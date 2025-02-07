@@ -55,12 +55,6 @@ class Trajectory():
         if not isinstance(self.MD, MDSimulation):
             raise ValueError("MDsim needs to be instance of MDSimulation class!")
 
-        # # max out on computational resources
-        # num_cores = multiprocessing.cpu_count()                         # Total physical + logical cores
-        # os.environ["OMP_NUM_THREADS"] = str(num_cores)                  # Set dynamically
-        os.environ["OMP_NUM_THREADS"] = "1"
-        os.environ["MKL_NUM_THREADS"] = "1"
-        os.environ["OPENBLAS_NUM_THREADS"] = "1"
 
     # get MDAnalysis object of specified residues at specified time slice
     def getChromophoreSnapshot(self, idx, molecule, conversion = None, cap = True):
