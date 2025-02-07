@@ -1,0 +1,28 @@
+dna_dye: Heat system with restraint on DNA
+ &cntrl
+  imin   = 0,			! MD: Minimization turned off (run MD)
+  nstlim = 10000,		! MD: # of MD steps
+  dt = 0.002,			! MD: Time step (ps)
+  irest  = 0,			! INIT: Random initial velocities
+  ntx    = 1,			! INIT: Only read in coordinates from *.rst7 file
+  ntb    = 1,			! INIT: Volume periodic boundaries
+  iwrap  = 1,			! INIT: Wrap molecules back into periodic box when they diffuse out
+  cut    = 8.0, 		! INIT: Cutoff radius (angstroms) beyond which interactions are ignored
+  ntr    = 1,			! INIT: Position restraint on GROUP (below)
+  ntc    = 2,			! INIT: Turn on SHAKE to constrain bonds involving hydrogen atoms
+  ntf    = 2,			! INIT: Do not compute forces for hydrogen atoms (since bonds are constrained)
+  tempi  = 0.0,			! THERMOSTAT: Start temperature (K)
+  temp0  = 300.0,		! THERMOSTAT: Final temperature (K)
+  ntt    = 3,			! THERMOSTAT: Langevin thermostat 
+  gamma_ln = 5.0,		! THERMOSTAT: Collision frequency (ps-1), i.e. random force applied to maintain temperature 
+  ig=-1,			! THERMOSTAT: Random seed chosen automatically for thermostat
+  ntpr = 100, 			! OUT: How often to write in out file (energy/log data)
+  ntwx = 100, 			! OUT: How often to write in traj file (trajectory data)
+  ntwr = 100, 			! OUT: How often to write in restart file 
+  ioutfm = 0			! OUT: trajectory output format ASCII
+/
+Hold the DNA fixed with weak restrains
+10.0
+RES 1 40
+END
+END

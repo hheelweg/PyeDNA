@@ -1,0 +1,30 @@
+dna_dye: NPT equilibration and slowly remove DNA restraint
+ &cntrl
+  imin   = 0,			! MD: Minimization turned off (run MD)
+  nstlim = 50000,		! MD: # of MD steps
+  dt = 0.002,			! MD: Time step (ps)
+  irest  = 1,			! INIT: read velocities from previous run
+  ntx    = 7,			! INIT: read in coordinates and box dimensions from previous run (for NPT simulations)
+  iwrap  = 1,			! INIT: Wrap molecules back into periodic box when they diffuse out
+  cut    = 8.0, 		! INIT: Cutoff radius (angstroms) beyond which interactions are ignored
+  ntr    = 1,			! INIT: Position restraint on GROUP (below)
+  ntc    = 2,			! INIT: Turn on SHAKE to constrain bonds involving hydrogen atoms
+  ntf    = 2,			! INIT: Do not compute forces for hydrogen atoms (since bonds are constrained)
+  ntp    = 2,			! BAROSTAT: Constant pressure (NPT) using Berendsen thermostat
+  pres0  = 1.0, 		! BAROSTAT: Target pressure (atm)
+  taup   = 2.0, 		! BAROSTAT: Pressure relaxation time (ps)
+  tempi  = 300.0,		! THERMOSTAT: Start temperature (K)
+  temp0  = 300.0,		! THERMOSTAT: Final temperature (K)
+  ntt    = 3,			! THERMOSTAT: Langevin thermostat 
+  gamma_ln = 5.0,		! THERMOSTAT: Collision frequency (ps-1), i.e. random force applied to maintain temperature 
+  ig=-1,			! THERMOSTAT: Random seed chosen automatically for thermostat
+  ntpr = 100, 			! OUT: How often to write in out file (energy/log data)
+  ntwx = 100, 			! OUT: How often to write in traj file (trajectory data)
+  ntwr = 100, 			! OUT: How often to write in restart file 
+  ioutfm = 0			! OUT: trajectory output format ASCII
+/
+Hold the DNA fixed with weaker restrains
+10.0
+RES 1 40
+END
+END

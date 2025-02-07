@@ -1,0 +1,15 @@
+dna_dye: Initial minimization solvent + ions
+ &cntrl
+  imin   = 1,			! Explicit solvent minimization
+  maxcyc = 1000,		! # of minimization steps
+  ncyc   = 500, 		! # of initial steepest descent minimization steps
+  ntb    = 1,			! Volume periodic boundaries
+  ntr    = 1,			! Position restraint on GROUP (below)
+  iwrap  = 1,			! Wrap molecules back into periodic box when they diffuse out
+  cut    = 8.0			! Cutoff radius (angstroms) beyond which interactions are ignored
+/
+Hold the DNA fixed
+500.0
+RES 1 40
+END
+END

@@ -1,0 +1,41 @@
+source leaprc.DNA.OL15
+source leaprc.gaff
+source leaprc.water.tip3p
+loadAmberParams ./createStructure/connectparms.frcmod
+CY3 = loadmol2 ./createStructure/CY3/ff_new/CY3_del.mol2
+loadAmberParams ./createStructure/CY3/ff_new/CY3_del.frcmod
+set CY3.1.O1 type OS
+set CY3.1.O1 name O3'
+set CY3.1.P2 type P
+set CY3.1.P2 name P
+set CY3.1.O5 type OS
+set CY3.1.O5 name O5'
+set CY3.1.O6 type O2
+set CY3.1.O6 name OP1
+set CY3.1.O8 type O2
+set CY3.1.O8 name OP2
+set CY3.1 connect0 CY3.1.P
+set CY3.1 connect1 CY3.1.O3'
+CY5 = loadmol2 ./createStructure/CY5/ff_new/CY5_del.mol2
+loadAmberParams ./createStructure/CY5/ff_new/CY5_del.frcmod
+set CY5.1.O1 type OS
+set CY5.1.O1 name O3'
+set CY5.1.P2 type P
+set CY5.1.P2 name P
+set CY5.1.O5 type OS
+set CY5.1.O5 name O5'
+set CY5.1.O6 type O2
+set CY5.1.O6 name OP1
+set CY5.1.O8 type O2
+set CY5.1.O8 name OP2
+set CY5.1 connect0 CY5.1.P
+set CY5.1 connect1 CY5.1.O3'
+mol = loadpdb ./createStructure/dnaCY3_CY5_4nt/dna_4nt.pdb 
+bond mol.8.O3' mol.9.P 
+bond mol.9.O3' mol.10.P 
+bond mol.13.O3' mol.14.P 
+bond mol.14.O3' mol.15.P 
+addIons mol NA 36
+solvatebox mol TIP3PBOX 10.0
+saveAmberParm mol ./createStructure/dnaCY3_CY5_4nt/dna_4nt.prmtop ./createStructure/dnaCY3_CY5_4nt/dna_4nt.rst7
+quit
