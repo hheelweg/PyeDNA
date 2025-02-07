@@ -42,7 +42,7 @@ def main(molecule_id, time_idx, do_tddft):
 
     # (3) optional: do TDDFT calculation based on that result:
     if do_tddft:
-        state_ids = [0, 1, 2, 3]                                  # might want to add more states
+        state_ids = [0]                                     # might want to add more states
         exc_energies, trans_dipoles, osc_strengths, tdms, osc_idx = quantumTools.doTDDFT(mf, occ, virt, state_ids)
         end_time = time.time()
          # (3.1) elapsed time after TDDFT
