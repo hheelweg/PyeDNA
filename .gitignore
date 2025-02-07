@@ -1,0 +1,4 @@
+# Ignore all NetCDF and DCD files
+*.nc
+*.dcd
+*.log
