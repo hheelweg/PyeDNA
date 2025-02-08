@@ -1,26 +1,44 @@
 import os
 import argparse
 import time
+import subprocess
+import torch
+
+# Detect available GPUs
+num_gpus = torch.cuda.device_count()
+if num_gpus < 2:
+    raise RuntimeError("Error: Less than 2 GPUs detected! Check SLURM allocation.")
 
 
+def run_dft_tddft(molecule, time_idx, gpu_id, do_tddft):
+    """Launch a DFT/TDDFT calculation on a specific GPU."""
+    env = os.environ.copy()
+    env["CUDA_VISIBLE_DEVICES"] = str(gpu_id)  # Assign GPU
+
+    cmd = f"python DFT_TDDFT_GPU.py {molecule} {time_idx}"
+    if do_tddft:
+        cmd += " --do-tddft"
+    
+    print(f"Running: {cmd} on GPU {gpu_id}")
+    return subprocess.Popen(cmd, shell=True, env=env)
 
 # function that parallel executes 
-def main(mol_1, mol_2, time_idx, do_tddft):
+def main(mol_1, mol_2, time_steps, do_tddft):
     
-    start_time_global = time.time()
-    # revaluate trajectory:
-    for t in range(time_idx):
-        # parallel execute molecule 1 and 2
-        if do_tddft:
-            os.system(f"python DFT_gpu.py {mol_1} {t} --do-tddft &")
-            os.system(f"python DFT_gpu.py {mol_2} {t} --do-tddft & wait")
-        else:
-            os.system(f"python DFT_gpu.py {mol_1} {t} &")
-            os.system(f"python DFT_gpu.py {mol_2} {t} & wait")
+    start = time.time()
+    for t in range(time_steps):
+        print(f"\n Running Time Step {t}...")
 
-    print("All DFT/TDDFT calculations completed!")
-    end_time_global = time.time()
-    print(f"Total elapsed time: {end_time_global - start_time_global} sec.")
+        # Run molecule_1 on GPU 0 and molecule_2 on GPU 1
+        proc1 = run_dft_tddft(mol_1, t, gpu_id=0, do_tddft=do_tddft)
+        proc2 = run_dft_tddft(mol_2, t, gpu_id=1, do_tddft=do_tddft)
+
+        # Wait for both processes to complete before moving to next time step
+        proc1.wait()
+        proc2.wait()
+
+    end = time.time()
+    print(f"All DFT/TDDFT calculations completed in {end -start} sec!")
 
 
 

@@ -3,7 +3,7 @@
 #SBATCH --partition=gpu          # GPU partition
 #SBATCH --nodelist=gpu001        # Run on GPU node gpu001
 #SBATCH --gres=gpu:2             # Request 2 GPU
-#SBATCH --cpus-per-task=24       # Request 48 CPU cores
+#SBATCH --cpus-per-task=48       # Request 48 CPU cores
 #SBATCH --output=out_gpu.log     # Output file
 
 # Activate conda environment
@@ -19,6 +19,9 @@ DO_TDDFT=""
 if [[ "$4" == "--do-tddft" ]]; then
     DO_TDDFT="--do-tddft"
 fi
+
+# Print allocated GPUs
+echo "Allocated GPUs: $CUDA_VISIBLE_DEVICES"
 
 # Run PySCF DFT calculation with PyTorch acceleration
 python dft_control.py "$MOLECULE_1_ID" "$MOLECULE_2_ID" "$TIME_IDX" $DO_TDDFT
