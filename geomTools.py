@@ -11,7 +11,8 @@ def getCoords(mda_u, selection='all'):
     # select subset of interest
     u_sel = mda_u.select_atoms(selection_str)
     # coordinates, atom names, centre of mass, residue names
-    xyz, names, types, com, resnames = np.array(u_sel.positions), u_sel.atoms.names, u_sel.atoms.types, u_sel.atoms.center_of_mass(), u_sel.resnames
+    # TODO : we changed from center_of_mass -> center_of_geometry
+    xyz, names, types, com, resnames = np.array(u_sel.positions), u_sel.atoms.names, u_sel.atoms.types, u_sel.atoms.center_of_geometry(), u_sel.resnames
     return xyz, names, types, com, resnames
 
 # transform list of ATOM names into readible string for MDAanalysis.select_atoms
