@@ -190,7 +190,9 @@ def writeLeap(path, pdb_file, leap_file,
         # (4) make bonds
         if len(bonds) > 0:
             for bond in bonds:
-                f.write(f"bond mol.{".".join(str(el) for el in bond[0])} mol.{".".join(str(el) for el in bond[1])} \n")
+                bond0 = ".".join(str(el) for el in bond[0])
+                bond1 = ".".join(str(el) for el in bond[1])
+                f.write(f"bond mol.{bond0} mol.{bond1} \n")
 
         # (5) # add ions to make cell neutral
         if add_ions is not None:
