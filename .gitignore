@@ -2,3 +2,5 @@
 *.nc
 *.dcd
 *.log
+.vscode
+.DS_Store
