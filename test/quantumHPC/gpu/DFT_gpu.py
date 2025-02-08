@@ -1,7 +1,7 @@
 import numpy as np
 import os
 from pyscf import gto
-from gpu4pyscf import scf, lib, solvent
+from gpu4pyscf import rks, scf, lib, solvent
 import argparse
 import sys
 import time
@@ -24,7 +24,7 @@ def doDFT_gpu(molecule, basis = '6-31g', xc = 'b3lyp', density_fit = False, char
     mol.verbose = verbosity
 
     # (2) initialize SCF object
-    mf = scf.RKS(mol)
+    mf = rks.RKS(mol)
     mf.xc = xc
     mf.max_cycle = scf_cycles               
     mf.conv_tol = 1e-5
