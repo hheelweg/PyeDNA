@@ -27,7 +27,7 @@ def main(mol_1, mol_2, time_steps, do_tddft):
     
     startT = time.time()
     for t in range(time_steps):
-        print(f"\n Running Time Step {t}...")
+        print(f"\n Running Time Step {t}...", flush = True)
         start_time = time.time()
         # Run molecule_1 on GPU 0 and molecule_2 on GPU 1
         proc1 = run_dft_tddft(mol_1, t, gpu_id=0, do_tddft=do_tddft)
@@ -39,7 +39,7 @@ def main(mol_1, mol_2, time_steps, do_tddft):
 
         end_time = time.time()  # End timing for this step
         elapsed_time = end_time - start_time
-        print(f"Time Step {t} Completed in {elapsed_time:.2f} seconds")
+        print(f"Time Step {t} Completed in {elapsed_time:.2f} seconds", flush = True)
 
     endT = time.time()
     print(f"All DFT/TDDFT calculations completed in {endT -startT} sec!")
