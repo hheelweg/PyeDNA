@@ -79,11 +79,7 @@ def main(molecule_id, time_idx, do_tddft):
     name_prmtop = 'dna_test.prmtop'
     name_nc = 'dna_test_prod.nc'                            
     name_out = 'dna_test_prod.out'
-
-    # enable PySCF multi-threading
-    lib.num_threads()
-    print(f"Numer of PySCF Threads: {lib.num_threads()}")
-    print(f"run TDDFT on top: {do_tddft}")                  
+              
 
     data = [name_prmtop,name_nc, name_out]                  # trajectory data 
     test = traj.Trajectory(MDsim, path, data)               # initialize Trajectory object
