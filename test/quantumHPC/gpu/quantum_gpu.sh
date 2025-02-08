@@ -3,9 +3,7 @@
 #SBATCH --partition=gpu          # GPU partition
 #SBATCH --nodelist=gpu001        # Run on GPU node gpu001
 #SBATCH --gres=gpu:1             # Request 1 GPU
-#SBATCH --cpus-per-task=18       # Request 48 CPU cores
-#SBATCH --mem=32G                # Request 32GB memory
-#SBATCH --time=02:00:00          # Time limit (2 hours)
+#SBATCH --cpus-per-task=48       # Request 48 CPU cores
 #SBATCH --output=out_gpu.log     # Output file
 
 # Activate conda environment
