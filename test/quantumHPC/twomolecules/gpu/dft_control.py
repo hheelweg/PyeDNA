@@ -37,6 +37,9 @@ def main(mol_1, mol_2, time_steps, do_tddft):
         proc1.wait()
         proc2.wait()
 
+        # print total time for time step:
+        print(f"Total time after time step {t}: {time.time()} sec!")
+
     end = time.time()
     print(f"All DFT/TDDFT calculations completed in {end -start} sec!")
 
