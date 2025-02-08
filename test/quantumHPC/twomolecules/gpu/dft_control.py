@@ -12,7 +12,7 @@ def main(mol_1, mol_2, time_idx, do_tddft):
     # revaluate trajectory:
     for t in range(time_idx):
         # parallel execute molecule 1 and 2
-        os.system(f"python DFT_gpu.py {mol_1} {t} {do_tddft} & python DFT_TDDFT_GPU.py {mol_2} {t} {do_tddft} & wait")
+        os.system(f"python DFT_gpu.py {mol_1} {t} {do_tddft} & python DFT_gpu.py {mol_2} {t} {do_tddft} & wait")
 
     print("All DFT/TDDFT calculations completed!")
     end_time_global = time.time()
