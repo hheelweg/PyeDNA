@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=pyscf_mpi    # Job name
 #SBATCH --nodes=1               # Run on a single node
-#SBATCH --ntasks=48             # Request 48 MPI tasks
-#SBATCH --cpus-per-task=1       # Each MPI task gets 1 CPU
+#SBATCH --ntasks=1              # Request 48 MPI tasks
+#SBATCH --cpus-per-task=48      # Each MPI task gets 1 CPU
 #SBATCH --time=02:00:00         # Time limit (2 hours)
 #SBATCH --output=out_mpi.log    # Output file
 
@@ -30,4 +30,5 @@ fi
 
 
 # Run PySCF DFT calculation with MPI
-mpirun -np 48 python DFT_mpi.py "$MOLECULE_ID" "$TIME_IDX" $DO_TDDFT
+#mpirun -np 48 python DFT_mpi.py "$MOLECULE_ID" "$TIME_IDX" $DO_TDDFT
+python DFT_mpi.py "$MOLECULE_ID" "$TIME_IDX" $DO_TDDFT
