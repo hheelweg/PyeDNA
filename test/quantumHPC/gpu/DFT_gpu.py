@@ -30,7 +30,7 @@ def doDFT_gpu(molecule, basis = '6-31g', xc = 'b3lyp', density_fit = False, char
     mf.max_cycle = scf_cycles               
     mf.conv_tol = 1e-5
     mf = mf.SMD()                           # TODO : look up this model
-    mf.with_solvent.method = 'COSMO'       # COSMO implicit solvent model 
+    mf.with_solvent.method = 'COSMO'        # COSMO implicit solvent model 
     if density_fit:                         # optional: use density fit for accelerating computation
         mf.density_fit()
 
@@ -101,7 +101,7 @@ def main(molecule_id, time_idx, do_tddft):
     # (3) optional: do TDDFT calculation based on that result:
     if do_tddft:
         state_ids = [0]                                     # might want to add more states
-        exc_energies, trans_dipoles, osc_strengths, tdms, osc_idx = doTDDFT_gpu(mf, occ, virt, state_ids, TDA=True)
+        exc_energies, trans_dipoles, osc_strengths, tdms, osc_idx = doTDDFT_gpu(mf, occ, virt, state_ids, TDA=False)
         end_time = time.time()
          # (3.1) elapsed time after TDDFT
         print(f"Elapsed time (after DFT + TDDFT): {end_time - start_time} sec")
