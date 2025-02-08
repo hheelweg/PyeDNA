@@ -8,7 +8,7 @@ import time
 def main(mol_1, mol_2, time_idx, do_tddft):
     
     start_time_global = time.time()
-
+    print("to_dft:", do_tddft)
     # revaluate trajectory:
     for t in range(time_idx):
         # parallel execute molecule 1 and 2
