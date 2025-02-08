@@ -2,7 +2,7 @@
 #SBATCH --job-name=pyscf_mpi    # Job name
 #SBATCH --nodes=1               # Run on a single node
 #SBATCH --ntasks=1              # Request 48 MPI tasks
-#SBATCH --cpus-per-task=48      # Each MPI task gets 1 CPU
+#SBATCH --cpus-per-task=48      # Each MPI task gets 48 CPU
 #SBATCH --time=02:00:00         # Time limit (2 hours)
 #SBATCH --output=out_mpi.log    # Output file
 
