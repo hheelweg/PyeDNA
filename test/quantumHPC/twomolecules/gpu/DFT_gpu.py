@@ -112,7 +112,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run DFT and optional TDDFT simulations on molecule")
     parser.add_argument("molecule_id", type=int, help="Molecule 1 ID (integer)")                # specifies residue name of molecule
     parser.add_argument("time_idx", type=int, help="Time index (integer)")                      # specifies time idx of trajectory
-    parser.add_argument("do-tddft", action="store_true", help="Enable TDDFT calculation")
+    parser.add_argument("--do-tddft", action="store_true", help="Enable TDDFT calculation")
     args = parser.parse_args()
 
     # run main
