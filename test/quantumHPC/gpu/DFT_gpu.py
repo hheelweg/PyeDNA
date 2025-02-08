@@ -1,7 +1,7 @@
 import numpy as np
 import os
-from pyscf import gto
-from gpu4pyscf import scf, scf, lib, solvent
+from pyscf import gto, lib
+from gpu4pyscf import scf, scf, solvent
 from gpu4pyscf.dft import rks
 import argparse
 import sys
@@ -93,7 +93,7 @@ def main(molecule_id, time_idx, do_tddft):
 
     # (2) perform DFT calculation
     start_time = time.time()
-    mf, occ, virt = doDFT_gpu(chromophore_conv)
+    mf, occ, virt = doDFT_gpu(chromophore_conv, density_fit=True)
     end_time = time.time()
     # (2.1) elapsed time after DFT
     print(f"Elapsed time (after DFT): {end_time - start_time} sec")
