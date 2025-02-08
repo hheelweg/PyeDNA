@@ -93,7 +93,7 @@ def main(molecule_id, time_idx, do_tddft):
 
     # (2) perform DFT calculation
     start_time = time.time()
-    mf, occ, virt = doDFT_gpu(chromophore_conv, density_fit=True)
+    mf, occ, virt = doDFT_gpu(chromophore_conv, density_fit=False)
     end_time = time.time()
     # (2.1) elapsed time after DFT
     print(f"Elapsed time (after DFT): {end_time - start_time} sec")
