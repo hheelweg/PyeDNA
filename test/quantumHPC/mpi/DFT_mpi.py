@@ -6,7 +6,7 @@ import sys
 import time
 
 # import custom modules
-path_to_modules = '/Users/henrikhee/Library/Mobile Documents/com~apple~CloudDocs/MIT/Other Projects/SchlauCohen/MyCode'
+path_to_modules = '/home/hheelweg/Cy3Cy5/PyCY'
 sys.path.append(path_to_modules)
 import quantumTools, structure
 import trajectory as traj
@@ -16,7 +16,7 @@ def main(molecule_id, time_idx, do_tddft):
 
     MDsim = traj.MDSimulation([])                           # empty MDSimulation object
 
-    path = '../prod/'                                       # specify relative path to MD ouput
+    path = '../../prod/'                                    # specify relative path to MD ouput
     name_prmtop = 'dna_test.prmtop'
     name_nc = 'dna_test_prod.nc'                            
     name_out = 'dna_test_prod.out'
