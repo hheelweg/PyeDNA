@@ -73,12 +73,11 @@ def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = Tru
     return exc_energies, trans_dipoles, osc_strengths, tdms, osc_idx
 
 
-
 def main(molecule_id, time_idx, do_tddft):
 
     MDsim = traj.MDSimulation([])                           # empty MDSimulation object
 
-    path = '/home/hheelweg/Cy3Cy5/PyCY/test/prod'           # specify path to MD ouput
+    path = '/home/hheelweg/Cy3Cy5/PyCY/test/prod/'          # specify relative path to MD ouput
     name_prmtop = 'dna_test.prmtop'
     name_nc = 'dna_test_prod.nc'                            
     name_out = 'dna_test_prod.out'
@@ -104,16 +103,16 @@ def main(molecule_id, time_idx, do_tddft):
         exc_energies, trans_dipoles, osc_strengths, tdms, osc_idx = doTDDFT_gpu(mf, occ, virt, state_ids, TDA=True)
         end_time = time.time()
          # (3.1) elapsed time after TDDFT
-        print(f"Elapsed time (after DFT + TDDFT): {end_time - start_time} sec")
+        print(f"Elapsed time (after DFT + TDDFT) in step {time_idx}: {end_time - start_time} sec")
 
 
 if __name__ == "__main__":
 
     # parse arguments from command line
-    parser = argparse.ArgumentParser(description="Run DFT and optional TDDFT simulations")
-    parser.add_argument("molecule_id", type=int, help="Molecule ID (integer)")                  # specifies residue name of one molecule
-    parser.add_argument("time_idx", type=int, help="Time index (integer)")                      # specifies time slice of trajectory
-    parser.add_argument("--do-tddft", action="store_true", help="Enable TDDFT calculation")
+    parser = argparse.ArgumentParser(description="Run DFT and optional TDDFT simulations on molecule")
+    parser.add_argument("molecule_id", type=int, help="Molecule 1 ID (integer)")                # specifies residue name of molecule
+    parser.add_argument("time_idx", type=int, help="Time index (integer)")                      # specifies time idx of trajectory
+    parser.add_argument("do-tddft", action="store_true", help="Enable TDDFT calculation")
     args = parser.parse_args()
 
     # run main
