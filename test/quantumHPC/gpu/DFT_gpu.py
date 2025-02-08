@@ -13,7 +13,7 @@ path_to_modules = '/home/hheelweg/Cy3Cy5/PyCY'
 sys.path.append(path_to_modules)
 import quantumTools, structure
 import trajectory as traj
-print('test')
+
 
 # GPU-supported DFT
 def doDFT_gpu(molecule, basis = '6-31g', xc = 'b3lyp', density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4):
@@ -38,7 +38,7 @@ def doDFT_gpu(molecule, basis = '6-31g', xc = 'b3lyp', density_fit = False, char
     # (3) run DFT
     mf.kernel()       
 
-    # (4) output quantities of interest:
+    # (4) output
     mo = mf.mo_coeff                        # MO Coefficients
     occ = mo[:, mf.mo_occ != 0]             # occupied orbitals
     virt = mo[:, mf.mo_occ == 0]            # virtual orbitals
@@ -60,7 +60,6 @@ def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = Tru
 
     # (4) compute oscillator strengths
     # (4.1) for all possible transitions
-    # TODO : Maria does not have the 2/3 pre-factor (find reason for this!)
     osc_strengths = [2/3 * exc_energies[i] * np.linalg.norm(trans_dipoles[i])**2 for i in range(len(exc_energies))]
     # (4.2) find strongest transition
     osc_idx = np.argmax(osc_strengths) if not any(np.array(osc_strengths) > 0.1) else np.argwhere(np.array(osc_strengths) > 0.1)[0][0]
@@ -94,7 +93,7 @@ def main(molecule_id, time_idx, do_tddft):
 
     # (2) perform DFT calculation
     start_time = time.time()
-    mf, occ, virt = doDFT_gpu(chromophore_conv, density_fit=True)
+    mf, occ, virt = doDFT_gpu(chromophore_conv, density_fit=False)
     end_time = time.time()
     # (2.1) elapsed time after DFT
     print(f"Elapsed time (after DFT): {end_time - start_time} sec")
@@ -102,7 +101,7 @@ def main(molecule_id, time_idx, do_tddft):
     # (3) optional: do TDDFT calculation based on that result:
     if do_tddft:
         state_ids = [0, 1, 2]                                     # might want to add more states
-        exc_energies, trans_dipoles, osc_strengths, tdms, osc_idx = doTDDFT_gpu(mf, occ, virt, state_ids, TDA=False)
+        exc_energies, trans_dipoles, osc_strengths, tdms, osc_idx = doTDDFT_gpu(mf, occ, virt, state_ids, TDA=True)
         end_time = time.time()
          # (3.1) elapsed time after TDDFT
         print(f"Elapsed time (after DFT + TDDFT): {end_time - start_time} sec")
