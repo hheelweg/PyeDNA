@@ -95,7 +95,7 @@ def main(molecule_id, time_idx, do_tddft):
     mf, occ, virt = doDFT_gpu(chromophore_conv, density_fit=False)
     end_time = time.time()
     # (2.1) elapsed time after DFT
-    print(f"Elapsed time (after DFT): {end_time - start_time} sec")
+    print(f"Elapsed time (after DFT) in step {time_idx} on mol {molecule_id}: {end_time - start_time} sec")
 
     # (3) optional: do TDDFT calculation based on that result:
     if do_tddft:
@@ -103,7 +103,7 @@ def main(molecule_id, time_idx, do_tddft):
         exc_energies, trans_dipoles, osc_strengths, tdms, osc_idx = doTDDFT_gpu(mf, occ, virt, state_ids, TDA=True)
         end_time = time.time()
          # (3.1) elapsed time after TDDFT
-        print(f"Elapsed time (after DFT + TDDFT) in step {time_idx}: {end_time - start_time} sec")
+        print(f"Elapsed time (after DFT + TDDFT) in step {time_idx} on mol {molecule_id}: {end_time - start_time} sec")
 
 
 if __name__ == "__main__":

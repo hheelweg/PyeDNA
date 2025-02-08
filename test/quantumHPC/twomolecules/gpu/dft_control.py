@@ -12,13 +12,12 @@ def main(mol_1, mol_2, time_idx, do_tddft):
     for t in range(time_idx):
         # parallel execute molecule 1 and 2
         if do_tddft:
-            os.system(f"python DFT_gpu.py {mol_1} {t} --do-tddft")
-            os.system(f"python DFT_gpu.py {mol_2} {t} --do-tddft")
+            os.system(f"python DFT_gpu.py {mol_1} {t} --do-tddft &")
+            os.system(f"python DFT_gpu.py {mol_2} {t} --do-tddft & wait")
         else:
-            os.system(f"python DFT_gpu.py {mol_1} {t}")
-            os.system(f"python DFT_gpu.py {mol_2} {t}")
+            os.system(f"python DFT_gpu.py {mol_1} {t} &")
+            os.system(f"python DFT_gpu.py {mol_2} {t} & wait")
 
-    os.system("wait")
     print("All DFT/TDDFT calculations completed!")
     end_time_global = time.time()
     print(f"Total elapsed time: {end_time_global - start_time_global} sec.")
