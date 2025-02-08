@@ -26,4 +26,4 @@ fi
 
 
 # Run PySCF DFT calculation with PyTorch acceleration
-python DFT.py "$MOLECULE_ID" "$TIME_IDX" $DO_TDDFT
+python DFT_gpu.py "$MOLECULE_ID" "$TIME_IDX" $DO_TDDFT
