@@ -6,6 +6,7 @@ from gpu4pyscf.dft import rks
 import argparse
 import sys
 import time
+import cupy as cp
 
 # import custom modules
 path_to_modules = '/home/hheelweg/Cy3Cy5/PyCY'
@@ -68,7 +69,7 @@ def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = Tru
     # td.xy[i] is tuple (X_i, Y_i) with X_i contains the expansion coefficients for the excitation part of the i-th excited state
     # and Y_1 the expansion coefficients for the de-excitation part; in TDDFT td.xy[i][0] quantifies how the virtual orbitals mix
     # with the occupied orbital in the i-th excitation
-    tdms = [np.sqrt(2) * occ_orbits.dot(td.xy[id][0]).dot(virt_orbits.T) for id in state_ids]
+    tdms = [cp.sqrt(2) * cp.asarray(occ_orbits).dot(td.xy[id][0]).dot(cp.asarray(virt_orbits).T) for id in state_ids]
 
     return exc_energies, trans_dipoles, osc_strengths, tdms, osc_idx
 
