@@ -30,4 +30,4 @@ fi
 
 
 # Run PySCF DFT calculation with MPI
-mpirun -np 48 python DFT.py "$MOLECULE_ID" "$TIME_IDX" $DO_TDDFT
+mpirun -np 48 python DFT_mpi.py "$MOLECULE_ID" "$TIME_IDX" $DO_TDDFT
