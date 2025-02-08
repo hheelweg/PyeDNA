@@ -1,2 +1,2 @@
 # PyCY
-create DNA + chromophore structures, MD, QM ...
+under construction 🚧: future high-throughput platform for creating DNA/chromophore structures, performing all-atom MD and analyzing trajectories.
