@@ -15,7 +15,7 @@ def run_dft_tddft(molecule, time_idx, gpu_id, do_tddft):
     env = os.environ.copy()
     env["CUDA_VISIBLE_DEVICES"] = str(gpu_id)  # Assign GPU
 
-    cmd = f"python DFT_TDDFT_GPU.py {molecule} {time_idx}"
+    cmd = f"python DFT_gpu.py {molecule} {time_idx}"
     if do_tddft:
         cmd += " --do-tddft"
     
