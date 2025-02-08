@@ -1,7 +1,8 @@
 import numpy as np
 import os
 from pyscf import gto
-from gpu4pyscf import rks, scf, lib, solvent
+from gpu4pyscf import scf, scf, lib, solvent
+from gpu4pyscf.dft import rks
 import argparse
 import sys
 import time
