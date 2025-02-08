@@ -14,7 +14,6 @@ sys.path.append(path_to_modules)
 import quantumTools, structure
 import trajectory as traj
 
-#print("cuTENSOR available:", cp.cuda.cutensor.available)
 
 # GPU-supported DFT
 def doDFT_gpu(molecule, basis = '6-31g', xc = 'b3lyp', density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4):

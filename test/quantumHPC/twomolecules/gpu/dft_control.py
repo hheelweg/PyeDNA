@@ -25,10 +25,10 @@ def run_dft_tddft(molecule, time_idx, gpu_id, do_tddft):
 # function that parallel executes 
 def main(mol_1, mol_2, time_steps, do_tddft):
     
-    start = time.time()
+    startT = time.time()
     for t in range(time_steps):
         print(f"\n Running Time Step {t}...")
-
+        start_time = time.time()
         # Run molecule_1 on GPU 0 and molecule_2 on GPU 1
         proc1 = run_dft_tddft(mol_1, t, gpu_id=0, do_tddft=do_tddft)
         proc2 = run_dft_tddft(mol_2, t, gpu_id=1, do_tddft=do_tddft)
@@ -37,11 +37,12 @@ def main(mol_1, mol_2, time_steps, do_tddft):
         proc1.wait()
         proc2.wait()
 
-        # print total time for time step:
-        print(f"Total time after time step {t}: {time.time()} sec!")
+        end_time = time.time()  # End timing for this step
+        elapsed_time = end_time - start_time
+        print(f"Time Step {t} Completed in {elapsed_time:.2f} seconds")
 
-    end = time.time()
-    print(f"All DFT/TDDFT calculations completed in {end -start} sec!")
+    endT = time.time()
+    print(f"All DFT/TDDFT calculations completed in {endT -startT} sec!")
 
 
 
