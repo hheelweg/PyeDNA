@@ -11,8 +11,8 @@
 source activate AmberTools24
 
 # Set OpenMP and MKL threading options for PySCF
-export OMP_NUM_THREADS=1        # Prevent OpenMP from interfering with MPI
-export MKL_NUM_THREADS=1        # Prevent extra MKL threads
+#export OMP_NUM_THREADS=1        # Prevent OpenMP from interfering with MPI
+#export MKL_NUM_THREADS=1        # Prevent extra MKL threads
 
 # Print system info for debugging
 echo "Running on CPU node: $(hostname)"
