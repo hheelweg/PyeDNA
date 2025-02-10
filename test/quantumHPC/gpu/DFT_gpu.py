@@ -32,7 +32,7 @@ def doDFT_gpu(molecule, basis = '6-31g', xc = 'b3lyp', density_fit = False, char
     mf.max_cycle = scf_cycles               
     mf.conv_tol = 1e-5
     mf = mf.SMD()                           # TODO : look up this model
-    mf.with_solvent.method = 'DDCOSMO'      # COSMO implicit solvent model 
+    mf.with_solvent.method = 'COSMO'        # COSMO implicit solvent model 
     #mf = solvent.ddCOSMO(mf).run()
     if density_fit:                         # optional: use density fit for accelerating computation
         mf.density_fit()
