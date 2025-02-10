@@ -1,7 +1,8 @@
 import numpy as np
 import os
-from pyscf import gto, lib
-from gpu4pyscf import scf, scf, solvent, tdscf
+from pyscf import gto, lib, solvent
+#from gpu4pyscf import scf, scf, solvent, tdscf
+from gpu4pyscf import scf, scf, tdscf
 from gpu4pyscf.dft import rks
 import argparse
 import sys
