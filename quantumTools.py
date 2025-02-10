@@ -232,10 +232,11 @@ def doDFT(molecule, basis = '6-31g', xc_f = 'b3lyp', density_fit = False, charge
 
     # (3) run with with COSMO implicit solvent model
     # NOTE : changed this for a few tests
-    mf = solvent.ddCOSMO(mf).run()
+    mf = solvent.ddCOSMO(mf)
+    # mf = solvent.ddCOSMO(mf).run()
     # mf = mf.SMD()
     # mf.with_solvent.method = 'COSMO'
-    # mf.kernel()       
+    mf.kernel()       
 
     # (4) output quantities of interest:
     mo = mf.mo_coeff                        # MO Coefficients
@@ -252,7 +253,11 @@ def doTDDFT(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = True):
     nstates = len(state_ids)
 
     # (2) run TDDFT with or without TDA (Tamm-Dancoff approximation)
-    td = molecule_mf.TDA().run(nstates = nstates) if TDA else molecule_mf.TDDFT(nstates = nstates).run()
+    #td = molecule_mf.TDA().run(nstates = nstates) if TDA else molecule_mf.TDDFT(nstates = nstates).run()
+    # NOTE : we changed this around a little bit for some tests
+    td = tdscf.rks.TDA(molecule_mf)
+    td.with_solvent = molecule_mf.with_solvent
+    td.kernel()
 
     # (3) extract excitation energies and transition dipole moments
     exc_energies = [td.e[id] for id in state_ids]
