@@ -236,6 +236,7 @@ def doDFT(molecule, basis = '6-31g', xc_f = 'b3lyp', density_fit = False, charge
     # mf = solvent.ddCOSMO(mf).run()
     # mf = mf.SMD()
     # mf.with_solvent.method = 'COSMO'
+    mf.with_solvent.eps = 78.3553
     mf.kernel()       
 
     # (4) output quantities of interest:
