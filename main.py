@@ -258,7 +258,7 @@ test = traj.Trajectory(MDsim, path, data)
 
 # # analyze *.out file (e.g. for looking at energy convergence)
 # path_to_perl = '/opt/homebrew/Caskroom/miniconda/base/envs/AmberTools23/bin/process_mdout.perl'
-# test.analyzeOut(path_to_perl, plot = False)
+# test.analyzeOut(path_to_perl, plot = True)
 
 # %%
 # test analysis of trajectory
@@ -274,9 +274,15 @@ traj_info = {'conversion': 'pyscf',
              'com': True}
 
 # which time slice of the trajectory are we interested in?
-time_slice = [0, 0]
-test.analyzeTrajectory(molecules, time_slice, **traj_info)
+time_slice = [0, 199]
+distances = test.analyzeTrajectory(molecules, time_slice, **traj_info)
 
+# # plot distance between chromophores:
+# import matplotlib.pyplot as plt
+# plt.plot(distances)
+# plt.xlabel('Time Step')
+# plt.ylabel(r'Distance CY3-CY5 ($\mathrm{\AA}$)')
+# plt.show()
 
 # %% [markdown]
 # #### Quantum Mechanical Computations

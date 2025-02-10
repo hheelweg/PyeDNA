@@ -107,6 +107,7 @@ class Trajectory():
             self.time_slice = time_slice
 
         # (3) analyze trajectory
+        distances = []
         for idx in range(self.time_slice[0], self.time_slice[1] + 1):
 
             # (1) get Chromophores of interest 
@@ -117,17 +118,27 @@ class Trajectory():
                 self.chromophores.append(chromophore)
                 self.chromophores_conv.append(chromophore_conv)
 
-            # (2) analyze with respect to quantities of interest
-            # TODO : improve this based on **params:
-            mol_idx = 0
-            # (2.1) perform DFT computation
-            molecule_mf, occ_orbits, virt_orbits = qm.doDFT(self.chromophores_conv[mol_idx])
-            # (2.2) perform TDDFT computation
-            exc_energies, trans_dipoles, osc_strengths, tdms, osc_idx = qm.doTDDFT(molecule_mf, occ_orbits, virt_orbits)
+            # (2) get distance between chromophores:
+            distances.append(self.getDistance(self.chromophores[0], self.chromophores[1]))
+
+            # # (2) analyze with respect to quantities of interest
+            # # TODO : improve this based on **params:
+            # mol_idx = 0
+            # # (2.1) perform DFT computation
+            # molecule_mf, occ_orbits, virt_orbits = qm.doDFT(self.chromophores_conv[mol_idx])
+            # # (2.2) perform TDDFT computation
+            # exc_energies, trans_dipoles, osc_strengths, tdms, osc_idx = qm.doTDDFT(molecule_mf, occ_orbits, virt_orbits)
 
 
-        pass
+        return distances
 
+
+    # get disatnce between chromophores
+    # TODO : add various distance measure to compare them
+    def getDistance(self, chromophore_1, chromophore_2):
+        com_1, com_2 = chromophore_1.com, chromophore_2.com
+        distance = np.linalg.norm(com_1 - com_2)
+        return distance
 
 
     # TODO : might want to make this more general for atom types to cap etc.

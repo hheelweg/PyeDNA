@@ -207,7 +207,6 @@ def optimizeStructureSymmetryFF(path, moleculeNamePDB, stepsNo = 50000, econv = 
 
 # perform DFT calculation on molecule
 def doDFT(molecule, basis = '6-31g', xc_f = 'b3lyp', density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4):
-    from pyscf.dft import xcfun
 
     # (1) make PySCF molecular structure 
     mol = gto.M(atom = molecule,
@@ -231,7 +230,11 @@ def doDFT(molecule, basis = '6-31g', xc_f = 'b3lyp', density_fit = False, charge
         mf.density_fit(auxbasis="weigend")
 
     # (3) run with with COSMO implicit solvent model
-    mf = solvent.ddCOSMO(mf).run()       
+    # NOTE : changed this for a few tests
+    #mf = solvent.ddCOSMO(mf).run()
+    mf = mf.SMD()
+    mf.with_solvent.method = 'COSMO'
+    mf.kernel()       
 
     # (4) output quantities of interest:
     mo = mf.mo_coeff                        # MO Coefficients
