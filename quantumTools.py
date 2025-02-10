@@ -222,7 +222,8 @@ def doDFT(molecule, basis = '6-31g', xc_f = 'b3lyp', density_fit = False, charge
     #     mol = contrained_opt(mf, opt_cap)
 
     # (2) initialize SCF object
-    mf = scf.RKS(mol)
+    # mf = scf.RKS(mol)
+    mf = dft.RKS(mol)
     mf.xc = xc_f
     mf.max_cycle = scf_cycles               
     mf.conv_tol = 1e-5
@@ -231,10 +232,10 @@ def doDFT(molecule, basis = '6-31g', xc_f = 'b3lyp', density_fit = False, charge
 
     # (3) run with with COSMO implicit solvent model
     # NOTE : changed this for a few tests
-    #mf = solvent.ddCOSMO(mf).run()
-    mf = mf.SMD()
-    mf.with_solvent.method = 'COSMO'
-    mf.kernel()       
+    mf = solvent.ddCOSMO(mf).run()
+    # mf = mf.SMD()
+    # mf.with_solvent.method = 'COSMO'
+    # mf.kernel()       
 
     # (4) output quantities of interest:
     mo = mf.mo_coeff                        # MO Coefficients
