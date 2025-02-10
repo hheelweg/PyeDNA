@@ -79,7 +79,7 @@ def main(molecule_id, time_idx, do_tddft):
 
     MDsim = traj.MDSimulation([])                           # empty MDSimulation object
 
-    path = '/home/hheelweg/Cy3Cy5/PyCY/test/prod'           # specify path to MD ouput
+    path = '/home/hheelweg/Cy3Cy5/PyCY/test/prod/'          # specify path to MD ouput
     name_prmtop = 'dna_test.prmtop'
     name_nc = 'dna_test_prod.nc'                            
     name_out = 'dna_test_prod.out'
