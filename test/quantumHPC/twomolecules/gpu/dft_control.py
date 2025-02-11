@@ -4,12 +4,16 @@ import time
 import subprocess
 import torch
 import DFT_gpu
+import multiprocessing as mp
 from concurrent.futures import ProcessPoolExecutor
 
 # Detect available GPUs
 num_gpus = torch.cuda.device_count()
 if num_gpus < 2:
     raise RuntimeError("Error: Less than 2 GPUs detected! Check SLURM allocation.")
+
+# Set the multiprocessing method to "spawn" to avoid CUDA errors
+mp.set_start_method('spawn', force=True)
 
 # NOTE : old version calling subprocess routin
 # def run_dft_tddft(molecule, time_idx, gpu_id, do_tddft):
