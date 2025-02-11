@@ -38,49 +38,46 @@ def getMol(mol_idx, time_idx):
                 spin = 0)
     return mol
 
+
 # NOTE : we here try to compute the coupling
 # compute coupling test-wise
 def getCoupling(molA, molB, tdmA, tdmB, calcK = False):
+
     from pyscf.scf import jk, _vhf
-    naoA = molA.nao
-    naoB = molB.nao
-    print(naoA, naoB)
-    assert(tdmA.shape == (naoA, naoA))
-    assert(tdmB.shape == (naoB, naoB))
 
-    molAB = molA + molB
+    # (0) check that dimensions are correct
+    assert(tdmA.shape == (molA.nao, molA.nao))
+    assert(tdmB.shape == (molB.nao, molB.nao))
+
+    # (1) merge separate molecules together and set up joint density matrix
+    mol_AB = molA + molB
+    dm_AB = scipy.linalg.block_diag(tdmA, tdmB) 
     
-    #vhf = Hartree Fock Potential
-    vhfopt = _vhf.VHFOpt(molAB, 'int2e', 'CVHFnrs8_prescreen',
+    # (2) set of HF infrastucture for fast integral evaluation
+    # 'int2e' specifies two-electron integrals, 'CVHFnrs8_prescreen' use prescreen options to reduce computational time
+    # key idea : instead of directly computing all (ij∣kl) integrals, PySCF uses prescreening techniques to skip irrelevant terms.
+    vhfopt = _vhf.VHFOpt(mol_AB, 'int2e', 'CVHFnrs8_prescreen',
                          'CVHFsetnr_direct_scf',
-                         'CVHFsetnr_direct_scf_dm')
-    dmAB = scipy.linalg.block_diag(tdmA, tdmB)
-    #### Initialization for AO-direct JK builder
-    # The prescreen function CVHFnrs8_prescreen indexes q_cond and dm_cond
-    # over the entire basis.  "set_dm" in function jk.get_jk/direct_bindm only
-    # creates a subblock of dm_cond which is not compatible with
-    # CVHFnrs8_prescreen.
-    vhfopt.set_dm(dmAB, molAB._atm, molAB._bas, molAB._env)
-    # Then skip the "set_dm" initialization in function jk.get_jk/direct_bindm.
+                         'CVHFsetnr_direct_scf_dm')                    
+    vhfopt.set_dm(dm_AB, mol_AB._atm, mol_AB._bas, mol_AB._env)             # enables denisity-based prescreening
     vhfopt._dmcondname = None
-    ####
 
-    # Coulomb integrals
+    # (3) compute Coulomb integrals
     with lib.temporary_env(vhfopt._this.contents,
                            fprescreen=_vhf._fpointer('CVHFnrs8_vj_prescreen')):
         shls_slice = (0        , molA.nbas , 0        , molA.nbas,
-                      molA.nbas, molAB.nbas, molA.nbas, molAB.nbas)  # AABB
-        vJ = jk.get_jk(molAB, tdmB, 'ijkl,lk->s2ij', shls_slice=shls_slice,
+                      molA.nbas, mol_AB.nbas, molA.nbas, mol_AB.nbas)  # AABB
+        vJ = jk.get_jk(mol_AB, tdmB, 'ijkl,lk->s2ij', shls_slice=shls_slice,
                        vhfopt=vhfopt, aosym='s4', hermi=1)
         cJ = np.einsum('ia,ia->', vJ, tdmA)
-        
-    if calcK==True:
-        # Exchange integrals
+    
+    # (4) compute Exchange integrals
+    if calcK == True:
         with lib.temporary_env(vhfopt._this.contents,
                                fprescreen=_vhf._fpointer('CVHFnrs8_vk_prescreen')):
-            shls_slice = (0        , molA.nbas , molA.nbas, molAB.nbas,
-                          molA.nbas, molAB.nbas, 0        , molA.nbas)  # ABBA
-            vK = jk.get_jk(molAB, tdmB, 'ijkl,jk->il', shls_slice=shls_slice,
+            shls_slice = (0        , molA.nbas , molA.nbas, mol_AB.nbas,
+                          molA.nbas, mol_AB.nbas, 0        , molA.nbas)  # ABBA
+            vK = jk.get_jk(mol_AB, tdmB, 'ijkl,jk->il', shls_slice=shls_slice,
                            vhfopt=vhfopt, aosym='s1', hermi=0)
             cK = np.einsum('ia,ia->', vK, tdmA)
             
