@@ -17,7 +17,7 @@ import trajectory as traj
 
 
 # GPU-supported DFT
-def doDFT_gpu(molecule, basis = '6-31g', xc = 'b3lyp', geom_opt = False, 
+def doDFT_gpu(molecule, basis = '6-31g', xc = 'b3lyp', 
               density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4):
 
     # (1) make PySCF molecular structure 
@@ -27,12 +27,8 @@ def doDFT_gpu(molecule, basis = '6-31g', xc = 'b3lyp', geom_opt = False,
                 spin = spin)
     mol.verbose = verbosity
 
-    # (2) peform initial geometry optimization
-    # TODO : might want to add this in, but seems like we don't need it
-    if geom_opt:
-        pass
 
-    # (3) initialize SCF object
+    # (2) initialize SCF object
     mf = rks.RKS(mol)
     mf.xc = xc
     mf.max_cycle = scf_cycles               
@@ -42,10 +38,10 @@ def doDFT_gpu(molecule, basis = '6-31g', xc = 'b3lyp', geom_opt = False,
     if density_fit:                         # optional: use density fit for accelerating computation
         mf.density_fit()
 
-    # (4) run DFT
+    # (3) run DFT
     mf.kernel()       
 
-    # (5) output
+    # (4) output
     mo = mf.mo_coeff                        # MO Coefficients
     occ = mo[:, mf.mo_occ != 0]             # occupied orbitals
     virt = mo[:, mf.mo_occ == 0]            # virtual orbitals
@@ -98,7 +94,7 @@ def main(molecule_id, time_idx, do_tddft):
     chromophore, chromophore_conv = test.getChromophoreSnapshot(time_idx, molecule, conversion = 'pyscf')
 
     # (2) perform DFT calculation
-    mf, occ, virt = doDFT_gpu(chromophore_conv, density_fit=False, verbosity=0)
+    mf, occ, virt = doDFT_gpu(chromophore_conv, density_fit=False, verbosity=4)
 
     # (3) optional: do TDDFT calculation based on that result:
     if do_tddft:
@@ -118,7 +114,7 @@ if __name__ == "__main__":
 
     # run main
     exc_energies, tdms = main(args.molecule_id, args.time_idx, args.do_tddft)
-    print(exc_energies)
+    print(args.molecule_id, args.time_idx, args.do_tddft, exc_energies)
 
 
     # print the structured JSON output  
