@@ -33,7 +33,7 @@ def doDFT_gpu(molecule, basis = '6-31g', xc = 'b3lyp',
     mf = rks.RKS(mol)
     mf.xc = xc
     mf.max_cycle = scf_cycles               
-    mf.conv_tol = 1e-2                      # TODO : only did this for debugging
+    mf.conv_tol = 1e-5                      # TODO : only did this for debugging
     mf = mf.SMD()                           # TODO : look up this model
     mf.with_solvent.method = 'DDCOSMO'      # COSMO implicit solvent model 
     if density_fit:                         # optional: use density fit for accelerating computation
@@ -123,18 +123,14 @@ if __name__ == "__main__":
     # print(output_data)
 
     # Redirect all print outputs to `/dev/null` to suppress logs
-    sys.stdout = open(os.devnull, "w")  
 
-    try:
-        exc_energies, tdms = main(args.molecule_id, args.time_idx, args.do_tddft)
-    finally:
-        sys.stdout = sys.__stdout__  # Restore normal stdout
+    exc_energies, tdms = main(args.molecule_id, args.time_idx, args.do_tddft)
 
-    # ✅ Print JSON to `stderr` so SLURM doesn't log it in `out.log`
+    # Print JSON to `stderr` so SLURM doesn't log it in `out.log`
     json_output = json.dumps({
-        "exc_energies": exc_energies.tolist() if exc_energies is not None else [],
-        "tdms": tdms.tolist() if tdms is not None else []
+        "exc_energies": exc_energies.tolist(),
+        "tdms": tdms.tolist()
     })
-    sys.stderr.write(json_output + "\n")
-    sys.stderr.flush()
+    sys.stdout.write(json_output + "\n")
+    sys.stdout.flush()
 

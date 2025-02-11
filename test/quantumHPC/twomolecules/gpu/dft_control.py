@@ -23,7 +23,7 @@ def run_dft_tddft(molecule, time_idx, gpu_id, do_tddft):
     if do_tddft:
         cmd += " --do-tddft"
 
-    process = subprocess.Popen(cmd, shell=True, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)        
+    process = subprocess.Popen(cmd, shell=True, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)        
 
     return process
 
@@ -41,16 +41,9 @@ def main(mol_1, mol_2, time_steps, do_tddft):
         proc2 = run_dft_tddft(mol_2, t, gpu_id=1, do_tddft=do_tddft)
 
         # wait for both processes to finish and capture their outputs
-        _, output1 = proc1.communicate()
-        _, output2 = proc2.communicate()
+        output1, _ = proc1.communicate()
+        output2, _ = proc2.communicate()
         print('output1', output1 , flush = True)
-
-        # read in inputs
-        output1_json = json.loads(output1.strip())
-        exc_energies_1 = np.array(output1_json["exc_energies"])
-        tdms_1 = np.array(output1_json["tdms"])
-        print(exc_energies_1)
-        print(tdms_1.shape)
 
 
         end_time = time.time()  # End timing for this step
@@ -59,7 +52,6 @@ def main(mol_1, mol_2, time_steps, do_tddft):
 
     endT = time.time()
     print(f"All DFT/TDDFT calculations completed in {endT -startT} sec!")
-
 
 
 
