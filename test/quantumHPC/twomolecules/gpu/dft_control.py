@@ -19,7 +19,7 @@ def run_dft_tddft(molecule, time_idx, gpu_id, do_tddft):
     if do_tddft:
         cmd += " --do-tddft"
     
-    exc_energies, tdms = subprocess.run(cmd, shell=True, env=env, capture_output=True, text=True)
+    exc_energies, tdms = subprocess.run(cmd, shell=True, env=env, capture_output=True)
 
     return exc_energies.stdout.strip(), tdms.stdout.strip()
 
