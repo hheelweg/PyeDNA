@@ -109,6 +109,11 @@ def main(molecules, time_idx):
         tdm.append(tdms)
         mols.append(getMol(molecule_id, time_idx))
         
+    # NOTE : since we have run TDDFT based on three excited states state_ids = [0, 1, 2],
+    # each dimension in the TDM correspond to one of the states specified
+    # we here only want to use the TDM for the first excited state, i.e. state_id = 0 and therefore use tdm[molecule_id][0]
+    # to compute the coupling
+
     # compute coupling
     start_time = time.time()
     a, b = getCoupling(mols[0], mols[1], tdm[0][0], tdm[1][0])
