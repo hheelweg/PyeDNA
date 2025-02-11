@@ -12,7 +12,7 @@ import trajectory as traj
 import const
 
 
-def main(mol_1, mol_2):
+def main(molecules, time_idx):
     # NOTE : this script only serves the purpose of debugging 
     print('** Debug script to compute the coupling from the TDM of two molecules')
 
@@ -37,7 +37,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Run DFT and optional TDDFT simulations")
     parser.add_argument("molecule_1_id", type=int, help="Molecule 1 ID (integer)")              # specifies residue name of molecule 1
     parser.add_argument("molecule_2_id", type=int, help="Molecule 2 ID (integer)")              # specifies residue name of molecule 1
+    parser.add_argument("time_idx", type=int, help="Time index (integer)")                      # specifies time step upon we wish to analyze trajectory
     args = parser.parse_args()
 
     molecules = [args.molecule_1_id, args.molecule_2_id]
-    main(molecules)
+    main(molecules, args.time_idx)

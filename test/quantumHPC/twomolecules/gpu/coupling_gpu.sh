@@ -12,6 +12,7 @@ source activate AmberTools24
 # Read command-line arguments
 MOLECULE_1_ID=$1
 MOLECULE_2_ID=$2
+TIME_IDX=$3
 
 # Run PySCF DFT calculation with PyTorch acceleration
-python coupling_gpu.py "$MOLECULE_1_ID" "$MOLECULE_2_ID"
+python coupling_gpu.py "$MOLECULE_1_ID" "$MOLECULE_2_ID" "$TIME_IDX"
