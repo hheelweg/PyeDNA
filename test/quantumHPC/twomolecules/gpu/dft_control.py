@@ -31,7 +31,9 @@ def run_dft_tddft(molecule, time_idx, gpu_id, do_tddft):
 def main(mol_1, mol_2, time_steps, do_tddft):
     
     startT = time.time()
-    for t in range(time_steps):
+    #for t in range(time_steps):
+    for t in range(10, 11):
+        print(t)
         print(f"\n Running Time Step {t}...", flush = True)
         start_time = time.time()
 
