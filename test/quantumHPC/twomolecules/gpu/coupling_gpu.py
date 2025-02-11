@@ -28,9 +28,13 @@ def getMol(mol_idx, time_idx):
     # (1) specify chromophore to perform DFT/TDDFT on
     molecule = [mol_idx]
     chromophore, chromophore_conv = test.getChromophoreSnapshot(time_idx, molecule, conversion = 'pyscf')
-    return chromophore_conv
 
-
+    # (2) convert to pyscf mol object
+    mol = gto.M(atom = chromophore_conv,
+                basis = '6-31g',
+                charge = 0,
+                spin = 0)
+    return mol
 
 
 
@@ -51,7 +55,7 @@ def main(molecules, time_idx):
         tdm.append(tdms)
         mols.append(getMol(mol, time_idx))
         
-    print(mols[0])
+    # having loaded the pyscf mol object as well 
 
 
 
