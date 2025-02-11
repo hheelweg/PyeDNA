@@ -59,7 +59,7 @@ def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = Tru
     td = molecule_mf.TDA().run(nstates = nstates) if TDA else molecule_mf.TDDFT().run(nstates = nstates)
 
     # (3) extract excitation energies and transition dipole moments
-    exc_energies = [td.e[id] * const.EH2EV for id in state_ids]
+    exc_energies = [td.e[id] for id in state_ids]
     trans_dipoles = [td.transition_dipole()[id] for id in state_ids]
 
     # (4) compute oscillator strengths
@@ -74,6 +74,7 @@ def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = Tru
     # with the occupied orbital in the i-th excitation
     tdms = [cp.sqrt(2) * cp.asarray(occ_orbits).dot(cp.asarray(td.xy[id][0])).dot(cp.asarray(virt_orbits).T) for id in state_ids]
 
+    # return in E_h units and numpy arrays
     return np.array(exc_energies), np.array([tdm.get() for tdm in tdms])
 
 
@@ -95,7 +96,7 @@ def main(molecule_id, time_idx, do_tddft):
     chromophore, chromophore_conv = test.getChromophoreSnapshot(time_idx, molecule, conversion = 'pyscf')
 
     # (2) perform DFT calculation
-    mf, occ, virt = doDFT_gpu(chromophore_conv, density_fit=False, verbosity=4)
+    mf, occ, virt = doDFT_gpu(chromophore_conv, density_fit=False, verbosity=0)
 
     # (3) optional: do TDDFT calculation based on that result:
     if do_tddft:
@@ -115,7 +116,6 @@ if __name__ == "__main__":
 
     # run main
     exc_energies, tdms = main(args.molecule_id, args.time_idx, args.do_tddft)
-    print(args.molecule_id, args.time_idx, args.do_tddft, exc_energies)
 
 
     # print the structured JSON output  
