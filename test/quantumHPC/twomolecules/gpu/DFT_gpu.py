@@ -122,21 +122,19 @@ if __name__ == "__main__":
     # output_data = json.dumps({"exc_energies": exc_energies.tolist(), "tdms": tdms.tolist()})
     # print(output_data)
 
-    # Redirect stdout to suppress logs
-    original_stdout = sys.stdout
-    sys.stdout = open(os.devnull, "w")  # Suppress standard prints
+    # Redirect all print outputs to `/dev/null` to suppress logs
+    sys.stdout = open(os.devnull, "w")  
 
     try:
         exc_energies, tdms = main(args.molecule_id, args.time_idx, args.do_tddft)
     finally:
-        sys.stdout = original_stdout  # Restore stdout
+        sys.stdout = sys.__stdout__  # Restore normal stdout
 
-    # send JSON output as bytes (prevents SLURM logging large `tdms`)
+    # ✅ Print JSON to `stderr` so SLURM doesn't log it in `out.log`
     json_output = json.dumps({
         "exc_energies": exc_energies.tolist() if exc_energies is not None else [],
         "tdms": tdms.tolist() if tdms is not None else []
     })
-
-    sys.stdout.buffer.write(json_output.encode("utf-8"))  # Send JSON directly as bytes
-    sys.stdout.flush()
+    sys.stderr.write(json_output + "\n")
+    sys.stderr.flush()
 

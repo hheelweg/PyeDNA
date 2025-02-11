@@ -42,8 +42,8 @@ def main(mol_1, mol_2, time_steps, do_tddft):
         proc2 = run_dft_tddft(mol_2, t, gpu_id=1, do_tddft=do_tddft)
 
         # wait for both processes to finish and capture their outputs
-        output1, _ = proc1.communicate()
-        output2, _ = proc2.communicate()
+        _, output1 = proc1.communicate()
+        _, output2 = proc2.communicate()
         print('output1', output1 , flush = True)
 
         # read in inputs
