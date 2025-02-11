@@ -3,6 +3,8 @@ import os
 from pyscf import gto, lib
 import argparse
 import sys
+import scipy
+import time
 
 # import custom modules
 path_to_modules = '/home/hheelweg/Cy3Cy5/PyCY'
@@ -12,7 +14,7 @@ import trajectory as traj
 import const
 
 
-
+# get pyscf mol object
 def getMol(mol_idx, time_idx):
     MDsim = traj.MDSimulation([])                           # empty MDSimulation object
 
@@ -36,6 +38,57 @@ def getMol(mol_idx, time_idx):
                 spin = 0)
     return mol
 
+# NOTE : we here try to compute the coupling
+# compute coupling test-wise
+def getCoupling(molA, molB, tdmA, tdmB, calcK = False):
+    from pyscf.scf import jk, _vhf
+    naoA = molA.nao
+    naoB = molB.nao
+    assert(tdmA.shape == (naoA, naoA))
+    assert(tdmB.shape == (naoB, naoB))
+
+    molAB = molA + molB
+    
+    #vhf = Hartree Fock Potential
+    vhfopt = _vhf.VHFOpt(molAB, 'int2e', 'CVHFnrs8_prescreen',
+                         'CVHFsetnr_direct_scf',
+                         'CVHFsetnr_direct_scf_dm')
+    dmAB = scipy.linalg.block_diag(tdmA, tdmB)
+    #### Initialization for AO-direct JK builder
+    # The prescreen function CVHFnrs8_prescreen indexes q_cond and dm_cond
+    # over the entire basis.  "set_dm" in function jk.get_jk/direct_bindm only
+    # creates a subblock of dm_cond which is not compatible with
+    # CVHFnrs8_prescreen.
+    vhfopt.set_dm(dmAB, molAB._atm, molAB._bas, molAB._env)
+    # Then skip the "set_dm" initialization in function jk.get_jk/direct_bindm.
+    vhfopt._dmcondname = None
+    ####
+
+    # Coulomb integrals
+    with lib.temporary_env(vhfopt._this.contents,
+                           fprescreen=_vhf._fpointer('CVHFnrs8_vj_prescreen')):
+        shls_slice = (0        , molA.nbas , 0        , molA.nbas,
+                      molA.nbas, molAB.nbas, molA.nbas, molAB.nbas)  # AABB
+        vJ = jk.get_jk(molAB, tdmB, 'ijkl,lk->s2ij', shls_slice=shls_slice,
+                       vhfopt=vhfopt, aosym='s4', hermi=1)
+        cJ = np.einsum('ia,ia->', vJ, tdmA)
+        
+    if calcK==True:
+        # Exchange integrals
+        with lib.temporary_env(vhfopt._this.contents,
+                               fprescreen=_vhf._fpointer('CVHFnrs8_vk_prescreen')):
+            shls_slice = (0        , molA.nbas , molA.nbas, molAB.nbas,
+                          molA.nbas, molAB.nbas, 0        , molA.nbas)  # ABBA
+            vK = jk.get_jk(molAB, tdmB, 'ijkl,jk->il', shls_slice=shls_slice,
+                           vhfopt=vhfopt, aosym='s1', hermi=0)
+            cK = np.einsum('ia,ia->', vK, tdmA)
+            
+        return cJ, cK
+    
+    else: 
+        return cJ, 0
+
+
 
 
 def main(molecules, time_idx):
@@ -45,18 +98,23 @@ def main(molecules, time_idx):
     exc = []
     tdm = []
     mols = []
-    for mol in molecules:
+    for molecule_id in molecules:
         # load molecule data from DFT/TDDFT
-        with np.load(f"output_{mol}.npz") as data:
+        with np.load(f"output_{molecule_id}.npz") as data:
             exc_energies = data["exc_energies"]
             tdms = data["tdms"]
 
         exc.append(exc_energies)
         tdm.append(tdms)
-        mols.append(getMol(mol, time_idx))
+        mols.append(getMol(molecule_id, time_idx))
         
-    # having loaded the pyscf mol object as well 
-    print(mols[0], mols[1])
+    # compute coupling
+    start_time = time.time()
+    a, b = getCoupling(mols[0], mols[1], tdm[0], tdm[1])
+    end_time = time.time()
+
+    print(f"Elapsed time for computing the coupling: {end_time - start_time} seconds")
+    print(a, b)
 
 
 
