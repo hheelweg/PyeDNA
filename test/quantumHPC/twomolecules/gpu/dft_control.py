@@ -43,7 +43,7 @@ def main(mol_1, mol_2, time_steps, do_tddft):
         # wait for both processes to finish and capture their outputs
         output1, error1 = proc1.communicate()
         output2, error2 = proc2.communicate()
-        print('output1', output1)
+        print('output1', output1, flush = True)
 
         # read in inputs
         output1_json = json.loads(output1.strip())
