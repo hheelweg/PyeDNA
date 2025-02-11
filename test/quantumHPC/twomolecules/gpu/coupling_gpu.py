@@ -111,7 +111,7 @@ def main(molecules, time_idx):
         
     # compute coupling
     start_time = time.time()
-    a, b = getCoupling(mols[0], mols[1], tdm[0], tdm[1])
+    a, b = getCoupling(mols[0], mols[1], tdm[0][0], tdm[1][0])
     end_time = time.time()
 
     print(f"Elapsed time for computing the coupling: {end_time - start_time} seconds")
