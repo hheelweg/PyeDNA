@@ -8,13 +8,13 @@ import sys
 import time
 import cupy as cp
 import json
-import const
 
 # import custom modules
 path_to_modules = '/home/hheelweg/Cy3Cy5/PyCY'
 sys.path.append(path_to_modules)
 import quantumTools, structure
 import trajectory as traj
+import const
 
 
 # GPU-supported DFT
