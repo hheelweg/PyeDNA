@@ -7,6 +7,7 @@ import argparse
 import sys
 import time
 import cupy as cp
+import json
 
 # import custom modules
 path_to_modules = '/home/hheelweg/Cy3Cy5/PyCY'
