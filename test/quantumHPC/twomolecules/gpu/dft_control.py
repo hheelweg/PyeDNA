@@ -19,8 +19,9 @@ def run_dft_tddft(molecule, time_idx, gpu_id, do_tddft):
     if do_tddft:
         cmd += " --do-tddft"
     
-    print(f"Running: {cmd} on GPU {gpu_id}")
-    return subprocess.Popen(cmd, shell=True, env=env)
+    exc_energies, tdms = subprocess.run(cmd, shell=True, env=env, capture_output=True, text=True)
+
+    return exc_energies.stdout.strip(), tdms.stdout.strip()
 
 # function that parallel executes 
 def main(mol_1, mol_2, time_steps, do_tddft):
@@ -30,12 +31,13 @@ def main(mol_1, mol_2, time_steps, do_tddft):
         print(f"\n Running Time Step {t}...", flush = True)
         start_time = time.time()
         # Run molecule_1 on GPU 0 and molecule_2 on GPU 1
-        proc1 = run_dft_tddft(mol_1, t, gpu_id=0, do_tddft=do_tddft)
-        proc2 = run_dft_tddft(mol_2, t, gpu_id=1, do_tddft=do_tddft)
+        exc_energies_1, tdms_1 = run_dft_tddft(mol_1, t, gpu_id=0, do_tddft=do_tddft)
+        exc_energies_2, tdms_2 = run_dft_tddft(mol_2, t, gpu_id=1, do_tddft=do_tddft)
 
-        # Wait for both processes to complete before moving to next time step
-        proc1.wait()
-        proc2.wait()
+        # print test-wise
+        print(exc_energies_1)
+        print(exc_energies_2)
+        print(tdms_1.shape)
 
         end_time = time.time()  # End timing for this step
         elapsed_time = end_time - start_time

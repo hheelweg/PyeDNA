@@ -230,10 +230,7 @@ def doDFT(molecule, basis = '6-31g', xc_f = 'b3lyp', density_fit = False, charge
     if density_fit:                         # optional: use density fit for accelerating computation
         mf.density_fit(auxbasis="weigend")
 
-    # (3) run with with COSMO implicit solvent model
-    # # NOTE : changed this for a few tests
-    # mf = solvent.ddCOSMO(mf)
-    # mf = solvent.ddCOSMO(mf).run()
+    # (3) run with with SMD/ddCOSMO implicit solvent model
     mf = mf.SMD()
     mf.with_solvent.method = 'DDCOSMO'
     mf.kernel()       

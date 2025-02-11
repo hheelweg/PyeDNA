@@ -1,7 +1,7 @@
 import numpy as np
 import os
 from pyscf import gto, lib
-from gpu4pyscf import scf, scf, solvent, tdscf
+from gpu4pyscf import scf, solvent, tdscf
 from gpu4pyscf.dft import rks
 import argparse
 import sys
@@ -16,7 +16,8 @@ import trajectory as traj
 
 
 # GPU-supported DFT
-def doDFT_gpu(molecule, basis = '6-31g', xc = 'b3lyp', density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4):
+def doDFT_gpu(molecule, basis = '6-31g', xc = 'b3lyp', geom_opt = False, 
+              density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4):
 
     # (1) make PySCF molecular structure 
     mol = gto.M(atom = molecule,
@@ -25,20 +26,25 @@ def doDFT_gpu(molecule, basis = '6-31g', xc = 'b3lyp', density_fit = False, char
                 spin = spin)
     mol.verbose = verbosity
 
-    # (2) initialize SCF object
+    # (2) peform initial geometry optimization
+    # TODO : might want to add this in, but seems like we don't need it
+    if geom_opt:
+        pass
+
+    # (3) initialize SCF object
     mf = rks.RKS(mol)
     mf.xc = xc
     mf.max_cycle = scf_cycles               
     mf.conv_tol = 1e-5
     mf = mf.SMD()                           # TODO : look up this model
-    mf.with_solvent.method = 'COSMO'        # COSMO implicit solvent model 
+    mf.with_solvent.method = 'DDCOSMO'      # COSMO implicit solvent model 
     if density_fit:                         # optional: use density fit for accelerating computation
         mf.density_fit()
 
-    # (3) run DFT
+    # (4) run DFT
     mf.kernel()       
 
-    # (4) output
+    # (5) output
     mo = mf.mo_coeff                        # MO Coefficients
     occ = mo[:, mf.mo_occ != 0]             # occupied orbitals
     virt = mo[:, mf.mo_occ == 0]            # virtual orbitals
@@ -70,7 +76,7 @@ def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = Tru
     # with the occupied orbital in the i-th excitation
     tdms = [cp.sqrt(2) * cp.asarray(occ_orbits).dot(cp.asarray(td.xy[id][0])).dot(cp.asarray(virt_orbits).T) for id in state_ids]
 
-    return exc_energies, trans_dipoles, osc_strengths, tdms, osc_idx
+    return exc_energies, tdms
 
 
 def main(molecule_id, time_idx, do_tddft):
@@ -100,10 +106,12 @@ def main(molecule_id, time_idx, do_tddft):
     # (3) optional: do TDDFT calculation based on that result:
     if do_tddft:
         state_ids = [0, 1, 2]                                     # might want to add more states
-        exc_energies, trans_dipoles, osc_strengths, tdms, osc_idx = doTDDFT_gpu(mf, occ, virt, state_ids, TDA=True)
+        exc_energies, tdms = doTDDFT_gpu(mf, occ, virt, state_ids, TDA=True)
         end_time = time.time()
          # (3.1) elapsed time after TDDFT
         print(f"Elapsed time (after DFT + TDDFT) in step {time_idx} on mol {molecule_id}: {end_time - start_time} sec")
+
+        return exc_energies, tdms
 
 
 if __name__ == "__main__":
