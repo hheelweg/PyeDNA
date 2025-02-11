@@ -5,9 +5,9 @@ from gpu4pyscf import scf, solvent, tdscf
 from gpu4pyscf.dft import rks
 import argparse
 import sys
-import time
 import cupy as cp
 import json
+import traceback
 
 # import custom modules
 path_to_modules = '/home/hheelweg/Cy3Cy5/PyCY'
@@ -118,6 +118,20 @@ if __name__ == "__main__":
     exc_energies, tdms = main(args.molecule_id, args.time_idx, args.do_tddft)
 
 
-    # print the structured JSON output  
-    if exc_energies is not None and tdms is not None:
-        output_data = json.dumps({"exc_energies": exc_energies.tolist(), "tdms": tdms.tolist()})
+    # # print the structured JSON output  
+    # if exc_energies is not None and tdms is not None:
+    #     output_data = json.dumps({"exc_energies": exc_energies.tolist(), "tdms": tdms.tolist()})
+
+    try:
+        exc_energies, tdms = main(args.molecule_id, args.time_idx, args.do_tddft)
+
+        # Always print a clean JSON output at the very end
+        print(json.dumps({
+            "exc_energies": exc_energies.tolist() if exc_energies is not None else [],
+            "tdms": tdms.tolist() if tdms is not None else []
+        }))
+    
+    except Exception as e:
+        # Print errors to stderr so stdout remains clean
+        sys.stderr.write(f"ERROR: {str(e)}\n")
+        sys.stderr.write(traceback.format_exc() + "\n")
