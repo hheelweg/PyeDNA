@@ -6,6 +6,7 @@ import torch
 import json
 import numpy as np
 import sys
+import io
 
 # Detect available GPUs
 num_gpus = torch.cuda.device_count()
@@ -44,13 +45,10 @@ def main(mol_1, mol_2, time_steps, do_tddft):
         output1, _ = proc1.communicate()
         output2, _ = proc2.communicate()
         
-        with np.load(output1) as data1:
-            array_1d_1 = data1["exc_energies"]
-            array_2d_1 = data1["tdms"]
-
-        with np.load(output2) as data2:
-            array_1d_2 = data2["exc_energies"]
-            array_2d_2 = data2["tdms"]
+        data1 = np.load(io.BytesIO(output1))
+        array_1d_1 = data1["exc_energies"]
+        array_2d_1 = data1["tdms"]
+        print(array_1d_1)
 
         end_time = time.time()  # End timing for this step
         elapsed_time = end_time - start_time
