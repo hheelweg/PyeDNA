@@ -5,6 +5,7 @@ import subprocess
 import torch
 import json
 import numpy as np
+import sys
 
 # Detect available GPUs
 num_gpus = torch.cuda.device_count()
@@ -22,7 +23,7 @@ def run_dft_tddft(molecule, time_idx, gpu_id, do_tddft):
     if do_tddft:
         cmd += " --do-tddft"
 
-    process = subprocess.Popen(cmd, shell=True, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)         
+    process = subprocess.Popen(cmd, shell=True, env=env, stdout=subprocess.PIPE, stderr=sys.stderr, text=True )        
 
     return process
 
@@ -44,8 +45,7 @@ def main(mol_1, mol_2, time_steps, do_tddft):
         # wait for both processes to finish and capture their outputs
         output1, error1 = proc1.communicate()
         output2, error2 = proc2.communicate()
-        #print(output1)
-        print(error1)
+        print(output1)
 
         # read in inputs
         output1_json = json.loads(output1.strip())
