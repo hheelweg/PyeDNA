@@ -12,12 +12,35 @@ import trajectory as traj
 import const
 
 
+
+def getMol(mol_idx, time_idx):
+    MDsim = traj.MDSimulation([])                           # empty MDSimulation object
+
+    path = '/home/hheelweg/Cy3Cy5/PyCY/test/prod/'          # specify relative path to MD ouput
+    name_prmtop = 'dna_test.prmtop'
+    name_nc = 'dna_test_prod.nc'                            
+    name_out = 'dna_test_prod.out'
+              
+
+    data = [name_prmtop,name_nc, name_out]                  # trajectory data 
+    test = traj.Trajectory(MDsim, path, data)               # initialize Trajectory object
+
+    # (1) specify chromophore to perform DFT/TDDFT on
+    molecule = [mol_idx]
+    chromophore, chromophore_conv = test.getChromophoreSnapshot(time_idx, molecule, conversion = 'pyscf')
+    return chromophore_conv
+
+
+
+
+
 def main(molecules, time_idx):
     # NOTE : this script only serves the purpose of debugging 
     print('** Debug script to compute the coupling from the TDM of two molecules')
 
     exc = []
     tdm = []
+    mols = []
     for mol in molecules:
         # load molecule data from DFT/TDDFT
         with np.load(f"output_{mol}.npz") as data:
@@ -26,8 +49,9 @@ def main(molecules, time_idx):
 
         exc.append(exc_energies)
         tdm.append(tdms)
+        mols.append(getMol(mol, time_idx))
         
-        print(tdms.shape)
+    print(mols[0])
 
 
 
