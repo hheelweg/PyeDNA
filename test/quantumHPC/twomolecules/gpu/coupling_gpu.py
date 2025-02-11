@@ -45,8 +45,8 @@ def getCoupling(molA, molB, tdmA, tdmB, calcK = False):
     naoA = molA.nao
     naoB = molB.nao
     print(naoA, naoB)
-    assert(tdmA.shape == (naoA, naoA))
-    assert(tdmB.shape == (naoB, naoB))
+    assert(tdmA.shape == (3, naoA, naoA))
+    assert(tdmB.shape == (3, naoB, naoB))
 
     molAB = molA + molB
     
