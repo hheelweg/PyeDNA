@@ -98,20 +98,12 @@ def main(molecule_id, time_idx, do_tddft):
     chromophore, chromophore_conv = test.getChromophoreSnapshot(time_idx, molecule, conversion = 'pyscf')
 
     # (2) perform DFT calculation
-    start_time = time.time()
     mf, occ, virt = doDFT_gpu(chromophore_conv, density_fit=False, verbosity=0)
-    end_time = time.time()
-    # (2.1) elapsed time after DFT
-    print(f"Elapsed time (after DFT) in step {time_idx} on mol {molecule_id}: {end_time - start_time} sec")
 
     # (3) optional: do TDDFT calculation based on that result:
     if do_tddft:
         state_ids = [0, 1, 2]                                     # might want to add more states
         exc_energies, tdms = doTDDFT_gpu(mf, occ, virt, state_ids, TDA=True)
-        end_time = time.time()
-         # (3.1) elapsed time after TDDFT
-        print(f"Elapsed time (after DFT + TDDFT) in step {time_idx} on mol {molecule_id}: {end_time - start_time} sec")
-
         return exc_energies, tdms
 
 
