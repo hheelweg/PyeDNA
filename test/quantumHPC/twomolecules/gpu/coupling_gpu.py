@@ -44,6 +44,7 @@ def getCoupling(molA, molB, tdmA, tdmB, calcK = False):
     from pyscf.scf import jk, _vhf
     naoA = molA.nao
     naoB = molB.nao
+    print(naoA, naoB)
     assert(tdmA.shape == (naoA, naoA))
     assert(tdmB.shape == (naoB, naoB))
 
