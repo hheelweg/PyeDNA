@@ -5,7 +5,6 @@ import subprocess
 import torch
 import json
 import numpy as np
-import sys
 import io
 
 # Detect available GPUs
@@ -29,13 +28,14 @@ def run_dft_tddft(molecule, time_idx, gpu_id, do_tddft):
     return process
 
 
-# # NOTE : (old) function that parallel executes 
 def main(mol_1, mol_2, time_steps, do_tddft):
     
     startT = time.time()
     for t in range(time_steps):
         print(f"\n Running Time Step {t}...", flush = True)
         start_time = time.time()
+
+        # TODO : do this as a for loop over molecules
 
         # run molecule_1 on GPU 0 and molecule_2 on GPU 1
         proc1 = run_dft_tddft(mol_1, t, gpu_id=0, do_tddft=do_tddft)

@@ -6,7 +6,6 @@ from gpu4pyscf.dft import rks
 import argparse
 import sys
 import cupy as cp
-import pickle
 
 # import custom modules
 path_to_modules = '/home/hheelweg/Cy3Cy5/PyCY'
@@ -118,5 +117,10 @@ if __name__ == "__main__":
     # write array output to binary stream
     np.savez(sys.stdout.buffer, exc_energies = exc_energies, tdms = tdms)
     sys.stdout.flush()
+
+    # TODO : we only have this for debuging purposes
+    # save arrays to file for debugging
+    filename = f"output_{args.molecule_id}.npz"
+    np.savez(filename, exc_energies = exc_energies, tdms = tdms)
 
 
