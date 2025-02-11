@@ -56,6 +56,7 @@ def main(molecules, time_idx):
         mols.append(getMol(mol, time_idx))
         
     # having loaded the pyscf mol object as well 
+    print(mols[0], mols[1])
 
 
 
