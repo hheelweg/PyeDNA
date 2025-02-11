@@ -114,24 +114,29 @@ if __name__ == "__main__":
     parser.add_argument("--do-tddft", action="store_true", help="Enable TDDFT calculation")
     args = parser.parse_args()
 
-    # run main
-    exc_energies, tdms = main(args.molecule_id, args.time_idx, args.do_tddft)
+    # # run main
+    # exc_energies, tdms = main(args.molecule_id, args.time_idx, args.do_tddft)
 
-    # # print the structured JSON output  
-    # if exc_energies is not None and tdms is not None:
-    output_data = json.dumps({"exc_energies": exc_energies.tolist(), "tdms": tdms.tolist()})
-    print(output_data)
+    # # # print the structured JSON output  
+    # # if exc_energies is not None and tdms is not None:
+    # output_data = json.dumps({"exc_energies": exc_energies.tolist(), "tdms": tdms.tolist()})
+    # print(output_data)
 
-    # try:
-    #     exc_energies, tdms = main(args.molecule_id, args.time_idx, args.do_tddft)
+    # Redirect stdout to suppress logs
+    original_stdout = sys.stdout
+    sys.stdout = open(os.devnull, "w")  # Suppress standard prints
 
-    #     # Always print a clean JSON output at the very end
-    #     print(json.dumps({
-    #         "exc_energies": exc_energies.tolist() if exc_energies is not None else [],
-    #         "tdms": tdms.tolist() if tdms is not None else []
-    #     }))
-    
-    # except Exception as e:
-    #     # Print errors to stderr so stdout remains clean
-    #     sys.stderr.write(f"ERROR: {str(e)}\n")
-    #     sys.stderr.write(traceback.format_exc() + "\n")
+    try:
+        exc_energies, tdms = main(args.molecule_id, args.time_idx, args.do_tddft)
+    finally:
+        sys.stdout = original_stdout  # Restore stdout
+
+    # send JSON output as bytes (prevents SLURM logging large `tdms`)
+    json_output = json.dumps({
+        "exc_energies": exc_energies.tolist() if exc_energies is not None else [],
+        "tdms": tdms.tolist() if tdms is not None else []
+    })
+
+    sys.stdout.buffer.write(json_output.encode("utf-8"))  # Send JSON directly as bytes
+    sys.stdout.flush()
+
