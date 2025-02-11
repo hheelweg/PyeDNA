@@ -4,16 +4,12 @@ import time
 import subprocess
 import torch
 import DFT_gpu
-import multiprocessing as mp
-from concurrent.futures import ProcessPoolExecutor
 
 # Detect available GPUs
 num_gpus = torch.cuda.device_count()
 if num_gpus < 2:
     raise RuntimeError("Error: Less than 2 GPUs detected! Check SLURM allocation.")
 
-# Set the multiprocessing method to "spawn" to avoid CUDA errors
-mp.set_start_method('spawn', force=True)
 
 # NOTE : old version calling subprocess routin
 def run_dft_tddft(molecule, time_idx, gpu_id, do_tddft):
@@ -73,34 +69,34 @@ def main(mol_1, mol_2, time_steps, do_tddft):
     endT = time.time()
     print(f"All DFT/TDDFT calculations completed in {endT -startT} sec!")
 
-def main(mol_1, mol_2, time_steps, do_tddft):
-    startT = time.time()
-    results = []
+# def main(mol_1, mol_2, time_steps, do_tddft):
+#     startT = time.time()
+#     results = []
 
-    with ProcessPoolExecutor(max_workers = 2) as executor:  # Use 2 parallel processes
-        for t in range(time_steps):
-            print(f"\nRunning Time Step {t}...", flush=True)
-            start_time = time.time()
+#     with ProcessPoolExecutor(max_workers = 2) as executor:  # Use 2 parallel processes
+#         for t in range(time_steps):
+#             print(f"\nRunning Time Step {t}...", flush=True)
+#             start_time = time.time()
 
-            # Run both calculations in parallel
-            future1 = executor.submit(run_dft_tddft, mol_1, t, 0, do_tddft)
-            future2 = executor.submit(run_dft_tddft, mol_2, t, 1, do_tddft)
+#             # Run both calculations in parallel
+#             future1 = executor.submit(run_dft_tddft, mol_1, t, 0, do_tddft)
+#             future2 = executor.submit(run_dft_tddft, mol_2, t, 1, do_tddft)
 
-            # Retrieve results when both processes complete
-            exc_energies_1, tdms_1 = future1.result()
-            exc_energies_2, tdms_2 = future2.result()
+#             # Retrieve results when both processes complete
+#             exc_energies_1, tdms_1 = future1.result()
+#             exc_energies_2, tdms_2 = future2.result()
 
-            print(exc_energies_1)
-            print(exc_energies_2)
-            print(tdms_1)
+#             print(exc_energies_1)
+#             print(exc_energies_2)
+#             print(tdms_1)
 
-            #results.append((t, exc_energies_1, tdms_1, exc_energies_2, tdms_2))
+#             #results.append((t, exc_energies_1, tdms_1, exc_energies_2, tdms_2))
 
-            end_time = time.time()
-            elapsed_time = end_time - start_time
-            print(f"Time Step {t} Completed in {elapsed_time:.2f} seconds", flush=True)
+#             end_time = time.time()
+#             elapsed_time = end_time - start_time
+#             print(f"Time Step {t} Completed in {elapsed_time:.2f} seconds", flush=True)
 
-    print(f"All DFT/TDDFT calculations completed in {time.time() - startT} sec!")
+#     print(f"All DFT/TDDFT calculations completed in {time.time() - startT} sec!")
 
 
 
