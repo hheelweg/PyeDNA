@@ -47,16 +47,16 @@ def main(mol_1, mol_2, time_steps, do_tddft):
         
         # load data of molecule 1
         data1 = np.load(io.BytesIO(output1))
-        array_1d_1 = data1["exc_energies"]
-        array_2d_1 = data1["tdms"]
+        exc_energies_1 = data1["exc_energies"]
+        tdms_1 = data1["tdms"]
 
         # load data of molecule 2
         data2 = np.load(io.BytesIO(output2))
-        array_1d_2 = data2["exc_energies"]
-        array_2d_2 = data2["tdms"]
+        exc_energies_2 = data2["exc_energies"]
+        tdms_2 = data2["tdms"]
         
-        print(array_1d_1, array_1d_2)
-        print(array_1d_2.shape, array_2d_2.shape)
+        print(exc_energies_1, exc_energies_2)
+        print(tdms_1.shape, tdms_2.shape)
 
 
         end_time = time.time()  # End timing for this step

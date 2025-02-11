@@ -67,13 +67,13 @@ def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = Tru
     # (4.2) find strongest transition
     osc_idx = np.argmax(osc_strengths) if not any(np.array(osc_strengths) > 0.1) else np.argwhere(np.array(osc_strengths) > 0.1)[0][0]
 
-    # (5) compute TDM (Tarnsition Density Matrix) for all states
+    # (5) compute TDM (Transition Density Matrix) for all states
     # td.xy[i] is tuple (X_i, Y_i) with X_i contains the expansion coefficients for the excitation part of the i-th excited state
     # and Y_1 the expansion coefficients for the de-excitation part; in TDDFT td.xy[i][0] quantifies how the virtual orbitals mix
     # with the occupied orbital in the i-th excitation
     tdms = [cp.sqrt(2) * cp.asarray(occ_orbits).dot(cp.asarray(td.xy[id][0])).dot(cp.asarray(virt_orbits).T) for id in state_ids]
 
-    # return in E_h units and numpy arrays
+    # return numpy arrays
     return np.array(exc_energies), np.array([tdm.get() for tdm in tdms])
 
 
