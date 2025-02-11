@@ -77,7 +77,7 @@ def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = Tru
     # with the occupied orbital in the i-th excitation
     tdms = [cp.sqrt(2) * cp.asarray(occ_orbits).dot(cp.asarray(td.xy[id][0])).dot(cp.asarray(virt_orbits).T) for id in state_ids]
 
-    return np.array(exc_energies), np.array(tdms)
+    return np.array(exc_energies), np.array([tdm.get() for tdm in tdms])
 
 
 def main(molecule_id, time_idx, do_tddft):
@@ -126,3 +126,9 @@ if __name__ == "__main__":
 
     # run main
     exc_energies, tdms = main(args.molecule_id, args.time_idx, args.do_tddft)
+
+
+    # print the structured JSON output  
+    if exc_energies is not None and tdms is not None:
+        output_data = json.dumps({"exc_energies": exc_energies.tolist(), "tdms": tdms.tolist()})
+        print(output_data)  

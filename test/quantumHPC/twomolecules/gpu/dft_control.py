@@ -3,6 +3,8 @@ import argparse
 import time
 import subprocess
 import torch
+import json
+import numpy as np
 
 # Detect available GPUs
 num_gpus = torch.cuda.device_count()
@@ -19,11 +21,6 @@ def run_dft_tddft(molecule, time_idx, gpu_id, do_tddft):
     cmd = f"python DFT_gpu.py {molecule} {time_idx}"
     if do_tddft:
         cmd += " --do-tddft"
-    
-    # result = subprocess.run(cmd, shell=True, env=env, capture_output=True)
-    # output = result.stdout.strip().split("\n")                                  # Split into lines
-    # exc_energies = [float(x) for x in output[0].split()]  
-    # tdms = [float(x) for x in output[1].split()] 
 
     process = subprocess.Popen(cmd, shell=True, env=env) #, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)         
 
@@ -45,6 +42,14 @@ def main(mol_1, mol_2, time_steps, do_tddft):
         # wait for both processes to finish and capture their outputs
         output1, error1 = proc1.communicate()
         output2, error2 = proc2.communicate()
+
+        # read in inputs
+        output1_json = json.loads(output1.strip())
+        exc_energies_1 = np.array(output1_json["exc_energies"])
+        tdms_1 = np.array(output1_json["tdms"])
+        print(exc_energies_1)
+        print(tdms_1.shape)
+
 
         end_time = time.time()  # End timing for this step
         elapsed_time = end_time - start_time
