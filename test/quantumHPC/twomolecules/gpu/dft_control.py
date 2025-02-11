@@ -23,7 +23,7 @@ def run_dft_tddft(molecule, time_idx, gpu_id, do_tddft):
     if do_tddft:
         cmd += " --do-tddft"
 
-    process = subprocess.Popen(cmd, shell=True, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)        
+    process = subprocess.Popen(cmd, shell=True, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)        
 
     return process
 
@@ -51,9 +51,6 @@ def main(mol_1, mol_2, time_steps, do_tddft):
         with np.load(output2) as data2:
             array_1d_2 = data2["exc_energies"]
             array_2d_2 = data2["tdms"]
-
-        print(array_1d_1, array_1d_2)
-
 
         end_time = time.time()  # End timing for this step
         elapsed_time = end_time - start_time

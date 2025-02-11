@@ -115,7 +115,7 @@ if __name__ == "__main__":
 
     exc_energies, tdms = main(args.molecule_id, args.time_idx, args.do_tddft)
 
-    # save output 
+    # write array output to binary stream
     np.savez(sys.stdout.buffer, exc_energies = exc_energies, tdms = tdms)
     sys.stdout.flush()
 
