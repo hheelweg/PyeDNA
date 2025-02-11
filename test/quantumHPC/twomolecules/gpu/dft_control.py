@@ -32,9 +32,7 @@ def run_dft_tddft(molecule, time_idx, gpu_id, do_tddft):
 def main(mol_1, mol_2, time_steps, do_tddft):
     
     startT = time.time()
-    #for t in range(time_steps):
-    for t in range(10, 11):
-        print(t)
+    for t in range(time_steps):
         print(f"\n Running Time Step {t}...", flush = True)
         start_time = time.time()
 
@@ -45,7 +43,7 @@ def main(mol_1, mol_2, time_steps, do_tddft):
         # wait for both processes to finish and capture their outputs
         output1, error1 = proc1.communicate()
         output2, error2 = proc2.communicate()
-        print(output1)
+        print('output1', output1)
 
         # read in inputs
         output1_json = json.loads(output1.strip())
