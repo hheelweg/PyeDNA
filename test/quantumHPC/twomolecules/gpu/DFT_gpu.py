@@ -8,6 +8,7 @@ import sys
 import time
 import cupy as cp
 import json
+import const
 
 # import custom modules
 path_to_modules = '/home/hheelweg/Cy3Cy5/PyCY'
@@ -58,7 +59,7 @@ def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = Tru
     td = molecule_mf.TDA().run(nstates = nstates) if TDA else molecule_mf.TDDFT().run(nstates = nstates)
 
     # (3) extract excitation energies and transition dipole moments
-    exc_energies = [td.e[id] for id in state_ids]
+    exc_energies = [td.e[id] * const.EH2EV for id in state_ids]
     trans_dipoles = [td.transition_dipole()[id] for id in state_ids]
 
     # (4) compute oscillator strengths
