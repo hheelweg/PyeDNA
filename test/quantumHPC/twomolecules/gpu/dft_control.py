@@ -23,8 +23,7 @@ def run_dft_tddft(molecule, time_idx, gpu_id, do_tddft):
     if do_tddft:
         cmd += " --do-tddft"
 
-    with open(os.devnull, "w") as devnull:
-        process = subprocess.Popen(cmd, shell=True, env=env, stdout=subprocess.PIPE, stderr=devnull, text=True)        
+    process = subprocess.Popen(cmd, shell=True, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)        
 
     return process
 
