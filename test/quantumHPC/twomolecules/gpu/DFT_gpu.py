@@ -118,6 +118,7 @@ if __name__ == "__main__":
 
     # run main
     exc_energies, tdms = main(args.molecule_id, args.time_idx, args.do_tddft)
+    print(exc_energies)
 
 
     # print the structured JSON output  
