@@ -14,12 +14,17 @@ import const
 
 def main(mol_1, mol_2):
 
-    # load datat from debugging
+    # load molecule 1
     with np.load(f"output_{mol_1}.npz") as data:
-        array_1d = data["exc_energies"]
-        array_2d = data["tdms"]
-    
-    print(array_1d)
+        exc_energies_1 = data["exc_energies"]
+        tdms_1 = data["tdms"]
+
+    # load molecule 2
+    with np.load(f"output_{mol_2}.npz") as data:
+        exc_energies_2 = data["exc_energies"]
+        tdms_2 = data["tdms"]
+
+    print(tdms_1.shape, tdms_2.shape)
 
 
 
