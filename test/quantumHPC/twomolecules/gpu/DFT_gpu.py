@@ -6,8 +6,7 @@ from gpu4pyscf.dft import rks
 import argparse
 import sys
 import cupy as cp
-import json
-import traceback
+import pickle
 
 # import custom modules
 path_to_modules = '/home/hheelweg/Cy3Cy5/PyCY'
@@ -114,23 +113,10 @@ if __name__ == "__main__":
     parser.add_argument("--do-tddft", action="store_true", help="Enable TDDFT calculation")
     args = parser.parse_args()
 
-    # # run main
-    # exc_energies, tdms = main(args.molecule_id, args.time_idx, args.do_tddft)
-
-    # # # print the structured JSON output  
-    # # if exc_energies is not None and tdms is not None:
-    # output_data = json.dumps({"exc_energies": exc_energies.tolist(), "tdms": tdms.tolist()})
-    # print(output_data)
-
-    # Redirect all print outputs to `/dev/null` to suppress logs
-
     exc_energies, tdms = main(args.molecule_id, args.time_idx, args.do_tddft)
 
-    # Print JSON to `stderr` so SLURM doesn't log it in `out.log`
-    json_output = json.dumps({
-        "exc_energies": exc_energies.tolist(),
-        "tdms": tdms.tolist()
-    })
-    sys.stdout.write(json_output + "\n")
+    # save output 
+    np.savez(sys.stdout.buffer, exc_energies = exc_energies, tdms = tdms)
     sys.stdout.flush()
+
 
