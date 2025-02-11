@@ -13,18 +13,21 @@ import const
 
 
 def main(mol_1, mol_2):
+    # NOTE : this script only serves the purpose of debugging 
+    print('** Debug script to compute the coupling from the TDM of two molecules')
 
-    # load molecule 1
-    with np.load(f"output_{mol_1}.npz") as data:
-        exc_energies_1 = data["exc_energies"]
-        tdms_1 = data["tdms"]
+    exc = []
+    tdm = []
+    for mol in molecules:
+        # load molecule data from DFT/TDDFT
+        with np.load(f"output_{mol}.npz") as data:
+            exc_energies = data["exc_energies"]
+            tdms = data["tdms"]
 
-    # load molecule 2
-    with np.load(f"output_{mol_2}.npz") as data:
-        exc_energies_2 = data["exc_energies"]
-        tdms_2 = data["tdms"]
-
-    print(tdms_1.shape, tdms_2.shape)
+        exc.append(exc_energies)
+        tdm.append(tdms)
+        
+        print(tdms.shape)
 
 
 
@@ -36,4 +39,5 @@ if __name__ == '__main__':
     parser.add_argument("molecule_2_id", type=int, help="Molecule 2 ID (integer)")              # specifies residue name of molecule 1
     args = parser.parse_args()
 
-    main(args.molecule_1_id, args.molecule_2_id)
+    molecules = [args.molecule_1_id, args.molecule_2_id]
+    main(molecules)
