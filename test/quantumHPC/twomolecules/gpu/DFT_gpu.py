@@ -131,4 +131,3 @@ if __name__ == "__main__":
     # print the structured JSON output  
     if exc_energies is not None and tdms is not None:
         output_data = json.dumps({"exc_energies": exc_energies.tolist(), "tdms": tdms.tolist()})
-        print(output_data)  
