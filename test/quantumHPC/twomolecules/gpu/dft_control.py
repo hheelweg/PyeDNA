@@ -45,10 +45,19 @@ def main(mol_1, mol_2, time_steps, do_tddft):
         output1, _ = proc1.communicate()
         output2, _ = proc2.communicate()
         
+        # load data of molecule 1
         data1 = np.load(io.BytesIO(output1))
         array_1d_1 = data1["exc_energies"]
         array_2d_1 = data1["tdms"]
-        print(array_1d_1)
+
+        # load data of molecule 2
+        data2 = np.load(io.BytesIO(output2))
+        array_1d_2 = data2["exc_energies"]
+        array_2d_2 = data2["tdms"]
+        
+        print(array_1d_1, array_1d_2)
+        print(array_1d_2.shape, array_2d_2.shape)
+
 
         end_time = time.time()  # End timing for this step
         elapsed_time = end_time - start_time
