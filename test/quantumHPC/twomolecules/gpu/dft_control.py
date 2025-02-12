@@ -74,22 +74,21 @@ def main(molecules, time_steps, do_tddft):
 
         # run molecule_1 on GPU 0 and molecule_2 on GPU 1
         procs = []
+        mols = []
         for i, molecule_id in enumerate(molecules):
-            print(molecule_id)
-            proc = run_dft_tddft(molecule_id, t, gpu_id = i, do_tddft=do_tddft)
-            procs.append(proc)
-        # proc1 = run_dft_tddft(mol_1, t, gpu_id=0, do_tddft=do_tddft)
-        # proc2 = run_dft_tddft(mol_2, t, gpu_id=1, do_tddft=do_tddft)
+            # create pyscf mol objects
+            mols.append(getMol(molecule_id, t))
+            # run processes
+            procs.append(run_dft_tddft(molecule_id, t, gpu_id = i, do_tddft=do_tddft))
 
         # wait for both processes to finish and capture their outputs
         outputs = []
         for i in range(len(molecules)):
             out, _ = procs[i].communicate()
             outputs.append(out)
-        # output1, _ = proc1.communicate()
-        # output2, _ = proc2.communicate()
+
         
-        # load data of molecule 1
+        # load and store relevant data from outputs
         exc, tdms = [], []
         for i in range(len(molecules)):
             data = np.load(io.BytesIO(outputs[i]))
