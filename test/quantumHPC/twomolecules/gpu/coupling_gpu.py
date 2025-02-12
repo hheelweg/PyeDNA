@@ -90,7 +90,7 @@ def getCoupling(molA, molB, tdmA, tdmB, calcK = False):
 
 # NOTE : brute force way to compute the Coulomb coupling
 # [with explanation of the individual terms]
-def getCouplingBF(molA, molB, tdmA, tdmB):
+def getCouplingBF(molA, molB, tdmA, tdmB, calcK = False):
     from pyscf.scf import jk
     """ Efficiently computes the Coulomb interaction between molA and molB
         according to the formula cJ = \sum_{i,j, k, l} P_A(i,j)* J_ijkl * P_B(k,l)  
@@ -125,7 +125,14 @@ def getCouplingBF(molA, molB, tdmA, tdmB):
     # (3) Contract with P_A(i,j) (TDM of molecule A) to obtain Coulombic coupling
     # i.e. cJ = \sum_{i,j} P_A(i,j)* [\sum_{k,l} J_ijkl * P_B(k,l)]
     cJ = np.einsum('ij,ij->', tdmA, vJ[:molA.nao, :molA.nao])
-    return cJ
+    
+    # (4) Compute Exchange potential matrix (cK) if requested
+    if calcK:
+        vK = jk.get_jk(molAB, tdmB, 'ijkl,jk->il', aosym='s1', hermi=0)
+        cK = np.einsum('ij,ij->', tdmA, vK[:molA.nao, :molA.nao])
+        return cJ, cK  # Return both Coulomb and Exchange couplings
+    else:
+        return cJ, 0  # If `calcK=False`, return 0 for cK
 
 
 def main(molecules, time_idx):
@@ -150,19 +157,19 @@ def main(molecules, time_idx):
     # we here only want to use the TDM for the first excited state, i.e. state_id = 0 and therefore use tdm[molecule_id][0]
     # to compute the coupling
 
-    # compute coupling (Ardy's function)
+    # compute coupling 
     start_time = time.time()
-    a, b = getCoupling(mols[0], mols[1], tdm[0][0], tdm[1][0])
+    a, b = getCoupling(mols[0], mols[1], tdm[0][0], tdm[1][0], calcK=True)
     end_time = time.time()
     print(f"Elapsed time for computing the coupling: {end_time - start_time} seconds")
     print(a, b)
 
     # compare to my coupling function
     start_time = time.time()
-    a = getCouplingBF(mols[0], mols[1], tdm[0][0], tdm[1][0])
+    a, b = getCouplingBF(mols[0], mols[1], tdm[0][0], tdm[1][0], calcK=True)
     end_time = time.time()
-    print(f"Elapsed time for computing the BF coupling: {end_time - start_time} seconds")
-    print(a )
+    print(f"Elapsed time for computing the coupling (brute force): {end_time - start_time} seconds")
+    print(a, b)
 
 
 
