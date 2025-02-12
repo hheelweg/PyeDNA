@@ -64,6 +64,9 @@ def run_dft_tddft(molecule, time_idx, gpu_id, do_tddft):
 
 
 def main(molecules, time_steps, do_tddft):
+
+    # store couplings
+    cJs, cKs = [], []
     
     startT = time.time()
     for t in range(time_steps):
@@ -94,22 +97,17 @@ def main(molecules, time_steps, do_tddft):
             data = np.load(io.BytesIO(outputs[i]))
             exc.append(data["exc_energies"])
             tdms.append(data["tdms"])
-        # data1 = np.load(io.BytesIO(output1))
-        # exc_energies_1 = data1["exc_energies"]
-        # tdms_1 = data1["tdms"]
-
-        # # load data of molecule 2
-        # data2 = np.load(io.BytesIO(output2))
-        # exc_energies_2 = data2["exc_energies"]
-        # tdms_2 = data2["tdms"]
         
-        # # debug output
-        # print(exc_energies_1, exc_energies_2)
-        # print(tdms_1.shape, tdms_2.shape)
+        # debug output
         print(exc[0], exc[1])
         print(tdms[0].shape, tdms[1].shape)
 
-        # get molecules pyscf mol objects
+        # compute coupling information
+        cJ, cK = quantumTools.getV(mols[0], mols[1], tdms[0], tdms[1], coupling_type='both')
+        print('cJ', cJ)
+        print('cK', cK)
+        cJs.append(cJ)
+        cKs.append(cK)
 
 
         end_time = time.time()  # End timing for this step
