@@ -62,6 +62,9 @@ def run_dft_tddft(molecule_id, gpu_id, do_tddft):
 
 def main(molecules, time_steps, do_tddft):
 
+    # specify DFT/TDDFT parameters in parameter file
+
+
     # store couplings
     cJs, cKs = [], []
     # store excitation energies

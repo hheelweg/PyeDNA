@@ -1,11 +1,7 @@
 import numpy as np
 import os
-from pyscf import gto, lib
-from gpu4pyscf import scf, solvent, tdscf
-from gpu4pyscf.dft import rks
 import argparse
 import sys
-import cupy as cp
 from joblib import load, dump
 
 # import custom modules
@@ -14,67 +10,6 @@ sys.path.append(path_to_modules)
 import quantumTools, structure
 import trajectory as traj
 import const
-
-
-# GPU-supported DFT
-def doDFT_gpu(molecule, basis = '6-31g', xc = 'b3lyp', 
-              density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4):
-
-    # (1) make PySCF molecular structure 
-    mol = gto.M(atom = molecule,
-                basis = basis,
-                charge = charge,
-                spin = spin)
-    mol.verbose = verbosity
-
-
-    # (2) initialize SCF object
-    mf = rks.RKS(mol)
-    mf.xc = xc
-    mf.max_cycle = scf_cycles               
-    mf.conv_tol = 1e-5                      # TODO : only did this for debugging
-    mf = mf.SMD()                           # TODO : look up this model
-    mf.with_solvent.method = 'DDCOSMO'      # COSMO implicit solvent model 
-    if density_fit:                         # optional: use density fit for accelerating computation
-        mf.density_fit()
-
-    # (3) run DFT
-    mf.kernel()       
-
-    # (4) output
-    mo = mf.mo_coeff                        # MO Coefficients
-    occ = mo[:, mf.mo_occ != 0]             # occupied orbitals
-    virt = mo[:, mf.mo_occ == 0]            # virtual orbitals
-
-    return mol, mf, occ, virt
-
-# GPU-supported TDDFT
-def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = True):
-
-    # (1) number of states
-    nstates = len(state_ids)
-
-    # (2) run TDDFT with or without TDA (Tamm-Dancoff approximation)
-    td = molecule_mf.TDA().run(nstates = nstates) if TDA else molecule_mf.TDDFT().run(nstates = nstates)
-
-    # (3) extract excitation energies and transition dipole moments
-    exc_energies = [td.e[id] for id in state_ids]
-    trans_dipoles = [td.transition_dipole()[id] for id in state_ids]
-
-    # (4) compute oscillator strengths
-    # (4.1) for all possible transitions
-    osc_strengths = [2/3 * exc_energies[i] * np.linalg.norm(trans_dipoles[i])**2 for i in range(len(exc_energies))]
-    # (4.2) find strongest transition
-    osc_idx = np.argmax(osc_strengths) if not any(np.array(osc_strengths) > 0.1) else np.argwhere(np.array(osc_strengths) > 0.1)[0][0]
-
-    # (5) compute TDM (Transition Density Matrix) for all states
-    # td.xy[i] is tuple (X_i, Y_i) with X_i contains the expansion coefficients for the excitation part of the i-th excited state
-    # and Y_1 the expansion coefficients for the de-excitation part; in TDDFT td.xy[i][0] quantifies how the virtual orbitals mix
-    # with the occupied orbital in the i-th excitation
-    tdms = [cp.sqrt(2) * cp.asarray(occ_orbits).dot(cp.asarray(td.xy[id][0])).dot(cp.asarray(virt_orbits).T) for id in state_ids]
-
-    # return numpy arrays
-    return np.array(exc_energies), np.array([tdm.get() for tdm in tdms])
 
 
 def main(molecule_id, do_tddft):
