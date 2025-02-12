@@ -63,7 +63,7 @@ def run_dft_tddft(molecule_id, gpu_id, do_tddft):
 def main(molecules, time_steps, do_tddft):
 
     # specify DFT/TDDFT parameters in parameter file
-    settings = quantumTools.setQMSettings('qm.params')
+    settings = quantumTools.setQMSettings('/home/hheelweg/Cy3Cy5/PyCY/qm.params')
     print(settings, flush = True)
 
 
