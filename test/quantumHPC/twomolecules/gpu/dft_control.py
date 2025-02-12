@@ -83,7 +83,8 @@ def main(molecules, time_steps, do_tddft):
             # create pyscf input for subprocess and store in cache
             conv = getMol(molecule_id, t)
             dump(conv, f"input_{molecule_id}.joblib")
-            procs.append(run_dft_tddft(molecule_id, t, gpu_id = i, do_tddft=do_tddft))                  # run processes
+            # run subprocess
+            procs.append(run_dft_tddft(molecule_id, t, gpu_id = i, do_tddft=do_tddft))                
 
         # wait for both processes to finish and capture their outputs
         outputs = []
@@ -99,11 +100,11 @@ def main(molecules, time_steps, do_tddft):
             data = np.load(io.BytesIO(outputs[i]))
             exc.append(data["exc_energies"])
             tdms.append(data["tdms"])
-            os.remove(f"output_{molecule_id}.npz")
+            #os.remove(f"output_{molecule_id}.npz")
             # pyscf mol object
             mol = load(f"mol_{molecule_id}.joblib")
             mols.append(mol)
-            os.remove(f"mol_{molecule_id}.joblib")
+            #os.remove(f"mol_{molecule_id}.joblib")
         
         # debug output of DFT/TDDFT
         print(exc[0], exc[1])
