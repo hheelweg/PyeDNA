@@ -208,7 +208,7 @@ def optimizeStructureSymmetryFF(path, moleculeNamePDB, stepsNo = 50000, econv = 
 # functions e.g. for analyzing MD trajectories
 
 # set parameters for QM (DFT/TDDFT) simulation
-def setQMSettings():
+def setQMSettings(file):
     # default settings
     qm_defaults = {
         "basis": "6-31g",
@@ -224,7 +224,7 @@ def setQMSettings():
     }
 
     # read in user parameters from file
-    user_params = fp.readQMparams('qm.params')
+    user_params = fp.readQMparams(file)
 
     # update default parameters
     qm_defaults.update(user_params)
