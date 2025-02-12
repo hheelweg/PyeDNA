@@ -75,7 +75,9 @@ def main(molecules, time_steps, do_tddft):
         # run molecule_1 on GPU 0 and molecule_2 on GPU 1
         procs = []
         for i, molecule_id in enumerate(molecules):
-            procs.append(run_dft_tddft(molecule_id, t, gpu_id = i, do_tddft=do_tddft))
+            print(molecule_id)
+            proc = run_dft_tddft(molecule_id, t, gpu_id = i, do_tddft=do_tddft)
+            procs.append(proc)
         # proc1 = run_dft_tddft(mol_1, t, gpu_id=0, do_tddft=do_tddft)
         # proc2 = run_dft_tddft(mol_2, t, gpu_id=1, do_tddft=do_tddft)
 
