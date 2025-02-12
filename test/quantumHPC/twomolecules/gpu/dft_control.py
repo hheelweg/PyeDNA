@@ -16,6 +16,7 @@ sys.path.append(path_to_modules)
 import quantumTools, structure
 import trajectory as traj
 import const
+import utils
 
 # Detect available GPUs
 num_gpus = torch.cuda.device_count()
@@ -99,10 +100,11 @@ def main(molecules, time_steps, do_tddft):
             data = np.load(io.BytesIO(outputs[i]))
             exc.append(data["exc_energies"])
             tdms.append(data["tdms"])
-            #os.remove(f"output_{molecule_id}.npz")
             # pyscf mol object
             mols.append(load(f"mol_{molecule_id}.joblib"))
-            #os.remove(f"mol_{molecule_id}.joblib")
+
+        # clean cache 
+        #utils.cleanCache()
         
         # debug output of DFT/TDDFT
         print(exc[0], exc[1])

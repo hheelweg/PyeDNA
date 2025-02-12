@@ -96,7 +96,7 @@ def main(molecule_id, time_idx, do_tddft):
 
     # (1) load chromophore pyscf input from cache
     chromophore_conv = load(f"input_{molecule_id}.joblib")
-    os.remove(f"input_{molecule_id}.joblib")
+    #os.remove(f"input_{molecule_id}.joblib")
 
     # (2) perform DFT calculation
     mol, mf, occ, virt = doDFT_gpu(chromophore_conv, density_fit=False, verbosity=0)
