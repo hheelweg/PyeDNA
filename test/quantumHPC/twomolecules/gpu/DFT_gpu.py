@@ -77,22 +77,7 @@ def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = Tru
     return np.array(exc_energies), np.array([tdm.get() for tdm in tdms])
 
 
-def main(molecule_id, time_idx, do_tddft):
-
-    MDsim = traj.MDSimulation([])                           # empty MDSimulation object
-
-    path = '/home/hheelweg/Cy3Cy5/PyCY/test/prod/'          # specify relative path to MD ouput
-    name_prmtop = 'dna_test.prmtop'
-    name_nc = 'dna_test_prod.nc'                            
-    name_out = 'dna_test_prod.out'
-              
-
-    data = [name_prmtop,name_nc, name_out]                  # trajectory data 
-    test = traj.Trajectory(MDsim, path, data)               # initialize Trajectory object
-
-    # (1) specify chromophore to perform DFT/TDDFT on
-    molecule = [molecule_id]
-    #chromophore, chromophore_conv = test.getChromophoreSnapshot(time_idx, molecule, conversion = 'pyscf')
+def main(molecule_id, do_tddft):
 
     # (1) load chromophore pyscf input from cache
     chromophore_conv = load(f"input_{molecule_id}.joblib")
@@ -117,17 +102,17 @@ if __name__ == "__main__":
     # parse arguments from command line
     parser = argparse.ArgumentParser(description="Run DFT and optional TDDFT simulations on molecule")
     parser.add_argument("molecule_id", type=int, help="Molecule 1 ID (integer)")                # specifies residue name of molecule
-    parser.add_argument("time_idx", type=int, help="Time index (integer)")                      # specifies time idx of trajectory
     parser.add_argument("--do-tddft", action="store_true", help="Enable TDDFT calculation")
     args = parser.parse_args()
 
-    exc_energies, tdms = main(args.molecule_id, args.time_idx, args.do_tddft)
+    exc_energies, tdms = main(args.molecule_id, args.do_tddft)
 
     # write array output to binary stream
     np.savez(sys.stdout.buffer, exc_energies = exc_energies, tdms = tdms)
     sys.stdout.flush()
 
-    # TODO : we only have this for debuging purposes
+    # TODO : we only have this for debugging purposes where we actually need the TDMs so that 
+    # we don't have to run DFT/TDDFT over and over again
     # save arrays to file for debugging
     filename = f"output_{args.molecule_id}.npz"
     np.savez(filename, exc_energies = exc_energies, tdms = tdms)

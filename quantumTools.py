@@ -339,7 +339,6 @@ def getV(molA, molB, tdmsA, tdmsB, stateA = 0, stateB = 0, coupling_type = 'elec
         return cJ, cK
 
 
-
 # compute absorption spectrum from oscillator strength and excitation energies
 def getAbsorptionSpectrum(osc_strengths, exc_energies, sigma = 0.1, energy_units = 'eV'):
 

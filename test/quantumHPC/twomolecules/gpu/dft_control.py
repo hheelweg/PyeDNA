@@ -51,12 +51,12 @@ def getMol(mol_idx, time_idx):
 
 
 # NOTE : function that calls python ssubprocess to perform DFT/TDDFT on individual GPUs
-def run_dft_tddft(molecule, time_idx, gpu_id, do_tddft):
+def run_dft_tddft(molecule_id, gpu_id, do_tddft):
     """Launch a DFT/TDDFT calculation on a specific GPU."""
     env = os.environ.copy()
     env["CUDA_VISIBLE_DEVICES"] = str(gpu_id)  # Assign GPU
 
-    cmd = f"python DFT_gpu.py {molecule} {time_idx}"
+    cmd = f"python DFT_gpu.py {molecule_id}"
     if do_tddft:
         cmd += " --do-tddft"
 
@@ -85,13 +85,13 @@ def main(molecules, time_steps, do_tddft):
             # run subprocess
             procs.append(run_dft_tddft(molecule_id, t, gpu_id = i, do_tddft=do_tddft))                
 
-        # wait for both processes to finish and capture their outputs
+        # wait for both subprocesses to finish and capture their outputs
         outputs = []
         for i, molecule_id in enumerate(molecules):
             out, _ = procs[i].communicate()
             outputs.append(out)
 
-        # load and store relevant data from outputs
+        # load and store relevant data from output of subprocesses
         exc, tdms, mols = [], [], []
         for i, molecule_id in enumerate(molecules):
             # array-type data
@@ -101,12 +101,9 @@ def main(molecules, time_steps, do_tddft):
             # pyscf mol object
             mols.append(load(f"mol_{molecule_id}.joblib"))
 
-        # clean cache 
+        # clean subprocess cache 
         utils.cleanCache()
         
-        # debug output of DFT/TDDFT
-        print(exc[0], exc[1])
-        print(tdms[0].shape, tdms[1].shape)
 
         # compute coupling information
         cJ, cK = quantumTools.getV(mols[0], mols[1], tdms[0], tdms[1], coupling_type='both')
