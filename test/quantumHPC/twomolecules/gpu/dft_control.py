@@ -104,7 +104,7 @@ def main(molecules, time_steps, do_tddft):
         print('cJ', cJ)
         cJs.append(cJ)
         cKs.append(cK)
-        print(cKs)
+        print(cJs)
 
 
         end_time = time.time()  # End timing for this step
