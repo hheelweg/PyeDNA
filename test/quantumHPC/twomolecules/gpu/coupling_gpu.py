@@ -80,7 +80,7 @@ def getCoupling(molA, molB, tdmA, tdmB, calcK = False):
             vK = jk.get_jk(mol_AB, tdmB, 'ijkl,jk->il', shls_slice=shls_slice,
                            vhfopt=vhfopt, aosym='s1', hermi=0)
             cK = np.einsum('ia,ia->', vK, tdmA)
-            
+            print('test1', cK)
         return cJ, cK
     
     else: 
@@ -130,6 +130,7 @@ def getCouplingBF(molA, molB, tdmA, tdmB, calcK = False):
     if calcK:
         vK = jk.get_jk(molAB, tdmB, 'ijkl,jk->il', aosym='s1', hermi=0)
         cK = np.einsum('ij,ij->', tdmA, vK[:molA.nao, :molA.nao])
+        print('test2', cK)
         return cJ, cK  # Return both Coulomb and Exchange couplings
     else:
         return cJ, 0  # If `calcK=False`, return 0 for cK
