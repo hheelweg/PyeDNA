@@ -42,11 +42,6 @@ def getMol(mol_idx, time_idx):
     molecule = [mol_idx]
     chromophore, chromophore_conv = test.getChromophoreSnapshot(time_idx, molecule, conversion = 'pyscf')
 
-    # (2) convert to pyscf mol object
-    mol = gto.M(atom = chromophore_conv,
-                basis = '6-31g',
-                charge = 0,
-                spin = 0)
     return chromophore_conv
 
 
@@ -83,7 +78,7 @@ def main(molecules, time_steps, do_tddft):
             # create pyscf input for subprocess and store in cache
             dump(getMol(molecule_id, t), f"input_{molecule_id}.joblib")
             # run subprocess
-            procs.append(run_dft_tddft(molecule_id, t, gpu_id = i, do_tddft=do_tddft))                
+            procs.append(run_dft_tddft(molecule_id, gpu_id = i, do_tddft=do_tddft))                
 
         # wait for both subprocesses to finish and capture their outputs
         outputs = []
