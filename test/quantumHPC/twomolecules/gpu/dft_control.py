@@ -80,7 +80,6 @@ def main(molecules, time_steps, do_tddft):
         # run molecules on different GPUs in parallel
         procs, mols = [], []
         for i, molecule_id in enumerate(molecules):
-             
             # create pyscf input for subprocess and store in cache
             dump(getMol(molecule_id, t), f"input_{molecule_id}.joblib")
             # run subprocess
@@ -92,7 +91,6 @@ def main(molecules, time_steps, do_tddft):
             out, _ = procs[i].communicate()
             outputs.append(out)
 
-        
         # load and store relevant data from outputs
         exc, tdms, mols = [], [], []
         for i, molecule_id in enumerate(molecules):
@@ -104,7 +102,7 @@ def main(molecules, time_steps, do_tddft):
             mols.append(load(f"mol_{molecule_id}.joblib"))
 
         # clean cache 
-        #utils.cleanCache()
+        utils.cleanCache()
         
         # debug output of DFT/TDDFT
         print(exc[0], exc[1])
