@@ -46,7 +46,7 @@ def getMol(mol_idx, time_idx):
                 basis = '6-31g',
                 charge = 0,
                 spin = 0)
-    return mol, chromophore_conv
+    return chromophore_conv
 
 
 # NOTE : function that calls python ssubprocess to perform DFT/TDDFT on individual GPUs
@@ -81,8 +81,7 @@ def main(molecules, time_steps, do_tddft):
         for i, molecule_id in enumerate(molecules):
              
             # create pyscf input for subprocess and store in cache
-            mol, conv = getMol(molecule_id, t)
-            dump(conv, f"input_{molecule_id}.joblib")
+            dump(getMol(molecule_id, t), f"input_{molecule_id}.joblib")
             # run subprocess
             procs.append(run_dft_tddft(molecule_id, t, gpu_id = i, do_tddft=do_tddft))                
 
@@ -102,8 +101,7 @@ def main(molecules, time_steps, do_tddft):
             tdms.append(data["tdms"])
             #os.remove(f"output_{molecule_id}.npz")
             # pyscf mol object
-            mol = load(f"mol_{molecule_id}.joblib")
-            mols.append(mol)
+            mols.append(load(f"mol_{molecule_id}.joblib"))
             #os.remove(f"mol_{molecule_id}.joblib")
         
         # debug output of DFT/TDDFT
