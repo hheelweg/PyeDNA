@@ -234,6 +234,9 @@ def reset_atomids(mol_df):
 def readQMparams(filename):
 
     import ast
+    from pathlib import Path
+    print(Path.cwd())
+    print('filename')
 
     user_params = {}                                        # initialize parameter dictionary
     
