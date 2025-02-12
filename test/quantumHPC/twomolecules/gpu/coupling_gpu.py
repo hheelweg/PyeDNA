@@ -86,7 +86,14 @@ def getCoupling(molA, molB, tdmA, tdmB, calcK = False):
     else: 
         return cJ, 0
 
-
+# NOTE : brute force way to compute the Coulomb coupling
+def getCouplingBF(molA, molB, tdmA, tdmB):
+    # (1) compute the Coulomb interaction matrix
+    eri = molA.intor('int2e', aosym=1)                                              # (ij|kl) integrals
+    J = eri.reshape(molA.nao, molA.nao, molB.nao, molB.nao).sum(axis=(2, 3))        # Sum over k, l, should have shape (naoA, naoA)
+    # (2) compute electronic coupling
+    V = np.einsum('ij,ij->', tdmA, J @ tdmB)
+    return V
 
 
 def main(molecules, time_idx):
@@ -111,13 +118,19 @@ def main(molecules, time_idx):
     # we here only want to use the TDM for the first excited state, i.e. state_id = 0 and therefore use tdm[molecule_id][0]
     # to compute the coupling
 
-    # compute coupling
+    # compute coupling (Ardy's function)
     start_time = time.time()
     a, b = getCoupling(mols[0], mols[1], tdm[0][0], tdm[1][0])
     end_time = time.time()
-
     print(f"Elapsed time for computing the coupling: {end_time - start_time} seconds")
     print(a, b)
+
+    # compare to my coupling function
+    start_time = time.time()
+    a = getCouplingBF(mols[0], mols[1], tdm[0][0], tdm[1][0])
+    end_time = time.time()
+    print(f"Elapsed time for computing the BF coupling: {end_time - start_time} seconds")
+    print(a )
 
 
 
