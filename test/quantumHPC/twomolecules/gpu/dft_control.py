@@ -86,7 +86,7 @@ def main(molecules, time_steps, do_tddft):
 
         # wait for both processes to finish and capture their outputs
         outputs, mols = [], []
-        for i in range(len(molecules)):
+        for i, molecule_id in enumerate(molecules):
             out, _ = procs[i].communicate()
             mols.append(load(f"mol_{molecule_id}.joblib"))
             os.remove(f"mol_{molecule_id}.joblib")
