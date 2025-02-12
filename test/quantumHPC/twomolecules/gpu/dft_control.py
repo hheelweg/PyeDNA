@@ -64,6 +64,8 @@ def main(molecules, time_steps, do_tddft):
 
     # store couplings
     cJs, cKs = [], []
+    # store excitation energies
+    excs_A, excs_B = [], []
     
     startT = time.time()
     for t in range(time_steps):
@@ -99,13 +101,16 @@ def main(molecules, time_steps, do_tddft):
         # clean subprocess cache 
         utils.cleanCache()
         
-
-        # compute coupling information
-        cJ, cK = quantumTools.getV(mols[0], mols[1], tdms[0], tdms[1], coupling_type='both')
+        # compute coupling information and excitation energies
+        stateA, stateB = 0, 0
+        cJ, cK = quantumTools.getV(mols[0], mols[1], tdms[0], tdms[1], stateA=stateA, stateB=stateB, coupling_type='both')
+        exc_A, exc_B = exc[0][stateA], exc[1][stateB]
         print('cJ', cJ)
         cJs.append(cJ)
         cKs.append(cK)
-        print(cJs)
+        excs_A.append(exc_A)
+        excs_B.append(exc_B)
+        print(excs_A, excs_B)
 
 
         end_time = time.time()  # End timing for this step
