@@ -6,6 +6,7 @@ from Bio.PDB import PDBIO, Structure, Model, Chain, Residue, Atom
 import const
 import subprocess
 import scipy
+import fileProcessing as fp
 
 
 # optimize molecular structure from *.xyz file into optimized structure in *.pdb file
@@ -206,10 +207,36 @@ def optimizeStructureSymmetryFF(path, moleculeNamePDB, stepsNo = 50000, econv = 
 #--------------------------------------------------------------------------------------------------------------------------------------------
 # functions e.g. for analyzing MD trajectories
 
-# perform DFT calculation on molecule
-def doDFT(molecule, basis = '6-31g', xc_f = 'b3lyp', density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4):
+# set parameters for QM (DFT/TDDFT) simulation
+def setQMSettings():
+    # default settings
+    qm_defaults = {
+        "basis": "6-31g",
+        "xc": "b3lyp",
+        "density_fit": False,
+        "charge": 0,
+        "spin": 0,
+        "scf_cycles": 200,
+        "verbosity": 4,
+        "state_ids": [0],
+        "TDA": True,
+        "run_gpu": True
+    }
 
-    # (1) make PySCF molecular structure 
+    # read in user parameters from file
+    user_params = fp.readQMparams('qm.params')
+
+    # update default parameters
+    qm_defaults.update(user_params)
+
+    return qm_defaults
+
+
+# perform DFT calculation on molecule
+def doDFT(molecule, basis = '6-31g', xc = 'b3lyp', 
+          density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4):
+
+    # (1) make PySCF molecular structure object
     mol = gto.M(atom = molecule,
                 basis = basis,
                 charge = charge,
@@ -225,7 +252,7 @@ def doDFT(molecule, basis = '6-31g', xc_f = 'b3lyp', density_fit = False, charge
     # (2) initialize SCF object
     # mf = scf.RKS(mol)
     mf = dft.RKS(mol)
-    mf.xc = xc_f
+    mf.xc = xc
     mf.max_cycle = scf_cycles               
     mf.conv_tol = 1e-5
     if density_fit:                         # optional: use density fit for accelerating computation
@@ -283,7 +310,7 @@ def doDFT_gpu(molecule, basis = '6-31g', xc = 'b3lyp',
     import cupy as cp
 
 
-    # (1) make PySCF molecular structure 
+    # (1) make PySCF molecular structure object 
     mol = gto.M(atom = molecule,
                 basis = basis,
                 charge = charge,

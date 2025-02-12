@@ -230,3 +230,29 @@ def reset_atomids(mol_df):
     return mol_df
 
 
+# read QM (DFT/TDDFT) input parameters
+def readQMparams(filename):
+
+    import ast
+
+    user_params = {}                                        # initialize parameter dictionary
+    
+    with open(filename, "r") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#"):            # Ignore empty lines and comments
+                continue
+
+            key, value = line.split("=", 1)                 # Split key-value pair
+            key = key.strip()
+            value = value.strip()
+
+            # Convert values to appropriate types
+            try:
+                value = ast.literal_eval(value)             # Safely parse numbers, booleans, lists
+            except (ValueError, SyntaxError):
+                pass                                        # Keep as string if not evaluable
+
+            user_params[key] = value
+
+    return user_params

@@ -22,7 +22,6 @@ def main(molecule_id, do_tddft):
     mol, mf, occ, virt = quantumTools.doDFT_gpu(chromophore_conv, density_fit=False, verbosity=0)
 
     # (3) dump mol object to cache
-    # print('testtt')
     dump(mol, f"mol_{molecule_id}.joblib")
 
     # (3) optional: do TDDFT calculation based on that result:
