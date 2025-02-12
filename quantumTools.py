@@ -5,6 +5,7 @@ from MDAnalysis.coordinates.PDB import PDBWriter
 from Bio.PDB import PDBIO, Structure, Model, Chain, Residue, Atom
 import const
 import subprocess
+import scipy
 
 
 # optimize molecular structure from *.xyz file into optimized structure in *.pdb file
@@ -243,7 +244,7 @@ def doDFT(molecule, basis = '6-31g', xc_f = 'b3lyp', density_fit = False, charge
     return mf, occ, virt
 
 
-# perform TDDFT calculation on molecule
+# perform TDDFT calculation on pyscf mf object
 def doTDDFT(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = True):
 
     # (1) number of states
@@ -270,6 +271,49 @@ def doTDDFT(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = True):
     tdms = [np.sqrt(2) * occ_orbits.dot(td.xy[id][0]).dot(virt_orbits.T) for id in state_ids]
 
     return exc_energies, trans_dipoles, osc_strengths, tdms, osc_idx
+
+
+# coupling terms for the computation cJ and cK 
+def getCJCK(molA, molB, tdmA, tdmB, get_cK = False):
+
+    from pyscf.scf import jk, _vhf
+
+    # (0) check that dimensions are correct
+    assert(tdmA.shape == (molA.nao, molA.nao))
+    assert(tdmB.shape == (molB.nao, molB.nao))
+
+    # (1) merge separate molecules together and set up joint density matrix
+    molAB = molA + molB
+    dm_AB = scipy.linalg.block_diag(tdmA, tdmB) 
+    
+    # (2) set of HF infrastucture for fast integral evaluation
+    # 'int2e' specifies two-electron integrals, 'CVHFnrs8_prescreen' use prescreen options to reduce computational time
+    # key idea : instead of directly computing all (ij∣kl) integrals, PySCF uses prescreening techniques to skip irrelevant terms.
+    vhfopt = _vhf.VHFOpt(molAB, 'int2e', 'CVHFnrs8_prescreen', 'CVHFsetnr_direct_scf', 'CVHFsetnr_direct_scf_dm')                    
+    vhfopt.set_dm(dm_AB, molAB._atm, molAB._bas, molAB._env)             # enables density-based prescreening
+    vhfopt._dmcondname = None
+
+    # (3) compute Coulomb integrals
+    with lib.temporary_env(vhfopt._this.contents, fprescreen=_vhf._fpointer('CVHFnrs8_vj_prescreen')):
+        shls_slice = (0, molA.nbas, 0, molA.nbas, molA.nbas, molAB.nbas, molA.nbas, molAB.nbas) 
+        vJ = jk.get_jk(molAB, tdmB, 'ijkl,lk->s2ij', shls_slice=shls_slice, vhfopt=vhfopt, aosym='s4', hermi=1)
+        cJ = np.einsum('ia,ia->', vJ, tdmA)
+    
+    # (4) compute Exchange integrals
+    if get_cK == True:
+        with lib.temporary_env(vhfopt._this.contents, fprescreen=_vhf._fpointer('CVHFnrs8_vk_prescreen')):
+            shls_slice = (0, molA.nbas , molA.nbas, molAB.nbas, molA.nbas, molAB.nbas, 0, molA.nbas)  
+            vK = jk.get_jk(molAB, tdmB, 'ijkl,jk->il', shls_slice=shls_slice, vhfopt=vhfopt, aosym='s1', hermi=0)
+            cK = np.einsum('ia,ia->', vK, tdmA)
+        return cJ, cK
+    else: 
+        return cJ, 0
+
+
+# compute coupling ('cJ', 'cK', 'electronic') for the state (S_0^A , S_{stateB + 1}^B) --> (S_{stateA + 1}^A, S_0^B)
+# NOTE : A is acceptor, B is donor
+def getV(molA, molB, tdmsA, tdmsB, stateA, stateB, coupling_type = 'electronic'):
+    pass
 
 
 # compute absorption spectrum from oscillator strength and excitation energies

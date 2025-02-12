@@ -49,27 +49,27 @@ def getCJCK(molA, molB, tdmA, tdmB, get_cK = False):
     assert(tdmB.shape == (molB.nao, molB.nao))
 
     # (1) merge separate molecules together and set up joint density matrix
-    mol_AB = molA + molB
+    molAB = molA + molB
     dm_AB = scipy.linalg.block_diag(tdmA, tdmB) 
     
     # (2) set of HF infrastucture for fast integral evaluation
     # 'int2e' specifies two-electron integrals, 'CVHFnrs8_prescreen' use prescreen options to reduce computational time
     # key idea : instead of directly computing all (ij∣kl) integrals, PySCF uses prescreening techniques to skip irrelevant terms.
-    vhfopt = _vhf.VHFOpt(mol_AB, 'int2e', 'CVHFnrs8_prescreen', 'CVHFsetnr_direct_scf', 'CVHFsetnr_direct_scf_dm')                    
-    vhfopt.set_dm(dm_AB, mol_AB._atm, mol_AB._bas, mol_AB._env)             # enables density-based prescreening
+    vhfopt = _vhf.VHFOpt(molAB, 'int2e', 'CVHFnrs8_prescreen', 'CVHFsetnr_direct_scf', 'CVHFsetnr_direct_scf_dm')                    
+    vhfopt.set_dm(dm_AB, molAB._atm, molAB._bas, molAB._env)             # enables density-based prescreening
     vhfopt._dmcondname = None
 
     # (3) compute Coulomb integrals
     with lib.temporary_env(vhfopt._this.contents, fprescreen=_vhf._fpointer('CVHFnrs8_vj_prescreen')):
-        shls_slice = (0, molA.nbas, 0, molA.nbas, molA.nbas, mol_AB.nbas, molA.nbas, mol_AB.nbas) 
-        vJ = jk.get_jk(mol_AB, tdmB, 'ijkl,lk->s2ij', shls_slice=shls_slice, vhfopt=vhfopt, aosym='s4', hermi=1)
+        shls_slice = (0, molA.nbas, 0, molA.nbas, molA.nbas, molAB.nbas, molA.nbas, molAB.nbas) 
+        vJ = jk.get_jk(molAB, tdmB, 'ijkl,lk->s2ij', shls_slice=shls_slice, vhfopt=vhfopt, aosym='s4', hermi=1)
         cJ = np.einsum('ia,ia->', vJ, tdmA)
     
     # (4) compute Exchange integrals
     if get_cK == True:
         with lib.temporary_env(vhfopt._this.contents, fprescreen=_vhf._fpointer('CVHFnrs8_vk_prescreen')):
-            shls_slice = (0, molA.nbas , molA.nbas, mol_AB.nbas, molA.nbas, mol_AB.nbas, 0, molA.nbas)  
-            vK = jk.get_jk(mol_AB, tdmB, 'ijkl,jk->il', shls_slice=shls_slice, vhfopt=vhfopt, aosym='s1', hermi=0)
+            shls_slice = (0, molA.nbas , molA.nbas, molAB.nbas, molA.nbas, molAB.nbas, 0, molA.nbas)  
+            vK = jk.get_jk(molAB, tdmB, 'ijkl,jk->il', shls_slice=shls_slice, vhfopt=vhfopt, aosym='s1', hermi=0)
             cK = np.einsum('ia,ia->', vK, tdmA)
         return cJ, cK
     else: 
@@ -147,14 +147,16 @@ def main(molecules, time_idx):
 
     # accelerated computation of coupling
     start_time = time.time()
-    cJ, cK = getCJCK(mols[0], mols[1], tdm[0][0], tdm[1][0], get_cK = False)
+    #cJ, cK = getCJCK(mols[0], mols[1], tdm[0][0], tdm[1][0], get_cK = False)
+    cJ, cK = getCJCK(mols[1], mols[0], tdm[1][0], tdm[0][0], get_cK = False)
     end_time = time.time()
     print(f"Elapsed time for computing the coupling: {end_time - start_time} seconds")
     print(cJ, cK)
 
     # compare to brute-force coupling function
     start_time = time.time()
-    cJ, cK = getCJCK_BF(mols[0], mols[1], tdm[0][0], tdm[1][0], get_cK = False)
+    #cJ, cK = getCJCK_BF(mols[0], mols[1], tdm[0][0], tdm[1][0], get_cK = False)
+    cJ, cK = getCJCK_BF(mols[1], mols[0], tdm[1][0], tdm[0][0], get_cK = False)
     end_time = time.time()
     print(f"Elapsed time for computing the coupling (brute force): {end_time - start_time} seconds")
     print(cJ, cK)
