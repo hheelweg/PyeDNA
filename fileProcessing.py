@@ -235,8 +235,8 @@ def readQMparams(filename):
 
     import ast
     from pathlib import Path
-    print(Path.cwd())
-    print('filename')
+    print(Path.cwd(), flush = True)
+    print('filename', flush = True)
 
     user_params = {}                                        # initialize parameter dictionary
     
