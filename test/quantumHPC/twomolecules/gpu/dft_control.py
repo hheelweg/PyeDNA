@@ -46,7 +46,7 @@ def getMol(mol_idx, time_idx):
                 basis = '6-31g',
                 charge = 0,
                 spin = 0)
-    return mol, chromophore_conv
+    return chromophore_conv
 
 
 # NOTE : function that calls python ssubprocess to perform DFT/TDDFT on individual GPUs
