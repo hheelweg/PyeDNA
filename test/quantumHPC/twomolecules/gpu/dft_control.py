@@ -8,6 +8,7 @@ import numpy as np
 from pyscf import gto, lib
 import io
 import sys
+from joblib import dump
 
 # import custom modules
 path_to_modules = '/home/hheelweg/Cy3Cy5/PyCY'
@@ -45,7 +46,7 @@ def getMol(mol_idx, time_idx):
                 basis = '6-31g',
                 charge = 0,
                 spin = 0)
-    return mol
+    return mol, chromophore_conv
 
 
 # NOTE : function that calls python ssubprocess to perform DFT/TDDFT on individual GPUs
@@ -78,7 +79,12 @@ def main(molecules, time_steps, do_tddft):
         # run molecules on different GPUs in parallel
         procs, mols = [], []
         for i, molecule_id in enumerate(molecules):
-            mols.append(getMol(molecule_id, t))                                                         # create pyscf mol objects
+             
+            mol, conv = getMol(molecule_id, t)                                                                # create pyscf mol objects 
+            print(conv)
+            mols.append(mol)  
+            # try to store conv in cache:
+            dump(conv, f"conv_{molecule_id}.joblib")
             procs.append(run_dft_tddft(molecule_id, t, gpu_id = i, do_tddft=do_tddft))                  # run processes
 
         # wait for both processes to finish and capture their outputs
