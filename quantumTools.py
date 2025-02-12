@@ -319,12 +319,12 @@ def getV(molA, molB, tdmsA, tdmsB, stateA = 0, stateB = 0, coupling_type = 'elec
     tdmA = tdmsA[stateA]           
     tdmB = tdmsB[stateB]
 
-    if coupling_type in ['electronic', 'cK' 'both']:
+    if coupling_type in ['electronic', 'cK', 'both']:
         cJ, cK = getCJCK(molA, molB, tdmA, tdmB, get_cK=True)
     elif coupling_type in ['cJ']:
         cJ, _ = getCJCK(molA, molB, tdmA, tdmB, get_cK=False)
     else:
-        raise ValueError("Invalid coupling type specified!")
+        raise NotImplementedError("Invalid coupling type specified!")
     
     if coupling_type == 'electronic':
         V_AB = 2 * cJ - cK                                          # total electronic coupling
