@@ -95,16 +95,16 @@ def main(molecules, time_steps, do_tddft):
             exc.append(data["exc_energies"])
             tdms.append(data["tdms"])
         
-        # debug output
+        # debug output of DFT/TDDFT
         print(exc[0], exc[1])
         print(tdms[0].shape, tdms[1].shape)
 
         # compute coupling information
         cJ, cK = quantumTools.getV(mols[0], mols[1], tdms[0], tdms[1], coupling_type='both')
         print('cJ', cJ)
-        print('cK', cK)
         cJs.append(cJ)
         cKs.append(cK)
+        print(cKs)
 
 
         end_time = time.time()  # End timing for this step
