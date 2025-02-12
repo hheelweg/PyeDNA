@@ -89,9 +89,14 @@ def getCoupling(molA, molB, tdmA, tdmB, calcK = False):
 
 
 # NOTE : brute force way to compute the Coulomb coupling
+# [with explanation of the individual terms]
 def getCouplingBF(molA, molB, tdmA, tdmB):
     from pyscf.scf import jk
-    """Efficiently computes the Coulomb interaction matrix J between donor and acceptor using `jk.get_jk()`."""
+    """ Efficiently computes the Coulomb interaction between molA and molB
+        according to the formula cJ = \sum_{i,j, k, l} P_A(i,j)* J_ijkl * P_B(k,l)  
+        with J_ijkl = \int AO_i(r)AO_j(r) * (1/|r-r'|) * AO_k(r')AO_l(r') dr dr' as the Coulomb matrix 
+        which is computed internally with jk.get_jk()
+    """
     
     # (0) Merge donor and acceptor into one system
     molAB = molA + molB 
@@ -113,12 +118,14 @@ def getCouplingBF(molA, molB, tdmA, tdmB):
     
     tdmB = pad_tdm_in_molAB(molA, molB, tdmB)
     
-    # (2) Compute Coulomb potential matrix using jk.get_jk()
+    # (2) Compute Coulomb interaction matrix J_ijkl using HF potential optimization
+    # pre-multiplies J_ijkl with P_B(k,l) (TDM of molecule B), i.e. \sum_{k,l} J_ijkl * P_B(k,l) 
     vJ = jk.get_jk(molAB, tdmB, 'ijkl,lk->s2ij', aosym='s4', hermi=1)
     
-    # (3) Contract with transition density of molecula A to obtain electronic coupling
-    V_DA = np.einsum('ij,ij->', tdmA, vJ[:molA.nao, :molA.nao])
-    return V_DA
+    # (3) Contract with P_A(i,j) (TDM of molecule A) to obtain Coulombic coupling
+    # i.e. cJ = \sum_{i,j} P_A(i,j)* [\sum_{k,l} J_ijkl * P_B(k,l)]
+    cJ = np.einsum('ij,ij->', tdmA, vJ[:molA.nao, :molA.nao])
+    return cJ
 
 
 def main(molecules, time_idx):
