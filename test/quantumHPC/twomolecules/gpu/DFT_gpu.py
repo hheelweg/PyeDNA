@@ -46,7 +46,7 @@ def doDFT_gpu(molecule, basis = '6-31g', xc = 'b3lyp',
     occ = mo[:, mf.mo_occ != 0]             # occupied orbitals
     virt = mo[:, mf.mo_occ == 0]            # virtual orbitals
 
-    return mf, occ, virt
+    return mol, mf, occ, virt
 
 # GPU-supported TDDFT
 def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = True):
@@ -93,12 +93,16 @@ def main(molecule_id, time_idx, do_tddft):
     # (1) specify chromophore to perform DFT/TDDFT on
     molecule = [molecule_id]
     #chromophore, chromophore_conv = test.getChromophoreSnapshot(time_idx, molecule, conversion = 'pyscf')
-    chromophore_conv = load(f"conv_{molecule_id}.joblib")
-    os.remove(f"conv_{molecule_id}.joblib")
-    print(chromophore_conv)
+
+    # (1) load chromophore pyscf input from cache
+    chromophore_conv = load(f"input_{molecule_id}.joblib")
+    os.remove(f"output_{molecule_id}.joblib")
 
     # (2) perform DFT calculation
-    mf, occ, virt = doDFT_gpu(chromophore_conv, density_fit=False, verbosity=0)
+    mol, mf, occ, virt = doDFT_gpu(chromophore_conv, density_fit=False, verbosity=0)
+
+    # (3) dump mol object to cache
+    dump(mol, f"mol_{molecule_id}.joblib")
 
     # (3) optional: do TDDFT calculation based on that result:
     if do_tddft:
