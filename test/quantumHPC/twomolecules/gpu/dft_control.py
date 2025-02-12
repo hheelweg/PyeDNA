@@ -72,8 +72,6 @@ def main(molecules, time_steps, do_tddft):
         print(f"\n Running Time Step {t}...", flush = True)
         start_time = time.time()
 
-        # TODO : do this as a for loop over molecules
-
         # run molecules on different GPUs in parallel
         procs, mols = [], []
         for i, molecule_id in enumerate(molecules):

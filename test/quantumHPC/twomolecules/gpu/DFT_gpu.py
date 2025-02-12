@@ -84,7 +84,7 @@ def main(molecule_id, do_tddft):
     #os.remove(f"input_{molecule_id}.joblib")
 
     # (2) perform DFT calculation
-    mol, mf, occ, virt = doDFT_gpu(chromophore_conv, density_fit=False, verbosity=0)
+    mol, mf, occ, virt = quantumTools.doDFT_gpu(chromophore_conv, density_fit=False, verbosity=0)
 
     # (3) dump mol object to cache
     # print('testtt')
@@ -93,7 +93,7 @@ def main(molecule_id, do_tddft):
     # (3) optional: do TDDFT calculation based on that result:
     if do_tddft:
         state_ids = [0, 1, 2]                               # might want to add more states
-        exc_energies, tdms = doTDDFT_gpu(mf, occ, virt, state_ids, TDA=True)
+        exc_energies, tdms = quantumTools.doTDDFT_gpu(mf, occ, virt, state_ids, TDA=True)
         return exc_energies, tdms
 
 
