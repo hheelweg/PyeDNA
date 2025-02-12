@@ -310,10 +310,35 @@ def getCJCK(molA, molB, tdmA, tdmB, get_cK = False):
         return cJ, 0
 
 
-# compute coupling ('cJ', 'cK', 'electronic') for the state (S_0^A , S_{stateB + 1}^B) --> (S_{stateA + 1}^A, S_0^B)
+# compute coupling terms ('cJ', 'cK', 'electronic', 'both') for the states (S_0^A , S_{stateB + 1}^B) <--> (S_{stateA + 1}^A, S_0^B)
+# 'cJ' only returns the electrostatic interaction, 'cK' only the exchange interaction, 'electronic' returns 2 * cJ - cK, and 'both' returns tuple (cJ, cK)
 # NOTE : A is acceptor, B is donor
-def getV(molA, molB, tdmsA, tdmsB, stateA, stateB, coupling_type = 'electronic'):
-    pass
+# NOTE : stateA and stateB are zero-indexed here so stateA = 0 corresponds to the first excited state of molecule A etc.
+# stateA and stateB default to 0 to for the transition (S_0^A , S_1^B) <--> (S_1^A, S_0^B)
+def getV(molA, molB, tdmsA, tdmsB, stateA = 0, stateB = 0, coupling_type = 'electronic'):
+
+    tdmA = tdmsA[stateA]           
+    tdmB = tdmsB[stateB]
+
+    if coupling_type in ['electronic', 'cK' 'both']:
+        cJ, cK = getCJCK(molA, molB, tdmA, tdmB, get_cK=True)
+    elif coupling_type in ['cJ']:
+        cJ, _ = getCJCK(molA, molB, tdmA, tdmB, get_cK=False)
+    else:
+        raise ValueError("Invalid coupling type specified!")
+    
+    if coupling_type == 'electronic':
+        V_AB = 2 * cJ - cK                                          # total electronic coupling
+        return V_AB
+    elif coupling_type == 'cK':
+        V_AB = - cK                                                 # exchange-interaction part of the electronic coupling
+        return V_AB
+    elif coupling_type == 'cJ':
+        V_AB = 2 * cJ                                               # electrostatic-interaction part of the electronic coupling
+        return V_AB
+    elif coupling_type == 'both':
+        return cJ, cK
+
 
 
 # compute absorption spectrum from oscillator strength and excitation energies

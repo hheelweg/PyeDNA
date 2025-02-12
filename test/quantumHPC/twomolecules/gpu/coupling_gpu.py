@@ -147,6 +147,7 @@ def main(molecules, time_idx):
 
     # accelerated computation of coupling
     start_time = time.time()
+    # NOTE : coupling function is symmetric in arguments, which makes sense physically
     #cJ, cK = getCJCK(mols[0], mols[1], tdm[0][0], tdm[1][0], get_cK = False)
     cJ, cK = getCJCK(mols[1], mols[0], tdm[1][0], tdm[0][0], get_cK = False)
     end_time = time.time()
@@ -155,6 +156,7 @@ def main(molecules, time_idx):
 
     # compare to brute-force coupling function
     start_time = time.time()
+    # NOTE : coupling function is symmetric in arguments, which makes sense physically
     #cJ, cK = getCJCK_BF(mols[0], mols[1], tdm[0][0], tdm[1][0], get_cK = False)
     cJ, cK = getCJCK_BF(mols[1], mols[0], tdm[1][0], tdm[0][0], get_cK = False)
     end_time = time.time()
