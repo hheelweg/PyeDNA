@@ -88,20 +88,17 @@ def getCoupling(molA, molB, tdmA, tdmB, calcK = False):
 
 # NOTE : brute force way to compute the Coulomb coupling
 def getCouplingBF(molA, molB, tdmA, tdmB):
-    # (0) combine molecules together
-    molAB = molA + molB
-    # (1) compute the Coulomb interaction matrix
-    eri = molAB.intor('int2e', aosym=1)                                             # (ij|kl) integrals
-    naoA = molA.nao
-    naoB = molB.nao
-    naoAB = molAB.nao  # Total number of AOs in merged system
-    # Reshape full integral tensor (naoAB, naoAB, naoAB, naoAB)
-    eri_full = eri.reshape(naoAB, naoAB, naoAB, naoAB)
-    # Extract only the donor-acceptor interaction block (A-B)
-    J = eri_full[:naoA, :naoA, naoA:naoA+naoB, naoA:naoA+naoB].sum(axis=(2, 3))
-    # (2) compute electronic coupling
-    V = np.einsum('ij,ij->', tdmB, J @ tdmA)
-    return V
+    from pyscf.scf import jk
+    """Efficiently computes the Coulomb interaction matrix J between donor and acceptor using `jk.get_jk()`."""
+    
+    molAB = molA + molB  # Merge donor and acceptor into one system
+    
+    # Compute Coulomb potential matrix using jk.get_jk()
+    vJ = jk.get_jk(molAB, tdmB, 'ijkl,lk->s2ij', aosym='s4', hermi=1)
+    
+    # Contract with donor transition density to obtain electronic coupling
+    V_DA = np.einsum('ij,ij->', tdmA, vJ)
+    return V_DA
 
 
 def main(molecules, time_idx):
