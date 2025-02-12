@@ -222,7 +222,7 @@ def setQMSettings(file):
         "TDA": True,
         "run_gpu": True
     }
-
+    print()
     # read in user parameters from file
     user_params = fp.readQMparams(file)
 
