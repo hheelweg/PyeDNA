@@ -97,7 +97,9 @@ def main(molecules, time_steps, do_tddft):
             data = np.load(io.BytesIO(outputs[i]))
             exc.append(data["exc_energies"])
             tdms.append(data["tdms"])
-            mols.append(load(f"mol_{molecule_id}.joblib"))
+            print('testtttttttt')
+            mol = load(f"mol_{molecule_id}.joblib")
+            mols.append(mol)
             os.remove(f"mol_{molecule_id}.joblib")
         
         # debug output of DFT/TDDFT
