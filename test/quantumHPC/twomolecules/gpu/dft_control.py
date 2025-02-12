@@ -63,10 +63,8 @@ def run_dft_tddft(molecule_id, gpu_id, do_tddft):
 def main(molecules, time_steps, do_tddft):
 
     # specify DFT/TDDFT parameters in parameter file
-    current_dir = '/home/hheelweg/Cy3Cy5/PyCY/test/quantumHPC/twomolecules/gpu'
-    print(os.getcwd())
-    sys.path.append(os.getcwd())
-    settings = quantumTools.setQMSettings('qm.params')
+    sys.path.append(os.getcwd())                                # append current working directory to path
+    settings = quantumTools.setQMSettings('qm.params')          # read in params
     print(settings, flush = True)
 
 
