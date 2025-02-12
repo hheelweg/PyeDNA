@@ -102,8 +102,8 @@ def main(molecule_id, time_idx, do_tddft):
     mol, mf, occ, virt = doDFT_gpu(chromophore_conv, density_fit=False, verbosity=0)
 
     # (3) dump mol object to cache
-    print('testtt')
-    dump(mol, f"mol_{molecule_id}.joblib")
+    # print('testtt')
+    # dump(mol, f"mol_{molecule_id}.joblib")
 
     # (3) optional: do TDDFT calculation based on that result:
     if do_tddft:
