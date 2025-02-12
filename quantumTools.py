@@ -316,6 +316,11 @@ def doDFT_gpu(molecule, basis = '6-31g', xc = 'b3lyp',
 # TODO : merge with doTDDFT()
 def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = True):
 
+    # (0) import gou4pyscf and GPU support
+    from gpu4pyscf import scf, solvent, tdscf
+    from gpu4pyscf.dft import rks
+    import cupy as cp
+
     # (1) number of states
     nstates = len(state_ids)
 
