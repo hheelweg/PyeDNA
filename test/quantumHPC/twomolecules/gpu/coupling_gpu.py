@@ -87,35 +87,36 @@ def getCoupling(molA, molB, tdmA, tdmB, calcK = False):
         return cJ, 0
 
 
-def pad_tdm_in_molAB(molA, molB, tdmB):
-    """Embeds `tdmB` into the full-sized molecule `molAB` to match dimensions for `jk.get_jk()`."""
-    naoA = molA.nao
-    naoB = molB.nao
-    naoAB = naoA + naoB  # Total number of atomic orbitals in molAB
-    
-    # Create a zero matrix of the full dimension
-    tdmB_padded = np.zeros((naoAB, naoAB))
-    
-    # Insert `tdmB` into the correct block
-    tdmB_padded[naoA:naoA+naoB, naoA:naoA+naoB] = tdmB
-    
-    return tdmB_padded
-
 
 # NOTE : brute force way to compute the Coulomb coupling
 def getCouplingBF(molA, molB, tdmA, tdmB):
     from pyscf.scf import jk
     """Efficiently computes the Coulomb interaction matrix J between donor and acceptor using `jk.get_jk()`."""
     
-    molAB = molA + molB  # Merge donor and acceptor into one system
+    # (0) Merge donor and acceptor into one system
+    molAB = molA + molB 
 
-    # Pad `tdmB` to match the full molecule size
-    tdmB_padded = pad_tdm_in_molAB(molA, molB, tdmB)
+    # (1) Pad TDM to match the full molecule size
+    def pad_tdm_in_molAB(molA, molB, tdmB):
+        """Embeds tdmB into the full-sized molecule molAB to match dimensions for `jk.get_jk()`."""
+        naoA = molA.nao
+        naoB = molB.nao
+        naoAB = naoA + naoB 
+        
+        # Create a zero matrix of the full dimension
+        tdmB_padded = np.zeros((naoAB, naoAB))
+        
+        # Insert tdmB into the correct block
+        tdmB_padded[naoA:naoA+naoB, naoA:naoA+naoB] = tdmB
+        
+        return tdmB_padded
     
-    # Compute Coulomb potential matrix using jk.get_jk()
-    vJ = jk.get_jk(molAB, tdmB_padded, 'ijkl,lk->s2ij', aosym='s4', hermi=1)
+    tdmB = pad_tdm_in_molAB(molA, molB, tdmB)
     
-    # Contract with donor transition density to obtain electronic coupling
+    # (2) Compute Coulomb potential matrix using jk.get_jk()
+    vJ = jk.get_jk(molAB, tdmB, 'ijkl,lk->s2ij', aosym='s4', hermi=1)
+    
+    # (3) Contract with transition density of molecula A to obtain electronic coupling
     V_DA = np.einsum('ij,ij->', tdmA, vJ[:molA.nao, :molA.nao])
     return V_DA
 
