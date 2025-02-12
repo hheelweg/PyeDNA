@@ -14,7 +14,7 @@ import trajectory as traj
 import const
 
 
-# get pyscf mol object
+# get pyscf mol object based on molecule index and time slice
 def getMol(mol_idx, time_idx):
     MDsim = traj.MDSimulation([])                           # empty MDSimulation object
 

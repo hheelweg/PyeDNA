@@ -98,7 +98,7 @@ def main(molecule_id, time_idx, do_tddft):
 
     # (3) optional: do TDDFT calculation based on that result:
     if do_tddft:
-        state_ids = [0, 1, 2]                                     # might want to add more states
+        state_ids = [0, 1, 2]                               # might want to add more states
         exc_energies, tdms = doTDDFT_gpu(mf, occ, virt, state_ids, TDA=True)
         return exc_energies, tdms
 

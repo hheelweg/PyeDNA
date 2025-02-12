@@ -5,7 +5,16 @@ import subprocess
 import torch
 import json
 import numpy as np
+from pyscf import gto, lib
 import io
+import sys
+
+# import custom modules
+path_to_modules = '/home/hheelweg/Cy3Cy5/PyCY'
+sys.path.append(path_to_modules)
+import quantumTools, structure
+import trajectory as traj
+import const
 
 # Detect available GPUs
 num_gpus = torch.cuda.device_count()
@@ -13,7 +22,33 @@ if num_gpus < 2:
     raise RuntimeError("Error: Less than 2 GPUs detected! Check SLURM allocation.")
 
 
-# NOTE : old version calling subprocess routin
+# get pyscf mol object based on molecule index and time slice
+# NOTE : this is just here for test purposes
+def getMol(mol_idx, time_idx):
+    MDsim = traj.MDSimulation([])                           # empty MDSimulation object
+
+    path = '/home/hheelweg/Cy3Cy5/PyCY/test/prod/'          # specify relative path to MD ouput
+    name_prmtop = 'dna_test.prmtop'
+    name_nc = 'dna_test_prod.nc'                            
+    name_out = 'dna_test_prod.out'
+              
+
+    data = [name_prmtop,name_nc, name_out]                  # trajectory data 
+    test = traj.Trajectory(MDsim, path, data)               # initialize Trajectory object
+
+    # (1) specify chromophore to perform DFT/TDDFT on
+    molecule = [mol_idx]
+    chromophore, chromophore_conv = test.getChromophoreSnapshot(time_idx, molecule, conversion = 'pyscf')
+
+    # (2) convert to pyscf mol object
+    mol = gto.M(atom = chromophore_conv,
+                basis = '6-31g',
+                charge = 0,
+                spin = 0)
+    return mol
+
+
+# NOTE : function that calls python ssubprocess to perform DFT/TDDFT on individual GPUs
 def run_dft_tddft(molecule, time_idx, gpu_id, do_tddft):
     """Launch a DFT/TDDFT calculation on a specific GPU."""
     env = os.environ.copy()
@@ -28,7 +63,7 @@ def run_dft_tddft(molecule, time_idx, gpu_id, do_tddft):
     return process
 
 
-def main(mol_1, mol_2, time_steps, do_tddft):
+def main(molecules, time_steps, do_tddft):
     
     startT = time.time()
     for t in range(time_steps):
@@ -38,30 +73,49 @@ def main(mol_1, mol_2, time_steps, do_tddft):
         # TODO : do this as a for loop over molecules
 
         # run molecule_1 on GPU 0 and molecule_2 on GPU 1
-        proc1 = run_dft_tddft(mol_1, t, gpu_id=0, do_tddft=do_tddft)
-        proc2 = run_dft_tddft(mol_2, t, gpu_id=1, do_tddft=do_tddft)
+        procs = []
+        for i, molecule_id in enumerate(molecules):
+            procs.append(run_dft_tddft(molecule_id, t, gpu_id = i, do_tddft=do_tddft))
+        # proc1 = run_dft_tddft(mol_1, t, gpu_id=0, do_tddft=do_tddft)
+        # proc2 = run_dft_tddft(mol_2, t, gpu_id=1, do_tddft=do_tddft)
 
         # wait for both processes to finish and capture their outputs
-        output1, _ = proc1.communicate()
-        output2, _ = proc2.communicate()
+        outputs = []
+        for i in range(len(molecules)):
+            out, _ = procs[i].communicate()
+            outputs.append(out)
+        # output1, _ = proc1.communicate()
+        # output2, _ = proc2.communicate()
         
         # load data of molecule 1
-        data1 = np.load(io.BytesIO(output1))
-        exc_energies_1 = data1["exc_energies"]
-        tdms_1 = data1["tdms"]
+        exc, tdms = [], []
+        for i in range(len(molecules)):
+            data = np.load(io.BytesIO(outputs[i]))
+            exc.append(data["exc_energies"])
+            tdms.append(data["tdms"])
+        # data1 = np.load(io.BytesIO(output1))
+        # exc_energies_1 = data1["exc_energies"]
+        # tdms_1 = data1["tdms"]
 
-        # load data of molecule 2
-        data2 = np.load(io.BytesIO(output2))
-        exc_energies_2 = data2["exc_energies"]
-        tdms_2 = data2["tdms"]
+        # # load data of molecule 2
+        # data2 = np.load(io.BytesIO(output2))
+        # exc_energies_2 = data2["exc_energies"]
+        # tdms_2 = data2["tdms"]
         
-        print(exc_energies_1, exc_energies_2)
-        print(tdms_1.shape, tdms_2.shape)
+        # # debug output
+        # print(exc_energies_1, exc_energies_2)
+        # print(tdms_1.shape, tdms_2.shape)
+        print(exc[0], exc[1])
+        print(tdms[0].shape, tdms[1].shape)
+
+        # get molecules pyscf mol objects
 
 
         end_time = time.time()  # End timing for this step
         elapsed_time = end_time - start_time
         print(f"Time Step {t} Completed in {elapsed_time:.2f} seconds", flush = True)
+
+
 
     endT = time.time()
     print(f"All DFT/TDDFT calculations completed in {endT -startT} sec!")
@@ -80,5 +134,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # run main
-    main(args.molecule_1_id, args.molecule_2_id, args.time_idx, args.do_tddft)
+    molecules = [args.molecule_1_id, args.molecule_2_id]
+    main(molecules, args.time_idx, args.do_tddft)
 

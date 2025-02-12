@@ -312,7 +312,6 @@ def getCJCK(molA, molB, tdmA, tdmB, get_cK = False):
 
 # compute coupling terms ('cJ', 'cK', 'electronic', 'both') for the states (S_0^A , S_{stateB + 1}^B) <--> (S_{stateA + 1}^A, S_0^B)
 # 'cJ' only returns the electrostatic interaction, 'cK' only the exchange interaction, 'electronic' returns 2 * cJ - cK, and 'both' returns tuple (cJ, cK)
-# NOTE : A is acceptor, B is donor
 # NOTE : stateA and stateB are zero-indexed here so stateA = 0 corresponds to the first excited state of molecule A etc.
 # stateA and stateB default to 0 to for the transition (S_0^A , S_1^B) <--> (S_1^A, S_0^B)
 def getV(molA, molB, tdmsA, tdmsB, stateA = 0, stateB = 0, coupling_type = 'electronic'):
