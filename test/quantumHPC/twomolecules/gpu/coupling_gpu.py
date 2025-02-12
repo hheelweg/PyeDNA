@@ -88,9 +88,17 @@ def getCoupling(molA, molB, tdmA, tdmB, calcK = False):
 
 # NOTE : brute force way to compute the Coulomb coupling
 def getCouplingBF(molA, molB, tdmA, tdmB):
+    # (0) combine molecules together
+    molAB = molA + molB
     # (1) compute the Coulomb interaction matrix
-    eri = molB.intor('int2e', aosym=1)                                              # (ij|kl) integrals
-    J = eri.reshape(molB.nao, molB.nao, molA.nao, molA.nao).sum(axis=(2, 3))        # Sum over k, l, should have shape (naoA, naoA)
+    eri = molAB.intor('int2e', aosym=1)                                             # (ij|kl) integrals
+    naoA = molA.nao
+    naoB = molB.nao
+    naoAB = molAB.nao  # Total number of AOs in merged system
+    # Reshape full integral tensor (naoAB, naoAB, naoAB, naoAB)
+    eri_full = eri.reshape(naoAB, naoAB, naoAB, naoAB)
+    # Extract only the donor-acceptor interaction block (A-B)
+    J = eri_full[:naoA, :naoA, naoA:naoA+naoB, naoA:naoA+naoB].sum(axis=(2, 3))
     # (2) compute electronic coupling
     V = np.einsum('ij,ij->', tdmB, J @ tdmA)
     return V
