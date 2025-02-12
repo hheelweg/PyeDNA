@@ -40,7 +40,7 @@ def getMol(mol_idx, time_idx):
 
 
 # NOTE : fast function to compute coupling terms cJ and cK
-def getCJCK(molA, molB, tdmA, tdmB, calcK = False):
+def getCJCK(molA, molB, tdmA, tdmB, get_cK = False):
 
     from pyscf.scf import jk, _vhf
 
@@ -66,7 +66,7 @@ def getCJCK(molA, molB, tdmA, tdmB, calcK = False):
         cJ = np.einsum('ia,ia->', vJ, tdmA)
     
     # (4) compute Exchange integrals
-    if calcK == True:
+    if get_cK == True:
         with lib.temporary_env(vhfopt._this.contents, fprescreen=_vhf._fpointer('CVHFnrs8_vk_prescreen')):
             shls_slice = (0, molA.nbas , molA.nbas, mol_AB.nbas, molA.nbas, mol_AB.nbas, 0, molA.nbas)  
             vK = jk.get_jk(mol_AB, tdmB, 'ijkl,jk->il', shls_slice=shls_slice, vhfopt=vhfopt, aosym='s1', hermi=0)
@@ -78,7 +78,7 @@ def getCJCK(molA, molB, tdmA, tdmB, calcK = False):
 
 # NOTE : brute force way to compute the electronic coupling terms cJ and cK
 # [with explanation of the individual terms]
-def getCJCK_BF(molA, molB, tdmA, tdmB, calcK = False):
+def getCJCK_BF(molA, molB, tdmA, tdmB, get_cK = False):
     from pyscf.scf import jk
     """ Efficiently computes the Coulomb interaction between molA and molB
         according to the formula cJ = \sum_{i,j, k, l} P_A(i,j)* J_ijkl * P_B(k,l)  
@@ -115,7 +115,7 @@ def getCJCK_BF(molA, molB, tdmA, tdmB, calcK = False):
     cJ = np.einsum('ij,ij->', tdmA, vJ[:molA.nao, :molA.nao])
     
     # (4) Compute Exchange potential matrix (cK) if requested
-    if calcK:
+    if get_cK:
         vK = jk.get_jk(molAB, tdmB, 'ijkl,jk->il', aosym='s1', hermi=0)
         cK = np.einsum('ij,ij->', tdmA, vK[:molA.nao, :molA.nao])
         return cJ, cK  
@@ -147,14 +147,14 @@ def main(molecules, time_idx):
 
     # accelerated computation of coupling
     start_time = time.time()
-    cJ, cK = getCJCK(mols[0], mols[1], tdm[0][0], tdm[1][0], calcK=True)
+    cJ, cK = getCJCK(mols[0], mols[1], tdm[0][0], tdm[1][0], get_cK = False)
     end_time = time.time()
     print(f"Elapsed time for computing the coupling: {end_time - start_time} seconds")
     print(cJ, cK)
 
     # compare to brute-force coupling function
     start_time = time.time()
-    cJ, cK = getCJCK_BF(mols[0], mols[1], tdm[0][0], tdm[1][0], calcK=True)
+    cJ, cK = getCJCK_BF(mols[0], mols[1], tdm[0][0], tdm[1][0], get_cK = False)
     end_time = time.time()
     print(f"Elapsed time for computing the coupling (brute force): {end_time - start_time} seconds")
     print(cJ, cK)
