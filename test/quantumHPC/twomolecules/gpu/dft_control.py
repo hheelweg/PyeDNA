@@ -8,7 +8,7 @@ import numpy as np
 from pyscf import gto, lib
 import io
 import sys
-from joblib import dump
+from joblib import dump, load
 
 # import custom modules
 path_to_modules = '/home/hheelweg/Cy3Cy5/PyCY'

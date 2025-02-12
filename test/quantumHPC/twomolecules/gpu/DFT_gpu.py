@@ -6,7 +6,7 @@ from gpu4pyscf.dft import rks
 import argparse
 import sys
 import cupy as cp
-from joblib import load
+from joblib import load, dump
 
 # import custom modules
 path_to_modules = '/home/hheelweg/Cy3Cy5/PyCY'
@@ -94,6 +94,7 @@ def main(molecule_id, time_idx, do_tddft):
     molecule = [molecule_id]
     #chromophore, chromophore_conv = test.getChromophoreSnapshot(time_idx, molecule, conversion = 'pyscf')
     chromophore_conv = load(f"conv_{molecule_id}.joblib")
+    os.remove(f"conv_{molecule_id}.joblib")
     print(chromophore_conv)
 
     # (2) perform DFT calculation
