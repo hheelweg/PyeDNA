@@ -103,7 +103,7 @@ def main(molecule_id, time_idx, do_tddft):
 
     # (3) dump mol object to cache
     # print('testtt')
-    # dump(mol, f"mol_{molecule_id}.joblib")
+    dump(mol, f"mol_{molecule_id}.joblib")
 
     # (3) optional: do TDDFT calculation based on that result:
     if do_tddft:

@@ -93,15 +93,15 @@ def main(molecules, time_steps, do_tddft):
 
         
         # load and store relevant data from outputs
-        exc, tdms = [], []
+        exc, tdms, mols = [], [], []
         for i, molecule_id in enumerate(molecules):
             data = np.load(io.BytesIO(outputs[i]))
             exc.append(data["exc_energies"])
             tdms.append(data["tdms"])
             # print('testtttttttt')
-            # mol = load(f"mol_{molecule_id}.joblib")
-            # mols.append(mol)
-            # os.remove(f"mol_{molecule_id}.joblib")
+            mol = load(f"mol_{molecule_id}.joblib")
+            mols.append(mol)
+            os.remove(f"mol_{molecule_id}.joblib")
         
         # debug output of DFT/TDDFT
         print(exc[0], exc[1])
