@@ -39,9 +39,8 @@ def getMol(mol_idx, time_idx):
     return mol
 
 
-# NOTE : we here try to compute the coupling
-# compute coupling test-wise
-def getCoupling(molA, molB, tdmA, tdmB, calcK = False):
+# NOTE : fast function to compute coupling terms cJ and cK
+def getCJCK(molA, molB, tdmA, tdmB, calcK = False):
 
     from pyscf.scf import jk, _vhf
 
@@ -56,41 +55,30 @@ def getCoupling(molA, molB, tdmA, tdmB, calcK = False):
     # (2) set of HF infrastucture for fast integral evaluation
     # 'int2e' specifies two-electron integrals, 'CVHFnrs8_prescreen' use prescreen options to reduce computational time
     # key idea : instead of directly computing all (ij∣kl) integrals, PySCF uses prescreening techniques to skip irrelevant terms.
-    vhfopt = _vhf.VHFOpt(mol_AB, 'int2e', 'CVHFnrs8_prescreen',
-                         'CVHFsetnr_direct_scf',
-                         'CVHFsetnr_direct_scf_dm')                    
-    vhfopt.set_dm(dm_AB, mol_AB._atm, mol_AB._bas, mol_AB._env)             # enables denisity-based prescreening
+    vhfopt = _vhf.VHFOpt(mol_AB, 'int2e', 'CVHFnrs8_prescreen', 'CVHFsetnr_direct_scf', 'CVHFsetnr_direct_scf_dm')                    
+    vhfopt.set_dm(dm_AB, mol_AB._atm, mol_AB._bas, mol_AB._env)             # enables density-based prescreening
     vhfopt._dmcondname = None
 
     # (3) compute Coulomb integrals
-    with lib.temporary_env(vhfopt._this.contents,
-                           fprescreen=_vhf._fpointer('CVHFnrs8_vj_prescreen')):
-        shls_slice = (0        , molA.nbas , 0        , molA.nbas,
-                      molA.nbas, mol_AB.nbas, molA.nbas, mol_AB.nbas)  # AABB
-        vJ = jk.get_jk(mol_AB, tdmB, 'ijkl,lk->s2ij', shls_slice=shls_slice,
-                       vhfopt=vhfopt, aosym='s4', hermi=1)
+    with lib.temporary_env(vhfopt._this.contents, fprescreen=_vhf._fpointer('CVHFnrs8_vj_prescreen')):
+        shls_slice = (0, molA.nbas, 0, molA.nbas, molA.nbas, mol_AB.nbas, molA.nbas, mol_AB.nbas) 
+        vJ = jk.get_jk(mol_AB, tdmB, 'ijkl,lk->s2ij', shls_slice=shls_slice, vhfopt=vhfopt, aosym='s4', hermi=1)
         cJ = np.einsum('ia,ia->', vJ, tdmA)
     
     # (4) compute Exchange integrals
     if calcK == True:
-        with lib.temporary_env(vhfopt._this.contents,
-                               fprescreen=_vhf._fpointer('CVHFnrs8_vk_prescreen')):
-            shls_slice = (0        , molA.nbas , molA.nbas, mol_AB.nbas,
-                          molA.nbas, mol_AB.nbas, 0        , molA.nbas)  # ABBA
-            vK = jk.get_jk(mol_AB, tdmB, 'ijkl,jk->il', shls_slice=shls_slice,
-                           vhfopt=vhfopt, aosym='s1', hermi=0)
+        with lib.temporary_env(vhfopt._this.contents, fprescreen=_vhf._fpointer('CVHFnrs8_vk_prescreen')):
+            shls_slice = (0, molA.nbas , molA.nbas, mol_AB.nbas, molA.nbas, mol_AB.nbas, 0, molA.nbas)  
+            vK = jk.get_jk(mol_AB, tdmB, 'ijkl,jk->il', shls_slice=shls_slice, vhfopt=vhfopt, aosym='s1', hermi=0)
             cK = np.einsum('ia,ia->', vK, tdmA)
-            print('test1', cK)
         return cJ, cK
-    
     else: 
         return cJ, 0
 
 
-
-# NOTE : brute force way to compute the Coulomb coupling
+# NOTE : brute force way to compute the electronic coupling terms cJ and cK
 # [with explanation of the individual terms]
-def getCouplingBF(molA, molB, tdmA, tdmB, calcK = False):
+def getCJCK_BF(molA, molB, tdmA, tdmB, calcK = False):
     from pyscf.scf import jk
     """ Efficiently computes the Coulomb interaction between molA and molB
         according to the formula cJ = \sum_{i,j, k, l} P_A(i,j)* J_ijkl * P_B(k,l)  
@@ -130,10 +118,9 @@ def getCouplingBF(molA, molB, tdmA, tdmB, calcK = False):
     if calcK:
         vK = jk.get_jk(molAB, tdmB, 'ijkl,jk->il', aosym='s1', hermi=0)
         cK = np.einsum('ij,ij->', tdmA, vK[:molA.nao, :molA.nao])
-        print('test2', cK)
-        return cJ, cK  # Return both Coulomb and Exchange couplings
+        return cJ, cK  
     else:
-        return cJ, 0  # If `calcK=False`, return 0 for cK
+        return cJ, 0 
 
 
 def main(molecules, time_idx):
@@ -158,21 +145,22 @@ def main(molecules, time_idx):
     # we here only want to use the TDM for the first excited state, i.e. state_id = 0 and therefore use tdm[molecule_id][0]
     # to compute the coupling
 
-    # compute coupling 
+    # accelerated computation of coupling
     start_time = time.time()
-    a, b = getCoupling(mols[0], mols[1], tdm[0][0], tdm[1][0], calcK=True)
+    cJ, cK = getCJCK(mols[0], mols[1], tdm[0][0], tdm[1][0], calcK=True)
     end_time = time.time()
     print(f"Elapsed time for computing the coupling: {end_time - start_time} seconds")
-    print(a, b)
+    print(cJ, cK)
 
-    # compare to my coupling function
+    # compare to brute-force coupling function
     start_time = time.time()
-    a, b = getCouplingBF(mols[0], mols[1], tdm[0][0], tdm[1][0], calcK=True)
+    cJ, cK = getCJCK_BF(mols[0], mols[1], tdm[0][0], tdm[1][0], calcK=True)
     end_time = time.time()
     print(f"Elapsed time for computing the coupling (brute force): {end_time - start_time} seconds")
-    print(a, b)
+    print(cJ, cK)
 
-
+    # NOTE : both ways of computing the couplings lead to the same results
+    # but getCJCK() is much fast than getCJCK_BF(), so we prefer that computational advantage
 
 
 if __name__ == '__main__':
