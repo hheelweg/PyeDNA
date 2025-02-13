@@ -62,7 +62,7 @@ def run_dft_tddft(molecule_id, gpu_id):
 def doQM_gpu(molecules, time_idx, output_keys):
 
     # output dictionary
-    output = {key: [] for key in output_keys}
+    output = {key: [] for key, value in output_keys.items() if value}
 
     # run molecules on different GPUs in parallel
     procs = []
@@ -89,9 +89,11 @@ def doQM_gpu(molecules, time_idx, output_keys):
     return output
 
 # parse output information for QM calculations
-def parseQMOutput(file):
+def parseQMOutput(file, parse_post = False):
+
     # output default parameters
-    default_out = {
+    # TODO : add to this
+    out = {
             "exc" : False,
             "mol" : True,
             "tdm" : True
@@ -100,36 +102,50 @@ def parseQMOutput(file):
     user_out = fp.readParams(file)
 
     # update default settings
-    default_out.update(user_out)
+    out.update(user_out)
 
-    return default_out
+    # split the output parameters into parameters that are relevant only to
+    # conductiong QM (DFT/TDDFT) simulations or to post-processing of the QM results
+    # TODO : add to this
+    qm_outs = {key: out.get(key) for key in ["exc", "mol", "tdm"]}                          # NOTE : only boolean key values
+    post_outs = {key: out.get(key) for key in ["stateA", "stateB", "coupling_type"]}
+
+
+    return qm_outs, post_outs
+
+
+# post-process QM output
+def analyzeQM(qm_output, output_keys):
+    pass
 
 
 def main(molecules, time_steps):
+
+    # output quantities we are interested in
+    qm_output_keys, _ = parseQMOutput('qm_out.params')
 
     # store couplings
     cJs, cKs = [], []
     # store excitation energies
     excs_A, excs_B = [], []
 
-    # output quantities we are interested in
-    out_dict = parseQMOutput('qm_out.params')
-    qm_dict = {key: out_dict.get(key) for key in ["exc", "mol", "tdm", "stateA"]}
-    print(qm_dict)
-    output_keys = [key for key, value in qm_dict.items() if value]
     
-    startT = time.time()
+    startT = time.time()                                                            # track time
+
     for t in range(time_steps):
         print(f"\n Running Time Step {t}...", flush = True)
-        start_time = time.time()
+        start_time = time.time()                                                    # track time for time step
 
         # run QM on two molecules
         # TODO : only implemented for GPU support so far
-        output = doQM_gpu(molecules, t, output_keys)
+        output_qm = doQM_gpu(molecules, t, qm_output_keys)
 
         # print output for debugging
-        print(output['exc'])
+        print(output_qm['exc'])
         
+        # postprocessing of QM output
+
+
         # # compute coupling information and excitation energies
         # stateA, stateB = 0, 0
         # cJ, cK = quantumTools.getV(mols[0], mols[1], tdms[0], tdms[1], stateA=stateA, stateB=stateB, coupling_type='both')
@@ -142,7 +158,9 @@ def main(molecules, time_steps):
         # print(excs_A, excs_B)
 
 
-        end_time = time.time()  # End timing for this step
+
+        # evaluate time 
+        end_time = time.time()                                                      # End timing for this step
         elapsed_time = end_time - start_time
         print(f"Time Step {t} Completed in {elapsed_time:.2f} seconds", flush = True)
 

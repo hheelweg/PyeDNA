@@ -2,3 +2,4 @@
 exc = True
 stateA = 0
 stateB = 0
+coupling = 'electronic'
