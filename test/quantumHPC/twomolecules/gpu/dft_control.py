@@ -97,7 +97,7 @@ def main(molecules, time_steps):
             # exc.append(exc_)
             # tdms.append(tdm_)
             # pyscf mol object
-            mols.append(load(f"mol_{molecule_id}.joblib"))
+            #mols.append(load(f"mol_{molecule_id}.joblib"))
 
         # clean subprocess cache 
         utils.cleanCache()
