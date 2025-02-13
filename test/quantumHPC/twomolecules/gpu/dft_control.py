@@ -81,8 +81,10 @@ def main(molecules, time_steps):
         # wait for both subprocesses to finish and capture their outputs
         outputs = []
         for i, molecule_id in enumerate(molecules):
-            out, _ = procs[i].communicate()
+            out, err= procs[i].communicate()
             outputs.append(out)
+            if err:
+                print("Subprocess STDERR:", err.decode(), flush=True)
 
         # load and store relevant data from output of subprocesses
         exc, tdms, mols = [], [], []
