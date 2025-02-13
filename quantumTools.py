@@ -263,7 +263,7 @@ def parseQMOutput(file, parse_post = False):
     # conductiong QM (DFT/TDDFT) simulations or to post-processing of the QM results
     # TODO : add to this
     qm_outs = {key: out.get(key) for key in ["exc", "mol", "tdm"]}                          # NOTE : only boolean key values
-    post_outs = {key: out.get(key) for key in ["stateA", "stateB", "coupling_type"]}
+    post_outs = {key: out.get(key) for key in ["stateA", "stateB", "coupling"]}
 
     # TODO : add list intialization of quantities we are eventually interested in 
 

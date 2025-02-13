@@ -90,21 +90,14 @@ def doQM_gpu(molecules, time_idx, output_keys):
 
 
 # post-process QM output
-def analyzeQM(qm_output, output_keys):
+def analyzeQM(output_qm, output_keys):
     pass
 
 
 def main(molecules, time_steps):
 
     # output quantities we are interested in
-    qm_output_keys, _ = quantumTools.parseQMOutput('qm_out.params', parse_post=True)
-    print(qm_output_keys, flush = True)
-    output = {key: [] for key, value in qm_output_keys.items() if value}
-    print(output)
-
-    a,b= quantumTools.setQMSettings('qm.params')
-    print(a, flush=True)
-    print(b, flush=True)
+    qm_outs, post_outs = quantumTools.parseQMOutput('qm_out.params', parse_post=True)
 
     # store couplings
     cJs, cKs = [], []
@@ -120,24 +113,29 @@ def main(molecules, time_steps):
 
         # run QM on two molecules
         # TODO : only implemented for GPU support so far
-        output_qm = doQM_gpu(molecules, t, qm_output_keys)
+        output_qm = doQM_gpu(molecules, t, qm_outs)
 
         # print output for debugging
         print(output_qm['exc'])
         
-        # postprocessing of QM output
-
+        # postprocessing of QM output (coupling etc)
+        # TODO : ideally we want this to be incorporated in the analyzeOut() function
 
         # # compute coupling information and excitation energies
-        # stateA, stateB = 0, 0
-        # cJ, cK = quantumTools.getV(mols[0], mols[1], tdms[0], tdms[1], stateA=stateA, stateB=stateB, coupling_type='both')
-        # exc_A, exc_B = exc[0][stateA], exc[1][stateB]
-        # print('cJ', cJ)
-        # cJs.append(cJ)
-        # cKs.append(cK)
-        # excs_A.append(exc_A)
-        # excs_B.append(exc_B)
-        # print(excs_A, excs_B)
+        stateA, stateB = post_outs["stateA"], post_outs["stateB"]
+        coupling = post_outs["coupling"]
+        mols = output_qm["mol"]
+        tdms = output_qm["tdm"]
+        exc = output_qm["exc"]
+
+        cJ, cK = quantumTools.getV(mols[0], mols[1], tdms[0], tdms[1], stateA=stateA, stateB=stateB, coupling_type='both')
+        exc_A, exc_B = exc[0][stateA], exc[1][stateB]
+        print('cJ', cJ)
+        cJs.append(cJ)
+        cKs.append(cK)
+        excs_A.append(exc_A)
+        excs_B.append(exc_B)
+        print(excs_A, excs_B)
 
 
 
