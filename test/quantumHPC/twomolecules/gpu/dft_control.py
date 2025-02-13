@@ -83,7 +83,7 @@ def main(molecules, time_steps):
         for i, molecule_id in enumerate(molecules):
             out, _= procs[i].communicate()
             if out:
-                print("SUBPROCESS STDOUT:\n", out, flush=True)
+                print("SUBPROCESS STDOUT:\n", out.decode('utf-8'), flush=True)
             outputs.append(out)
 
         # load and store relevant data from output of subprocesses
