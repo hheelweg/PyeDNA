@@ -56,7 +56,7 @@ def main():
     # time slices we are interested in
     time_slice = [0, 1]
     test.analyzeTrajectory(molecules, time_slice, **traj_info)
-    print(test.qm_outs)
+    
 
 
 

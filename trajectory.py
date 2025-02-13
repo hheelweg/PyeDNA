@@ -51,13 +51,16 @@ class Trajectory():
         self.out = trajectory[2]                                        # load *.out file
         # make sure *.nc file is NetCDF3 (as required for MDAnalysis) and not NetCDF4 (as created by Amber)
         self.convertTrajectory()
+
         # create MD analysis object
         self.trajectory_u = mda.Universe(path + self.prmtop, path + self.nc)
         self.num_frames = self.trajectory_u.trajectory.n_frames         # number of frames in trajectory
+
         # load MDSimulation object which contains all information
         self.MD = MDsim                             # TODO : do we need this?
         if not isinstance(self.MD, MDSimulation):
             raise ValueError("MDsim needs to be instance of MDSimulation class!")
+        
         # TODO : make this more flexible
         # parse output information for QM and MD simulations
         self.qm_outs, self.post_outs = qm.parseQMOutput(path + 'qm_out.params', parse_post=True)
@@ -180,6 +183,10 @@ class Trajectory():
             # molecule_mf, occ_orbits, virt_orbits = qm.doDFT(self.chromophores_conv[mol_idx])
             # # (2.2) perform TDDFT computation
             # exc_energies, trans_dipoles, osc_strengths, tdms, osc_idx = qm.doTDDFT(molecule_mf, occ_orbits, virt_orbits)
+
+            # NOTE : test-wise DFT/TDDFT calculation
+            print('test output', flush = True)
+            output_qm = self.doQM_gpu(self.chromophores_conv, self.qm_outs)
 
 
         

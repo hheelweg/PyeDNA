@@ -11,6 +11,11 @@ import quantumTools, structure
 import trajectory as traj
 import const
 
+# TODO : we manually set the path to the input scrips here, but ideally
+# we want to use the path from where this script is being executed
+path_to_files = '/home/hheelweg/Cy3Cy5/PyCY/test/prod'
+sys.path.append(path_to_files)
+
 
 def main(molecule_id):
 
