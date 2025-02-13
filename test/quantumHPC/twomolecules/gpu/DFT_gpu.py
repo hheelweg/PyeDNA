@@ -46,6 +46,7 @@ if __name__ == "__main__":
     a = np.array([1,2,3])
     b = np.array([1,2,3,4])
     print(f'abc {a}', flush=True)
+    sys.stdout.flush()
 
     # # write array output to binary stream
     # np.savez(sys.stdout.buffer, exc_energies = exc_energies, tdms = tdms)
