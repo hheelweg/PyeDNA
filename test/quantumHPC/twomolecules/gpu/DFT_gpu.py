@@ -17,10 +17,10 @@ import dft_control
 def main(molecule_id):
 
     # (0) set settings for QM (DFT/TDDFT) calculation
-    settings_dft, settings_tddft = quantumTools.setQMSettings('qm.params')
+    settings_dft, settings_tddft, setting = quantumTools.setQMSettings('qm.params')
 
     # (0) load desired outputs
-    #qm_outs = dft_control.parseQMOutput('qm_out.params')
+    qm_outs = dft_control.parseQMOutput('qm_out.params')
 
     # (1) load chromophore pyscf input from cache
     chromophore_conv = load(f"input_{molecule_id}.joblib")
@@ -32,7 +32,7 @@ def main(molecule_id):
     dump(mol, f"mol_{molecule_id}.joblib")
 
     # (4) optional: do TDDFT calculation based on that result:
-    if settings_tddft.pop("do_tddft", False):
+    if setting["do_tddft"]:
         exc_energies, tdms = quantumTools.doTDDFT_gpu(mf, occ, virt, **settings_tddft)
 
         # output TDDFT quantities of interest
