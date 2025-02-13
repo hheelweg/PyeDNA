@@ -75,7 +75,7 @@ def main(molecules, time_steps):
             # create pyscf input for subprocess and store in cache
             dump(getMol(molecule_id, t), f"input_{molecule_id}.joblib")
             # run subprocess
-            procs.append(run_dft_tddft(molecule_id, gpu_id = i, do_tddft=do_tddft))                
+            procs.append(run_dft_tddft(molecule_id, gpu_id = i))                
 
         # wait for both subprocesses to finish and capture their outputs
         outputs = []
