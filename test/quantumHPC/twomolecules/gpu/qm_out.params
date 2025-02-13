@@ -3,5 +3,5 @@
 exc = True
 # post-processing across trajectory 
 stateA = 0
-stateB = 0
+stateB = 1
 coupling = 'both'

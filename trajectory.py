@@ -50,7 +50,8 @@ class Trajectory():
         self.nc = trajectory[1]                                         # load *.nc from Amber MD simulation
         self.out = trajectory[2]                                        # load *.out file
         # make sure *.nc file is NetCDF3 (as required for MDAnalysis) and not NetCDF4 (as created by Amber)
-        self.convertTrajectory()
+        # TODO : we commented this out for debugging purposes, but need to change it back eventually
+        # self.convertTrajectory()
 
         # create MD analysis object
         self.trajectory_u = mda.Universe(path + self.prmtop, path + self.nc)
@@ -66,6 +67,13 @@ class Trajectory():
         self.qm_outs, self.outs = parseQMOutput(path + 'qm_out.params', parse_post=True)
         print(self.outs)
 
+
+    # initialize output based on desired output parameters 
+    def initOutput(self):
+        # (1) define QM states we are interested in (0-indexed)
+        self.stateA, self.stateB = self.outs["stateA"], self.outs["stateB"]
+
+        print(self.stateA, self.stateB)
 
 
     # get MDAnalysis object of specified residues at specified time slice
