@@ -233,10 +233,9 @@ def setQMSettings(file):
 
     # split into dictionaries for keys related to DFT and TDDFT
     settings_dft = {key: qm_settings[key] for key in ["basis", "xc", "density_fit", "charge", "spin", "scf_cycles", "verbosity"]}
-    settings_tddft = {key: qm_settings[key] for key in ["state_ids", "TDA"]}
-    setting = {key: qm_settings[key] for key in ["do_tddft"]}
+    settings_tddft = {key: qm_settings[key] for key in ["state_ids", "TDA", "do_tddft"]}
 
-    return settings_dft, settings_tddft, setting
+    return settings_dft, settings_tddft
 
 
 # perform DFT calculation on molecule

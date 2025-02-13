@@ -131,10 +131,9 @@ def main(molecules, time_steps):
     output = {key: [] for key, value in qm_output_keys.items() if value}
     print(output)
 
-    a,b,c = quantumTools.setQMSettings('qm.params')
+    a,b= quantumTools.setQMSettings('qm.params')
     print(a, flush=True)
     print(b, flush=True)
-    print(c, flush=True)
 
     # store couplings
     cJs, cKs = [], []

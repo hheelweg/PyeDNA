@@ -17,7 +17,7 @@ import const
 def main(molecule_id):
 
     # (0) set settings for QM (DFT/TDDFT) calculation
-    settings_dft, settings_tddft, setting = quantumTools.setQMSettings('qm.params')
+    settings_dft, settings_tddft = quantumTools.setQMSettings('qm.params')
 
     # (0) load desired outputs
     #qm_outs = dft_control.parseQMOutput('qm_out.params')
@@ -32,7 +32,7 @@ def main(molecule_id):
     dump(mol, f"mol_{molecule_id}.joblib")
 
     # (4) optional: do TDDFT calculation based on that result:
-    if setting["do_tddft"]:
+    if settings_tddft.pop("do_tddft", False):
         exc_energies, tdms = quantumTools.doTDDFT_gpu(mf, occ, virt, **settings_tddft)
 
         # output TDDFT quantities of interest
