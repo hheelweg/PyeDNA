@@ -1,7 +1,12 @@
 # specify output parameters for QM calculations
 # booloean DFT/TDDFT parameters that are outputted per molecules
 exc = True
-# post-processing across trajectory 
+# QM post-processing along trajectory 
 stateA = 0
 stateB = 1
+# try to incorporate multiple transitions
+transitions = [[0, 1], [1,0]]
 coupling = 'both'
+# MD post-processing along trajectory
+distance_mols = True
+distance_type = cog

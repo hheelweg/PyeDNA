@@ -7,9 +7,8 @@ import MDAnalysis as mda
 import re
 import structure
 import quantumTools as qm
-import multiprocessing
-import utils
 import time
+import pandas as pd
 
 
 
@@ -70,10 +69,24 @@ class Trajectory():
 
     # initialize output based on desired output parameters 
     def initOutput(self):
-        # (1) define QM states we are interested in (0-indexed)
-        self.stateA, self.stateB = self.outs["stateA"], self.outs["stateB"]
+        # (1) define QM states we are interested in (0-indexed), i.e. (S_0^A , S_{stateB + 1}^B) <--> (S_{stateA + 1}^A, S_0^B)
+        # TODO : maybe feed multiple of state pairs here to have more things to examine
+        self.states= [self.outs["stateA"], self.outs["stateB"]]
+        self.transitions = self.outs["transitions"]
+        print('transitions', self.transitions)
 
-        print('states', self.stateA, self.stateB)
+        # (2) which trajectory-ensemble outputs are we interested in:
+        # (2.1) classical MD output parameters:
+
+        # (2.2) QM-based output parameters:
+        if self.outs["coupling"] == 'both':
+            pass
+
+    
+    # initialize molecules of shape [molecule_A, molecule_B] where molecule_A/B list with residue indices
+    # TODO : add check whether molecule is actually valid (consecutive integers etc.)
+    def initMolecules(self, molecules):
+        self.molecules
 
 
     # get MDAnalysis object of specified residues at specified time slice
@@ -116,18 +129,20 @@ class Trajectory():
 
     # analyze trajectory based on specific molecules of interest
     def analyzeTrajectory(self, molecules, time_slice = None, **params):
-        # (1) unpack arguments, i.e. quantities of interest for the trajectory
+        # (0) unpack arguments, i.e. quantities of interest for the trajectory
         # TODO : make this more flexible and stream-line this better
         conversion = params['conversion']
         
-        # (2) time range of interest: time_slice = [idx_start, idx_end]
+        # (1) time range of interest: time_slice = [idx_start, idx_end]
         # TODO : change this to actual time and not just frame index
         if time_slice is None:                                          # study the whole trajectory
             self.time_slice = [0, self.num_frames - 1]
         else:
             self.time_slice = time_slice
 
-        # initialize output
+        # (2) initialize molecules of interest
+        self.initMolecules(molecules)
+        # (2) intialize output of interest
         self.initOutput()
 
         # (3) analyze trajectory
@@ -140,7 +155,7 @@ class Trajectory():
             # # (1) get Chromophores of interest 
             # self.chromophores = []
             # self.chromophores_conv = []
-            # for molecule in molecules:
+            # for molecule in self.molecules:
             #     chromophore, chromophore_conv = self.getChromophoreSnapshot(idx, molecule, conversion)
             #     self.chromophores.append(chromophore)
             #     self.chromophores_conv.append(chromophore_conv)
@@ -343,7 +358,7 @@ def parseQMOutput(file, parse_post = False):
     # conductiong QM (DFT/TDDFT) simulations or to post-processing of the QM results
     # TODO : add to this
     qm_outs = {key: out.get(key) for key in ["exc", "mol", "tdm"]}                          # NOTE : only boolean key values
-    post_outs = {key: out.get(key) for key in ["stateA", "stateB", "coupling"]}
+    post_outs = {key: out.get(key) for key in ["stateA", "stateB", "coupling", "transitions", "distance_mols", "distance_type"]}
 
     # TODO : add list intialization of quantities we are eventually interested in 
 
