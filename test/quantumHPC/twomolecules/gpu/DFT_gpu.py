@@ -15,10 +15,10 @@ import const
 def main(molecule_id):
 
     # (0) set settings for QM (DFT/TDDFT) calculation
-    settings_dft, settings_tddft = quantumTools.setQMSettings('qm.params')
+    settings_dft, settings_tddft = traj.setQMSettings('qm.params')
 
     # (0) load output information
-    output_keys = quantumTools.parseQMOutput('qm_out.params')
+    output_keys = traj.parseQMOutput('qm_out.params')
     # intialize value dict for storing outputs
     values = {key: None for key in output_keys}
 

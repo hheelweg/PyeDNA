@@ -64,7 +64,8 @@ class Trajectory():
         
         # TODO : make this more flexible
         # parse output information for QM and MD simulations
-        self.qm_outs, self.post_outs = qm.parseQMOutput(path + 'qm_out.params', parse_post=True)
+        self.qm_outs, self.post_outs = parseQMOutput(path + 'qm_out.params', parse_post=True)
+
 
 
     # get MDAnalysis object of specified residues at specified time slice
@@ -166,7 +167,7 @@ class Trajectory():
         for idx in range(self.time_slice[0], self.time_slice[1] + 1):
 
             start_time = time.time()
-            print(f"** Running Time Step {idx} ...")
+            print(f"*** Running Time Step {idx} ...")
 
             # (1) get Chromophores of interest 
             self.chromophores = []
@@ -176,18 +177,11 @@ class Trajectory():
                 self.chromophores.append(chromophore)
                 self.chromophores_conv.append(chromophore_conv)
 
+
             # (2) get distance between chromophores:
             # distances.append(self.getDistance(self.chromophores[0], self.chromophores[1]))
 
-
             # # (2) analyze with respect to quantities of interest
-            # # TODO : improve this based on **params:
-            # mol_idx = 0
-            # # (2.1) perform DFT computation
-            # molecule_mf, occ_orbits, virt_orbits = qm.doDFT(self.chromophores_conv[mol_idx])
-            # # (2.2) perform TDDFT computation
-            # exc_energies, trans_dipoles, osc_strengths, tdms, osc_idx = qm.doTDDFT(molecule_mf, occ_orbits, virt_orbits)
-
             # NOTE : test-wise DFT/TDDFT calculation
             print('test output', flush = True)
             output_qm = self.doQM_gpu(self.chromophores_conv, self.qm_outs)
@@ -316,8 +310,72 @@ class Trajectory():
             plt.legend()
             plt.show()
     
+    
+    
 
 
+# set parameters for QM (DFT/TDDFT) simulation
+# TODO : allow file not to exist without problem
+def setQMSettings(file):
+    # default settings
+    qm_settings = {
+        "basis": "6-31g",
+        "xc": "b3lyp",
+        "density_fit": False,
+        "charge": 0,
+        "spin": 0,
+        "scf_cycles": 200,
+        "verbosity": 4,
+        "state_ids": [0],
+        "TDA": True,
+        "gpu": True,
+        "do_tddft": True
+    }
 
+    # read in user parameters from file
+    user_params = fp.readParams(file)
+
+    # update default parameters
+    qm_settings.update(user_params)
+
+    # split into dictionaries for keys related to DFT and TDDFT
+    settings_dft = {key: qm_settings[key] for key in ["basis", "xc", "density_fit", "charge", "spin", "scf_cycles", "verbosity"]}
+    settings_tddft = {key: qm_settings[key] for key in ["state_ids", "TDA", "do_tddft"]}
+
+    return settings_dft, settings_tddft
             
+# parse output information for QM calculations
+# TODO : allow file not to exist without problem
+def parseQMOutput(file, parse_post = False):
 
+    # output default parameters
+    # TODO : add to this
+    out = {
+            "exc" : False,
+            "mf"  : False,
+            "occ" : False,
+            "virt": False,
+            "mol" : True,
+            "tdm" : True,
+            "dip" : False,
+            "osc" : False,
+            "idx" : False
+    }
+    # specify user parameters
+    user_out = fp.readParams(file)
+
+    # update default settings
+    out.update(user_out)
+
+    # split the output parameters into parameters that are relevant only to
+    # conductiong QM (DFT/TDDFT) simulations or to post-processing of the QM results
+    # TODO : add to this
+    qm_outs = {key: out.get(key) for key in ["exc", "mol", "tdm"]}                          # NOTE : only boolean key values
+    post_outs = {key: out.get(key) for key in ["stateA", "stateB", "coupling"]}
+
+    # TODO : add list intialization of quantities we are eventually interested in 
+
+    if parse_post:
+        return qm_outs, post_outs
+    else:
+        return qm_outs
