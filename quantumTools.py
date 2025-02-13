@@ -7,6 +7,9 @@ import const
 import subprocess
 import scipy
 import fileProcessing as fp
+from joblib import dump, load
+import os
+import utils
 
 
 # optimize molecular structure from *.xyz file into optimized structure in *.pdb file
@@ -348,6 +351,53 @@ def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = Tru
 
     # return numpy arrays
     return np.array(exc_energies), np.array([tdm.get() for tdm in tdms]), np.array(trans_dipoles), np.array(osc_strengths), osc_idx
+
+
+# NOTE : function that calls python ssubprocess to perform DFT/TDDFT on individual GPUs with PySCF
+# TODO : make this more flexible with regards to the path where the launcher (DFT_gpu.py) is
+def launchQM_gpu(molecule_no, gpu_id):
+    """Launch a DFT/TDDFT calculation on a specific GPU."""
+    env = os.environ.copy()
+    env["CUDA_VISIBLE_DEVICES"] = str(gpu_id)  # Assign GPU
+
+    cmd = f"python /home/hheelweg/Cy3Cy5/PyCY/DFT_gpu.py {molecule_no}"
+    process = subprocess.Popen(cmd, env=env, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)        
+
+    return process
+
+
+# do PySCF on molecules = [mol1, mol2] where mol are the nuclear coordinates for PySCF calculations
+# TODO : make this also without GPU-support depending on the available resources
+def doQM_gpu(molecules, output_keys):
+
+    # (0) initialize output dictionary for quantities of interest
+    # [] stores data for both molecules in a list-type fashion
+    output = {key: [] for key, value in output_keys.items() if value}
+
+    # (1)run molecules on different GPUs in parallel
+    procs = []
+    for i, molecule in enumerate(molecules):
+        # create pyscf input for subprocess and store in cache
+        dump(molecule, f"input_{i}.joblib")
+        # run subprocess
+        procs.append(launchQM_gpu(i, gpu_id = i))
+    
+    # wait for both subprocesses to finish
+    for i, molecule in enumerate(molecules):
+        procs[i].wait()
+
+    # (2) load and store relevant data from output of subprocesses
+    # TODO : flexibilize this for quantities we are interested in
+    for i, molecule in enumerate(molecules):
+        for key in output_keys:
+            output[key].append(load(f"{key}_{i}.joblib"))
+
+    # (3) clean subprocess cache 
+    utils.cleanCache()
+
+    return output
+
+
 
 
 # coupling terms for the computation cJ and cK 

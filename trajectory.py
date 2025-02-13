@@ -8,7 +8,6 @@ import re
 import structure
 import quantumTools as qm
 import multiprocessing
-from joblib import dump, load
 import utils
 import time
 
@@ -105,49 +104,6 @@ class Trajectory():
         return molecule_conv
     
 
-    # NOTE : function that calls python ssubprocess to perform DFT/TDDFT on individual GPUs with PySCF
-    # TODO : make this more flexible with regards to the path where the launcher (DFT_gpu.py) is
-    def launchQM(self, molecule_no, gpu_id):
-        """Launch a DFT/TDDFT calculation on a specific GPU."""
-        env = os.environ.copy()
-        env["CUDA_VISIBLE_DEVICES"] = str(gpu_id)  # Assign GPU
-
-        cmd = f"python /home/hheelweg/Cy3Cy5/PyCY/DFT_gpu.py {molecule_no}"
-        process = subprocess.Popen(cmd, env=env, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)        
-
-        return process
-
-
-    # do PySCF on molecules = [mol1, mol2] where mol are the nuclear coordinates for PySCF calculations
-    def doQM_gpu(self, molecules, output_keys):
-
-        # (0) initialize output dictionary for quantities of interest
-        # [] stores data for both molecules in a list-type fashion
-        output = {key: [] for key, value in output_keys.items() if value}
-
-        # (1)run molecules on different GPUs in parallel
-        procs = []
-        for i, molecule in enumerate(molecules):
-            # create pyscf input for subprocess and store in cache
-            dump(molecule, f"input_{i}.joblib")
-            # run subprocess
-            procs.append(self.launchQM(i, gpu_id = i))
-        
-        # wait for both subprocesses to finish
-        for i, molecule in enumerate(molecules):
-            procs[i].wait()
-
-        # (2) load and store relevant data from output of subprocesses
-        # TODO : flexibilize this for quantities we are interested in
-        for i, molecule in enumerate(molecules):
-            for key in output_keys:
-                output[key].append(load(f"{key}_{i}.joblib"))
-
-        # (3) clean subprocess cache 
-        utils.cleanCache()
-
-        return output
-
 
     # analyze trajectory based on specific molecules of interest
     def analyzeTrajectory(self, molecules, time_slice = None, **params):
@@ -184,7 +140,8 @@ class Trajectory():
             # # (2) analyze with respect to quantities of interest
             # NOTE : test-wise DFT/TDDFT calculation
             print('test output', flush = True)
-            output_qm = self.doQM_gpu(self.chromophores_conv, self.qm_outs)
+            output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs)
+            print(output_qm['exc'])
 
 
             # take time
