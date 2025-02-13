@@ -72,11 +72,16 @@ class Trajectory():
         # (1) define QM states we are interested in (0-indexed), i.e. (S_0^A , S_{stateB + 1}^B) <--> (S_{stateA + 1}^A, S_0^B)
         # TODO : maybe feed multiple of state pairs here to have more things to examine
         self.states= [self.outs["stateA"], self.outs["stateB"]]
+        # this might be the best way forward
         self.transitions = self.outs["transitions"]
         print('transitions', self.transitions)
+        print('no of transitions', len(self.transitions))
+
+        # TODO: make two df's (one for classical output, one for quantum output) 
 
         # (2) which trajectory-ensemble outputs are we interested in:
         # (2.1) classical MD output parameters:
+
 
         # (2.2) QM-based output parameters:
         if self.outs["coupling"] == 'both':
