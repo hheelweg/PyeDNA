@@ -10,6 +10,7 @@ import quantumTools as qm
 import multiprocessing
 from joblib import dump, load
 import utils
+import time
 
 
 
@@ -164,6 +165,9 @@ class Trajectory():
         # distances = []
         for idx in range(self.time_slice[0], self.time_slice[1] + 1):
 
+            start_time = time.time()
+            print(f"** Running Time Step {idx} ...")
+
             # (1) get Chromophores of interest 
             self.chromophores = []
             self.chromophores_conv = []
@@ -189,7 +193,9 @@ class Trajectory():
             output_qm = self.doQM_gpu(self.chromophores_conv, self.qm_outs)
 
 
-        
+            # take time
+            end_time = time.time()
+            print(f"Elpased time for time step {idx}: {end_time- start_time} seconds")
 
 
 

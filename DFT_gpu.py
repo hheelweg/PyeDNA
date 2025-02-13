@@ -14,7 +14,8 @@ import const
 # TODO : we manually set the path to the input scrips here, but ideally
 # we want to use the path from where this script is being executed
 path_to_files = '/home/hheelweg/Cy3Cy5/PyCY/test/prod'
-sys.path.append(path_to_files)
+execution_path = os.getcwd()
+sys.path.append(execution_path)
 
 
 def main(molecule_id):
@@ -52,16 +53,5 @@ if __name__ == "__main__":
 
     # run main
     main(args.molecule_id)
-    
-    # # NOTE : write array output to binary stream
-    # np.savez(sys.stdout.buffer, exc_energies = exc_energies, tdms = tdms)
-    # sys.stdout.flush()
-
-
-    # # TODO : we only have this for debugging purposes where we actually need the TDMs so that 
-    # # we don't have to run DFT/TDDFT over and over again
-    # # save arrays to file for debugging
-    # filename = f"output_{args.molecule_id}.npz"
-    # np.savez(filename, exc_energies = exc_energies, tdms = tdms)
 
 
