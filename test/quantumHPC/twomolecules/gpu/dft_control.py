@@ -89,6 +89,7 @@ def main(molecules, time_steps):
         for i, molecule_id in enumerate(molecules):
             # array-type data
             print('output', type(outputs[i]), flush = True)
+            print('output', len(outputs[i]), flush = True)
             data = np.load(io.BytesIO(outputs[i]))
             exc.append(data["exc_energies"])
             tdms.append(data["tdms"])
