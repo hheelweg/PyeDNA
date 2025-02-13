@@ -65,7 +65,7 @@ def doQM(molecules, time_idx, output_keys):
     output = {key: [] for key in output_keys}
 
     # run molecules on different GPUs in parallel
-    procs, = []
+    procs = []
     for i, molecule_id in enumerate(molecules):
         # create pyscf input for subprocess and store in cache
         dump(getMol(molecule_id, time_idx), f"input_{molecule_id}.joblib")
