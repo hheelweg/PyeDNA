@@ -64,6 +64,7 @@ class Trajectory():
         # TODO : make this more flexible
         # parse output information for QM and MD simulations
         self.qm_outs, self.outs = parseQMOutput(path + 'qm_out.params', parse_post=True)
+        print(self.qm_outs)
         print(self.outs)
 
 
@@ -72,7 +73,7 @@ class Trajectory():
         # (1) define QM states we are interested in (0-indexed)
         self.stateA, self.stateB = self.outs["stateA"], self.outs["stateB"]
 
-        print(self.stateA, self.stateB)
+        print('states', self.stateA, self.stateB)
 
 
     # get MDAnalysis object of specified residues at specified time slice
