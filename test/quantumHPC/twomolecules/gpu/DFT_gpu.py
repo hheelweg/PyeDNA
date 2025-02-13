@@ -11,7 +11,7 @@ import quantumTools, structure
 import trajectory as traj
 import const
 # NOTE : only add this temporarily for debugging purposes
-#import dft_control
+import dft_control
 
 
 def main(molecule_id):
@@ -32,12 +32,12 @@ def main(molecule_id):
     dump(mol, f"mol_{molecule_id}.joblib")
 
     # (4) optional: do TDDFT calculation based on that result:
-    #if settings_tddft["do_tddft"]:
-    exc_energies, tdms = quantumTools.doTDDFT_gpu(mf, occ, virt, **settings_tddft)
-    
-    # output TDDFT quantities of interest
-    dump(exc_energies, f"exc_{args.molecule_id}.joblib")
-    dump(tdms, f"tdm_{args.molecule_id}.joblib")
+    if settings_tddft.pop("do_tddft", False):
+        exc_energies, tdms = quantumTools.doTDDFT_gpu(mf, occ, virt, **settings_tddft)
+
+        # output TDDFT quantities of interest
+        dump(exc_energies, f"exc_{args.molecule_id}.joblib")
+        dump(tdms, f"tdm_{args.molecule_id}.joblib")
 
 
 if __name__ == "__main__":
