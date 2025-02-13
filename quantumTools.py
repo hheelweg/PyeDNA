@@ -208,6 +208,7 @@ def optimizeStructureSymmetryFF(path, moleculeNamePDB, stepsNo = 50000, econv = 
 # functions e.g. for analyzing MD trajectories
 
 # set parameters for QM (DFT/TDDFT) simulation
+# TODO : allow file not to exist without problem
 def setQMSettings(file):
     # default settings
     qm_defaults = {
@@ -220,9 +221,10 @@ def setQMSettings(file):
         "verbosity": 4,
         "state_ids": [0],
         "TDA": True,
-        "run_gpu": True
+        "gpu": True,
+        "do_tddft": True
     }
-    print()
+
     # read in user parameters from file
     user_params = fp.readQMparams(file)
 

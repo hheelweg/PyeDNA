@@ -62,12 +62,6 @@ def run_dft_tddft(molecule_id, gpu_id, do_tddft):
 
 def main(molecules, time_steps, do_tddft):
 
-    # specify DFT/TDDFT parameters in parameter file
-    sys.path.append(os.getcwd())                                # append current working directory to path
-    settings = quantumTools.setQMSettings('qm.params')          # read in params
-    print(settings, flush = True)
-
-
     # store couplings
     cJs, cKs = [], []
     # store excitation energies

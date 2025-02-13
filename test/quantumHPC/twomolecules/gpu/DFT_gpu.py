@@ -14,12 +14,18 @@ import const
 
 def main(molecule_id, do_tddft):
 
+    # (0) set settings for QM (DFT/TDDFT) calculation
+    settings = quantumTools.setQMSettings('qm.params')
+    settings_dft = {key: settings[key] for key in ["basis", "xc", "density_fit", "charge", "spin", "scf_cycles", "verbosity"]}
+    print(settings_dft, flush = True)
+    settings_tddft = {key: settings[key] for key in ["state_ids", "TDA"]}
+    print('do ttttt', settings['do_tddft'])
+    
     # (1) load chromophore pyscf input from cache
     chromophore_conv = load(f"input_{molecule_id}.joblib")
-    #os.remove(f"input_{molecule_id}.joblib")
 
     # (2) perform DFT calculation
-    mol, mf, occ, virt = quantumTools.doDFT_gpu(chromophore_conv, density_fit=False, verbosity=0)
+    mol, mf, occ, virt = quantumTools.doDFT_gpu(chromophore_conv, **settings_dft)
 
     # (3) dump mol object to cache
     dump(mol, f"mol_{molecule_id}.joblib")
@@ -27,7 +33,7 @@ def main(molecule_id, do_tddft):
     # (3) optional: do TDDFT calculation based on that result:
     if do_tddft:
         state_ids = [0, 1, 2]                               # might want to add more states
-        exc_energies, tdms = quantumTools.doTDDFT_gpu(mf, occ, virt, state_ids, TDA=True)
+        exc_energies, tdms = quantumTools.doTDDFT_gpu(mf, occ, virt, **settings_tddft)
         return exc_energies, tdms
 
 
