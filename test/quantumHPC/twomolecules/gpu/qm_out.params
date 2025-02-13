@@ -1,5 +1,7 @@
 # specify output parameters for QM calculations
+# booloean DFT/TDDFT parameters
 exc = True
 stateA = 0
 stateB = 0
+# post-processing across trajectory
 coupling = 'electronic'
