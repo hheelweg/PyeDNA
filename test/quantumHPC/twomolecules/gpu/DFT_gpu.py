@@ -30,9 +30,9 @@ def main(molecule_id):
 
     # (3) optional: do TDDFT calculation based on that result:
     # print(settings['do_tddft'])
-    # if settings['do_tddft']:
-    exc_energies, tdms = quantumTools.doTDDFT_gpu(mf, occ, virt, **settings_tddft)
-    return exc_energies, tdms
+    if settings['do_tddft']:
+        exc_energies, tdms = quantumTools.doTDDFT_gpu(mf, occ, virt, **settings_tddft)
+        return exc_energies, tdms
 
 
 if __name__ == "__main__":
@@ -43,18 +43,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     exc_energies, tdms = main(args.molecule_id)
-    # a = np.array([1,2,3])
-    # b = np.array([1,2,3,4])
-    # print(f'abc {exc_energies}', flush=True)
     dump(exc_energies, f"exc_{args.molecule_id}.joblib")
-    dump(tdms, f"tdms_{args.molecule_id}.joblib")
+    dump(tdms, f"tdm_{args.molecule_id}.joblib")
 
-    # # write array output to binary stream
+    # # NOTE : write array output to binary stream
     # np.savez(sys.stdout.buffer, exc_energies = exc_energies, tdms = tdms)
     # sys.stdout.flush()
-    # np.savez(sys.stdout.buffer, exc_energies = a, tdms = b)
-    # sys.stdout.flush()
-    
 
 
     # # TODO : we only have this for debugging purposes where we actually need the TDMs so that 

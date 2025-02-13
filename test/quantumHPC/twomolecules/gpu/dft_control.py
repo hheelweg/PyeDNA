@@ -86,16 +86,9 @@ def main(molecules, time_steps):
 
         # load and store relevant data from output of subprocesses
         exc, tdms, mols = [], [], []
-        print('test')
         for i, molecule_id in enumerate(molecules):
-            # array-type data
-            # data = np.load(io.BytesIO(outputs[i]))
-            # print(data["exc_energies"], data["tdms"])
-            # exc.append(data["exc_energies"])
-            # tdms.append(data["tdms"])
             exc.append(load(f"exc_{molecule_id}.joblib"))
-            tdms.append(load(f"tdms_{molecule_id}.joblib"))
-            # pyscf mol object
+            tdms.append(load(f"tdm_{molecule_id}.joblib"))
             mols.append(load(f"mol_{molecule_id}.joblib"))
 
         # clean subprocess cache 
