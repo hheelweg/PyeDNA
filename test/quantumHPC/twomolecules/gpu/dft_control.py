@@ -78,11 +78,9 @@ def main(molecules, time_steps):
             # run subprocess
             procs.append(run_dft_tddft(molecule_id, gpu_id = i))                
 
-        # wait for both subprocesses to finish and capture their outputs
-        outputs = []
+        # wait for both subprocesses to finish
         for i, molecule_id in enumerate(molecules):
-            out, _= procs[i].communicate()
-            outputs.append(out)
+            procs[i].wait()
 
         # load and store relevant data from output of subprocesses
         exc, tdms, mols = [], [], []

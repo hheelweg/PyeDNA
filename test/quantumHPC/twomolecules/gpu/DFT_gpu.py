@@ -28,7 +28,7 @@ def main(molecule_id):
     # (3) dump mol object to cache
     dump(mol, f"mol_{molecule_id}.joblib")
 
-    # (3) optional: do TDDFT calculation based on that result:
+    # (4) optional: do TDDFT calculation based on that result:
     if settings['do_tddft']:
         exc_energies, tdms = quantumTools.doTDDFT_gpu(mf, occ, virt, **settings_tddft)
         
