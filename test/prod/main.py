@@ -26,12 +26,13 @@ if num_gpus < 2:
 
 
 
-def main(molecules, time_steps):
+def main():
 
     # TODO: write class for MD simulation
     params = []
     MDsim = traj.MDSimulation(params)
 
+    # input data
     path = './test/prod/'
     name_prmtop = 'dna_test.prmtop'
     name_nc = 'dna_test_prod.nc'                          # need to NetCDF3 and not NetCDF4 (use cpptraj to convert)
