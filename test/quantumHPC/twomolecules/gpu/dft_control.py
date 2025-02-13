@@ -87,7 +87,7 @@ def main(molecules, time_steps):
         exc, tdms, mols = [], [], []
         for i, molecule_id in enumerate(molecules):
             # array-type data
-            data = np.load(io.BytesIO(outputs[i]), allow_pickle=True)
+            data = np.load(io.BytesIO(outputs[i]))
             exc.append(data["exc_energies"])
             tdms.append(data["tdms"])
             # pyscf mol object

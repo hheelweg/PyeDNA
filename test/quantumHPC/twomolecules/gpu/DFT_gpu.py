@@ -29,16 +29,17 @@ def main(molecule_id):
     dump(mol, f"mol_{molecule_id}.joblib")
 
     # (3) optional: do TDDFT calculation based on that result:
-    #if settings['do_tddft']:
-    exc_energies, tdms = quantumTools.doTDDFT_gpu(mf, occ, virt, **settings_tddft)
-    return exc_energies, tdms
+    print(settings['do_tddft'])
+    if settings['do_tddft']:
+        exc_energies, tdms = quantumTools.doTDDFT_gpu(mf, occ, virt, **settings_tddft)
+        return exc_energies, tdms
 
 
 if __name__ == "__main__":
 
     # parse arguments from command line
     parser = argparse.ArgumentParser(description="Run DFT and optional TDDFT simulations on molecule")
-    parser.add_argument("molecule_id", type=int, help="Molecule 1 ID (integer)")                # specifies residue name of molecule
+    parser.add_argument("molecule_id", type=int, help="Molecule ID (integer)")                              # specifies residue name of molecule
     args = parser.parse_args()
 
     exc_energies, tdms = main(args.molecule_id)
@@ -47,8 +48,8 @@ if __name__ == "__main__":
     np.savez(sys.stdout.buffer, exc_energies = exc_energies, tdms = tdms)
     sys.stdout.flush()
 
-    # TODO : we only have this for debugging purposes where we actually need the TDMs so that 
-    # we don't have to run DFT/TDDFT over and over again
+    # # TODO : we only have this for debugging purposes where we actually need the TDMs so that 
+    # # we don't have to run DFT/TDDFT over and over again
     # save arrays to file for debugging
     filename = f"output_{args.molecule_id}.npz"
     np.savez(filename, exc_energies = exc_energies, tdms = tdms)
