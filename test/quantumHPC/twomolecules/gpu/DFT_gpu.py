@@ -45,13 +45,19 @@ if __name__ == "__main__":
     exc_energies, tdms = main(args.molecule_id)
 
     # write array output to binary stream
-    np.savez(sys.stdout.buffer, exc_energies = exc_energies, tdms = tdms)
+    import base64, io
+    output_data = io.BytesIO()
+    np.savez(output_data, exc_energies = exc_energies, tdms = tdms)
+    encoded_data = base64.b64encode(output_data.getvalue()).decode()
     sys.stdout.flush()
+
+    # np.savez(sys.stdout.buffer, exc_energies = exc_energies, tdms = tdms)
+    # sys.stdout.flush()
 
     # # TODO : we only have this for debugging purposes where we actually need the TDMs so that 
     # # we don't have to run DFT/TDDFT over and over again
-    # save arrays to file for debugging
-    filename = f"output_{args.molecule_id}.npz"
-    np.savez(filename, exc_energies = exc_energies, tdms = tdms)
+    # # save arrays to file for debugging
+    # filename = f"output_{args.molecule_id}.npz"
+    # np.savez(filename, exc_energies = exc_energies, tdms = tdms)
 
 
