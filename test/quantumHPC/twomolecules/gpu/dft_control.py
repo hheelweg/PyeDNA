@@ -88,9 +88,7 @@ def main(molecules, time_steps):
         print('test')
         for i, molecule_id in enumerate(molecules):
             # array-type data
-            import base64
-            decoded_data = base64.b64decode(outputs[i])
-            data = np.load(io.BytesIO(decoded_data), allow_pickle = True)
+            data = np.load(io.BytesIO(outputs[i]), allow_pickle = True)
             exc.append(data["exc_energies"])
             tdms.append(data["tdms"])
             # pyscf mol object
