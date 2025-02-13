@@ -62,9 +62,6 @@ def run_dft_tddft(molecule_id, gpu_id):
 def doQM_gpu(molecules, time_idx, output_keys):
 
     # output dictionary
-    out_dict = parseQMOutput('qm_out.params')
-    print(out_dict, flush = True)
-    output_keys = [key for key, value in out_dict.items() if value]
     output = {key: [] for key in output_keys}
 
     # run molecules on different GPUs in parallel
@@ -116,6 +113,10 @@ def main(molecules, time_steps):
     excs_A, excs_B = [], []
 
     # output quantities we are interested in
+    out_dict = parseQMOutput('qm_out.params')
+    print(out_dict, flush = True)
+    output_keys = [key for key, value in out_dict.items() if value]
+    print('test', output_keys, flush = True)
     output_keys = ['exc', 'tdm', 'mol']
     
     startT = time.time()
