@@ -114,10 +114,9 @@ def main(molecules, time_steps):
 
     # output quantities we are interested in
     out_dict = parseQMOutput('qm_out.params')
-    print(out_dict, flush = True)
-    output_keys = [key for key, value in out_dict.items() if value]
-    print('test', output_keys, flush = True)
-    output_keys = ['exc', 'tdm', 'mol']
+    qm_dict = {key: out_dict.get(key) for key in ["exc", "mol", "tdm", "stateA"]}
+    print(qm_dict)
+    output_keys = [key for key, value in qm_dict.items() if value]
     
     startT = time.time()
     for t in range(time_steps):
