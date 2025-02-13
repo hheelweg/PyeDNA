@@ -57,7 +57,7 @@ def run_dft_tddft(molecule_id, gpu_id):
     return process
 
 
-def main(molecules, time_steps, do_tddft):
+def main(molecules, time_steps):
 
     # store couplings
     cJs, cKs = [], []
