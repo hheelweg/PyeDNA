@@ -53,7 +53,7 @@ def run_dft_tddft(molecule_id, gpu_id):
     env["CUDA_VISIBLE_DEVICES"] = str(gpu_id)  # Assign GPU
 
     cmd = f"python DFT_gpu.py {molecule_id}"
-    process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)        
+    process = subprocess.Popen(cmd, env=env, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)        
 
     return process
 
@@ -92,7 +92,7 @@ def main(molecules, time_steps):
             # data = np.load(io.BytesIO(outputs[i]))
             # exc.append(data["exc_energies"])
             # tdms.append(data["tdms"])
-            exc_, tdm_ = pickle.loads(outputs[i])
+            exc_, tdm_ = pickle.load(outputs[i])
             exc.append(exc_)
             tdms.append(tdm_)
             # pyscf mol object
