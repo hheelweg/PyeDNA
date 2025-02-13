@@ -11,7 +11,7 @@ import quantumTools, structure
 import trajectory as traj
 import const
 # NOTE : only add this temporarily for debugging purposes
-import dft_control
+#import dft_control
 
 
 def main(molecule_id):
