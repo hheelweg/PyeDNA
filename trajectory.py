@@ -8,6 +8,10 @@ import re
 import structure
 import quantumTools as qm
 import multiprocessing
+from joblib import dump, load
+import utils
+
+
 
 # TODO : write class to perform MD simulation
 class MDSimulation():
@@ -54,6 +58,9 @@ class Trajectory():
         self.MD = MDsim                             # TODO : do we need this?
         if not isinstance(self.MD, MDSimulation):
             raise ValueError("MDsim needs to be instance of MDSimulation class!")
+        # TODO : make this more flexible
+        # parse output information for QM and MD simulations
+        self.qm_outs, self.post_outs = qm.parseQMOutput(path + 'qm_out.params', parse_post=True)
 
 
     # get MDAnalysis object of specified residues at specified time slice
@@ -72,7 +79,7 @@ class Trajectory():
 
         return chromophore, chromophore_conv
         
-    # converts Chromophore instance into desired format for tarjectory processing
+    # converts Chromophore instance into desired format for trajectory processing
     # TODO : might want to add this to Chromophore class
     def convertChromophore(self, chromophore, conversion):
         # can only convert to PySCF or QChem input
@@ -93,6 +100,50 @@ class Trajectory():
         return molecule_conv
     
 
+    # NOTE : function that calls python ssubprocess to perform DFT/TDDFT on individual GPUs with PySCF
+    # TODO : make this more flexible with regards to the path where the launcher (DFT_gpu.py) is
+    def launchQM(self, molecule_no, gpu_id):
+        """Launch a DFT/TDDFT calculation on a specific GPU."""
+        env = os.environ.copy()
+        env["CUDA_VISIBLE_DEVICES"] = str(gpu_id)  # Assign GPU
+
+        cmd = f"python /home/hheelweg/Cy3Cy5/PyCY/DFT_gpu.py {molecule_no}"
+        process = subprocess.Popen(cmd, env=env, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)        
+
+        return process
+
+
+    # do PySCF on molecules = [mol1, mol2] where mol are the nuclear coordinates for PySCF calculations
+    def doQM_gpu(self, molecules, output_keys):
+
+        # (0) initialize output dictionary for quantities of interest
+        # [] stores data for both molecules in a list-type fashion
+        output = {key: [] for key, value in output_keys.items() if value}
+
+        # (1)run molecules on different GPUs in parallel
+        procs = []
+        for i, molecule in enumerate(molecules):
+            # create pyscf input for subprocess and store in cache
+            dump(molecule, f"input_{i}.joblib")
+            # run subprocess
+            procs.append(self.launchQM(i, gpu_id = i))
+        
+        # wait for both subprocesses to finish
+        for i, molecule in enumerate(molecules):
+            procs[i].wait()
+
+        # (2) load and store relevant data from output of subprocesses
+        # TODO : flexibilize this for quantities we are interested in
+        for i, molecule in enumerate(molecules):
+            for key in output_keys:
+                output[key].append(load(f"{key}_{i}.joblib"))
+
+        # (3) clean subprocess cache 
+        utils.cleanCache()
+
+        return output
+
+
     # analyze trajectory based on specific molecules of interest
     def analyzeTrajectory(self, molecules, time_slice = None, **params):
         # (1) unpack arguments, i.e. quantities of interest for the trajectory
@@ -107,7 +158,7 @@ class Trajectory():
             self.time_slice = time_slice
 
         # (3) analyze trajectory
-        distances = []
+        # distances = []
         for idx in range(self.time_slice[0], self.time_slice[1] + 1):
 
             # (1) get Chromophores of interest 
@@ -119,7 +170,8 @@ class Trajectory():
                 self.chromophores_conv.append(chromophore_conv)
 
             # (2) get distance between chromophores:
-            distances.append(self.getDistance(self.chromophores[0], self.chromophores[1]))
+            # distances.append(self.getDistance(self.chromophores[0], self.chromophores[1]))
+
 
             # # (2) analyze with respect to quantities of interest
             # # TODO : improve this based on **params:
@@ -130,7 +182,10 @@ class Trajectory():
             # exc_energies, trans_dipoles, osc_strengths, tdms, osc_idx = qm.doTDDFT(molecule_mf, occ_orbits, virt_orbits)
 
 
-        return distances
+        
+
+
+
 
 
     # get disatnce between chromophores
@@ -222,8 +277,6 @@ class Trajectory():
         return molecule
 
 
-
-    
 
 
 

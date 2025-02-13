@@ -37,10 +37,10 @@ def main():
     name_prmtop = 'dna_test.prmtop'
     name_nc = 'dna_test_prod.nc'                          # need to NetCDF3 and not NetCDF4 (use cpptraj to convert)
     name_out = 'dna_test_prod.out'
-
     data = [name_prmtop,name_nc, name_out]
     dt = 0.002                                            # specify time step (fs)
 
+    # define Trajectory object
     test = traj.Trajectory(MDsim, path, data)
 
     # define donor and acceptor molecules
@@ -54,9 +54,9 @@ def main():
              'com': True}
 
     # time slices we are interested in
-    time_slice = [0, 199]
-    distances = test.analyzeTrajectory(molecules, time_slice, **traj_info)
-    print(distances)
+    time_slice = [0, 1]
+    test.analyzeTrajectory(molecules, time_slice, **traj_info)
+    print(test.qm_outs)
 
 
 
