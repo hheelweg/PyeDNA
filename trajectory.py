@@ -50,8 +50,7 @@ class Trajectory():
         self.nc = trajectory[1]                                         # load *.nc from Amber MD simulation
         self.out = trajectory[2]                                        # load *.out file
         # make sure *.nc file is NetCDF3 (as required for MDAnalysis) and not NetCDF4 (as created by Amber)
-        # TODO : we commented this out for debugging purposes, but need to change it back eventually
-        # self.convertTrajectory()
+        self.convertTrajectory()
 
         # create MD analysis object
         self.trajectory_u = mda.Universe(path + self.prmtop, path + self.nc)
@@ -126,6 +125,9 @@ class Trajectory():
             self.time_slice = [0, self.num_frames - 1]
         else:
             self.time_slice = time_slice
+
+        # initialize output
+        self.initOutput()
 
         # (3) analyze trajectory
         # distances = []
