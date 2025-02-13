@@ -244,8 +244,14 @@ def parseQMOutput(file, parse_post = False):
     # TODO : add to this
     out = {
             "exc" : False,
+            "mf"  : False,
+            "occ" : False,
+            "virt": False,
             "mol" : True,
-            "tdm" : True
+            "tdm" : True,
+            "dip" : False,
+            "osc" : False,
+            "idx" : False
     }
     # specify user parameters
     user_out = fp.readParams(file)
@@ -406,7 +412,7 @@ def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = Tru
     tdms = [cp.sqrt(2) * cp.asarray(occ_orbits).dot(cp.asarray(td.xy[id][0])).dot(cp.asarray(virt_orbits).T) for id in state_ids]
 
     # return numpy arrays
-    return np.array(exc_energies), np.array([tdm.get() for tdm in tdms])
+    return np.array(exc_energies), np.array([tdm.get() for tdm in tdms]), np.array(trans_dipoles), np.array(osc_strengths), osc_idx
 
 
 # coupling terms for the computation cJ and cK 
