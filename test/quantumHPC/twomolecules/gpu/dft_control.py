@@ -110,8 +110,12 @@ def parseQMOutput(file, parse_post = False):
     qm_outs = {key: out.get(key) for key in ["exc", "mol", "tdm"]}                          # NOTE : only boolean key values
     post_outs = {key: out.get(key) for key in ["stateA", "stateB", "coupling_type"]}
 
+    # TODO : add list intialization of quantities we are eventually interested in 
 
-    return qm_outs, post_outs
+    if parse_post:
+        return qm_outs, post_outs
+    else:
+        return qm_outs
 
 
 # post-process QM output

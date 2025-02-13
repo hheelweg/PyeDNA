@@ -211,7 +211,7 @@ def optimizeStructureSymmetryFF(path, moleculeNamePDB, stepsNo = 50000, econv = 
 # TODO : allow file not to exist without problem
 def setQMSettings(file):
     # default settings
-    qm_defaults = {
+    qm_settings = {
         "basis": "6-31g",
         "xc": "b3lyp",
         "density_fit": False,
@@ -229,9 +229,13 @@ def setQMSettings(file):
     user_params = fp.readParams(file)
 
     # update default parameters
-    qm_defaults.update(user_params)
+    qm_settings.update(user_params)
 
-    return qm_defaults
+    # split into dictionaries for keys related to DFT and TDDFT
+    settings_dft = {key: qm_settings[key] for key in ["basis", "xc", "density_fit", "charge", "spin", "scf_cycles", "verbosity"]}
+    settings_tddft = {key: qm_settings[key] for key in ["state_ids", "TDA", "do_tddft"]}
+
+    return settings_dft, settings_tddft
 
 
 # perform DFT calculation on molecule

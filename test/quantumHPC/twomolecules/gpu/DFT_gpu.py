@@ -10,14 +10,17 @@ sys.path.append(path_to_modules)
 import quantumTools, structure
 import trajectory as traj
 import const
+# NOTE : only add this temporarily for debugging purposes
+import dft_control
 
 
 def main(molecule_id):
 
     # (0) set settings for QM (DFT/TDDFT) calculation
-    settings = quantumTools.setQMSettings('qm.params')
-    settings_dft = {key: settings[key] for key in ["basis", "xc", "density_fit", "charge", "spin", "scf_cycles", "verbosity"]}
-    settings_tddft = {key: settings[key] for key in ["state_ids", "TDA"]}
+    settings_dft, settings_tddft = quantumTools.setQMSettings('qm.params')
+
+    # (0) load desired outputs
+    
 
     # (1) load chromophore pyscf input from cache
     chromophore_conv = load(f"input_{molecule_id}.joblib")
@@ -29,7 +32,7 @@ def main(molecule_id):
     dump(mol, f"mol_{molecule_id}.joblib")
 
     # (4) optional: do TDDFT calculation based on that result:
-    if settings['do_tddft']:
+    if settings_tddft['do_tddft']:
         exc_energies, tdms = quantumTools.doTDDFT_gpu(mf, occ, virt, **settings_tddft)
         
         # output TDDFT quantities of interest
