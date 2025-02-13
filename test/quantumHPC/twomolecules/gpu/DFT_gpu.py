@@ -19,38 +19,29 @@ def main(molecule_id):
 
     # (0) load output information
     bool_dict = quantumTools.parseQMOutput('qm_out.params')
-    # value dictionary TODO : put this somewhere else
-    value_dict = {
-            "exc" : "exc_energies",
-            "mf"  : "mf",
-            "occ" : "occ",
-            "virt": "virt",
-            "mol" : "mol",
-            "tdm" : "tdms",
-            "dip" : "dipoles",
-            "osc" : "osc_strength",
-            "idx" : "osc_idx"
-    }
-    # what do we actually want to output
-    out_dict = {key: value_dict[key] for key in bool_dict if bool_dict[key]}
-    # intialize the output variables
-    output = dict()
+    # store all output parameters in values
+    values = {key: None for key in bool_dict}
 
 
     # (1) load chromophore pyscf input from cache
     chromophore_conv = load(f"input_{molecule_id}.joblib")
 
-    # (2) perform DFT/TDDFT calculation
-    mol, mf, occ, virt = quantumTools.doDFT_gpu(chromophore_conv, **settings_dft)
+    # (2) perform DFT/TDDFT calculation and store outputs
+    values['mol'], values['mf'], values['occ'], values['virt'] = quantumTools.doDFT_gpu(chromophore_conv, **settings_dft)
     if settings_tddft.pop("do_tddft", False):
-        exc_energies, tdms, dipoles, osc_strength, osc_idx = quantumTools.doTDDFT_gpu(mf, occ, virt, **settings_tddft)
+        values['exc'], values['tdm'], values['dip'], values['osc'], values['idx'] = quantumTools.doTDDFT_gpu(values['mf'], values['occ'], values['virt'], **settings_tddft)
 
-    # (3) dump objects to output to cache for output
-    # output DFT quantities of interest
-    dump(mol, f"mol_{molecule_id}.joblib")
-    # output TDDFT quantities of interest
-    dump(exc_energies, f"exc_{args.molecule_id}.joblib")
-    dump(tdms, f"tdm_{args.molecule_id}.joblib")
+    # filter for quantities we want to output
+    output = {key: values[key] for key in bool_dict if bool_dict[key]}
+    for key in output:
+        dump(values[key], f"{key}_{molecule_id}.joblib")
+
+    # # (3) dump objects to output to cache for output
+    # # output DFT quantities of interest
+    # dump(mol, f"mol_{molecule_id}.joblib")
+    # # output TDDFT quantities of interest
+    # dump(exc_energies, f"exc_{args.molecule_id}.joblib")
+    # dump(tdms, f"tdm_{args.molecule_id}.joblib")
 
 
 if __name__ == "__main__":
