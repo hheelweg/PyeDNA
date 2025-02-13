@@ -42,10 +42,10 @@ if __name__ == "__main__":
     parser.add_argument("molecule_id", type=int, help="Molecule ID (integer)")                              # specifies residue name of molecule
     args = parser.parse_args()
 
-    exc_energies, tdms = main(args.molecule_id)
-    print(f'abc {exc_energies}', flush=True)
+    #exc_energies, tdms = main(args.molecule_id)
     a = np.array([1,2,3])
     b = np.array([1,2,3,4])
+    print(f'abc {a}', flush=True)
 
     # # write array output to binary stream
     np.savez(sys.stdout.buffer, exc_energies = exc_energies, tdms = tdms)

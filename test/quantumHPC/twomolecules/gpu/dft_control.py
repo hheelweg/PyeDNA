@@ -53,7 +53,7 @@ def run_dft_tddft(molecule_id, gpu_id):
     env["CUDA_VISIBLE_DEVICES"] = str(gpu_id)  # Assign GPU
 
     cmd = f"python DFT_gpu.py {molecule_id}"
-    process = subprocess.Popen(cmd, env=env, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)        
+    process = subprocess.Popen(cmd, env=env, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1)        
 
     return process
 
@@ -76,7 +76,7 @@ def main(molecules, time_steps):
             # create pyscf input for subprocess and store in cache
             dump(getMol(molecule_id, t), f"input_{molecule_id}.joblib")
             # run subprocess
-            procs.append(run_dft_tddft(molecule_id, gpu_id = i))                
+            #procs.append(run_dft_tddft(molecule_id, gpu_id = i))                
 
         # wait for both subprocesses to finish and capture their outputs
         outputs = []
@@ -98,7 +98,7 @@ def main(molecules, time_steps):
             # exc.append(exc_)
             # tdms.append(tdm_)
             # pyscf mol object
-            mols.append(load(f"mol_{molecule_id}.joblib"))
+            #mols.append(load(f"mol_{molecule_id}.joblib"))
 
         # clean subprocess cache 
         utils.cleanCache()
