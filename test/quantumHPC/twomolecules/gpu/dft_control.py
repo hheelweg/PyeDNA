@@ -90,7 +90,7 @@ def main(molecules, time_steps):
             # array-type data
             print('output', type(outputs[i]), flush = True)
             print('output', len(outputs[i]), flush = True)
-            data = np.load(io.BytesIO(outputs[i]), allow_pickle=True)
+            data = np.load(io.BytesIO(outputs[i]))
             exc.append(data["exc_energies"])
             tdms.append(data["tdms"])
             # pyscf mol object
