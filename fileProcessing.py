@@ -231,7 +231,7 @@ def reset_atomids(mol_df):
 
 
 # read QM (DFT/TDDFT) input parameters
-def readQMparams(filename):
+def readParams(filename):
 
     import ast
 

@@ -226,7 +226,7 @@ def setQMSettings(file):
     }
 
     # read in user parameters from file
-    user_params = fp.readQMparams(file)
+    user_params = fp.readParams(file)
 
     # update default parameters
     qm_defaults.update(user_params)

@@ -17,7 +17,7 @@ import quantumTools, structure
 import trajectory as traj
 import const
 import utils
-import pickle
+import fileProcessing as fp
 
 # Detect available GPUs
 num_gpus = torch.cuda.device_count()
@@ -59,9 +59,12 @@ def run_dft_tddft(molecule_id, gpu_id):
 
 # do QM calculations on molecules for output quantities we are interested in (output_keys)
 # TODO : this is written for GPU support only so far, but plan to extend this to CPU MPI
-def doQM(molecules, time_idx, output_keys):
+def doQM_gpu(molecules, time_idx, output_keys):
 
     # output dictionary
+    out_dict = parseQMOutput('qm_out.params')
+    print(out_dict, flush = True)
+    output_keys = [key for key, value in out_dict.items() if value]
     output = {key: [] for key in output_keys}
 
     # run molecules on different GPUs in parallel
@@ -83,15 +86,26 @@ def doQM(molecules, time_idx, output_keys):
         for key in output_keys:
             output[key].append(load(f"{key}_{molecule_id}.joblib"))
 
-        #exc.append(load(f"exc_{molecule_id}.joblib"))
-        #tdms.append(load(f"tdm_{molecule_id}.joblib"))
-        #mols.append(load(f"mol_{molecule_id}.joblib"))
-
     # clean subprocess cache 
     utils.cleanCache()
 
-
     return output
+
+# parse output information for QM calculations
+def parseQMOutput(file):
+    # output default parameters
+    default_out = {
+            "exc" : False,
+            "mol" : True,
+            "tdm" : True
+    }
+    # specify user parameters
+    user_out = fp.readParams(file)
+
+    # update default settings
+    default_out.update(user_out)
+
+    return default_out
 
 
 def main(molecules, time_steps):
@@ -100,37 +114,20 @@ def main(molecules, time_steps):
     cJs, cKs = [], []
     # store excitation energies
     excs_A, excs_B = [], []
+
+    # output quantities we are interested in
+    output_keys = ['exc', 'tdm', 'mol']
     
     startT = time.time()
     for t in range(time_steps):
         print(f"\n Running Time Step {t}...", flush = True)
         start_time = time.time()
 
-        # # run molecules on different GPUs in parallel
-        # procs = []
-        # for i, molecule_id in enumerate(molecules):
-        #     # create pyscf input for subprocess and store in cache
-        #     dump(getMol(molecule_id, t), f"input_{molecule_id}.joblib")
-        #     # run subprocess
-        #     procs.append(run_dft_tddft(molecule_id, gpu_id = i))                
+        # run QM on two molecules
+        # TODO : only implemented for GPU support so far
+        output = doQM_gpu(molecules, t, output_keys)
 
-        # # wait for both subprocesses to finish
-        # for i, molecule_id in enumerate(molecules):
-        #     procs[i].wait()
-
-        # # load and store relevant data from output of subprocesses
-        # exc, tdms, mols = [], [], []
-        # for i, molecule_id in enumerate(molecules):
-        #     exc.append(load(f"exc_{molecule_id}.joblib"))
-        #     tdms.append(load(f"tdm_{molecule_id}.joblib"))
-        #     mols.append(load(f"mol_{molecule_id}.joblib"))
-
-        # # clean subprocess cache 
-        # utils.cleanCache()
-
-        output_keys = ['exc', 'tdm', 'mol']
-        output = doQM(molecules, t, output_keys)
-
+        # print output for debugging
         print(output['exc'])
         
         # # compute coupling information and excitation energies
