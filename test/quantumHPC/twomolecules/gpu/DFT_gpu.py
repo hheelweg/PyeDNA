@@ -11,7 +11,7 @@ import quantumTools, structure
 import trajectory as traj
 import const
 # NOTE : only add this temporarily for debugging purposes
-import dft_control
+#import dft_control
 
 
 def main(molecule_id):
@@ -20,7 +20,7 @@ def main(molecule_id):
     settings_dft, settings_tddft = quantumTools.setQMSettings('qm.params')
 
     # (0) load desired outputs
-    qm_outs = dft_control.parseQMOutput('qm_out.params')
+    #qm_outs = dft_control.parseQMOutput('qm_out.params')
 
     # (1) load chromophore pyscf input from cache
     chromophore_conv = load(f"input_{molecule_id}.joblib")
