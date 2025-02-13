@@ -43,7 +43,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     exc_energies, tdms = main(args.molecule_id)
-    print('abc', exc_energies)
+    print(f'abc {exc_energies}', flush=True)
     a = np.array([1,2,3])
     b = np.array([1,2,3,4])
 
