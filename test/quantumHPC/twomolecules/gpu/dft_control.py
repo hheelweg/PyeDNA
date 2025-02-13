@@ -74,7 +74,7 @@ def main(molecules, time_steps):
         procs, mols = [], []
         for i, molecule_id in enumerate(molecules):
             # create pyscf input for subprocess and store in cache
-            dump(getMol(molecule_id, t), f"input_{molecule_id}.joblib")
+            # dump(getMol(molecule_id, t), f"input_{molecule_id}.joblib")
             # run subprocess
             procs.append(run_dft_tddft(molecule_id, gpu_id = i))                
 
