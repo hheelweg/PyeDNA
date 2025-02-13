@@ -8,7 +8,7 @@ from joblib import load, dump
 # TODO : make this more flexible
 path_to_modules = '/home/hheelweg/Cy3Cy5/PyCY'
 sys.path.append(path_to_modules)
-import quantumTools, structure
+import quantumTools as qm
 import trajectory as traj
 import const
 
@@ -30,9 +30,9 @@ def main(molecule_id):
     chromophore_conv = load(f"input_{molecule_id}.joblib")
 
     # (2) perform DFT/TDDFT calculation and store outputs
-    values['mol'], values['mf'], values['occ'], values['virt'] = quantumTools.doDFT_gpu(chromophore_conv, **settings_dft)
+    values['mol'], values['mf'], values['occ'], values['virt'] = qm.doDFT_gpu(chromophore_conv, **settings_dft)
     if settings_tddft.pop("do_tddft", False):
-        values['exc'], values['tdm'], values['dip'], values['osc'], values['idx'] = quantumTools.doTDDFT_gpu(values['mf'], values['occ'], values['virt'], **settings_tddft)
+        values['exc'], values['tdm'], values['dip'], values['osc'], values['idx'] = qm.doTDDFT_gpu(values['mf'], values['occ'], values['virt'], **settings_tddft)
 
     # (3) output quantities of interest
     # TODO : might want to add that specific outputs are only possible if do_tddft is set to True
