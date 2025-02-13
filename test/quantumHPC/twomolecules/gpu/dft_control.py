@@ -92,7 +92,8 @@ def main(molecules, time_steps):
             # data = np.load(io.BytesIO(outputs[i]))
             # exc.append(data["exc_energies"])
             # tdms.append(data["tdms"])
-            exc_, tdm_ = pickle.load(outputs[i])
+            buffer = io.BytesIO(outputs[i])
+            exc_, tdm_ = pickle.load(buffer)
             exc.append(exc_)
             tdms.append(tdm_)
             # pyscf mol object

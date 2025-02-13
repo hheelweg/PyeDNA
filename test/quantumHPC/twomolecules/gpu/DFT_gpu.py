@@ -47,8 +47,11 @@ if __name__ == "__main__":
     # # write array output to binary stream
     # np.savez(sys.stdout.buffer, exc_energies = exc_energies, tdms = tdms)
     # sys.stdout.flush()
-    import pickle
-    sys.stdout.buffer.write(pickle.dumps((exc_energies, tdms)))
+    import pickle, io
+    buffer = io.BytesIO()
+    pickle.dump((exc_energies, tdms), buffer)
+    sys.stdout.buffer.write(buffer.getvalue())
+    sys.stdout.flush()
     
 
 
