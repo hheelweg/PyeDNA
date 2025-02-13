@@ -61,10 +61,11 @@ def run_dft_tddft(molecule_id, gpu_id):
 # TODO : this is written for GPU support only so far, but plan to extend this to CPU MPI
 def doQM_gpu(molecules, time_idx, output_keys):
 
-    # output dictionary
+    # (0) initialize output dictionary for quantities of interest
+    # [] stores data for both molecules in a list-type fashion
     output = {key: [] for key, value in output_keys.items() if value}
 
-    # run molecules on different GPUs in parallel
+    # (1)run molecules on different GPUs in parallel
     procs = []
     for i, molecule_id in enumerate(molecules):
         # create pyscf input for subprocess and store in cache
@@ -76,14 +77,13 @@ def doQM_gpu(molecules, time_idx, output_keys):
     for i, molecule_id in enumerate(molecules):
         procs[i].wait()
 
-    # load and store relevant data from output of subprocesses
+    # (2) load and store relevant data from output of subprocesses
     # TODO : flexibilize this for quantities we are interested in
-    exc, tdms, mols = [], [], []
     for i, molecule_id in enumerate(molecules):
         for key in output_keys:
             output[key].append(load(f"{key}_{molecule_id}.joblib"))
 
-    # clean subprocess cache 
+    # (3) clean subprocess cache 
     utils.cleanCache()
 
     return output
