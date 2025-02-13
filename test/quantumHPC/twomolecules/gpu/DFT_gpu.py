@@ -48,10 +48,10 @@ if __name__ == "__main__":
     print(f'abc {a}', flush=True)
 
     # # write array output to binary stream
-    np.savez(sys.stdout.buffer, exc_energies = exc_energies, tdms = tdms)
-    sys.stdout.flush()
-    # np.savez(sys.stdout.buffer, exc_energies = a, tdms = b)
+    # np.savez(sys.stdout.buffer, exc_energies = exc_energies, tdms = tdms)
     # sys.stdout.flush()
+    np.savez(sys.stdout.buffer, exc_energies = a, tdms = b)
+    sys.stdout.flush()
     
 
 

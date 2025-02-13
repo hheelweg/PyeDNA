@@ -53,7 +53,7 @@ def run_dft_tddft(molecule_id, gpu_id):
     env["CUDA_VISIBLE_DEVICES"] = str(gpu_id)  # Assign GPU
 
     cmd = f"python DFT_gpu.py {molecule_id}"
-    process = subprocess.Popen(cmd, env=env, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1, text=True)        
+    process = subprocess.Popen(cmd, env=env, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)        
 
     return process
 
@@ -82,6 +82,8 @@ def main(molecules, time_steps):
         outputs = []
         for i, molecule_id in enumerate(molecules):
             out, _= procs[i].communicate()
+            if out:
+                print("SUBPROCESS STDOUT:\n", out, flush=True)
             outputs.append(out)
 
         # load and store relevant data from output of subprocesses
