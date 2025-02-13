@@ -1,2 +1,4 @@
 # specify output parameters for QM calculations
 exc = True
+stateA = 0
+stateB = 0
