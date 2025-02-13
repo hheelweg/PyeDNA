@@ -17,6 +17,7 @@ import quantumTools, structure
 import trajectory as traj
 import const
 import utils
+import pickle
 
 # Detect available GPUs
 num_gpus = torch.cuda.device_count()
@@ -52,7 +53,7 @@ def run_dft_tddft(molecule_id, gpu_id):
     env["CUDA_VISIBLE_DEVICES"] = str(gpu_id)  # Assign GPU
 
     cmd = f"python DFT_gpu.py {molecule_id}"
-    process = subprocess.Popen(cmd, shell=True, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)        
+    process = subprocess.Popen(cmd, shell=True, env=env, stdout=subprocess.PIPE)#, stderr=subprocess.PIPE)        
 
     return process
 
@@ -88,11 +89,12 @@ def main(molecules, time_steps):
         print('test')
         for i, molecule_id in enumerate(molecules):
             # array-type data
-            print('output', type(outputs[i]), flush = True)
-            print('output', len(outputs[i]), flush = True)
-            data = np.load(io.BytesIO(outputs[i]))
-            exc.append(data["exc_energies"])
-            tdms.append(data["tdms"])
+            # data = np.load(io.BytesIO(outputs[i]))
+            # exc.append(data["exc_energies"])
+            # tdms.append(data["tdms"])
+            exc_, tdm_ = pickle.loads(outputs[i])
+            exc.append(exc_)
+            tdms.append(tdm_)
             # pyscf mol object
             mols.append(load(f"mol_{molecule_id}.joblib"))
 

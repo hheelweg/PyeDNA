@@ -45,14 +45,11 @@ if __name__ == "__main__":
     exc_energies, tdms = main(args.molecule_id)
 
     # # write array output to binary stream
-    np.savez(sys.stdout.buffer, exc_energies = exc_energies, tdms = tdms)
-    sys.stdout.flush()
-    # import io
-    # output = io.BytesIO()
-    # np.savez(output, exc_energies = exc_energies, tdms = tdms)
-    # # Write pure binary data to stdout
-    # sys.stdout.buffer.write(output.getvalue())
+    # np.savez(sys.stdout.buffer, exc_energies = exc_energies, tdms = tdms)
     # sys.stdout.flush()
+    import pickle
+    sys.stdout.buffer.write(pickle.dumps((exc_energies, tdms)))
+    
 
 
     # # TODO : we only have this for debugging purposes where we actually need the TDMs so that 
