@@ -12,15 +12,13 @@ import trajectory as traj
 import const
 
 
-def main(molecule_id, do_tddft):
+def main(molecule_id):
 
     # (0) set settings for QM (DFT/TDDFT) calculation
     settings = quantumTools.setQMSettings('qm.params')
     settings_dft = {key: settings[key] for key in ["basis", "xc", "density_fit", "charge", "spin", "scf_cycles", "verbosity"]}
-    print(settings_dft, flush = True)
     settings_tddft = {key: settings[key] for key in ["state_ids", "TDA"]}
-    print('do ttttt', settings['do_tddft'])
-    
+
     # (1) load chromophore pyscf input from cache
     chromophore_conv = load(f"input_{molecule_id}.joblib")
 
@@ -31,10 +29,9 @@ def main(molecule_id, do_tddft):
     dump(mol, f"mol_{molecule_id}.joblib")
 
     # (3) optional: do TDDFT calculation based on that result:
-    if do_tddft:
-        state_ids = [0, 1, 2]                               # might want to add more states
-        exc_energies, tdms = quantumTools.doTDDFT_gpu(mf, occ, virt, **settings_tddft)
-        return exc_energies, tdms
+    #if settings['do_tddft']:
+    exc_energies, tdms = quantumTools.doTDDFT_gpu(mf, occ, virt, **settings_tddft)
+    return exc_energies, tdms
 
 
 if __name__ == "__main__":
@@ -42,10 +39,9 @@ if __name__ == "__main__":
     # parse arguments from command line
     parser = argparse.ArgumentParser(description="Run DFT and optional TDDFT simulations on molecule")
     parser.add_argument("molecule_id", type=int, help="Molecule 1 ID (integer)")                # specifies residue name of molecule
-    parser.add_argument("--do-tddft", action="store_true", help="Enable TDDFT calculation")
     args = parser.parse_args()
 
-    exc_energies, tdms = main(args.molecule_id, args.do_tddft)
+    exc_energies, tdms = main(args.molecule_id)
 
     # write array output to binary stream
     np.savez(sys.stdout.buffer, exc_energies = exc_energies, tdms = tdms)

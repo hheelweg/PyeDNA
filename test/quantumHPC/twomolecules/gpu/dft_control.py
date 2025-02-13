@@ -46,15 +46,12 @@ def getMol(mol_idx, time_idx):
 
 
 # NOTE : function that calls python ssubprocess to perform DFT/TDDFT on individual GPUs
-def run_dft_tddft(molecule_id, gpu_id, do_tddft):
+def run_dft_tddft(molecule_id, gpu_id):
     """Launch a DFT/TDDFT calculation on a specific GPU."""
     env = os.environ.copy()
     env["CUDA_VISIBLE_DEVICES"] = str(gpu_id)  # Assign GPU
 
     cmd = f"python DFT_gpu.py {molecule_id}"
-    if do_tddft:
-        cmd += " --do-tddft"
-
     process = subprocess.Popen(cmd, shell=True, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)        
 
     return process
@@ -130,10 +127,9 @@ if __name__ == "__main__":
     parser.add_argument("molecule_1_id", type=int, help="Molecule 1 ID (integer)")              # specifies residue name of molecule 1
     parser.add_argument("molecule_2_id", type=int, help="Molecule 2 ID (integer)")              # specifies residue name of molecule 1
     parser.add_argument("time_idx", type=int, help="Time index (integer)")                      # specifies time step upon we wish to analyze trajectory
-    parser.add_argument("--do-tddft", action="store_true", help="Enable TDDFT calculation")     # boolean : run TDDFT
     args = parser.parse_args()
 
     # run main
     molecules = [args.molecule_1_id, args.molecule_2_id]
-    main(molecules, args.time_idx, args.do_tddft)
+    main(molecules, args.time_idx)
 
