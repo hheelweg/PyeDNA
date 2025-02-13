@@ -57,6 +57,42 @@ def run_dft_tddft(molecule_id, gpu_id):
 
     return process
 
+# do QM calculations on molecules for output quantities we are interested in (output_keys)
+# TODO : this is written for GPU support only so far, but plan to extend this to CPU MPI
+def doQM(molecules, time_idx, output_keys):
+
+    # output dictionary
+    output = {key: [] for key in output_keys}
+
+    # run molecules on different GPUs in parallel
+    procs, = []
+    for i, molecule_id in enumerate(molecules):
+        # create pyscf input for subprocess and store in cache
+        dump(getMol(molecule_id, time_idx), f"input_{molecule_id}.joblib")
+        # run subprocess
+        procs.append(run_dft_tddft(molecule_id, gpu_id = i))
+    
+    # wait for both subprocesses to finish
+    for i, molecule_id in enumerate(molecules):
+        procs[i].wait()
+
+    # load and store relevant data from output of subprocesses
+    # TODO : flexibilize this for quantities we are interested in
+    exc, tdms, mols = [], [], []
+    for i, molecule_id in enumerate(molecules):
+        for key in output_keys:
+            output[key].append(load(f"{key}_{molecule_id}.joblib"))
+
+        #exc.append(load(f"exc_{molecule_id}.joblib"))
+        #tdms.append(load(f"tdm_{molecule_id}.joblib"))
+        #mols.append(load(f"mol_{molecule_id}.joblib"))
+
+    # clean subprocess cache 
+    utils.cleanCache()
+
+
+    return output
+
 
 def main(molecules, time_steps):
 
@@ -70,38 +106,43 @@ def main(molecules, time_steps):
         print(f"\n Running Time Step {t}...", flush = True)
         start_time = time.time()
 
-        # run molecules on different GPUs in parallel
-        procs, mols = [], []
-        for i, molecule_id in enumerate(molecules):
-            # create pyscf input for subprocess and store in cache
-            dump(getMol(molecule_id, t), f"input_{molecule_id}.joblib")
-            # run subprocess
-            procs.append(run_dft_tddft(molecule_id, gpu_id = i))                
+        # # run molecules on different GPUs in parallel
+        # procs = []
+        # for i, molecule_id in enumerate(molecules):
+        #     # create pyscf input for subprocess and store in cache
+        #     dump(getMol(molecule_id, t), f"input_{molecule_id}.joblib")
+        #     # run subprocess
+        #     procs.append(run_dft_tddft(molecule_id, gpu_id = i))                
 
-        # wait for both subprocesses to finish
-        for i, molecule_id in enumerate(molecules):
-            procs[i].wait()
+        # # wait for both subprocesses to finish
+        # for i, molecule_id in enumerate(molecules):
+        #     procs[i].wait()
 
-        # load and store relevant data from output of subprocesses
-        exc, tdms, mols = [], [], []
-        for i, molecule_id in enumerate(molecules):
-            exc.append(load(f"exc_{molecule_id}.joblib"))
-            tdms.append(load(f"tdm_{molecule_id}.joblib"))
-            mols.append(load(f"mol_{molecule_id}.joblib"))
+        # # load and store relevant data from output of subprocesses
+        # exc, tdms, mols = [], [], []
+        # for i, molecule_id in enumerate(molecules):
+        #     exc.append(load(f"exc_{molecule_id}.joblib"))
+        #     tdms.append(load(f"tdm_{molecule_id}.joblib"))
+        #     mols.append(load(f"mol_{molecule_id}.joblib"))
 
-        # clean subprocess cache 
-        utils.cleanCache()
+        # # clean subprocess cache 
+        # utils.cleanCache()
+
+        output_keys = ['exc', 'tdm', 'mol']
+        output = doQM(molecules, t, output_keys)
+
+        print(output['exc'])
         
-        # compute coupling information and excitation energies
-        stateA, stateB = 0, 0
-        cJ, cK = quantumTools.getV(mols[0], mols[1], tdms[0], tdms[1], stateA=stateA, stateB=stateB, coupling_type='both')
-        exc_A, exc_B = exc[0][stateA], exc[1][stateB]
-        print('cJ', cJ)
-        cJs.append(cJ)
-        cKs.append(cK)
-        excs_A.append(exc_A)
-        excs_B.append(exc_B)
-        print(excs_A, excs_B)
+        # # compute coupling information and excitation energies
+        # stateA, stateB = 0, 0
+        # cJ, cK = quantumTools.getV(mols[0], mols[1], tdms[0], tdms[1], stateA=stateA, stateB=stateB, coupling_type='both')
+        # exc_A, exc_B = exc[0][stateA], exc[1][stateB]
+        # print('cJ', cJ)
+        # cJs.append(cJ)
+        # cKs.append(cK)
+        # excs_A.append(exc_A)
+        # excs_B.append(exc_B)
+        # print(excs_A, excs_B)
 
 
         end_time = time.time()  # End timing for this step
