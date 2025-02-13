@@ -86,7 +86,7 @@ class Trajectory():
     # initialize molecules of shape [molecule_A, molecule_B] where molecule_A/B list with residue indices
     # TODO : add check whether molecule is actually valid (consecutive integers etc.)
     def initMolecules(self, molecules):
-        self.molecules
+        self.molecules = molecules
 
 
     # get MDAnalysis object of specified residues at specified time slice
@@ -357,7 +357,7 @@ def parseQMOutput(file, parse_post = False):
     # split the output parameters into parameters that are relevant only to
     # conductiong QM (DFT/TDDFT) simulations or to post-processing of the QM results
     # TODO : add to this
-    qm_outs = {key: out.get(key) for key in ["exc", "mol", "tdm"]}                          # NOTE : only boolean key values
+    qm_outs = {key: out.get(key) for key in ["exc", "mol", "tdm", "mf", "occ", "virt", "dip", "osc", "idx"]}                          # NOTE : only boolean key values
     post_outs = {key: out.get(key) for key in ["stateA", "stateB", "coupling", "transitions", "distance_mols", "distance_type"]}
 
     # TODO : add list intialization of quantities we are eventually interested in 
