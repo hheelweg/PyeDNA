@@ -63,7 +63,8 @@ class Trajectory():
         
         # TODO : make this more flexible
         # parse output information for QM and MD simulations
-        self.qm_outs, self.post_outs = parseQMOutput(path + 'qm_out.params', parse_post=True)
+        self.qm_outs, self.outs = parseQMOutput(path + 'qm_out.params', parse_post=True)
+        print(self.outs)
 
 
 
@@ -125,28 +126,30 @@ class Trajectory():
             start_time = time.time()
             print(f"*** Running Time Step {idx} ...")
 
-            # (1) get Chromophores of interest 
-            self.chromophores = []
-            self.chromophores_conv = []
-            for molecule in molecules:
-                chromophore, chromophore_conv = self.getChromophoreSnapshot(idx, molecule, conversion)
-                self.chromophores.append(chromophore)
-                self.chromophores_conv.append(chromophore_conv)
+            # # (1) get Chromophores of interest 
+            # self.chromophores = []
+            # self.chromophores_conv = []
+            # for molecule in molecules:
+            #     chromophore, chromophore_conv = self.getChromophoreSnapshot(idx, molecule, conversion)
+            #     self.chromophores.append(chromophore)
+            #     self.chromophores_conv.append(chromophore_conv)
 
 
-            # (2) get distance between chromophores:
+            # # (2) get distance between chromophores:
             # distances.append(self.getDistance(self.chromophores[0], self.chromophores[1]))
 
-            # # (2) analyze with respect to quantities of interest
+            # (3) analyze with respect to QM quantities of interest
             # NOTE : test-wise DFT/TDDFT calculation
-            print('test output', flush = True)
-            output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs)
-            print(output_qm['exc'])
+            # # (3.1) run QM calculation
+            # output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs)
+            
+            # (3.2) post-processing of QM output
+
 
 
             # take time
             end_time = time.time()
-            print(f"Elpased time for time step {idx}: {end_time- start_time} seconds")
+            print(f"Elapsed time for step {idx}: {end_time- start_time} seconds")
 
 
 
@@ -300,7 +303,8 @@ def setQMSettings(file):
     settings_tddft = {key: qm_settings[key] for key in ["state_ids", "TDA", "do_tddft"]}
 
     return settings_dft, settings_tddft
-            
+
+
 # parse output information for QM calculations
 # TODO : allow file not to exist without problem
 def parseQMOutput(file, parse_post = False):

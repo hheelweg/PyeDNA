@@ -395,6 +395,7 @@ def doQM_gpu(molecules, output_keys):
     # (3) clean subprocess cache 
     utils.cleanCache()
 
+    # returns output dictionary with keys specified in output_keys
     return output
 
 
