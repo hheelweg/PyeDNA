@@ -29,10 +29,10 @@ def main(molecule_id):
     dump(mol, f"mol_{molecule_id}.joblib")
 
     # (3) optional: do TDDFT calculation based on that result:
-    print(settings['do_tddft'])
-    if settings['do_tddft']:
-        exc_energies, tdms = quantumTools.doTDDFT_gpu(mf, occ, virt, **settings_tddft)
-        return exc_energies, tdms
+    # print(settings['do_tddft'])
+    # if settings['do_tddft']:
+    exc_energies, tdms = quantumTools.doTDDFT_gpu(mf, occ, virt, **settings_tddft)
+    return exc_energies, tdms
 
 
 if __name__ == "__main__":
@@ -42,15 +42,16 @@ if __name__ == "__main__":
     parser.add_argument("molecule_id", type=int, help="Molecule ID (integer)")                              # specifies residue name of molecule
     args = parser.parse_args()
 
-    #exc_energies, tdms = main(args.molecule_id)
+    exc_energies, tdms = main(args.molecule_id)
+    print('abc', exc_energies)
     a = np.array([1,2,3])
     b = np.array([1,2,3,4])
 
     # # write array output to binary stream
-    # np.savez(sys.stdout.buffer, exc_energies = exc_energies, tdms = tdms)
-    # sys.stdout.flush()
-    np.savez(sys.stdout.buffer, exc_energies = a, tdms = b)
+    np.savez(sys.stdout.buffer, exc_energies = exc_energies, tdms = tdms)
     sys.stdout.flush()
+    # np.savez(sys.stdout.buffer, exc_energies = a, tdms = b)
+    # sys.stdout.flush()
     
 
 
