@@ -52,7 +52,7 @@ def run_dft_tddft(molecule_id, gpu_id):
     env["CUDA_VISIBLE_DEVICES"] = str(gpu_id)  # Assign GPU
 
     cmd = f"python DFT_gpu.py {molecule_id}"
-    process = subprocess.Popen(cmd, shell=True, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)        
+    process = subprocess.Popen(cmd, shell=True, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)        
 
     return process
 
