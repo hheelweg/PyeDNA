@@ -33,7 +33,7 @@ def main():
     MDsim = traj.MDSimulation(params)
 
     # input data
-    path = './test/prod/'
+    path = './'
     name_prmtop = 'dna_test.prmtop'
     name_nc = 'dna_test_prod.nc'                          # need to NetCDF3 and not NetCDF4 (use cpptraj to convert)
     name_out = 'dna_test_prod.out'
