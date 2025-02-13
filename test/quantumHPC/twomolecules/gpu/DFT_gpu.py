@@ -43,15 +43,17 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     exc_energies, tdms = main(args.molecule_id)
-    a = np.array([1,2,3])
-    b = np.array([1,2,3,4])
-    print(f'abc {exc_energies}', flush=True)
+    # a = np.array([1,2,3])
+    # b = np.array([1,2,3,4])
+    # print(f'abc {exc_energies}', flush=True)
+    dump(exc_energies, f"exc_{args.molecule_id}.joblib")
+    dump(tdms, f"tdms_{args.molecule_id}.joblib")
 
     # # write array output to binary stream
     # np.savez(sys.stdout.buffer, exc_energies = exc_energies, tdms = tdms)
     # sys.stdout.flush()
-    np.savez(sys.stdout.buffer, exc_energies = a, tdms = b)
-    sys.stdout.flush()
+    # np.savez(sys.stdout.buffer, exc_energies = a, tdms = b)
+    # sys.stdout.flush()
     
 
 

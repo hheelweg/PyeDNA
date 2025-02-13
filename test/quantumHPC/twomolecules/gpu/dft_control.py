@@ -74,7 +74,7 @@ def main(molecules, time_steps):
         procs, mols = [], []
         for i, molecule_id in enumerate(molecules):
             # create pyscf input for subprocess and store in cache
-            #dump(getMol(molecule_id, t), f"input_{molecule_id}.joblib")
+            dump(getMol(molecule_id, t), f"input_{molecule_id}.joblib")
             # run subprocess
             procs.append(run_dft_tddft(molecule_id, gpu_id = i))                
 
@@ -82,8 +82,6 @@ def main(molecules, time_steps):
         outputs = []
         for i, molecule_id in enumerate(molecules):
             out, _= procs[i].communicate()
-            if out:
-                print("SUBPROCESS STDOUT:\n", out.decode('utf-8'), flush=True)
             outputs.append(out)
 
         # load and store relevant data from output of subprocesses
@@ -91,16 +89,14 @@ def main(molecules, time_steps):
         print('test')
         for i, molecule_id in enumerate(molecules):
             # array-type data
-            data = np.load(io.BytesIO(outputs[i]))
-            print(data["exc_energies"], data["tdms"])
-            exc.append(data["exc_energies"])
-            tdms.append(data["tdms"])
-            # buffer = io.BytesIO(outputs[i])
-            # exc_, tdm_ = pickle.load(buffer)
-            # exc.append(exc_)
-            # tdms.append(tdm_)
+            # data = np.load(io.BytesIO(outputs[i]))
+            # print(data["exc_energies"], data["tdms"])
+            # exc.append(data["exc_energies"])
+            # tdms.append(data["tdms"])
+            exc.append(load(f"exc_{molecule_id}.joblib"))
+            tdms.append(load(f"tdms_{molecule_id}.joblib"))
             # pyscf mol object
-            #mols.append(load(f"mol_{molecule_id}.joblib"))
+            mols.append(load(f"mol_{molecule_id}.joblib"))
 
         # clean subprocess cache 
         utils.cleanCache()
