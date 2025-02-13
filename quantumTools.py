@@ -237,6 +237,35 @@ def setQMSettings(file):
 
     return settings_dft, settings_tddft
 
+# parse output information for QM calculations
+def parseQMOutput(file, parse_post = False):
+
+    # output default parameters
+    # TODO : add to this
+    out = {
+            "exc" : False,
+            "mol" : True,
+            "tdm" : True
+    }
+    # specify user parameters
+    user_out = fp.readParams(file)
+
+    # update default settings
+    out.update(user_out)
+
+    # split the output parameters into parameters that are relevant only to
+    # conductiong QM (DFT/TDDFT) simulations or to post-processing of the QM results
+    # TODO : add to this
+    qm_outs = {key: out.get(key) for key in ["exc", "mol", "tdm"]}                          # NOTE : only boolean key values
+    post_outs = {key: out.get(key) for key in ["stateA", "stateB", "coupling_type"]}
+
+    # TODO : add list intialization of quantities we are eventually interested in 
+
+    if parse_post:
+        return qm_outs, post_outs
+    else:
+        return qm_outs
+
 
 # perform DFT calculation on molecule
 def doDFT(molecule, basis = '6-31g', xc = 'b3lyp', 

@@ -88,35 +88,6 @@ def doQM_gpu(molecules, time_idx, output_keys):
 
     return output
 
-# parse output information for QM calculations
-def parseQMOutput(file, parse_post = False):
-
-    # output default parameters
-    # TODO : add to this
-    out = {
-            "exc" : False,
-            "mol" : True,
-            "tdm" : True
-    }
-    # specify user parameters
-    user_out = fp.readParams(file)
-
-    # update default settings
-    out.update(user_out)
-
-    # split the output parameters into parameters that are relevant only to
-    # conductiong QM (DFT/TDDFT) simulations or to post-processing of the QM results
-    # TODO : add to this
-    qm_outs = {key: out.get(key) for key in ["exc", "mol", "tdm"]}                          # NOTE : only boolean key values
-    post_outs = {key: out.get(key) for key in ["stateA", "stateB", "coupling_type"]}
-
-    # TODO : add list intialization of quantities we are eventually interested in 
-
-    if parse_post:
-        return qm_outs, post_outs
-    else:
-        return qm_outs
-
 
 # post-process QM output
 def analyzeQM(qm_output, output_keys):
@@ -126,7 +97,7 @@ def analyzeQM(qm_output, output_keys):
 def main(molecules, time_steps):
 
     # output quantities we are interested in
-    qm_output_keys, _ = parseQMOutput('qm_out.params', parse_post=True)
+    qm_output_keys, _ = quantumTools.parseQMOutput('qm_out.params', parse_post=True)
     print(qm_output_keys, flush = True)
     output = {key: [] for key, value in qm_output_keys.items() if value}
     print(output)
