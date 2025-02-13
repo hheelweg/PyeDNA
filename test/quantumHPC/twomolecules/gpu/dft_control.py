@@ -83,21 +83,19 @@ def main(molecules, time_steps):
         for i, molecule_id in enumerate(molecules):
             out, err= procs[i].communicate()
             outputs.append(out)
-            if err:
-                print("Subprocess STDERR:", err.decode(), flush=True)
 
         # load and store relevant data from output of subprocesses
         exc, tdms, mols = [], [], []
         print('test')
         for i, molecule_id in enumerate(molecules):
             # array-type data
-            # data = np.load(io.BytesIO(outputs[i]))
-            # exc.append(data["exc_energies"])
-            # tdms.append(data["tdms"])
-            buffer = io.BytesIO(outputs[i])
-            exc_, tdm_ = pickle.load(buffer)
-            exc.append(exc_)
-            tdms.append(tdm_)
+            data = np.load(io.BytesIO(outputs[i]))
+            exc.append(data["exc_energies"])
+            tdms.append(data["tdms"])
+            # buffer = io.BytesIO(outputs[i])
+            # exc_, tdm_ = pickle.load(buffer)
+            # exc.append(exc_)
+            # tdms.append(tdm_)
             # pyscf mol object
             mols.append(load(f"mol_{molecule_id}.joblib"))
 
