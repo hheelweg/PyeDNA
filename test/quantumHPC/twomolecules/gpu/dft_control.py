@@ -126,7 +126,7 @@ def analyzeQM(qm_output, output_keys):
 def main(molecules, time_steps):
 
     # output quantities we are interested in
-    qm_output_keys, _ = parseQMOutput('qm_out.params')
+    qm_output_keys, _ = parseQMOutput('qm_out.params', parse_post=True)
 
     # store couplings
     cJs, cKs = [], []

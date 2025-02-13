@@ -20,7 +20,7 @@ def main(molecule_id):
     settings_dft, settings_tddft = quantumTools.setQMSettings('qm.params')
 
     # (0) load desired outputs
-    
+    qm_outs = dft_control.parseQMOutput('qm_out.params')
 
     # (1) load chromophore pyscf input from cache
     chromophore_conv = load(f"input_{molecule_id}.joblib")
