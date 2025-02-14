@@ -392,7 +392,7 @@ def parseOutput(file, parse_trajectory_out = False, verbose = True):
     print(" ** Parsed Output for Trajectory Analysis:")
     print(f"(1) classical parameters to evaluate at each time step: {', '.join(class_flags.keys())}")
     print(f"(1) we use the following methods (in order): {', '.join(class_methods.values())}")
-    print(f"(2) we study the following state transitions [stateA, stateB]: {', '.join(transition for transition in qm_flags["transitions"])}")
+    print(f"(2) we study the following state transitions \[stateA, stateB\]: {', '.join(transition for transition in qm_flags['transitions'])}")
     print(f"(2) quantum parameters to evaluate at each time step for each transition: {', '.join(key for key, value in qm_flags.items() if isinstance(value, bool))}")
     print(f"(2) we use the following methods (in order): {', '.join(qm_methods.values())}")
 
