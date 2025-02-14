@@ -54,7 +54,7 @@ def main():
              'com': True}
 
     # time slices we are interested in
-    time_slice = [0, 1]
+    time_slice = [0, 0]
     test.loopTrajectory(molecules, time_slice, **traj_info)
     
 
