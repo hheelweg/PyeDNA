@@ -83,10 +83,11 @@ class Trajectory():
 
         # (2) which trajectory-ensemble outputs are we interested in:
         # (2.1) classical MD output parameters:
+        columns_quant = []
 
 
         # (2.2) QM-based output parameters:
-        if self.outs["coupling"] == 'both':
+        if self.outs_quant["coupling"] == 'both':
             pass
 
     
