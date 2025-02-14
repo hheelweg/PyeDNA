@@ -375,10 +375,16 @@ def parseOutput(file, parse_post = False):
     # (2) trajectory-based outputs per time steps
     # (2.1) quantum-mechanical based parameters
     post_qm = {key: out.get(key) for key in ["coupling", "coupling_type", "transitions", "excited_states"]}                 # all QM options                         
-    qm_flags = {key: value for key, value in post_qm.items() if not isinstance(value, bool) and value}                      # NOTE : only bool/True params 
+    qm_flags = {key: value for key, value in post_qm.items() if isinstance(value, bool) and value}                          # NOTE : only bool/True params 
     print('qm_flags', qm_flags)
+    qm_methods = {
+        key: post_qm.get(f"{key}_type", "default") for key in qm_flags
+    }
+    print('qm_methods', qm_methods)
+
     # (2.2) classical parameters
-    post_class = {key: out.get(key) for key in ["distance", "distance_type"]} 
+    post_class = {key: out.get(key) for key in ["distance", "distance_type"]}                                               # all MD options
+
 
     # TODO : add list intialization of quantities we are eventually interested in 
 
