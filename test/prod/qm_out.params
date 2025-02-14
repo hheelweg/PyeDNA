@@ -6,7 +6,7 @@ exc = True
 transitions = [[0, 0], [0,1]]
 excited_states = True
 coupling = True
-coupling_type = 'both'
+coupling_type = 'electronic'
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # MD post-processing along trajectory
 # distance = True
