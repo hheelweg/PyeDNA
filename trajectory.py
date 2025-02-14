@@ -63,8 +63,6 @@ class Trajectory():
         # TODO : make this more flexible
         # parse output information for QM and MD simulations
         self.qm_outs, self.quant_info, self.class_info = parseOutput(path + 'qm_out.params', parse_trajectory_out=True)
-        print(self.qm_outs)
-        print(self.quant_info)
 
 
     # initialize output based on desired output parameters 
@@ -75,9 +73,11 @@ class Trajectory():
 
         # TODO: make two df's (one for classical output, one for quantum output) 
         # (2) which trajectory-ensemble outputs are we interested in:
+
         # (2.1) classical MD output parameters:
         columns_class = [key for key, value in self.class_info[0].items() if isinstance(value, bool) and value]
         self.output_class = pd.DataFrame(index = range(self.num_frames), columns = columns_class)
+
         # (2.2) quantum output parameters (output the same outputs for every transition in self.transitions)
         # NOTE : since states are 0-indexed, 0 actually corresponds to the 1st excited state of molecule A/B, 1 to the
         # 2nd excited state of molecule A/B etc.
@@ -87,12 +87,9 @@ class Trajectory():
             (transition_name, value_name) for transition_name in transition_names for value_name in columns_per_transitions
         ]) 
         self.output_quant = pd.DataFrame(index = range(self.num_frames), columns = columns_quant)
-        print(self.output_quant.columns)
-
-
-        # (2.2) QM-based output parameters:
-        if self.quant_info[1]["coupling"] == 'both':
-            pass
+        
+        print(" ** Intialization of output done!")
+        
 
     
     # initialize molecules of shape [molecule_A, molecule_B] where molecule_A/B list with residue indices
@@ -345,7 +342,7 @@ def setQMSettings(file):
 
 # parse output information for QM calculations
 # TODO : allow file not to exist without problem
-def parseOutput(file, parse_trajectory_out = False):
+def parseOutput(file, parse_trajectory_out = False, verbose = True):
 
     # output default parameters
     # TODO : add to this
@@ -391,7 +388,13 @@ def parseOutput(file, parse_trajectory_out = False):
         key: post_class.get(f"{key}_type", "default") for key in class_flags
     }
 
-    # TODO : add list intialization of quantities we are eventually interested in 
+    # print parsed output for trajectory analysis
+    print(" ** Parsed Output for Trajectory Analysis:")
+    print(f"(1) classical parameters to evaluate at each time step: {", ".join(class_flags.keys())}")
+    print(f"(1) we use the following methods (in order): {", ".join(class_methods.values())}")
+    print(f"(2) we study the following state transitions [stateA, stateB]: {", ".join(transition for transition in qm_flags["transitions"])}")
+    print(f"(2) quantum parameters to evaluate at each time step for each transition: {", ".join(key for key, value in qm_flags.items() if isinstance(value, bool))}")
+    print(f"(2) we use the following methods (in order): {", ".join(qm_methods.values())}")
 
     if parse_trajectory_out:
         return qm_outs, [qm_flags, qm_methods], [class_flags, class_methods]
