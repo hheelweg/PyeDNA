@@ -9,7 +9,8 @@ import structure
 import quantumTools as qm
 import time
 import pandas as pd
-
+# TODO : only for debugging
+from joblib import dump, load
 
 
 # TODO : write class to perform MD simulation
@@ -183,8 +184,10 @@ class Trajectory():
             # NOTE : test-wise DFT/TDDFT calculation
             # (3.1) run QM calculation
             output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs)
-            # temporarily store ouput_qm:
-            
+            # temporarily store ouput_qm for debugging
+            dump(output_qm, f"output_qm_{idx}.joblib")
+
+            output_qm = load(f"output_qm_{idx}.joblib")
             print('output DFT/TDDFT', output_qm['exc'])
             
             # (3.2) post-processing of QM output
@@ -397,6 +400,10 @@ def parseOutput(file, parse_trajectory_out = False, verbose = True):
         key: post_class.get(f"{key}_type", "default") for key in class_flags
     }
 
+    values = {key: None for key in qm_outs}
+    print('debug1', values)
+    output = {key: values[key] for key, value in qm_outs.items() if value}
+    print('debug2', output)
 
     if parse_trajectory_out:
         if verbose:
