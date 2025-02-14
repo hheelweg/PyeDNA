@@ -8,5 +8,5 @@ stateB = 1
 transitions = [[0, 1], [1,0]]
 coupling = 'both'
 # MD post-processing along trajectory
-distance_mols = True
+distance = True
 distance_type = cog

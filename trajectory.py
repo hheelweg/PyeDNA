@@ -62,22 +62,24 @@ class Trajectory():
         
         # TODO : make this more flexible
         # parse output information for QM and MD simulations
-        self.qm_outs, self.outs = parseQMOutput(path + 'qm_out.params', parse_post=True)
+        self.qm_outs, self.outs_quant, self.outs_class = parseOutput(path + 'qm_out.params', parse_post=True)
         print(self.qm_outs)
-        print(self.outs)
+        print(self.outs_quant)
 
 
     # initialize output based on desired output parameters 
     def initOutput(self):
         # (1) define QM states we are interested in (0-indexed), i.e. (S_0^A , S_{stateB + 1}^B) <--> (S_{stateA + 1}^A, S_0^B)
         # TODO : maybe feed multiple of state pairs here to have more things to examine
-        self.states= [self.outs["stateA"], self.outs["stateB"]]
-        # this might be the best way forward
-        self.transitions = self.outs["transitions"]
-        print('transitions', self.transitions)
-        print('no of transitions', len(self.transitions))
+        self.states= [self.outs_quant["stateA"], self.outs_quant["stateB"]]
+        # this might be the best way forward:
+        self.transitions = self.outs_quant["transitions"]
 
         # TODO: make two df's (one for classical output, one for quantum output) 
+        #columns_class = [self.outs[keyfor key in self.outs if]
+        columns_class = [key for key, value in self.outs_class if isinstance(key, bool) and value]
+        self.output_class = pd.DataFrame(index = range(self.num_frames), columns = columns_class)
+        print(self.output_class)
 
         # (2) which trajectory-ensemble outputs are we interested in:
         # (2.1) classical MD output parameters:
@@ -338,12 +340,12 @@ def setQMSettings(file):
 
 # parse output information for QM calculations
 # TODO : allow file not to exist without problem
-def parseQMOutput(file, parse_post = False):
+def parseOutput(file, parse_post = False):
 
     # output default parameters
     # TODO : add to this
     out = {
-            "exc" : False,
+            "exc" : True,
             "mf"  : False,
             "occ" : False,
             "virt": False,
@@ -363,11 +365,12 @@ def parseQMOutput(file, parse_post = False):
     # conductiong QM (DFT/TDDFT) simulations or to post-processing of the QM results
     # TODO : add to this
     qm_outs = {key: out.get(key) for key in ["exc", "mol", "tdm", "mf", "occ", "virt", "dip", "osc", "idx"]}                          # NOTE : only boolean key values
-    post_outs = {key: out.get(key) for key in ["stateA", "stateB", "coupling", "transitions", "distance_mols", "distance_type"]}
+    post_qm = {key: out.get(key) for key in ["stateA", "stateB", "coupling", "transitions"]}
+    post_class = {key: out.get(key) for key in ["distance", "distance_type"]} 
 
     # TODO : add list intialization of quantities we are eventually interested in 
 
     if parse_post:
-        return qm_outs, post_outs
+        return qm_outs, post_qm, post_class
     else:
         return qm_outs

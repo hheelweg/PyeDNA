@@ -97,7 +97,7 @@ def analyzeQM(output_qm, output_keys):
 def main(molecules, time_steps):
 
     # output quantities we are interested in
-    qm_outs, post_outs = traj.parseQMOutput('qm_out.params', parse_post=True)
+    qm_outs, post_outs, _ = traj.parseOutput('qm_out.params', parse_post=True)
 
     # store couplings
     cJs, cKs = [], []
