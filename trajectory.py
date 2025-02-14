@@ -87,7 +87,7 @@ class Trajectory():
             (transition_name, value_name) for transition_name in transition_names for value_name in columns_per_transitions
         ]) 
         self.output_quant = pd.DataFrame(index = range(self.num_frames), columns = columns_quant)
-        print(self.output_quant.head())
+        print(self.output_quant.columns)
 
 
         # (2.2) QM-based output parameters:
@@ -390,8 +390,6 @@ def parseOutput(file, parse_trajectory_out = False):
     class_methods = {
         key: post_class.get(f"{key}_type", "default") for key in class_flags
     }
-    print('qm_flags', qm_flags)
-    print('qm_methodss', qm_methods)
 
     # TODO : add list intialization of quantities we are eventually interested in 
 
