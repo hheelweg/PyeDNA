@@ -251,10 +251,10 @@ class Trajectory():
             # take time per time step
             end_time = time.time()
             print(f"Elapsed time for step {idx}: {end_time- start_time} seconds")
-            print('TT', self.quant_info[1].update({"transitions": self.transitions}))
+            print('TT', self.quant_info[1])
 
         # (4) write output files
-        self.writeOutputFiles(self.output_quant, self.quant_info[1].update({"transitions": self.transitions}), "out_quant.txt")
+        self.writeOutputFiles(self.output_quant, self.quant_info[0], "out_quant.txt")
 
 
 
