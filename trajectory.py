@@ -68,11 +68,15 @@ class Trajectory():
 
     # initialize output based on desired output parameters 
     def initOutput(self):
+
         # (1) define QM states we are interested in (0-indexed), i.e. (S_0^A , S_{stateB + 1}^B) <--> (S_{stateA + 1}^A, S_0^B)
-        # TODO : maybe feed multiple of state pairs here to have more things to examine
         self.transitions = self.quant_info[0]["transitions"]
 
-        # TODO: might also want to add DataFrame for the direct QM (DFT/TDDFT) outputs 
+        # TODO : might also want to add DataFrame for the direct QM (DFT/TDDFT) outputs 
+
+        # TODO : might want to add number of time steps instead of complete trajectory
+
+        # TODO : might also want to add time axis
 
 
         # (2) which trajectory-ensemble outputs are we interested in:
@@ -101,7 +105,19 @@ class Trajectory():
 
         print("*** Intialization of output done!")
         
+    # TODO : need to work on this function (2/14)
+    def writeOutputFiles(self, data_frame, out_params, file_name, write_meta_data = True):
+        # (1) write meta dats into header
+        print('testttt', out_params)
+        # (2) store DateFrame (classical or quantum) with meta data header (optional)
+        with open(file_name, "w") as f:
+            # optional: write meta data
+            if write_meta_data:
+                pass
+            # write output
+            self.output_class.to_csv(f, sep = "\t")
 
+        
     
     # initialize molecules of shape [molecule_A, molecule_B] where molecule_A/B list with residue indices
     # TODO : add check whether molecule is actually valid (consecutive integers etc.)
@@ -236,7 +252,8 @@ class Trajectory():
             end_time = time.time()
             print(f"Elapsed time for step {idx}: {end_time- start_time} seconds")
 
-
+        # (4) write output files
+        self.writeOutputFiles(self.output_quant, self.quant_info[0], "out_quant.txt")
 
 
 
@@ -395,7 +412,6 @@ def setQMSettings(file):
 def parseOutput(file, parse_trajectory_out = False, verbose = True):
 
     # output default parameters
-    # TODO : add to this
     out = {
             "exc" : True,
             "mf"  : False,
