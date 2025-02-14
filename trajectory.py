@@ -62,27 +62,27 @@ class Trajectory():
         
         # TODO : make this more flexible
         # parse output information for QM and MD simulations
-        self.qm_outs, self.outs_quant, self.outs_class = parseOutput(path + 'qm_out.params', parse_post=True)
+        self.qm_outs, self.quant_info, self.class_info = parseOutput(path + 'qm_out.params', parse_post=True)
         print(self.qm_outs)
-        print(self.outs_quant)
+        print(self.quant_info)
 
 
     # initialize output based on desired output parameters 
     def initOutput(self):
         # (1) define QM states we are interested in (0-indexed), i.e. (S_0^A , S_{stateB + 1}^B) <--> (S_{stateA + 1}^A, S_0^B)
         # TODO : maybe feed multiple of state pairs here to have more things to examine
-        self.transitions = self.outs_quant["transitions"]
+        self.transitions = self.quant_info[0]["transitions"]
 
         # TODO: make two df's (one for classical output, one for quantum output) 
         # (2) which trajectory-ensemble outputs are we interested in:
         # (2.1) classical MD output parameters:
-        columns_class = [key for key, value in self.outs_class.items() if isinstance(value, bool) and value]
+        columns_class = [key for key, value in self.class_info[0].items() if isinstance(value, bool) and value]
         self.output_class = pd.DataFrame(index = range(self.num_frames), columns = columns_class)
         # (2.2) quantum output parameters (output the same outputs for every transition in self.transitions)
         # NOTE : since states are 0-indexed, 0 actually corresponds to the 1st excited state of molecule A/B, 1 to the
         # 2nd excited state of molecule A/B etc.
         transition_names = [f"[A({states[0] + 1}), B(0)] <--> [A(0), B({states[1] + 1})]" for states in self.transitions]
-        columns_per_transitions = [key for key, value in self.outs_quant.items() if isinstance(value, bool) and value]
+        columns_per_transitions = [key for key, value in self.quant_info[0].items() if isinstance(value, bool) and value]
         columns_quant = pd.MultiIndex.from_tuples([
             (transition_name, value_name) for transition_name in transition_names for value_name in columns_per_transitions
         ]) 
@@ -91,7 +91,7 @@ class Trajectory():
 
 
         # (2.2) QM-based output parameters:
-        if self.outs_quant["coupling"] == 'both':
+        if self.quant_info[1]["coupling"] == 'both':
             pass
 
     
@@ -345,7 +345,7 @@ def setQMSettings(file):
 
 # parse output information for QM calculations
 # TODO : allow file not to exist without problem
-def parseOutput(file, parse_post = False):
+def parseOutput(file, parse_trajectory_out = False):
 
     # output default parameters
     # TODO : add to this
@@ -368,32 +368,34 @@ def parseOutput(file, parse_post = False):
 
     # split the output parameters into parameters that are relevant only to
     # conductiong QM (DFT/TDDFT) simulations or to post-processing of the trajectory 
-    # TODO : add to this
     # (1) QM (DFT/TDDFT) outputs (NOTE : only boolean)
-    qm_outs = {key: out.get(key) for key in ["exc", "mol", "tdm", "mf", "occ", "virt", "dip", "osc", "idx"]}                    
+    qm_outs = {key: out.get(key) for key in ["exc", "mol", "tdm", "mf", "occ", "virt", "dip", "osc", "idx"]}     
+    # TODO : in order to evaluate some of the post-processing output, we need to have some of this flags set to True
+    # might want to implement a checkpoint here               
 
     # (2) trajectory-based outputs per time steps
-    # (2.1) quantum-mechanical based parameters
-    post_qm = {key: out.get(key) for key in ["coupling", "coupling_type", "transitions", "excited_states"]}                 # all QM options                         
+    # (2.1) quantum-mechanical based parameters and methods
+    post_qm = {key: out.get(key) for key in ["transitions", "coupling", "coupling_type", "excited_states"]}                 # all QM options                         
     qm_flags = {key: value for key, value in post_qm.items() if isinstance(value, bool) and value}                          # NOTE : only bool/True param
+    qm_flags.update({"transitions": post_qm["transitions"]})
     # for each flag we either set specified methods_type or default
     qm_methods = {
-        key: post_qm.get(f"{key}_type", "default") for key in qm_flags
+        key: post_qm.get(f"{key}_type", "default") for key in qm_flags if isinstance(qm_flags[key], bool)
     }
 
-    # (2.2) classical parameters
+    # (2.2) classical parameters and methods
     post_class = {key: out.get(key) for key in ["distance", "distance_type"]}                                               # all MD options
     class_flags = {key: value for key, value in post_class.items() if isinstance(value, bool) and value}                    # NOTE : only bool/True param
     # for each flag we either set specified methods_type or default
     class_methods = {
         key: post_class.get(f"{key}_type", "default") for key in class_flags
     }
-    print('class_flags', class_flags)
-    print('clas_methodss', class_methods)
+    print('qm_flags', qm_flags)
+    print('qm_methodss', qm_methods)
 
     # TODO : add list intialization of quantities we are eventually interested in 
 
-    if parse_post:
-        return qm_outs, post_qm, post_class
+    if parse_trajectory_out:
+        return qm_outs, [qm_flags, qm_methods], [class_flags, class_methods]
     else:
         return qm_outs

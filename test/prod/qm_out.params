@@ -10,4 +10,4 @@ coupling_type = 'both'
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # MD post-processing along trajectory
 distance = True
-distance_type = cog
+distance_type = COG
