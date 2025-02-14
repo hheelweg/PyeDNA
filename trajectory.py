@@ -148,7 +148,7 @@ class Trajectory():
 
     # analyze trajectory time step with regards to 
     # TODO : also put qm.doDFT_gpu() in here eventually to save QM calculation if we don't want to do it
-    def analyzeSnapshotQuantum(self, output_qm):
+    def analyzeSnapshotQuantum(self, time_idx, output_qm):
         # TODO : implement check whether we even have to run this if nothing specified
 
         # (1) loop over all specified transitions
@@ -158,13 +158,14 @@ class Trajectory():
             # (a) get Coulombic coupling information if desired
             if self.quant_info[0]["coupling"]: 
                 coupling_out = qm.getVCoulombic(output_qm['mol'], output_qm['tdm'], states, coupling_type=self.quant_info[1]['coupling'])
+                # further scaffold the self.outpu_quant array to aacount for all coupling information
                 sub_columns = ['cJ', 'cK', 'V_C']
-                print('sub', sub_columns)
                 df = pd.DataFrame(index = range(self.num_frames), columns=pd.MultiIndex.from_product([[self.transition_names[i]], sub_columns]))
-                print(df.columns)
                 self.output_quant = self.output_quant.drop(columns=[(self.transition_names[i], "coupling")]).join(df)
-                # need to modify DataFrame accordingly
-                print(self.output_quant.columns)
+                # add to output
+                self.output_quant.loc[time_idx, [(self.transition_names[i], key) for key in coupling_out.keys()]] = list(coupling_out.values())
+
+        print(self.output_quant.head())
 
 
             # (b) get excitation energies
@@ -218,7 +219,7 @@ class Trajectory():
             # TODO : load for simplicity here
             output_qm = load(f"output_qm_{idx}.joblib")
             print('output DFT/TDDFT', output_qm['exc'])
-            self.analyzeSnapshotQuantum(output_qm)
+            self.analyzeSnapshotQuantum(idx, output_qm)
             
 
 
