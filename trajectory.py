@@ -62,7 +62,7 @@ class Trajectory():
         
         # TODO : make this more flexible
         # parse output information for QM and MD simulations
-        self.qm_outs, self.quant_info, self.class_info = parseOutput(path + 'qm_out.params', parse_post=True)
+        self.qm_outs, self.quant_info, self.class_info = parseOutput(path + 'qm_out.params', parse_trajectory_out=True)
         print(self.qm_outs)
         print(self.quant_info)
 
