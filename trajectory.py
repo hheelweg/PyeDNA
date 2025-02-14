@@ -71,8 +71,6 @@ class Trajectory():
     def initOutput(self):
         # (1) define QM states we are interested in (0-indexed), i.e. (S_0^A , S_{stateB + 1}^B) <--> (S_{stateA + 1}^A, S_0^B)
         # TODO : maybe feed multiple of state pairs here to have more things to examine
-        self.states= [self.outs_quant["stateA"], self.outs_quant["stateB"]]
-        # this might be the best way forward:
         self.transitions = self.outs_quant["transitions"]
 
         # TODO: make two df's (one for classical output, one for quantum output) 
@@ -80,8 +78,7 @@ class Trajectory():
         # (2.1) classical MD output parameters:
         columns_class = [key for key, value in self.outs_class.items() if isinstance(value, bool) and value]
         self.output_class = pd.DataFrame(index = range(self.num_frames), columns = columns_class)
-        # (2.2) quantum output parameters
-        # output the same outputs for every transition in self.transitions
+        # (2.2) quantum output parameters (output the same outputs for every transition in self.transitions)
         # NOTE : since states are 0-indexed, 0 actually corresponds to the 1st excited state of molecule A/B, 1 to the
         # 2nd excited state of molecule A/B etc.
         transition_names = [f"[A({states[0] + 1}), B(0)] <--> [A(0), B({states[1] + 1})]" for states in self.transitions]
