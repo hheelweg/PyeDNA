@@ -149,10 +149,8 @@ class Trajectory():
         else:
             self.time_slice = time_slice
 
-        # (2) initialize molecules of interest
-        self.initMolecules(molecules)
-        # (2) intialize output of interest
-        self.initOutput()
+        self.initMolecules(molecules)                                   # intialize molecule information
+        self.initOutput()                                               # initialize ourput
 
         # (3) analyze trajectory
         # distances = []
@@ -396,7 +394,7 @@ def parseOutput(file, parse_trajectory_out = False, verbose = True):
             print(" *** Parsed Output for Trajectory Analysis:")
             print(f"(1) classical parameters to evaluate at each time step: {', '.join(class_flags.keys())}")
             print(f"(1) we use the following methods (in order): {', '.join(class_methods.values())}")
-            print(f"(2) we study the following state transitions \[stateA, stateB\]: {', '.join(str(transition) for transition in qm_flags['transitions'])}")
+            print(f"(2) we study the following state transitions [stateA, stateB]: {', '.join(str(transition) for transition in qm_flags['transitions'])}")
             print(f"(2) quantum parameters to evaluate at each time step for each transition: {', '.join(key for key, value in qm_flags.items() if isinstance(value, bool))}")
             print(f"(2) we use the following methods (in order): {', '.join(qm_methods.values())}")
         return qm_outs, [qm_flags, qm_methods], [class_flags, class_methods]
