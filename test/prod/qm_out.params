@@ -9,5 +9,5 @@ transitions = [[0, 0], [0,1]]
 coupling_type = 'both'
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # MD post-processing along trajectory
-distance = True
+#distance = True
 distance_type = COG

@@ -76,6 +76,7 @@ class Trajectory():
 
         # (2.1) classical MD output parameters:
         columns_class = [key for key, value in self.class_info[0].items() if isinstance(value, bool) and value]
+        print(columns_class)
         self.output_class = pd.DataFrame(index = range(self.num_frames), columns = columns_class)
 
         # (2.2) quantum output parameters (output the same outputs for every transition in self.transitions)
@@ -83,6 +84,7 @@ class Trajectory():
         # 2nd excited state of molecule A/B etc.
         transition_names = [f"[A({states[0] + 1}), B(0)] <--> [A(0), B({states[1] + 1})]" for states in self.transitions]
         columns_per_transitions = [key for key, value in self.quant_info[0].items() if isinstance(value, bool) and value]
+        print(columns_per_transitions)
         columns_quant = pd.MultiIndex.from_tuples([
             (transition_name, value_name) for transition_name in transition_names for value_name in columns_per_transitions
         ]) 
@@ -390,7 +392,6 @@ def parseOutput(file, parse_trajectory_out = False, verbose = True):
     if parse_trajectory_out:
         if verbose:
             # print parsed output for trajectory analysis
-            print(qm_flags['transitions'])
             print(" *** Parsed Output for Trajectory Analysis:")
             print(f"(1) classical parameters to evaluate at each time step: {', '.join(class_flags.keys())}")
             print(f"(1) we use the following methods (in order): {', '.join(class_methods.values())}")
