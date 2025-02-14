@@ -367,10 +367,17 @@ def parseOutput(file, parse_post = False):
     out.update(user_out)
 
     # split the output parameters into parameters that are relevant only to
-    # conductiong QM (DFT/TDDFT) simulations or to post-processing of the QM results
+    # conductiong QM (DFT/TDDFT) simulations or to post-processing of the trajectory 
     # TODO : add to this
-    qm_outs = {key: out.get(key) for key in ["exc", "mol", "tdm", "mf", "occ", "virt", "dip", "osc", "idx"]}                          # NOTE : only boolean key values
-    post_qm = {key: out.get(key) for key in ["coupling", "coupling_type", "transitions", "excited_states"]}
+    # (1) QM (DFT/TDDFT) outputs (NOTE : only boolean)
+    qm_outs = {key: out.get(key) for key in ["exc", "mol", "tdm", "mf", "occ", "virt", "dip", "osc", "idx"]}                    
+
+    # (2) trajectory-based outputs per time steps
+    # (2.1) quantum-mechanical based parameters
+    post_qm = {key: out.get(key) for key in ["coupling", "coupling_type", "transitions", "excited_states"]}                 # all QM options                         
+    qm_flags = {key: value for key, value in post_qm.items() if not isinstance(value, bool) and value}                      # NOTE : only bool/True params 
+    print('qm_flags', qm_flags)
+    # (2.2) classical parameters
     post_class = {key: out.get(key) for key in ["distance", "distance_type"]} 
 
     # TODO : add list intialization of quantities we are eventually interested in 
