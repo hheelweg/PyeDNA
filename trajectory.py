@@ -136,8 +136,9 @@ class Trajectory():
     
 
 
+
     # analyze trajectory based on specific molecules of interest
-    def analyzeTrajectory(self, molecules, time_slice = None, **params):
+    def loopTrajectory(self, molecules, time_slice = None, **params):
         # (0) unpack arguments, i.e. quantities of interest for the trajectory
         # TODO : make this more flexible and stream-line this better
         conversion = params['conversion']
@@ -153,7 +154,6 @@ class Trajectory():
         self.initOutput()                                               # initialize ourput
 
         # (3) analyze trajectory
-        # distances = []
         for idx in range(self.time_slice[0], self.time_slice[1] + 1):
 
             start_time = time.time()
@@ -180,7 +180,7 @@ class Trajectory():
 
 
 
-            # take time
+            # take time per time step
             end_time = time.time()
             print(f"Elapsed time for step {idx}: {end_time- start_time} seconds")
 
