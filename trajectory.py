@@ -157,16 +157,16 @@ class Trajectory():
             print('states', states)
             # (a) get Coulombic coupling information if desired
             if self.quant_info[0]["coupling"]: 
+                # compute coupling based on QM (DFT/TDDFT) output
                 coupling_out = qm.getVCoulombic(output_qm['mol'], output_qm['tdm'], states, coupling_type=self.quant_info[1]['coupling'])
                 # further scaffold the self.outpu_quant array to aacount for all coupling information
                 sub_columns = ['cJ', 'cK', 'V_C']
                 df = pd.DataFrame(index = range(self.num_frames), columns=pd.MultiIndex.from_product([[self.transition_names[i]], sub_columns]))
                 self.output_quant = self.output_quant.drop(columns=[(self.transition_names[i], "coupling")]).join(df)
-                # add to output
+                # add to output dict
                 self.output_quant.loc[time_idx, [(self.transition_names[i], key) for key in coupling_out.keys()]] = list(coupling_out.values())
 
         print(self.output_quant.head())
-
 
             # (b) get excitation energies
                 
