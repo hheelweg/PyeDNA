@@ -128,7 +128,7 @@ def main(molecules, time_steps):
         tdms = output_qm["tdm"]
         exc = output_qm["exc"]
 
-        cJ, cK = quantumTools.getV(mols[0], mols[1], tdms[0], tdms[1], stateA=stateA, stateB=stateB, coupling_type='both')
+        cJ, cK = quantumTools.getVCoulombic(mols[0], mols[1], tdms[0], tdms[1], stateA=stateA, stateB=stateB, coupling_type='both')
         exc_A, exc_B = exc[0][stateA], exc[1][stateB]
         print('cJ', cJ)
         cJs.append(cJ)
