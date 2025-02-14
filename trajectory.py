@@ -183,6 +183,8 @@ class Trajectory():
             # NOTE : test-wise DFT/TDDFT calculation
             # (3.1) run QM calculation
             output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs)
+            # temporarily store ouput_qm:
+            
             print('output DFT/TDDFT', output_qm['exc'])
             
             # (3.2) post-processing of QM output
