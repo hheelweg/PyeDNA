@@ -160,15 +160,24 @@ class Trajectory():
                 # compute coupling based on QM (DFT/TDDFT) output
                 coupling_out = qm.getVCoulombic(output_qm['mol'], output_qm['tdm'], states, coupling_type=self.quant_info[1]['coupling'])
                 # further scaffold the self.outpu_quant array to aacount for all coupling information
-                sub_columns = ['cJ', 'cK', 'V_C']
+                sub_columns = ['coupling cJ', 'coupling cK', 'coupling V_C']
                 df = pd.DataFrame(index = range(self.num_frames), columns=pd.MultiIndex.from_product([[self.transition_names[i]], sub_columns]))
                 self.output_quant = self.output_quant.drop(columns=[(self.transition_names[i], "coupling")]).join(df)
                 # add to output dict
                 self.output_quant.loc[time_idx, [(self.transition_names[i], key) for key in coupling_out.keys()]] = list(coupling_out.values())
 
-        print(self.output_quant.head())
-
             # (b) get excitation energies
+            if self.quant_info[0]["excited_energies"]:
+                # get excited state energies based on QM (DFT/TDDFT) output
+                energies_out = qm.getExcEnergies(output_qm['exc'], states, excitation_energy_type=self.quant_info[1]['excited_energies'])
+                # further scaffold the self.outpu_quant array to aacount for all excited state energies
+                sub_columns = ['energy A', 'energy B']
+                df = pd.DataFrame(index = range(self.num_frames), columns=pd.MultiIndex.from_product([[self.transition_names[i]], sub_columns]))
+                self.output_quant = self.output_quant.drop(columns=[(self.transition_names[i], "excited_energies")]).join(df)
+                # add to output dict
+                self.output_quant.loc[time_idx, [(self.transition_names[i], key) for key in energies_out.keys()]] = list(energies_out.values())
+        
+        print('test', self.output_quant.head())
                 
             
         
@@ -414,7 +423,7 @@ def parseOutput(file, parse_trajectory_out = False, verbose = True):
 
     # (2) trajectory-based outputs per time steps
     # (2.1) quantum-mechanical based parameters and methods
-    post_qm = {key: out.get(key) for key in ["transitions", "coupling", "coupling_type", "excited_states"]}                 # all QM options                         
+    post_qm = {key: out.get(key) for key in ["transitions", "coupling", "coupling_type", "excited_energies"]}               # all QM options                         
     qm_flags = {key: value for key, value in post_qm.items() if isinstance(value, bool) and value}                          # NOTE : only bool/True param
     qm_flags.update({"transitions": post_qm["transitions"]})
     # for each flag we either set specified methods_type or default

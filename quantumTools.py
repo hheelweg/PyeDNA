@@ -399,8 +399,6 @@ def doQM_gpu(molecules, output_keys):
     return output
 
 
-
-
 # coupling terms for the computation cJ and cK 
 def getCJCK(molA, molB, tdmA, tdmB, get_cK = False):
 
@@ -439,7 +437,7 @@ def getCJCK(molA, molB, tdmA, tdmB, get_cK = False):
 
 
 # compute coupling terms ('cJ', 'cK', 'electronic', 'both') for the states (S_0^A , S_{stateB + 1}^B) <--> (S_{stateA + 1}^A, S_0^B)
-# 'cJ' only returns the electrostatic interaction, 'cK' only the exchange interaction, 'electronic' returns 2 * cJ - cK, and 'both' returns tuple (cJ, cK)
+# 'cJ' only returns the electrostatic interaction, 'cK' only the exchange interaction, 'electronic' returns 2 * cJ - cK
 # NOTE : stateA and stateB are zero-indexed here so stateA = 0 corresponds to the first excited state of molecule A etc.
 # stateA and stateB default to 0 to for the transition (S_0^A , S_1^B) <--> (S_1^A, S_0^B)
 def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
@@ -448,20 +446,31 @@ def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
     molA, molB = mols[0], mols[1]
     tdmA, tdmB = tdms[0][stateA], tdms[1][stateB]
 
-    if coupling_type in ['electronic', 'cK', 'both']:
+    if coupling_type in ['electronic', 'cK']:
         cJ, cK = getCJCK(molA, molB, tdmA, tdmB, get_cK=True)
     elif coupling_type in ['cJ']:
         cJ, _ = getCJCK(molA, molB, tdmA, tdmB, get_cK=False)
     else:
         raise NotImplementedError("Invalid coupling type specified!")
     
-    results = {'cJ': cJ, 'cK': cK}
+    results = {'coupling cJ': cJ, 'coupling cK': cK}
     if coupling_type == 'electronic':                                     
-        results['V_C'] = 2 * cJ - cK                                # total electronic coupling
+        results['coupling V_C'] = 2 * cJ - cK                               # total electronic coupling
     elif coupling_type == 'cK':
-        results['V_C'] = - cK                                       # exchange-interaction part of the electronic coupling
+        results['couplingV_C'] = - cK                                       # exchange-interaction part of the electronic coupling
     elif coupling_type == 'cJ':
-        results['V_C'] = 2 * cJ                                     # electrostatic-interaction part of the electronic coupling
+        results['coupling V_C'] = 2 * cJ                                    # electrostatic-interaction part of the electronic coupling
+    return results
+
+# get excitation energies for specified states
+def getExcEnergies(excs, states, excitation_energy_type = 'default'):
+
+    stateA, stateB = states[0], states[1]
+    excA, excB = excs[0], excs[1]
+
+    results = {}
+    results['energy A'] = excA[stateA]
+    results['energy B'] = excB[stateB]
     return results
 
 
