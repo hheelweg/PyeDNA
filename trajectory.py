@@ -86,7 +86,7 @@ class Trajectory():
         columns_quant = pd.MultiIndex.from_tuples([
             (transition_name, value_name) for transition_name in transition_names for value_name in columns_per_transitions
         ]) 
-        self.output_quant = pd.DataFrame(index = range(self.num_frames), columns = columns_per_transitions)
+        self.output_quant = pd.DataFrame(index = range(self.num_frames), columns = columns_quant)
         print(self.output_quant)
 
 
