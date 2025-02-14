@@ -88,7 +88,7 @@ class Trajectory():
         ]) 
         self.output_quant = pd.DataFrame(index = range(self.num_frames), columns = columns_quant)
         
-        print(" ** Intialization of output done!")
+        print("*** Intialization of output done!")
         
 
     
@@ -388,16 +388,17 @@ def parseOutput(file, parse_trajectory_out = False, verbose = True):
         key: post_class.get(f"{key}_type", "default") for key in class_flags
     }
 
-    # print parsed output for trajectory analysis
-    print(qm_flags['transitions'])
-    print(" *** Parsed Output for Trajectory Analysis:")
-    print(f"(1) classical parameters to evaluate at each time step: {', '.join(class_flags.keys())}")
-    print(f"(1) we use the following methods (in order): {', '.join(class_methods.values())}")
-    print(f"(2) we study the following state transitions \[stateA, stateB\]: {', '.join(str(transition) for transition in qm_flags['transitions'])}")
-    print(f"(2) quantum parameters to evaluate at each time step for each transition: {', '.join(key for key, value in qm_flags.items() if isinstance(value, bool))}")
-    print(f"(2) we use the following methods (in order): {', '.join(qm_methods.values())}")
 
     if parse_trajectory_out:
+        if verbose:
+            # print parsed output for trajectory analysis
+            print(qm_flags['transitions'])
+            print(" *** Parsed Output for Trajectory Analysis:")
+            print(f"(1) classical parameters to evaluate at each time step: {', '.join(class_flags.keys())}")
+            print(f"(1) we use the following methods (in order): {', '.join(class_methods.values())}")
+            print(f"(2) we study the following state transitions \[stateA, stateB\]: {', '.join(str(transition) for transition in qm_flags['transitions'])}")
+            print(f"(2) quantum parameters to evaluate at each time step for each transition: {', '.join(key for key, value in qm_flags.items() if isinstance(value, bool))}")
+            print(f"(2) we use the following methods (in order): {', '.join(qm_methods.values())}")
         return qm_outs, [qm_flags, qm_methods], [class_flags, class_methods]
     else:
         return qm_outs
