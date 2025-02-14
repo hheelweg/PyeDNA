@@ -80,13 +80,12 @@ class Trajectory():
             self.output_class = pd.DataFrame(index = range(self.num_frames), columns = columns_class)
         else:
             self.output_class = None
-
+        print(self.output_class)
         # (2.2) quantum output parameters (output the same outputs for every transition in self.transitions)
         # NOTE : since states are 0-indexed, 0 actually corresponds to the 1st excited state of molecule A/B, 1 to the
         # 2nd excited state of molecule A/B etc.
         transition_names = [f"[A({states[0] + 1}), B(0)] <--> [A(0), B({states[1] + 1})]" for states in self.transitions]
         columns_per_transitions = [key for key, value in self.quant_info[0].items() if isinstance(value, bool) and value]
-        print(columns_per_transitions)
         if columns_per_transitions:
             columns_quant = pd.MultiIndex.from_tuples([
                 (transition_name, value_name) for transition_name in transition_names for value_name in columns_per_transitions
@@ -95,6 +94,7 @@ class Trajectory():
         else:
             self.output_quant = None
         
+        print(self.output_quant.columns)
         print("*** Intialization of output done!")
         
 
