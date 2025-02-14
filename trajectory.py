@@ -76,16 +76,21 @@ class Trajectory():
         self.transitions = self.outs_quant["transitions"]
 
         # TODO: make two df's (one for classical output, one for quantum output) 
-        #columns_class = [self.outs[keyfor key in self.outs if]
-        print('class dict', self.outs_class)
-        columns_class = [key for key, value in self.outs_class.items() if isinstance(value, bool) and value]
-        print('column names', columns_class)
-        self.output_class = pd.DataFrame(index = range(self.num_frames), columns = columns_class)
-        print(self.output_class)
-
         # (2) which trajectory-ensemble outputs are we interested in:
         # (2.1) classical MD output parameters:
-        columns_quant = []
+        columns_class = [key for key, value in self.outs_class.items() if isinstance(value, bool) and value]
+        self.output_class = pd.DataFrame(index = range(self.num_frames), columns = columns_class)
+        # (2.2) quantum output parameters
+        # output the same outputs for every transition in self.transitions
+        # NOTE : since states are 0-indexed, 0 actually corresponds to the 1st excited state of molecule A/B, 1 to the
+        # 2nd excited state of molecule A/B etc.
+        transition_names = [f"[A({states[0] + 1}), B(0)] <--> [A(0), B({states[1] + 1})]" for states in self.transitions]
+        columns_per_transitions = [key for key, value in self.outs_quant.items() if isinstance(value, bool) and value]
+        columns_quant = pd.MultiIndex.from_tuples([
+            (transition_name, value_name) for transition_name in transition_names for value_name in columns_per_transitions
+        ]) 
+        self.output_quant = pd.DataFrame(index = range(self.num_frames), columns = columns_per_transitions)
+        print(self.output_quant)
 
 
         # (2.2) QM-based output parameters:
@@ -368,7 +373,7 @@ def parseOutput(file, parse_post = False):
     # conductiong QM (DFT/TDDFT) simulations or to post-processing of the QM results
     # TODO : add to this
     qm_outs = {key: out.get(key) for key in ["exc", "mol", "tdm", "mf", "occ", "virt", "dip", "osc", "idx"]}                          # NOTE : only boolean key values
-    post_qm = {key: out.get(key) for key in ["stateA", "stateB", "coupling", "transitions"]}
+    post_qm = {key: out.get(key) for key in ["coupling", "coupling_type", "transitions", "excited_states"]}
     post_class = {key: out.get(key) for key in ["distance", "distance_type"]} 
 
     # TODO : add list intialization of quantities we are eventually interested in 
