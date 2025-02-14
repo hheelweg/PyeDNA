@@ -254,7 +254,7 @@ class Trajectory():
             print('TT', self.quant_info[1].update({"transitions": self.transitions}))
 
         # (4) write output files
-        self.writeOutputFiles(self.output_quant, self.quant_info[1], "out_quant.txt")
+        self.writeOutputFiles(self.output_quant, self.quant_info[1].update({"transitions": self.transitions}), "out_quant.txt")
 
 
 
