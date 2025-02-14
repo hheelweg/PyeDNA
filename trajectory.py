@@ -160,11 +160,11 @@ class Trajectory():
                 coupling_out = qm.getVCoulombic(output_qm['mol'], output_qm['tdm'], states, coupling_type=self.quant_info[1]['coupling'])
                 sub_columns = ['cJ', 'cK', 'V_C']
                 print('sub', sub_columns)
-                df = pd.DataFrame(index = self.num_frames, columns=pd.MultiIndex.from_product([[self.transition_names[i]], sub_columns]))
+                df = pd.DataFrame(index = range(self.num_frames), columns=pd.MultiIndex.from_product([[self.transition_names[i]], sub_columns]))
                 print(df.columns)
-                #self.output_quant = self.output_quant.drop(columns=[(self.transition_names[i], "coupling")]).join(df)
+                self.output_quant = self.output_quant.drop(columns=[(self.transition_names[i], "coupling")]).join(df)
                 # need to modify DataFrame accordingly
-                #print(self.output_quant.columns)
+                print(self.output_quant.columns)
 
 
             # (b) get excitation energies
