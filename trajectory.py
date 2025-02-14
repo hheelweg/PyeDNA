@@ -202,7 +202,7 @@ class Trajectory():
             # TODO : load for simplicty here
             output_qm = load(f"output_qm_{idx}.joblib")
             print('output DFT/TDDFT', output_qm['exc'])
-            self.analyzeSnapshotQuantum()
+            self.analyzeSnapshotQuantum(output_qm)
             
 
 
