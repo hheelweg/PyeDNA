@@ -88,6 +88,7 @@ class Trajectory():
         # NOTE : since states are 0-indexed, 0 actually corresponds to the 1st excited state of molecule A/B, 1 to the
         # 2nd excited state of molecule A/B etc.
         transition_names = [f"[A({states[0] + 1}), B(0)] <--> [A(0), B({states[1] + 1})]" for states in self.transitions]
+        self.quant_info[0].pop("transitions")
         columns_per_transitions = [key for key, value in self.quant_info[0].items() if isinstance(value, bool) and value]
         if columns_per_transitions:
             columns_quant = pd.MultiIndex.from_tuples([
@@ -199,7 +200,7 @@ class Trajectory():
 
 
             # (3.2) post-processing of QM output
-            # TODO : load for simplicty here
+            # TODO : load for simplicity here
             output_qm = load(f"output_qm_{idx}.joblib")
             print('output DFT/TDDFT', output_qm['exc'])
             self.analyzeSnapshotQuantum(output_qm)
