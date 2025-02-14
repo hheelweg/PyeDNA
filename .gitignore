@@ -2,6 +2,7 @@
 *.nc
 *.dcd
 *.log
+*.txt
 .vscode/
 .DS_Store
 dump/
