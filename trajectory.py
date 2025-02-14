@@ -94,7 +94,8 @@ class Trajectory():
         else:
             self.output_quant = None
         
-        print(self.quant_info[1])
+        # debig : print qm flags and methods
+        print(self.quant_info[0], self.quant_info[1])
         print("*** Intialization of output done!")
         
 
@@ -166,13 +167,13 @@ class Trajectory():
             start_time = time.time()
             print(f"*** Running Time Step {idx} ...")
 
-            # # (1) get Chromophores of interest 
-            # self.chromophores = []
-            # self.chromophores_conv = []
-            # for molecule in self.molecules:
-            #     chromophore, chromophore_conv = self.getChromophoreSnapshot(idx, molecule, conversion)
-            #     self.chromophores.append(chromophore)
-            #     self.chromophores_conv.append(chromophore_conv)
+            # (1) get Chromophores of interest 
+            self.chromophores = []
+            self.chromophores_conv = []
+            for molecule in self.molecules:
+                chromophore, chromophore_conv = self.getChromophoreSnapshot(idx, molecule, conversion)
+                self.chromophores.append(chromophore)
+                self.chromophores_conv.append(chromophore_conv)
 
 
             # # (2) get distance between chromophores:
@@ -180,8 +181,9 @@ class Trajectory():
 
             # (3) analyze with respect to QM quantities of interest
             # NOTE : test-wise DFT/TDDFT calculation
-            # # (3.1) run QM calculation
-            # output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs)
+            # (3.1) run QM calculation
+            output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs)
+            print('output DFT/TDDFT', output_qm['exc'])
             
             # (3.2) post-processing of QM output
 
