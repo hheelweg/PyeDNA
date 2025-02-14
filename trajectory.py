@@ -78,7 +78,7 @@ class Trajectory():
         # TODO: make two df's (one for classical output, one for quantum output) 
         #columns_class = [self.outs[keyfor key in self.outs if]
         print('class dict', self.outs_class)
-        columns_class = [key for key, value in self.outs_class.items() if isinstance(key, bool) and value]
+        columns_class = [key for key, value in self.outs_class.items() if isinstance(value, bool) and value]
         print('column names', columns_class)
         self.output_class = pd.DataFrame(index = range(self.num_frames), columns = columns_class)
         print(self.output_class)
