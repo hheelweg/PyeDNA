@@ -72,7 +72,9 @@ class Trajectory():
         # TODO : maybe feed multiple of state pairs here to have more things to examine
         self.transitions = self.quant_info[0]["transitions"]
 
-        # TODO: make two df's (one for classical output, one for quantum output) 
+        # TODO: might also want to add DataFrame for the direct QM (DFT/TDDFT) outputs 
+
+
         # (2) which trajectory-ensemble outputs are we interested in:
 
         # (2.1) classical MD output parameters:
@@ -95,8 +97,7 @@ class Trajectory():
         else:
             self.output_quant = None
         
-        # debig : print qm flags and methods
-        print(self.quant_info[0], self.quant_info[1])
+
         print("*** Intialization of output done!")
         
 
@@ -144,6 +145,15 @@ class Trajectory():
         return molecule_conv
     
 
+    # analyze trajectory time step with regards to 
+    # TODO : also put qm.doDFT_gpu() in here eventually to save QM calculation if we don't want to do it
+    def analyzeSnapshotQuantum(self, output_qm):
+        # TODO : implement check whether we even have to run this if nothing specified
+
+        # (1) do this per transition
+        print(self.quant_info[0], self.quant_info[1])
+        
+
 
 
     # analyze trajectory based on specific molecules of interest
@@ -189,8 +199,10 @@ class Trajectory():
 
 
             # (3.2) post-processing of QM output
+            # TODO : load for simplicty here
             output_qm = load(f"output_qm_{idx}.joblib")
             print('output DFT/TDDFT', output_qm['exc'])
+            self.analyzeSnapshotQuantum()
             
 
 
