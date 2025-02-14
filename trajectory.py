@@ -87,12 +87,12 @@ class Trajectory():
         # (2.2) quantum output parameters (output the same outputs for every transition in self.transitions)
         # NOTE : since states are 0-indexed, 0 actually corresponds to the 1st excited state of molecule A/B, 1 to the
         # 2nd excited state of molecule A/B etc.
-        transition_names = [f"[A({states[0] + 1}), B(0)] <--> [A(0), B({states[1] + 1})]" for states in self.transitions]
+        self.transition_names = [f"[A({states[0] + 1}), B(0)] <--> [A(0), B({states[1] + 1})]" for states in self.transitions]
         self.quant_info[0].pop("transitions")
         columns_per_transitions = [key for key, value in self.quant_info[0].items() if isinstance(value, bool) and value]
         if columns_per_transitions:
             columns_quant = pd.MultiIndex.from_tuples([
-                (transition_name, value_name) for transition_name in transition_names for value_name in columns_per_transitions
+                (transition_name, value_name) for transition_name in self.transition_names for value_name in columns_per_transitions
             ]) 
             self.output_quant = pd.DataFrame(index = range(self.num_frames), columns = columns_quant)
         else:
@@ -151,11 +151,23 @@ class Trajectory():
     def analyzeSnapshotQuantum(self, output_qm):
         # TODO : implement check whether we even have to run this if nothing specified
 
-        # (1) do this per transition
+        # (1) loop over all specified transitions
         print(self.quant_info[0], self.quant_info[1])
+        for i, states in self.transitions:
+            # (a) get Coulombic coupling information if desired
+            if self.quant_info[0]["coupling"]: 
+                coupling_out = qm.getVCoulombic(output_qm['mol'], output_qm['tdm'], states, coupling_type=self.quant_info[1]['coupling'])
+                sub_columns = ['cJ', 'cK', 'V_C']
+                df = pd.DataFrame(index = self.num_frames, columns=pd.MultiIndex.from_product([[self.transition_names[i]], sub_columns]))
+                self.output_quant = self.output_quant.drop(columns=[(self.transition_names[i], "coupling")]).join(df)
+                # need to modify DataFrame accordingly
+                print(self.output_quant.columns)
+
+
+            # (b) get excitation energies
+                
+            
         
-
-
 
     # analyze trajectory based on specific molecules of interest
     def loopTrajectory(self, molecules, time_slice = None, **params):

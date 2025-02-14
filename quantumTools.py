@@ -442,10 +442,11 @@ def getCJCK(molA, molB, tdmA, tdmB, get_cK = False):
 # 'cJ' only returns the electrostatic interaction, 'cK' only the exchange interaction, 'electronic' returns 2 * cJ - cK, and 'both' returns tuple (cJ, cK)
 # NOTE : stateA and stateB are zero-indexed here so stateA = 0 corresponds to the first excited state of molecule A etc.
 # stateA and stateB default to 0 to for the transition (S_0^A , S_1^B) <--> (S_1^A, S_0^B)
-def getV(molA, molB, tdmsA, tdmsB, stateA = 0, stateB = 0, coupling_type = 'electronic'):
+def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
 
-    tdmA = tdmsA[stateA]           
-    tdmB = tdmsB[stateB]
+    stateA, stateB = states[0], states[1]
+    molA, molB = mols[0], mols[1]
+    tdmA, tdmB = tdms[0][stateA], tdms[1][stateB]
 
     if coupling_type in ['electronic', 'cK', 'both']:
         cJ, cK = getCJCK(molA, molB, tdmA, tdmB, get_cK=True)
@@ -454,17 +455,14 @@ def getV(molA, molB, tdmsA, tdmsB, stateA = 0, stateB = 0, coupling_type = 'elec
     else:
         raise NotImplementedError("Invalid coupling type specified!")
     
-    if coupling_type == 'electronic':
-        V_AB = 2 * cJ - cK                                          # total electronic coupling
-        return V_AB
+    results = {'cJ': cJ, 'cK': cK}
+    if coupling_type == 'electronic':                                     
+        results['V_C'] = 2 * cJ - cK                                # total electronic coupling
     elif coupling_type == 'cK':
-        V_AB = - cK                                                 # exchange-interaction part of the electronic coupling
-        return V_AB
+        results['V_C'] = - cK                                       # exchange-interaction part of the electronic coupling
     elif coupling_type == 'cJ':
-        V_AB = 2 * cJ                                               # electrostatic-interaction part of the electronic coupling
-        return V_AB
-    elif coupling_type == 'both':
-        return cJ, cK
+        results['V_C'] = 2 * cJ                                     # electrostatic-interaction part of the electronic coupling
+    return results
 
 
 # compute absorption spectrum from oscillator strength and excitation energies
