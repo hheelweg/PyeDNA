@@ -108,7 +108,7 @@ class Trajectory():
     # TODO : need to work on this function (2/14)
     def writeOutputFiles(self, data_frame, out_params, file_name, write_meta_data = True):
         # (1) write meta dats into header
-        print('testttt', out_params)
+        print('Test', out_params)
         # (2) store DateFrame (classical or quantum) with meta data header (optional)
         with open(file_name, "w") as f:
             # optional: write meta data
