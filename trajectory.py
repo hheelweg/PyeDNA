@@ -210,16 +210,16 @@ class Trajectory():
             # # (3) analyze with respect to QM quantities of interest
             # # NOTE : test-wise DFT/TDDFT calculation
             # # (3.1) run QM calculation
-            # output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs)
+            output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs)
             # # temporarily store ouput_qm for debugging
-            # dump(output_qm, f"output_qm_{idx}.joblib")
+            dump(output_qm, f"output_qm_{idx}.joblib")
 
 
-            # (3.2) post-processing of QM output
-            # TODO : load for simplicity here
-            output_qm = load(f"output_qm_{idx}.joblib")
-            print('output DFT/TDDFT', output_qm['exc'])
-            self.analyzeSnapshotQuantum(idx, output_qm)
+            # # (3.2) post-processing of QM output
+            # # TODO : load for simplicity here
+            # output_qm = load(f"output_qm_{idx}.joblib")
+            # print('output DFT/TDDFT', output_qm['exc'])
+            # self.analyzeSnapshotQuantum(idx, output_qm)
             
 
 
