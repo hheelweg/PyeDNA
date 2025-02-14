@@ -180,18 +180,18 @@ class Trajectory():
             # # (2) get distance between chromophores:
             # distances.append(self.getDistance(self.chromophores[0], self.chromophores[1]))
 
-            # (3) analyze with respect to QM quantities of interest
-            # NOTE : test-wise DFT/TDDFT calculation
-            # (3.1) run QM calculation
-            output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs)
-            # temporarily store ouput_qm for debugging
-            dump(output_qm, f"output_qm_{idx}.joblib")
+            # # (3) analyze with respect to QM quantities of interest
+            # # NOTE : test-wise DFT/TDDFT calculation
+            # # (3.1) run QM calculation
+            # output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs)
+            # # temporarily store ouput_qm for debugging
+            # dump(output_qm, f"output_qm_{idx}.joblib")
 
+
+            # (3.2) post-processing of QM output
             output_qm = load(f"output_qm_{idx}.joblib")
             print('output DFT/TDDFT', output_qm['exc'])
             
-            # (3.2) post-processing of QM output
-
 
 
             # take time per time step
@@ -399,11 +399,6 @@ def parseOutput(file, parse_trajectory_out = False, verbose = True):
     class_methods = {
         key: post_class.get(f"{key}_type", "default") for key in class_flags
     }
-
-    values = {key: None for key in qm_outs}
-    print('debug1', values)
-    output = {key: values[key] for key, value in qm_outs.items() if value}
-    print('debug2', output)
 
     if parse_trajectory_out:
         if verbose:
