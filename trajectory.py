@@ -154,6 +154,7 @@ class Trajectory():
         # (1) loop over all specified transitions
         print(self.quant_info[0], self.quant_info[1])
         for i, states in self.transitions:
+            print('states', states)
             # (a) get Coulombic coupling information if desired
             if self.quant_info[0]["coupling"]: 
                 coupling_out = qm.getVCoulombic(output_qm['mol'], output_qm['tdm'], states, coupling_type=self.quant_info[1]['coupling'])
