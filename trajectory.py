@@ -115,7 +115,7 @@ class Trajectory():
             if write_meta_data:
                 pass
             # write output
-            self.output_class.to_csv(f, sep = "\t")
+            data_frame.to_csv(f, sep = "\t")
 
         
     
