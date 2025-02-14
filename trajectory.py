@@ -87,7 +87,7 @@ class Trajectory():
             (transition_name, value_name) for transition_name in transition_names for value_name in columns_per_transitions
         ]) 
         self.output_quant = pd.DataFrame(index = range(self.num_frames), columns = columns_quant)
-        print(self.output_quant)
+        print(self.output_quant.head())
 
 
         # (2.2) QM-based output parameters:
@@ -360,7 +360,7 @@ def parseOutput(file, parse_post = False):
             "osc" : False,
             "idx" : False
     }
-    # specify user parameters
+    # read user parameters four output
     user_out = fp.readParams(file)
 
     # update default settings
