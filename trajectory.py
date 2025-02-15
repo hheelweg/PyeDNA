@@ -105,17 +105,17 @@ class Trajectory():
 
         print("*** Intialization of output done!")
         
-    # TODO : need to work on this function (2/14)
-    def writeOutputFiles(self, data_frame, out_params, file_name, write_meta_data = True):
-        # (1) write meta dats into header
-        print('Test', out_params)
-        # (2) store DateFrame (classical or quantum) with meta data header (optional)
-        with open(file_name, "w") as f:
-            # optional: write meta data
-            if write_meta_data:
-                pass
-            # write output
-            data_frame.to_csv(f, sep = "\t")
+    # TODO : write simulation data into the header
+    def writeOutputFiles(self, data_frame, file_name, write_meta_data = True):
+        # TODO : write meta data into header
+        # store DateFrame (classical or quantum) with meta data header (optional)
+        if data_frame:
+            with open(file_name, "w") as f:
+                # optional: write meta data
+                if write_meta_data:
+                    pass
+                # write output
+                data_frame.to_csv(f, sep = "\t")
 
         
     
@@ -192,11 +192,9 @@ class Trajectory():
                 # add to output dict
                 self.output_quant.loc[time_idx, [(self.transition_names[i], key) for key in energies_out.keys()]] = list(energies_out.values())
         
-        print('test', self.output_quant.head())
+
                 
             
-        
-
     # analyze trajectory based on specific molecules of interest
     def loopTrajectory(self, molecules, time_slice = None, **params):
         # (0) unpack arguments, i.e. quantities of interest for the trajectory
@@ -254,7 +252,10 @@ class Trajectory():
             print('TT', self.quant_info[1])
 
         # (4) write output files
-        self.writeOutputFiles(self.output_quant, self.quant_info[0], "out_quant.txt")
+        # (4.1) quantum output
+        self.writeOutputFiles(self.output_quant, "out_quant.txt")
+        # (4.2) classical output
+        self.writeOutputFiles(self.output_class, "out_class.txt")
 
 
 
