@@ -86,7 +86,7 @@ class Trajectory():
         if columns_class:
             self.output_class = pd.DataFrame(index = range(self.num_frames), columns = columns_class)
         else:
-            self.output_class = None
+            self.output_class = pd.DataFrame()
         
         # (2.2) quantum output parameters (output the same outputs for every transition in self.transitions)
         # NOTE : since states are 0-indexed, 0 actually corresponds to the 1st excited state of molecule A/B, 1 to the
@@ -100,7 +100,7 @@ class Trajectory():
             ]) 
             self.output_quant = pd.DataFrame(index = range(self.num_frames), columns = columns_quant)
         else:
-            self.output_quant = None
+            self.output_quant = pd.DataFrame()
         
 
         print("*** Intialization of output done!")
