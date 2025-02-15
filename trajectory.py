@@ -116,7 +116,6 @@ class Trajectory():
                 data_frame.to_csv(f, sep = "\t", index=False)
 
         
-    
     # initialize molecules of shape [molecule_A, molecule_B] where molecule_A/B list with residue indices
     # TODO : add check whether molecule is actually valid (consecutive integers etc.)
     def initMolecules(self, molecules):
@@ -193,8 +192,19 @@ class Trajectory():
                 self.output_quant = self.output_quant.drop(columns=[(self.transition_names[i], "excited_energies")]).join(df)
                 # add to output dict
                 self.output_quant.loc[time_idx, [(self.transition_names[i], key) for key in energies_out.keys()]] = list(energies_out.values())
-        
 
+
+    # TODO : this function needs to be updated a lot and more functionalities implemeted
+    def analyzeSnapshotClassical(self, time_idx):
+
+         # (0) time (ps)
+        self.output_class.loc[time_idx, "time"] = time_idx * self.dt
+
+        # (1) compute distance metric:
+        # TODO : add an actual function here and not just some kind of dummy
+        if self.class_info[0]["distance"]:
+            self.output_class.loc[time_idx] = 4
+        
                 
             
     # analyze trajectory based on specific molecules of interest
@@ -247,8 +257,9 @@ class Trajectory():
 
             # TODO : only do this if we have quantum aspects to analyze
             self.analyzeSnapshotQuantum(idx, output_qm)
+            # TODO : only do the following if we have classical aspects to study
+            self.analyzeSnapshotClassical(idx)
             
-
 
             # take time per time step
             end_time = time.time()

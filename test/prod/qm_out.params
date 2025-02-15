@@ -9,5 +9,5 @@ coupling = True
 coupling_type = 'electronic'
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # MD post-processing along trajectory
-# distance = True
+distance = True
 distance_type = COG
