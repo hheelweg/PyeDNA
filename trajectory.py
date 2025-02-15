@@ -92,7 +92,7 @@ class Trajectory():
         columns_per_transitions = [key for key, value in self.quant_info[0].items() if isinstance(value, bool) and value]
         if columns_per_transitions:
             columns_quant = pd.MultiIndex.from_tuples(
-                [("time",)] +
+                [("time", "")] +
                 [(transition_name, value_name) for transition_name in self.transition_names for value_name in columns_per_transitions]
             ) 
             self.output_quant = pd.DataFrame(index = range(output_length), columns = columns_quant)
@@ -166,7 +166,7 @@ class Trajectory():
         # TODO : implement check whether we even have to run this if nothing specified
 
         # (0) time (ps)
-        self.output_quant.loc[time_idx, "time"] = time_idx * self.dt
+        self.output_quant.loc[time_idx, ("time", "")] = time_idx * self.dt
 
 
         # (1) loop over all specified transitions
