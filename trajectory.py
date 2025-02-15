@@ -113,7 +113,7 @@ class Trajectory():
                 if write_meta_data:
                     pass
                 # write output
-                data_frame.to_csv(f, sep = "\t")
+                data_frame.to_csv(f, sep = "\t", index=False)
 
         
     
@@ -166,7 +166,7 @@ class Trajectory():
         # TODO : implement check whether we even have to run this if nothing specified
 
         # (0) time (ps)
-        self.output_quant.loc[time_idx, ("time", "")] = 10#time_idx * self.dt
+        self.output_quant.loc[time_idx, ("time", "")] = time_idx * self.dt
 
 
         # (1) loop over all specified transitions

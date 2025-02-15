@@ -55,7 +55,9 @@ def main():
 
     # time slices we are interested in
     time_slice = [0, 0]
-    test.loopTrajectory(molecules, time_slice, **traj_info)
+    #test.loopTrajectory(molecules, time_slice, **traj_info)
+    
+    # read in MultiIndex and Single-Index DataFrames for local post-processing
     
 
 

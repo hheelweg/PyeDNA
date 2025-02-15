@@ -230,7 +230,7 @@ def reset_atomids(mol_df):
     return mol_df
 
 
-# read QM (DFT/TDDFT) input parameters
+# read QM (DFT/TDDFT) input parameters and return dictionary
 def readParams(filename):
 
     import ast
@@ -256,3 +256,10 @@ def readParams(filename):
             user_params[key] = value
 
     return user_params
+
+
+# read and parse DataFrame trajectory analysis output
+def readOutput(filename, multi_column = True):
+    # (1) read file
+    data_frame = pd.read_csv(filename, index_col=[0,1])
+    print(data_frame)

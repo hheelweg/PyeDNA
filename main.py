@@ -248,13 +248,13 @@ MDsim = traj.MDSimulation(params)
 
 path = './test/prod/'
 name_prmtop = 'dna_test.prmtop'
-name_nc = 'dna_test_prod.nc'                          # need to NetCDF3 and not NetCDF4 (use cpptraj to convert)
+name_nc = 'dna_test_prod.nc'                        # need to NetCDF3 and not NetCDF4 (use cpptraj to convert)
 name_out = 'dna_test_prod.out'
 
 data = [name_prmtop,name_nc, name_out]
-dt = 0.002                                            # specify time step (fs)
+dt = 10                                             # specify time step (ps)
 
-test = traj.Trajectory(MDsim, path, data)
+test = traj.Trajectory(MDsim, path, data, dt)
 
 # # analyze *.out file (e.g. for looking at energy convergence)
 # path_to_perl = '/opt/homebrew/Caskroom/miniconda/base/envs/AmberTools23/bin/process_mdout.perl'
@@ -294,71 +294,7 @@ distances = test.analyzeTrajectory(molecules, time_slice, **traj_info)
 molecule = [9]
 idx = 10
 chromophore, chromophore_conv = test.getChromophoreSnapshot(idx, molecule, conversion = 'pyscf')
-
 # %% [markdown]
-# (1) perform DFT calculation
+# We want to see how we can read in the output DataFrames we have analyzed from runnign classical and quantum analysis on the trajectories.
 # %%
-import quantumTools as qm
-import time
-from pyscf import gto, scf, geomopt, tdscf, lib, dft, lo, solvent
-import multiprocessing as mp
-
-def doDFT(molecule, basis='6-31g', xc_f='b3lyp', density_fit=False, charge=0, spin=0, scf_cycles=200, verbosity=4):
-    from pyscf.dft import xcfun
-
-    lib.num_threads(8)  # Set OpenMP threads explicitly
-
-    # (1) Create PySCF molecular structure
-    mol = gto.M(atom=molecule,
-                basis=basis,
-                charge=charge,
-                spin=spin)
-    mol.verbose = verbosity
-
-    # (2) Initialize SCF object
-    mf = scf.RKS(mol)
-    mf.xc = xc_f
-    mf.max_cycle = scf_cycles
-    mf.conv_tol = 1e-5
-
-    if density_fit:  # Optional: Use density fitting
-        mf.density_fit(auxbasis="weigend")
-
-    # (3) Run SCF with COSMO solvent model and measure time
-    start_time = time.time()
-    mf = solvent.ddCOSMO(mf).run()
-    elapsed_time = time.time() - start_time
-
-    print(f"SCF COSMO elapsed time: {elapsed_time:.4f} seconds")
-
-    # (4) Extract MO coefficients, occupied and virtual orbitals
-    mo = mf.mo_coeff
-    occ = mo[:, mf.mo_occ != 0]  # Occupied orbitals
-    virt = mo[:, mf.mo_occ == 0]  # Virtual orbitals
-
-    return mf, occ, virt
-
-a, b, c = doDFT(chromophore_conv)
-
-
-# %% [markdown]
-# (2) perform TDDFT calculation
-# %%
-import time
-
-state_ids = [0]
-
-start_time = time.time()
-exc_energies, trans_dipoles, osc_strengths, tdms, osc_idx = quantumTools.doTDDFT(mf, occ, virt, state_ids=state_ids)
-end_time = time.time()
-
-print(f"Elapsed time: {end_time - start_time} sec")
-# %% [markdown]
-# (3) compute obsoroption spectrum
-# %%
-import matplotlib.pyplot as plt
-
-e, s = qm.getAbsorptionSpectrum(np.array(osc_strengths), np.array(exc_energies), energy_units='eV')
-
-plt.plot(e, s)
-plt.show()
+fp.readOutput(path + 'out_quant.txt')
