@@ -261,5 +261,8 @@ def readParams(filename):
 # read and parse DataFrame trajectory analysis output
 def readOutput(filename, multi_column = True):
     # (1) read file
-    data_frame = pd.read_csv(filename, index_col=[0,1])
+    data_frame = pd.read_csv(filename, sep='\t', header=[0,1])
+    # 
+    # Ensure "time" remains a single column
+    data_frame.columns = [(col[0] if col[0] == "time" else col) for col in data_frame.columns]
     print(data_frame)
