@@ -160,6 +160,11 @@ class Trajectory():
         else:
             return qm_outs
 
+    # write a function that produces string for storing transition
+    @staticmethod
+    def generateTransitionString(states):
+        stateA, stateB = states[0], states[1]
+        return f"[A({stateA + 1}), B(0)] <--> [A(0), B({stateB + 1})]"
 
     # initialize output based on desired output parameters 
     def initOutput(self, output_length):
@@ -181,7 +186,7 @@ class Trajectory():
         # (2.2) quantum output parameters (output the same outputs for every transition in self.transitions)
         # NOTE : since states are 0-indexed, 0 actually corresponds to the 1st excited state of molecule A/B, 1 to the
         # 2nd excited state of molecule A/B etc.
-        self.transition_names = [f"[A({states[0] + 1}), B(0)] <--> [A(0), B({states[1] + 1})]" for states in self.transitions]
+        self.transition_names = [self.generateTransitionString(states) for states in self.transitions]
         self.quant_info[0].pop("transitions")
         columns_per_transitions = [key for key, value in self.quant_info[0].items() if isinstance(value, bool) and value]
         if columns_per_transitions:
