@@ -105,7 +105,7 @@ class Trajectory():
     @staticmethod
     def parseOutput(file, parse_trajectory_out = False, verbose = True):
 
-        # output default parameters
+        # output default parameters of DFT/TDDFT calculations
         out = {
                 "exc" : True,
                 "mf"  : False,
@@ -132,8 +132,17 @@ class Trajectory():
 
         # (2) trajectory-based outputs per time steps
         # (2.1) quantum-mechanical based parameters and methods
-        post_qm = {key: out.get(key) for key in ["transitions", "coupling", "coupling_type", "excited_energies"]}               # all QM options                         
+        qm_options = ["transitions", "coupling", "coupling_type", "excited_energies", "dipole_moments", "osc_strengths"]
+        post_qm = {key: out.get(key) for key in qm_options}                
         qm_flags = {key: value for key, value in post_qm.items() if isinstance(value, bool) and value}                          # NOTE : only bool/True param
+        # checkpoints: manually check if flags in out match with qm_flags:
+        # TODO : maybe there is a better way to do this?
+        out['exc'] = True if qm_flags["excited_energies"] else out['exc']
+        out['dip'] = True if qm_flags["dipole_moments"] else out['dip']
+        out['osc'] = True if qm_flags["osc_strengths"] else out['osc']
+        out['mol'] = True if qm_flags["coupling"] else out['mol']
+        out['tdm'] = True if qm_flags["coupling"] else out['tdm']
+
         qm_flags.update({"transitions": post_qm["transitions"]})
         # for each flag we either set specified methods_type or default
         qm_methods = {

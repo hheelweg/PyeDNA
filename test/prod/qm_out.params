@@ -1,6 +1,6 @@
 # specify output parameters for QM calculations
 # booloean DFT/TDDFT parameters that are outputted per molecules
-exc = True
+exc = False
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # QM post-processing along trajectory 
 transitions = [[0, 0], [0,1]]
