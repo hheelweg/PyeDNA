@@ -69,11 +69,10 @@ class Trajectory():
         self.defined_molecules = False                                  # flag to track whether molecules have been defined
 
 
-    # static methods to parse settings and output
     # set parameters for QM (DFT/TDDFT) simulation
     # TODO : allow file not to exist without problem
     @staticmethod
-    def setQMSettings(file):
+    def setQMSettings(file = None):
         # default settings
         qm_settings = {
             "basis": "6-31g",
@@ -257,7 +256,6 @@ class Trajectory():
         self.defined_molecules = True                               # molecules have been defined
             
 
-
     # get MDAnalysis object of specified residues at specified time slice
     def getChromophoreSnapshot(self, idx, molecule, conversion = None, cap = True):
         # (1) set time step
@@ -344,7 +342,7 @@ class Trajectory():
                 
             
     # analyze trajectory based on specific molecules of interest
-    def loopTrajectory(self, molecules, time_slice = None, **params):
+    def loopTrajectory(self, time_slice = None, **params):
         # (0) unpack arguments, i.e. quantities of interest for the trajectory
         # TODO : make this more flexible and stream-line this better
         conversion = params['conversion']
