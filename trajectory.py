@@ -252,7 +252,7 @@ class Trajectory():
             # take time per time step
             end_time = time.time()
             print(f"Elapsed time for step {idx}: {end_time- start_time} seconds")
-            print('TT', self.quant_info[1])
+            print('TT', self.output_quant)
 
         # (4) write output files
         # (4.1) quantum output
