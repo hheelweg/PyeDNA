@@ -300,6 +300,11 @@ chromophore, chromophore_conv = test.getChromophoreSnapshot(idx, molecule, conve
 test = 'out_quant.txt'
 test1 = 'out_class.txt'
 # test for single index DataFrame:
-traj.Trajectory.readOutputFiles(path + 'out_class.txt', output_type='classical', output_info = path + 'qm_out.params')
+df1, class_info = traj.Trajectory.readOutputFiles(path + 'out_class.txt', output_type='classical', output_info = path + 'qm_out.params')
 # test for multi index DataFrame:
-traj.Trajectory.readOutputFiles(path + 'out_quant.txt', output_type='quantum', output_info = path + 'qm_out.params')
+df2, diction, quant_info = traj.Trajectory.readOutputFiles(path + 'out_quant.txt', output_type='quantum', output_info = path + 'qm_out.params')
+print(diction)
+states = [0, 0]
+
+Test = df1[(diction[str(states)], "coupling V_C")]
+print(Test)

@@ -126,8 +126,7 @@ class Trajectory():
         # split the output parameters into parameters that are relevant only to
         # conductiong QM (DFT/TDDFT) simulations or to post-processing of the trajectory 
         # (1) QM (DFT/TDDFT) outputs (NOTE : only boolean)
-        qm_outs = {key: out.get(key) for key in ["exc", "mol", "tdm", "mf", "occ", "virt", "dip", "osc", "idx"]} 
-        print('debug1', qm_outs)    
+        qm_outs = {key: out.get(key) for key in ["exc", "mol", "tdm", "mf", "occ", "virt", "dip", "osc", "idx"]}    
         # TODO : in order to evaluate some of the post-processing output, we need to have some of this flags set to True
         # might want to implement a checkpoint here               
 
@@ -143,7 +142,6 @@ class Trajectory():
         qm_outs['osc'] = True if post_qm["osc_strengths"] else qm_outs['osc']
         qm_outs['mol'] = True if post_qm["coupling"] else qm_outs['mol']
         qm_outs['tdm'] = True if post_qm["coupling"] else qm_outs['tdm']
-        print('debug2', qm_outs)
 
         qm_flags.update({"transitions": post_qm["transitions"]})
         # for each flag we either set specified methods_type or default
@@ -240,22 +238,24 @@ class Trajectory():
             df = pd.read_csv(filename, sep='\t', header=[0,1])
             df.columns = [(col[0] if col[0] == "time" else col) for col in df.columns]
             # parse output information contained within data_frame
-            qm_outs, qm_info, _  = Trajectory.parseOutput(output_info, parse_trajectory_out=True, verbose=False)
+            _, qm_info, _  = Trajectory.parseOutput(output_info, parse_trajectory_out=True, verbose=False)
             # get names of the transitions under study
-            transition_names = [Trajectory.generateTransitionString(states) for states in qm_info[0]["transitions"]]
-            print(transition_names)
+            transition_dict = {}
+            for states in qm_info[0]["transitions"]:
+                key = Trajectory.generateTransitionString(states)
+                transition_dict[str(states)] = key
+            # return df, transition name dict, and output information
+            return df, transition_dict, qm_info
         # (1.2) DataFrame with classical information
         elif output_type == 'classical':
             df = pd.read_csv(filename, sep='\t', header=0)
             # parse output information contained within data_frame
             _, _, class_info  = Trajectory.parseOutput(output_info, parse_trajectory_out=True, verbose=False)
+            # return df and output information
+            return df, class_info
         else:
             raise TypeError("Output type does not exist!")
-        
-        # (2) extract column information from output_info
-        # Ensure "time" remains a single column
-        print(df.columns)
-        print("number of columns: ", df.shape[1])
+    
         
 
     # initialize molecules of shape [molecule_A, molecule_B] where molecule_A/B list with residue indices
@@ -389,20 +389,19 @@ class Trajectory():
             # # (2) get distance between chromophores:
             # distances.append(self.getDistance(self.chromophores[0], self.chromophores[1]))
 
-            # (3) analyze with respect to QM quantities of interest
-            # NOTE : test-wise DFT/TDDFT calculation
-            # (3.1) run QM calculation
-            print('debug3', self.qm_outs)
-            output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs)
-            # # temporarily store ouput_qm for debugging
-            print('tim idx', idx)
-            dump(output_qm, f"output_qm_{idx}.joblib")
+            # # (3) analyze with respect to QM quantities of interest
+            # # NOTE : test-wise DFT/TDDFT calculation
+            # # (3.1) run QM calculation
+            # output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs)
+            # # # temporarily store ouput_qm for debugging
+            # print('tim idx', idx)
+            # dump(output_qm, f"output_qm_{idx}.joblib")
 
 
-            # # (3.2) post-processing of QM output
-            # # TODO : load for simplicity here
-            # output_qm = load(f"output_qm_{idx}.joblib")
-            # print('output DFT/TDDFT', output_qm['exc'])
+            # (3.2) post-processing of QM output
+            # TODO : load for simplicity here
+            output_qm = load(f"output_qm_{idx}.joblib")
+            print('output DFT/TDDFT', output_qm['exc'])
 
             # TODO : only do this if we have quantum aspects to analyze
             self.analyzeSnapshotQuantum(idx, output_qm)
