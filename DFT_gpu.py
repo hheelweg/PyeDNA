@@ -19,10 +19,10 @@ sys.path.append(execution_path)
 def main(molecule_id):
 
     # (0) set settings for QM (DFT/TDDFT) calculation
-    settings_dft, settings_tddft = traj.setQMSettings('qm.params')
+    settings_dft, settings_tddft = traj.Trajectory.setQMSettings('qm.params')
 
     # (0) load output information
-    output_keys = traj.parseOutput('qm_out.params')
+    output_keys = traj.Trajectory.parseOutput('qm_out.params')
     # intialize value dict for storing outputs
     values = {key: None for key in output_keys}
 
