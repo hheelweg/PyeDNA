@@ -138,13 +138,12 @@ class Trajectory():
         qm_flags = {key: value for key, value in post_qm.items() if isinstance(value, bool) and value}                          # NOTE : only bool/True param
         # checkpoints: manually check if flags in out match with qm_flags:
         # TODO : maybe there is a better way to do this?
-        print('TTTTT', out)
-        out['exc'] = True if post_qm["excited_energies"] else out['exc']
-        out['dip'] = True if post_qm["dipole_moments"] else out['dip']
-        out['osc'] = True if post_qm["osc_strengths"] else out['osc']
-        out['mol'] = True if post_qm["coupling"] else out['mol']
-        out['tdm'] = True if post_qm["coupling"] else out['tdm']
-        print('TTTTT', out)
+        qm_outs['exc'] = True if post_qm["excited_energies"] else qm_outs['exc']
+        qm_outs['dip'] = True if post_qm["dipole_moments"] else qm_outs['dip']
+        qm_outs['osc'] = True if post_qm["osc_strengths"] else qm_outs['osc']
+        qm_outs['mol'] = True if post_qm["coupling"] else qm_outs['mol']
+        qm_outs['tdm'] = True if post_qm["coupling"] else qm_outs['tdm']
+        print('TTTTT', qm_outs)
 
         qm_flags.update({"transitions": post_qm["transitions"]})
         # for each flag we either set specified methods_type or default
