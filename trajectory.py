@@ -137,11 +137,11 @@ class Trajectory():
         qm_flags = {key: value for key, value in post_qm.items() if isinstance(value, bool) and value}                          # NOTE : only bool/True param
         # checkpoints: manually check if flags in out match with qm_flags:
         # TODO : maybe there is a better way to do this?
-        out['exc'] = True if qm_flags["excited_energies"] else out['exc']
-        out['dip'] = True if qm_flags["dipole_moments"] else out['dip']
-        out['osc'] = True if qm_flags["osc_strengths"] else out['osc']
-        out['mol'] = True if qm_flags["coupling"] else out['mol']
-        out['tdm'] = True if qm_flags["coupling"] else out['tdm']
+        out['exc'] = True if post_qm["excited_energies"] else out['exc']
+        out['dip'] = True if post_qm["dipole_moments"] else out['dip']
+        out['osc'] = True if post_qm["osc_strengths"] else out['osc']
+        out['mol'] = True if post_qm["coupling"] else out['mol']
+        out['tdm'] = True if post_qm["coupling"] else out['tdm']
 
         qm_flags.update({"transitions": post_qm["transitions"]})
         # for each flag we either set specified methods_type or default
@@ -387,19 +387,19 @@ class Trajectory():
             # # (2) get distance between chromophores:
             # distances.append(self.getDistance(self.chromophores[0], self.chromophores[1]))
 
-            # # (3) analyze with respect to QM quantities of interest
-            # # NOTE : test-wise DFT/TDDFT calculation
-            # # (3.1) run QM calculation
-            # output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs)
-            # # # temporarily store ouput_qm for debugging
-            # print('tim idx', idx)
-            # dump(output_qm, f"output_qm_{idx}.joblib")
+            # (3) analyze with respect to QM quantities of interest
+            # NOTE : test-wise DFT/TDDFT calculation
+            # (3.1) run QM calculation
+            output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs)
+            # # temporarily store ouput_qm for debugging
+            print('tim idx', idx)
+            dump(output_qm, f"output_qm_{idx}.joblib")
 
 
-            # (3.2) post-processing of QM output
-            # TODO : load for simplicity here
-            output_qm = load(f"output_qm_{idx}.joblib")
-            print('output DFT/TDDFT', output_qm['exc'])
+            # # (3.2) post-processing of QM output
+            # # TODO : load for simplicity here
+            # output_qm = load(f"output_qm_{idx}.joblib")
+            # print('output DFT/TDDFT', output_qm['exc'])
 
             # TODO : only do this if we have quantum aspects to analyze
             self.analyzeSnapshotQuantum(idx, output_qm)
