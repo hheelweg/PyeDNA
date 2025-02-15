@@ -127,7 +127,7 @@ class Trajectory():
         # conductiong QM (DFT/TDDFT) simulations or to post-processing of the trajectory 
         # (1) QM (DFT/TDDFT) outputs (NOTE : only boolean)
         qm_outs = {key: out.get(key) for key in ["exc", "mol", "tdm", "mf", "occ", "virt", "dip", "osc", "idx"]} 
-        print('debug', qm_outs)    
+        print('debug1', qm_outs)    
         # TODO : in order to evaluate some of the post-processing output, we need to have some of this flags set to True
         # might want to implement a checkpoint here               
 
@@ -143,7 +143,7 @@ class Trajectory():
         qm_outs['osc'] = True if post_qm["osc_strengths"] else qm_outs['osc']
         qm_outs['mol'] = True if post_qm["coupling"] else qm_outs['mol']
         qm_outs['tdm'] = True if post_qm["coupling"] else qm_outs['tdm']
-        print('TTTTT', qm_outs)
+        print('debug2', qm_outs)
 
         qm_flags.update({"transitions": post_qm["transitions"]})
         # for each flag we either set specified methods_type or default
@@ -392,6 +392,7 @@ class Trajectory():
             # (3) analyze with respect to QM quantities of interest
             # NOTE : test-wise DFT/TDDFT calculation
             # (3.1) run QM calculation
+            print('debug3', self.qm_outs)
             output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs)
             # # temporarily store ouput_qm for debugging
             print('tim idx', idx)
