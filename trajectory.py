@@ -62,7 +62,7 @@ class Trajectory():
         if not isinstance(self.MD, MDSimulation):
             raise ValueError("MDsim needs to be instance of MDSimulation class!")
         
-        # TODO : make this more flexible
+        # TODO : make this more flexible with regards to path
         # parse output information for QM and MD simulations
         self.qm_outs, self.quant_info, self.class_info = parseOutput(path + 'qm_out.params', parse_trajectory_out=True)
 
@@ -203,7 +203,7 @@ class Trajectory():
         # (1) compute distance metric:
         # TODO : add an actual function here and not just some kind of dummy
         if self.class_info[0]["distance"]:
-            self.output_class.loc[time_idx] = 4
+            self.output_class.loc[time_idx, "distance"] = 4
         
                 
             
