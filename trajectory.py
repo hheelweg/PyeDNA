@@ -92,11 +92,11 @@ class Trajectory():
         columns_per_transitions = [key for key, value in self.quant_info[0].items() if isinstance(value, bool) and value]
         if columns_per_transitions:
             columns_quant = pd.MultiIndex.from_tuples(
-                [("time", "")] +
+                [("time",)] +
                 [(transition_name, value_name) for transition_name in self.transition_names for value_name in columns_per_transitions]
             ) 
             self.output_quant = pd.DataFrame(index = range(output_length), columns = columns_quant)
-            self.output_quant = self.output_quant.rename(columns={("time", ""): "time"})
+            print('check', self.output_quant.columns)
         else:
             self.output_quant = pd.DataFrame()
         
