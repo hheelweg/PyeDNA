@@ -297,4 +297,9 @@ chromophore, chromophore_conv = test.getChromophoreSnapshot(idx, molecule, conve
 # %% [markdown]
 # We want to see how we can read in the output DataFrames we have analyzed from runnign classical and quantum analysis on the trajectories.
 # %%
-fp.readOutput(path + 'out_quant.txt')
+test = 'out_quant.txt'
+test1 = 'out_class.txt'
+# test for single index DataFrame:
+fp.readOutput(path + 'out_class.txt', output_type='classical', output_info = path + 'qm_out.params')
+# test for multi index DataFrame:
+fp.readOutput(path + 'out_quant.txt', output_type='quantum', output_info = path + 'qm_out.params')

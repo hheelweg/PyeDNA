@@ -52,7 +52,7 @@ class Trajectory():
         # make sure *.nc file is NetCDF3 (as required for MDAnalysis) and not NetCDF4 (as created by Amber)
         self.convertTrajectory()
 
-        # create MD analysis object
+        # create MDAnalysis object
         self.trajectory_u = mda.Universe(path + self.prmtop, path + self.nc)
         self.num_frames = self.trajectory_u.trajectory.n_frames         # number of frames in trajectory
         self.dt = dt                                                    # time step in (ps)
@@ -64,7 +64,101 @@ class Trajectory():
         
         # TODO : make this more flexible with regards to path
         # parse output information for QM and MD simulations
-        self.qm_outs, self.quant_info, self.class_info = parseOutput(path + 'qm_out.params', parse_trajectory_out=True)
+        self.qm_outs, self.quant_info, self.class_info = self.parseOutput(path + 'qm_out.params', parse_trajectory_out=True)
+
+
+    # static methods to parse settings and output
+    # set parameters for QM (DFT/TDDFT) simulation
+    # TODO : allow file not to exist without problem
+    @staticmethod
+    def setQMSettings(file):
+        # default settings
+        qm_settings = {
+            "basis": "6-31g",
+            "xc": "b3lyp",
+            "density_fit": False,
+            "charge": 0,
+            "spin": 0,
+            "scf_cycles": 200,
+            "verbosity": 4,
+            "state_ids": [0],
+            "TDA": True,
+            "gpu": True,
+            "do_tddft": True
+        }
+
+        # read in user parameters from file
+        user_params = fp.readParams(file)
+
+        # update default parameters
+        qm_settings.update(user_params)
+
+        # split into dictionaries for keys related to DFT and TDDFT
+        settings_dft = {key: qm_settings[key] for key in ["basis", "xc", "density_fit", "charge", "spin", "scf_cycles", "verbosity"]}
+        settings_tddft = {key: qm_settings[key] for key in ["state_ids", "TDA", "do_tddft"]}
+
+        return settings_dft, settings_tddft
+
+    # parse output information for QM calculations
+    # TODO : allow file not to exist without problem
+    @staticmethod
+    def parseOutput(file, parse_trajectory_out = False, verbose = True):
+
+        # output default parameters
+        out = {
+                "exc" : True,
+                "mf"  : False,
+                "occ" : False,
+                "virt": False,
+                "mol" : True,
+                "tdm" : True,
+                "dip" : False,
+                "osc" : False,
+                "idx" : False
+        }
+        # read user parameters four output
+        user_out = fp.readParams(file)
+
+        # update default settings
+        out.update(user_out)
+
+        # split the output parameters into parameters that are relevant only to
+        # conductiong QM (DFT/TDDFT) simulations or to post-processing of the trajectory 
+        # (1) QM (DFT/TDDFT) outputs (NOTE : only boolean)
+        qm_outs = {key: out.get(key) for key in ["exc", "mol", "tdm", "mf", "occ", "virt", "dip", "osc", "idx"]}     
+        # TODO : in order to evaluate some of the post-processing output, we need to have some of this flags set to True
+        # might want to implement a checkpoint here               
+
+        # (2) trajectory-based outputs per time steps
+        # (2.1) quantum-mechanical based parameters and methods
+        post_qm = {key: out.get(key) for key in ["transitions", "coupling", "coupling_type", "excited_energies"]}               # all QM options                         
+        qm_flags = {key: value for key, value in post_qm.items() if isinstance(value, bool) and value}                          # NOTE : only bool/True param
+        qm_flags.update({"transitions": post_qm["transitions"]})
+        # for each flag we either set specified methods_type or default
+        qm_methods = {
+            key: post_qm.get(f"{key}_type", "default") for key in qm_flags if isinstance(qm_flags[key], bool)
+        }
+
+        # (2.2) classical parameters and methods
+        post_class = {key: out.get(key) for key in ["distance", "distance_type"]}                                               # all MD options
+        class_flags = {key: value for key, value in post_class.items() if isinstance(value, bool) and value}                    # NOTE : only bool/True param
+        # for each flag we either set specified methods_type or default
+        class_methods = {
+            key: post_class.get(f"{key}_type", "default") for key in class_flags
+        }
+
+        if parse_trajectory_out:
+            if verbose:
+                # print parsed output for trajectory analysis
+                print(" *** Parsed Output for Trajectory Analysis:")
+                print(f"(1) classical parameters to evaluate at each time step: {', '.join(class_flags.keys())}")
+                print(f"(1) we use the following methods (in order): {', '.join(class_methods.values())}")
+                print(f"(2) we study the following state transitions [stateA, stateB]: {', '.join(str(transition) for transition in qm_flags['transitions'])}")
+                print(f"(2) quantum parameters to evaluate at each time step for each transition: {', '.join(key for key, value in qm_flags.items() if isinstance(value, bool))}")
+                print(f"(2) we use the following methods (in order): {', '.join(qm_methods.values())}")
+            return qm_outs, [qm_flags, qm_methods], [class_flags, class_methods]
+        else:
+            return qm_outs
 
 
     # initialize output based on desired output parameters 
@@ -390,96 +484,4 @@ class Trajectory():
             plt.show()
     
     
-    
 
-
-# set parameters for QM (DFT/TDDFT) simulation
-# TODO : allow file not to exist without problem
-def setQMSettings(file):
-    # default settings
-    qm_settings = {
-        "basis": "6-31g",
-        "xc": "b3lyp",
-        "density_fit": False,
-        "charge": 0,
-        "spin": 0,
-        "scf_cycles": 200,
-        "verbosity": 4,
-        "state_ids": [0],
-        "TDA": True,
-        "gpu": True,
-        "do_tddft": True
-    }
-
-    # read in user parameters from file
-    user_params = fp.readParams(file)
-
-    # update default parameters
-    qm_settings.update(user_params)
-
-    # split into dictionaries for keys related to DFT and TDDFT
-    settings_dft = {key: qm_settings[key] for key in ["basis", "xc", "density_fit", "charge", "spin", "scf_cycles", "verbosity"]}
-    settings_tddft = {key: qm_settings[key] for key in ["state_ids", "TDA", "do_tddft"]}
-
-    return settings_dft, settings_tddft
-
-
-# parse output information for QM calculations
-# TODO : allow file not to exist without problem
-def parseOutput(file, parse_trajectory_out = False, verbose = True):
-
-    # output default parameters
-    out = {
-            "exc" : True,
-            "mf"  : False,
-            "occ" : False,
-            "virt": False,
-            "mol" : True,
-            "tdm" : True,
-            "dip" : False,
-            "osc" : False,
-            "idx" : False
-    }
-    # read user parameters four output
-    user_out = fp.readParams(file)
-
-    # update default settings
-    out.update(user_out)
-
-    # split the output parameters into parameters that are relevant only to
-    # conductiong QM (DFT/TDDFT) simulations or to post-processing of the trajectory 
-    # (1) QM (DFT/TDDFT) outputs (NOTE : only boolean)
-    qm_outs = {key: out.get(key) for key in ["exc", "mol", "tdm", "mf", "occ", "virt", "dip", "osc", "idx"]}     
-    # TODO : in order to evaluate some of the post-processing output, we need to have some of this flags set to True
-    # might want to implement a checkpoint here               
-
-    # (2) trajectory-based outputs per time steps
-    # (2.1) quantum-mechanical based parameters and methods
-    post_qm = {key: out.get(key) for key in ["transitions", "coupling", "coupling_type", "excited_energies"]}               # all QM options                         
-    qm_flags = {key: value for key, value in post_qm.items() if isinstance(value, bool) and value}                          # NOTE : only bool/True param
-    qm_flags.update({"transitions": post_qm["transitions"]})
-    # for each flag we either set specified methods_type or default
-    qm_methods = {
-        key: post_qm.get(f"{key}_type", "default") for key in qm_flags if isinstance(qm_flags[key], bool)
-    }
-
-    # (2.2) classical parameters and methods
-    post_class = {key: out.get(key) for key in ["distance", "distance_type"]}                                               # all MD options
-    class_flags = {key: value for key, value in post_class.items() if isinstance(value, bool) and value}                    # NOTE : only bool/True param
-    # for each flag we either set specified methods_type or default
-    class_methods = {
-        key: post_class.get(f"{key}_type", "default") for key in class_flags
-    }
-
-    if parse_trajectory_out:
-        if verbose:
-            # print parsed output for trajectory analysis
-            print(" *** Parsed Output for Trajectory Analysis:")
-            print(f"(1) classical parameters to evaluate at each time step: {', '.join(class_flags.keys())}")
-            print(f"(1) we use the following methods (in order): {', '.join(class_methods.values())}")
-            print(f"(2) we study the following state transitions [stateA, stateB]: {', '.join(str(transition) for transition in qm_flags['transitions'])}")
-            print(f"(2) quantum parameters to evaluate at each time step for each transition: {', '.join(key for key, value in qm_flags.items() if isinstance(value, bool))}")
-            print(f"(2) we use the following methods (in order): {', '.join(qm_methods.values())}")
-        return qm_outs, [qm_flags, qm_methods], [class_flags, class_methods]
-    else:
-        return qm_outs
