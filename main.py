@@ -300,6 +300,6 @@ chromophore, chromophore_conv = test.getChromophoreSnapshot(idx, molecule, conve
 test = 'out_quant.txt'
 test1 = 'out_class.txt'
 # test for single index DataFrame:
-fp.readOutput(path + 'out_class.txt', output_type='classical', output_info = path + 'qm_out.params')
+traj.Trajectory.readOutputFiles(path + 'out_class.txt', output_type='classical', output_info = path + 'qm_out.params')
 # test for multi index DataFrame:
-fp.readOutput(path + 'out_quant.txt', output_type='quantum', output_info = path + 'qm_out.params')
+traj.Trajectory.readOutputFiles(path + 'out_quant.txt', output_type='quantum', output_info = path + 'qm_out.params')

@@ -55,7 +55,7 @@ class Trajectory():
         # create MDAnalysis object
         self.trajectory_u = mda.Universe(path + self.prmtop, path + self.nc)
         self.num_frames = self.trajectory_u.trajectory.n_frames         # number of frames in trajectory
-        self.dt = dt                                                    # time step in (ps)
+        self.dt = dt                                                    # time step in (ps) TODO : later load this from MDSimulation object
 
         # load MDSimulation object which contains all information
         self.MD = MDsim                                                 # TODO : do we need this?
@@ -65,6 +65,8 @@ class Trajectory():
         # TODO : make this more flexible with regards to path
         # parse output information for QM and MD simulations
         self.qm_outs, self.quant_info, self.class_info = self.parseOutput(path + 'qm_out.params', parse_trajectory_out=True)
+
+        self.defined_molecules = False                                  # flag to track whether molecules have been defined
 
 
     # static methods to parse settings and output
@@ -99,8 +101,8 @@ class Trajectory():
 
         return settings_dft, settings_tddft
 
-    # parse output information for QM calculations
-    # TODO : allow file not to exist without problem
+
+    # parse output information for trajectory analysis (classical + quantum) 
     @staticmethod
     def parseOutput(file, parse_trajectory_out = False, verbose = True):
 
@@ -160,11 +162,13 @@ class Trajectory():
         else:
             return qm_outs
 
+
     # write a function that produces string for storing transition
     @staticmethod
     def generateTransitionString(states):
         stateA, stateB = states[0], states[1]
         return f"[A({stateA + 1}), B(0)] <--> [A(0), B({stateB + 1})]"
+
 
     # initialize output based on desired output parameters 
     def initOutput(self, output_length):
@@ -202,6 +206,7 @@ class Trajectory():
 
         print("*** Intialization of output done!")
         
+
     # TODO : write simulation data into the header
     def writeOutputFiles(self, data_frame, file_name, write_meta_data = True):
         # TODO : write meta data into header
@@ -214,11 +219,43 @@ class Trajectory():
                 # write output
                 data_frame.to_csv(f, sep = "\t", index=False)
 
+
+    # read and parse DataFrame trajectory analysis output
+    @staticmethod
+    def readOutputFiles(filename, output_type, output_info):
+        # (1) read file and parse output info 
+        # (1.1) DataFrame with quantum information
+        if output_type == 'quantum':
+            df = pd.read_csv(filename, sep='\t', header=[0,1])
+            df.columns = [(col[0] if col[0] == "time" else col) for col in df.columns]
+            # parse output information contained within data_frame
+            qm_outs, qm_info, _  = Trajectory.parseOutput(output_info, parse_trajectory_out=True, verbose=False)
+            # get names of the transitions under study
+            transition_names = [Trajectory.generateTransitionString(states) for states in qm_info[0]["transitions"]]
+            print(transition_names)
+        # (1.2) DataFrame with classical information
+        elif output_type == 'classical':
+            df = pd.read_csv(filename, sep='\t', header=0)
+            # parse output information contained within data_frame
+            _, _, class_info  = Trajectory.parseOutput(output_info, parse_trajectory_out=True, verbose=False)
+        else:
+            raise TypeError("Output type does not exist!")
         
+        # (2) extract column information from output_info
+        # Ensure "time" remains a single column
+        print(df.columns)
+        print("number of columns: ", df.shape[1])
+        
+
     # initialize molecules of shape [molecule_A, molecule_B] where molecule_A/B list with residue indices
     # TODO : add check whether molecule is actually valid (consecutive integers etc.)
-    def initMolecules(self, molecules):
+    def initMolecules(self, molecules, molecule_names = ["D", "A"]):
         self.molecules = molecules
+        if molecule_names is not None:
+            assert(len(molecule_names) == len(self.molecules))
+            self.molecule_names = molecule_names
+        self.defined_molecules = True                               # molecules have been defined
+            
 
 
     # get MDAnalysis object of specified residues at specified time slice
@@ -319,7 +356,9 @@ class Trajectory():
         else:
             self.time_slice = time_slice
 
-        self.initMolecules(molecules)                                   # intialize molecule information
+        # check whether molecules have been defined and initialized
+        if not self.defined_molecules:
+            raise AttributeError("Molecules to study have not beend defined!")
         self.initOutput(self.time_slice[1]  - self.time_slice[0])       # initialize outputs
 
         # (3) analyze trajectory
@@ -470,6 +509,7 @@ class Trajectory():
     def convertTrajectory(self):
         cpptraj_command = f"bash convert_traj.sh {self.prmtop} {self.nc}"
         run_conversion = subprocess.Popen(cpptraj_command, shell = True, cwd = self.path, stdout = subprocess.DEVNULL)
+
 
     # analyze *.out file
     # TODO : generalize this to other quanity_of_interest

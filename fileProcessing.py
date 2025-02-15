@@ -258,26 +258,3 @@ def readParams(filename):
 
     return user_params
 
-
-# read and parse DataFrame trajectory analysis output
-# TODO : do we want to add this to trajectory?
-def readOutput(filename, output_type, output_info):
-    # (1) read file and parse output info 
-    if output_type == 'quantum':
-        data_frame = pd.read_csv(filename, sep='\t', header=[0,1])
-        data_frame.columns = [(col[0] if col[0] == "time" else col) for col in data_frame.columns]
-        # parse output information contained within data_frame
-        qm_outs, [qm_flags, qm_methods], _  = traj.Trajectory.parseOutput(output_info, parse_trajectory_out=True, verbose=False)
-        print(qm_flags)
-    elif output_type == 'classical':
-        data_frame = pd.read_csv(filename, sep='\t', header=0)
-        # parse output information contained within data_frame
-        _, _, [class_flags, class_methods]  = traj.Trajectory.parseOutput(output_info, parse_trajectory_out=True, verbose=False)
-        print(class_flags)
-    else:
-        raise TypeError("Output type does not exist!")
-    
-    # (2) extract column information from output_info
-    # Ensure "time" remains a single column
-    print(data_frame.columns)
-    print("number of columns: ", data_frame.shape[1])
