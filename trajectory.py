@@ -67,7 +67,7 @@ class Trajectory():
 
 
     # initialize output based on desired output parameters 
-    def initOutput(self):
+    def initOutput(self, output_length):
 
         # (1) define QM states we are interested in (0-indexed), i.e. (S_0^A , S_{stateB + 1}^B) <--> (S_{stateA + 1}^A, S_0^B)
         self.transitions = self.quant_info[0]["transitions"]
@@ -84,7 +84,7 @@ class Trajectory():
         # (2.1) classical MD output parameters:
         columns_class = [key for key, value in self.class_info[0].items() if isinstance(value, bool) and value]
         if columns_class:
-            self.output_class = pd.DataFrame(index = range(self.num_frames), columns = columns_class)
+            self.output_class = pd.DataFrame(index = range(output_length), columns = columns_class)
         else:
             self.output_class = pd.DataFrame()
         
@@ -98,7 +98,7 @@ class Trajectory():
             columns_quant = pd.MultiIndex.from_tuples([
                 (transition_name, value_name) for transition_name in self.transition_names for value_name in columns_per_transitions
             ]) 
-            self.output_quant = pd.DataFrame(index = range(self.num_frames), columns = columns_quant)
+            self.output_quant = pd.DataFrame(index = range(output_length), columns = columns_quant)
         else:
             self.output_quant = pd.DataFrame()
         
@@ -209,7 +209,7 @@ class Trajectory():
             self.time_slice = time_slice
 
         self.initMolecules(molecules)                                   # intialize molecule information
-        self.initOutput()                                               # initialize ourput
+        self.initOutput(self.time_slice[1]  - self.time_slice[0])       # initialize outputs
 
         # (3) analyze trajectory
         for idx in range(self.time_slice[0], self.time_slice[1] + 1):
