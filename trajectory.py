@@ -256,7 +256,7 @@ class Trajectory():
 
         # (4) write output files
         # (4.1) quantum output
-        self.writeOutputFiles(self.output_quant, "out_quant.txt")
+        #self.writeOutputFiles(self.output_quant, "out_quant.txt")
         # (4.2) classical output
         self.writeOutputFiles(self.output_class, "out_class.txt")
 
