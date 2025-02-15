@@ -126,7 +126,8 @@ class Trajectory():
         # split the output parameters into parameters that are relevant only to
         # conductiong QM (DFT/TDDFT) simulations or to post-processing of the trajectory 
         # (1) QM (DFT/TDDFT) outputs (NOTE : only boolean)
-        qm_outs = {key: out.get(key) for key in ["exc", "mol", "tdm", "mf", "occ", "virt", "dip", "osc", "idx"]}     
+        qm_outs = {key: out.get(key) for key in ["exc", "mol", "tdm", "mf", "occ", "virt", "dip", "osc", "idx"]} 
+        print('debug', qm_outs)    
         # TODO : in order to evaluate some of the post-processing output, we need to have some of this flags set to True
         # might want to implement a checkpoint here               
 
