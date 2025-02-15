@@ -44,7 +44,7 @@ class MDSimulation():
 
 class Trajectory():
 
-    def __init__(self, MDsim, path, trajectory):
+    def __init__(self, MDsim, path, trajectory, dt):
         self.path = path
         self.prmtop = trajectory[0]                                     # load *.prmtop
         self.nc = trajectory[1]                                         # load *.nc from Amber MD simulation
@@ -55,9 +55,10 @@ class Trajectory():
         # create MD analysis object
         self.trajectory_u = mda.Universe(path + self.prmtop, path + self.nc)
         self.num_frames = self.trajectory_u.trajectory.n_frames         # number of frames in trajectory
+        self.dt = dt                                                    # time step in (ps)
 
         # load MDSimulation object which contains all information
-        self.MD = MDsim                             # TODO : do we need this?
+        self.MD = MDsim                                                 # TODO : do we need this?
         if not isinstance(self.MD, MDSimulation):
             raise ValueError("MDsim needs to be instance of MDSimulation class!")
         
@@ -74,15 +75,10 @@ class Trajectory():
 
         # TODO : might also want to add DataFrame for the direct QM (DFT/TDDFT) outputs 
 
-        # TODO : might want to add number of time steps instead of complete trajectory
-
-        # TODO : might also want to add time axis
-
-
         # (2) which trajectory-ensemble outputs are we interested in:
 
         # (2.1) classical MD output parameters:
-        columns_class = [key for key, value in self.class_info[0].items() if isinstance(value, bool) and value]
+        columns_class = ["time"] + [key for key, value in self.class_info[0].items() if isinstance(value, bool) and value]
         if columns_class:
             self.output_class = pd.DataFrame(index = range(output_length), columns = columns_class)
         else:
@@ -95,9 +91,10 @@ class Trajectory():
         self.quant_info[0].pop("transitions")
         columns_per_transitions = [key for key, value in self.quant_info[0].items() if isinstance(value, bool) and value]
         if columns_per_transitions:
-            columns_quant = pd.MultiIndex.from_tuples([
-                (transition_name, value_name) for transition_name in self.transition_names for value_name in columns_per_transitions
-            ]) 
+            columns_quant = pd.MultiIndex.from_tuples(
+                [("time", )] +
+                [(transition_name, value_name) for transition_name in self.transition_names for value_name in columns_per_transitions]
+            ) 
             self.output_quant = pd.DataFrame(index = range(output_length), columns = columns_quant)
         else:
             self.output_quant = pd.DataFrame()
@@ -166,6 +163,10 @@ class Trajectory():
     # TODO : also put qm.doDFT_gpu() in here eventually to save QM calculation if we don't want to do it
     def analyzeSnapshotQuantum(self, time_idx, output_qm):
         # TODO : implement check whether we even have to run this if nothing specified
+
+        # (0) time (ps)
+        self.output_quant[time_idx, ("time", )] = time_idx * self.dt
+
 
         # (1) loop over all specified transitions
         for i, states in enumerate(self.transitions):
@@ -242,6 +243,8 @@ class Trajectory():
             # TODO : load for simplicity here
             output_qm = load(f"output_qm_{idx}.joblib")
             print('output DFT/TDDFT', output_qm['exc'])
+
+            # TODO : only do this if we have quantum aspects to analyze
             self.analyzeSnapshotQuantum(idx, output_qm)
             
 
