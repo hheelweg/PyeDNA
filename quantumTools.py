@@ -463,14 +463,14 @@ def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
     return results
 
 # get excitation energies for specified states
-def getExcEnergies(excs, states, excitation_energy_type = 'default'):
+def getExcEnergies(excs, states, molecule_names = ['D', 'A'], excitation_energy_type = 'default'):
 
     stateA, stateB = states[0], states[1]
     excA, excB = excs[0], excs[1]
 
     results = {}
-    results['energy A'] = excA[stateA]
-    results['energy B'] = excB[stateB]
+    results[f'energy {molecule_names[0]}'] = excA[stateA]
+    results[f'energy {molecule_names[1]}'] = excB[stateB]
     return results
 
 
