@@ -341,7 +341,7 @@ class Trajectory():
                 df = pd.DataFrame(index = range(self.num_frames), columns=pd.MultiIndex.from_product([[self.transition_names[i]], sub_columns]))
                 self.output_quant = self.output_quant.drop(columns=[(self.transition_names[i], "excited_energies")]).join(df)
                 print("Existing columns:", self.output_quant.columns.tolist())
-                print("Trying to access:", [(self.transition_names[i], key) for key in coupling_out.keys()])
+                print("Trying to access:", [(self.transition_names[i], key) for key in energies_out.keys()])
                 # add to output dict
                 self.output_quant.loc[time_idx, [(self.transition_names[i], key) for key in energies_out.keys()]] = list(energies_out.values())
 
