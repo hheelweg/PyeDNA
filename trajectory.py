@@ -317,7 +317,7 @@ class Trajectory():
         # (1) loop over all specified transitions
         for i, states in enumerate(self.transitions):
             
-            print('states:', states, sluh=True)
+            print('states:', states, flush=True)
             # (a) get Coulombic coupling information if desired
             if self.quant_info[0]["coupling"]: 
                 # compute coupling based on QM (DFT/TDDFT) output
