@@ -210,14 +210,15 @@ class Trajectory():
             self.output_quant = pd.DataFrame(index = range(output_length), columns = columns_quant)
 
             # further scaffold the self.output_quant df to account for all key information
-            if self.quant_info[0]["coupling"]: 
-                sub_columns = ['coupling cJ', 'coupling cK', 'coupling V_C']
-                df = pd.DataFrame(index = range(self.num_frames), columns=pd.MultiIndex.from_product([[self.transition_names[i]], sub_columns]))
-                self.output_quant = self.output_quant.drop(columns=[(self.transition_names[i], "coupling")]).join(df)
-            if self.quant_info[0]["excited_energies"]:
-                sub_columns = [f'energy {self.molecule_names[0]}', f'energy {self.molecule_names[1]}']
-                df = pd.DataFrame(index = range(self.num_frames), columns=pd.MultiIndex.from_product([[self.transition_names[i]], sub_columns]))
-                self.output_quant = self.output_quant.drop(columns=[(self.transition_names[i], "excited_energies")]).join(df)
+            for transition_name in self.transition_names:
+                if self.quant_info[0]["coupling"]: 
+                    sub_columns = ['coupling cJ', 'coupling cK', 'coupling V_C']
+                    df = pd.DataFrame(index = range(self.num_frames), columns=pd.MultiIndex.from_product([[transition_name], sub_columns]))
+                    self.output_quant = self.output_quant.drop(columns=[(transition_name, "coupling")]).join(df)
+                if self.quant_info[0]["excited_energies"]:
+                    sub_columns = [f'energy {self.molecule_names[0]}', f'energy {self.molecule_names[1]}']
+                    df = pd.DataFrame(index = range(self.num_frames), columns=pd.MultiIndex.from_product([[transition_name], sub_columns]))
+                    self.output_quant = self.output_quant.drop(columns=[(transition_name, "excited_energies")]).join(df) 
             print('check', self.output_quant.columns)
         else:
             self.output_quant = pd.DataFrame()
