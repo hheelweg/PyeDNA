@@ -208,6 +208,16 @@ class Trajectory():
                 [(transition_name, value_name) for transition_name in self.transition_names for value_name in columns_per_transitions]
             ) 
             self.output_quant = pd.DataFrame(index = range(output_length), columns = columns_quant)
+
+            # further scaffold the self.output_quant df to account for all key information
+            if self.quant_info[0]["coupling"]: 
+                sub_columns = ['coupling cJ', 'coupling cK', 'coupling V_C']
+                df = pd.DataFrame(index = range(self.num_frames), columns=pd.MultiIndex.from_product([[self.transition_names[i]], sub_columns]))
+                self.output_quant = self.output_quant.drop(columns=[(self.transition_names[i], "coupling")]).join(df)
+            if self.quant_info[0]["excited_energies"]:
+                sub_columns = [f'energy {self.molecule_names[0]}', f'energy {self.molecule_names[1]}']
+                df = pd.DataFrame(index = range(self.num_frames), columns=pd.MultiIndex.from_product([[self.transition_names[i]], sub_columns]))
+                self.output_quant = self.output_quant.drop(columns=[(self.transition_names[i], "excited_energies")]).join(df)
             print('check', self.output_quant.columns)
         else:
             self.output_quant = pd.DataFrame()
@@ -322,10 +332,10 @@ class Trajectory():
             if self.quant_info[0]["coupling"]: 
                 # compute coupling based on QM (DFT/TDDFT) output
                 coupling_out = qm.getVCoulombic(output_qm['mol'], output_qm['tdm'], states, coupling_type=self.quant_info[1]['coupling'])
-                # further scaffold the self.outpu_quant array to aacount for all coupling information
-                sub_columns = ['coupling cJ', 'coupling cK', 'coupling V_C']
-                df = pd.DataFrame(index = range(self.num_frames), columns=pd.MultiIndex.from_product([[self.transition_names[i]], sub_columns]))
-                self.output_quant = self.output_quant.drop(columns=[(self.transition_names[i], "coupling")]).join(df)
+                # # further scaffold the self.outpu_quant array to aacount for all coupling information
+                # sub_columns = ['coupling cJ', 'coupling cK', 'coupling V_C']
+                # df = pd.DataFrame(index = range(self.num_frames), columns=pd.MultiIndex.from_product([[self.transition_names[i]], sub_columns]))
+                # self.output_quant = self.output_quant.drop(columns=[(self.transition_names[i], "coupling")]).join(df)
                 print("Existing columns:", self.output_quant.columns.tolist(), flush=True)
                 print("Trying to access:", [(self.transition_names[i], key) for key in coupling_out.keys()], flush=True)
                 # add to output dict
@@ -335,10 +345,10 @@ class Trajectory():
             if self.quant_info[0]["excited_energies"]:
                 # get excited state energies based on QM (DFT/TDDFT) output
                 energies_out = qm.getExcEnergies(output_qm['exc'], states, molecule_names=self.molecule_names, excitation_energy_type=self.quant_info[1]['excited_energies'])
-                # further scaffold the self.outpu_quant array to aacount for all excited state energies
-                sub_columns = [f'energy {self.molecule_names[0]}', f'energy {self.molecule_names[1]}']
-                df = pd.DataFrame(index = range(self.num_frames), columns=pd.MultiIndex.from_product([[self.transition_names[i]], sub_columns]))
-                self.output_quant = self.output_quant.drop(columns=[(self.transition_names[i], "excited_energies")]).join(df)
+                # # further scaffold the self.outpu_quant array to aacount for all excited state energies
+                # sub_columns = [f'energy {self.molecule_names[0]}', f'energy {self.molecule_names[1]}']
+                # df = pd.DataFrame(index = range(self.num_frames), columns=pd.MultiIndex.from_product([[self.transition_names[i]], sub_columns]))
+                # self.output_quant = self.output_quant.drop(columns=[(self.transition_names[i], "excited_energies")]).join(df)
                 print("Existing columns:", self.output_quant.columns.tolist(), flush=True)
                 print("Trying to access:", [(self.transition_names[i], key) for key in energies_out.keys()], flush=True)
                 # add to output dict
