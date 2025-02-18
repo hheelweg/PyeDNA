@@ -321,6 +321,7 @@ class Trajectory():
             if self.quant_info[0]["coupling"]: 
                 # compute coupling based on QM (DFT/TDDFT) output
                 coupling_out = qm.getVCoulombic(output_qm['mol'], output_qm['tdm'], states, coupling_type=self.quant_info[1]['coupling'])
+                print('testy', coupling_out.keys())
                 # further scaffold the self.outpu_quant array to aacount for all coupling information
                 sub_columns = ['coupling cJ', 'coupling cK', 'coupling V_C']
                 df = pd.DataFrame(index = range(self.num_frames), columns=pd.MultiIndex.from_product([[self.transition_names[i]], sub_columns]))
@@ -333,7 +334,7 @@ class Trajectory():
                 # get excited state energies based on QM (DFT/TDDFT) output
                 energies_out = qm.getExcEnergies(output_qm['exc'], states, excitation_energy_type=self.quant_info[1]['excited_energies'])
                 # further scaffold the self.outpu_quant array to aacount for all excited state energies
-                sub_columns = ['energy A', 'energy B']
+                sub_columns = [f'energy {self.transition_names[0]}', f'energy {self.transition_names[1]}']
                 df = pd.DataFrame(index = range(self.num_frames), columns=pd.MultiIndex.from_product([[self.transition_names[i]], sub_columns]))
                 self.output_quant = self.output_quant.drop(columns=[(self.transition_names[i], "excited_energies")]).join(df)
                 # add to output dict
@@ -394,8 +395,9 @@ class Trajectory():
             # (3.1) run QM calculation
             output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs)
             # # temporarily store ouput_qm for debugging
-            print('tim idx', idx)
-            dump(output_qm, f"output_qm_{idx}.joblib")
+            print('time idx', idx)
+            #dump(output_qm, f"output_qm_{idx}.joblib")
+            print(output_qm['exc'][0], flush=True)
 
 
             # # (3.2) post-processing of QM output
