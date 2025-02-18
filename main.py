@@ -302,9 +302,10 @@ test1 = 'out_class.txt'
 # test for single index DataFrame:
 df1, class_info = traj.Trajectory.readOutputFiles(path + 'out_class.txt', output_type='classical', output_info = path + 'qm_out.params')
 # test for multi index DataFrame:
-df2, diction, quant_info = traj.Trajectory.readOutputFiles(path + 'out_quant.txt', output_type='quantum', output_info = path + 'qm_out.params')
-print(diction)
-states = [0, 0]
+df2, state_dict, quant_info = traj.Trajectory.readOutputFiles(path + 'out_quant.txt', output_type='quantum', output_info = path + 'qm_out.params')
+states = [0,0]
 
-Test = df1[(diction[str(states)], "coupling V_C")]
+Test = df2[(state_dict[str(states)], 'coupling V_C')]
+Test1 = df1['distance']
 print(Test)
+print(Test1)
