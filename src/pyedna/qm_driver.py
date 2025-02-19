@@ -49,7 +49,7 @@ if __name__ == "__main__":
     # parse arguments from command line
     parser = argparse.ArgumentParser(description="Run DFT and optional TDDFT simulations on molecule")
     parser.add_argument("molecule_id", type=int, help="Molecule ID (integer)")                              # specifies residue name of molecule
-    parser.add_argument("cwd", type=str, help="original working directory")
+    parser.add_argument("-o", "--output", type=str, default=None, help="Output log file name")
     args = parser.parse_args()
 
     # set working directory
