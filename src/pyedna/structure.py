@@ -419,8 +419,8 @@ class Chromophore():
 # clean PDB files
 # TODO : do we actually need this ??
 def cleanPDB(inPath, outPath, res_code='DYE', mol_title='Dye molecule', printCONNECT = False):
-    from fileProcessing import PDB_DF
-    lpdb = PDB_DF()
+    from . import fileproc
+    lpdb = fileproc.PDB_DF()
     lpdb.read_file(inPath)
 
     # Clean existing names (if already numbered)
