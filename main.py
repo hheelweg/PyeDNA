@@ -7,7 +7,6 @@ import MDAnalysis as mda
 import trajectory as traj
 import os
 from pyscf import lib
-
 # %% [markdown]
 # #### Obtaining the Input Structure 
 # We first need to generate and optimize the strctures for Cy3 and Cy5. We proceed
