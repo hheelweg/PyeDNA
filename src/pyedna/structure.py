@@ -1,6 +1,6 @@
 import numpy as np
-import fileProcessing as fp
-import geomTools as geo
+import fileproc as fp
+import geomtools as geo
 import MDAnalysis as mda
 import subprocess
 import os

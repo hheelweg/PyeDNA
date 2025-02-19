@@ -1,12 +1,12 @@
 import numpy as np
-import fileProcessing as fp
+import fileproc as fp
 import subprocess
 import os
 import matplotlib.pyplot as plt
 import MDAnalysis as mda
 import re
 import structure
-import quantumTools as qm
+import quanttools as qm
 import time
 import pandas as pd
 # TODO : only for debugging

@@ -6,7 +6,7 @@ from Bio.PDB import PDBIO, Structure, Model, Chain, Residue, Atom
 import const
 import subprocess
 import scipy
-import fileProcessing as fp
+import fileproc as fp
 from joblib import dump, load
 import os
 import utils
@@ -355,12 +355,12 @@ def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = Tru
 
 # NOTE : function that calls python ssubprocess to perform DFT/TDDFT on individual GPUs with PySCF
 # TODO : make this more flexible with regards to the path where the launcher (DFT_gpu.py) is
-def launchQM_gpu(molecule_no, gpu_id):
+def launchQMdriver(molecule_no, gpu_id):
     """Launch a DFT/TDDFT calculation on a specific GPU."""
     env = os.environ.copy()
     env["CUDA_VISIBLE_DEVICES"] = str(gpu_id)  # Assign GPU
 
-    cmd = f"python /home/hheelweg/Cy3Cy5/PyCY/DFT_gpu.py {molecule_no}"
+    cmd = f"python /home/hheelweg/Cy3Cy5/PyCY/qm_driver.py {molecule_no}"
     process = subprocess.Popen(cmd, env=env, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)        
 
     return process
@@ -380,7 +380,7 @@ def doQM_gpu(molecules, output_keys):
         # create pyscf input for subprocess and store in cache
         dump(molecule, f"input_{i}.joblib")
         # run subprocess
-        procs.append(launchQM_gpu(i, gpu_id = i))
+        procs.append(launchQMdriver(i, gpu_id = i))
     
     # wait for both subprocesses to finish
     for i, molecule in enumerate(molecules):

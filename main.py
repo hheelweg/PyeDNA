@@ -1,7 +1,7 @@
 # %%
 import numpy as np
-import quantumTools, structure
-import fileProcessing as fp
+import quanttools, structure
+import fileproc as fp
 import sys
 import MDAnalysis as mda
 import trajectory as traj
@@ -17,10 +17,10 @@ from pyscf import lib
 path = './createStructure/CY5/'
 dye_name = 'CY5'
 # optimization without considering 
-quantumTools.optimizeStructureFF(path, dye_name, 50000)
+quanttools.optimizeStructureFF(path, dye_name, 50000)
 # %% 
 # now do an optimization with incorporating C2 symmetry
-quantumTools.optimizeStructureSymmetryFF(path, dye_name, 5000)
+quanttools.optimizeStructureSymmetryFF(path, dye_name, 5000)
 # %% [markdow]n
 # We can additionally run a quantum optimization of the geometry. This can be very time-consuming though.
 # It seems to be more reasonable to do a good geometry optimization with molecular forcfields (e.g. with UFF).
