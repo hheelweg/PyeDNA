@@ -10,14 +10,9 @@ import io
 import sys
 from joblib import dump, load
 
-# import custom modules
-path_to_modules = '/home/hheelweg/Cy3Cy5/PyCY'
-sys.path.append(path_to_modules)
-import quantumTools, structure
-import trajectory as traj
-import const
-import utils
-import fileProcessing as fp
+# import PyeDNA package
+# for installation (in ediatble mode) first run "pip install -e . " in PyeDNA main directory
+import pyedna
 
 # Detect available GPUs
 num_gpus = torch.cuda.device_count()
@@ -30,7 +25,7 @@ def main():
 
     # TODO: write class for MD simulation
     params = []
-    MDsim = traj.MDSimulation(params)
+    MDsim = pyedna.MDSimulation(params)
 
     # input data
     path = './'
@@ -41,7 +36,7 @@ def main():
     dt = 10                                             # specify time step (ps)
 
     # define Trajectory object
-    test = traj.Trajectory(MDsim, path, data, dt)
+    test = pyedna.Trajectory(MDsim, path, data, dt)
 
     # define donor and acceptor molecules
     donor = [9]
