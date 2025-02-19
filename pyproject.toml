@@ -11,4 +11,5 @@ license         = { file = "LICENSE" }
 authors         = [
                    { name = "Henrik J. Heelweg", email = "hheelweg@mit.edu" }
                   ]
+[tool.setuptools.dynamic]
 dependencies    = { file = ["requirements.txt"] }
