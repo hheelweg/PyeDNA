@@ -1,7 +1,0 @@
-# specify output parameters for QM calculations
-# booloean DFT/TDDFT parameters that are outputted per molecules
-exc = True
-# post-processing across trajectory 
-stateA = 0
-stateB = 0
-coupling = 'electronic'
