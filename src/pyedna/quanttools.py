@@ -363,9 +363,7 @@ def launchQMdriver(molecule_no, gpu_id):
     env = os.environ.copy()
     env["CUDA_VISIBLE_DEVICES"] = str(gpu_id)  # Assign GPU
 
-    # path+file_name for execution of qm_driver.py
-    # script_dir = os.path.dirname(os.path.abspath(__file__))
-    # qm_driver_path = os.path.join(script_dir, "qm_driver")
+    # driver for QM (DFT/TDDFT) calculations
     qm_driver_module = 'pyedna.qm_driver'
 
     # run driver for QM calcualtions as module
@@ -377,7 +375,10 @@ def launchQMdriver(molecule_no, gpu_id):
 
 # do PySCF on molecules = [mol1, mol2] where mol are the nuclear coordinates for PySCF calculations
 # TODO : make this also without GPU-support depending on the available resources
-def doQM_gpu(molecules, output_keys):
+def doQM_gpu(molecules, output_keys, verbosity = 0):
+    # verbosity = 0 : suppress all the output from the QM calculations (default)
+    # verbosity = 1 : only print STDOUT of QM calculations
+    # verbosity = 2 : only print STDERR of QM calculations (for debugging)
 
     # (0) initialize output dictionary for quantities of interest
     # [] stores data for both molecules in a list-type fashion
@@ -391,12 +392,15 @@ def doQM_gpu(molecules, output_keys):
         # run subprocess
         procs.append(launchQMdriver(i, gpu_id = i))
     
-    # wait for both subprocesses to finish
+    # wait for both subprocesses to finish and sprint STDOUT or STDERR if desired
     for i, molecule in enumerate(molecules):
-        #procs[i].wait()
         stdout, stderr = procs[i].communicate()
-        print("STDOUT:", stdout, flush =True)
-        print("STDERR:", stderr, flush=True) 
+        if verbosity == 0:
+            continue
+        elif verbosity == 1:
+            print("STDOUT:", stdout, flush =True)
+        elif verbosity == 2:
+            print("STDERR:", stderr, flush=True) 
 
     # (2) load and store relevant data from output of subprocesses
     # TODO : flexibilize this for quantities we are interested in

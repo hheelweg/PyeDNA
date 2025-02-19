@@ -8,7 +8,8 @@ from joblib import load, dump
 from . import quanttools as qm
 from . import trajectory as traj
 
-execution_path = os.getcwd()                                    # get bath to working directory
+
+execution_path = os.getcwd()                                    # get path to working directory
 sys.path.append(execution_path)
 
 # ORIGINAL_CWD = os.getcwd()
