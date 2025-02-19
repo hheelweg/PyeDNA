@@ -369,7 +369,7 @@ def launchQMdriver(molecule_no, gpu_id):
 
 
     cmd = f"python {qm_driver_path} {molecule_no} -o output_{molecule_no}.log"
-    process = subprocess.Popen(cmd, env=env, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)        
+    process = subprocess.Popen(cmd, env=env, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text = True)        
 
     return process
 
