@@ -366,10 +366,9 @@ def launchQMdriver(molecule_no, gpu_id):
     # path+file_name for execution of qm_driver.py
     script_dir = os.path.dirname(os.path.abspath(__file__))
     qm_driver_path = os.path.join(script_dir, "qm_driver.py")
-    qm_driver_path = '/home/hheelweg/Cy3Cy5/PyCY/src/pyedna/qm_driver.py'
 
     cmd = f"python {qm_driver_path} {molecule_no}"
-    process = subprocess.Popen(cmd, env=env, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)        
+    process = subprocess.Popen(cmd, env=env, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)       
 
     return process
 
@@ -392,7 +391,10 @@ def doQM_gpu(molecules, output_keys):
     
     # wait for both subprocesses to finish
     for i, molecule in enumerate(molecules):
-        procs[i].wait()
+        #procs[i].wait()
+        stdout, stderr = procs[i].communicate()
+        print("STDOUT:", stdout, flush =True)
+        print("STDERR:", stderr, flush=True) 
 
     # (2) load and store relevant data from output of subprocesses
     # TODO : flexibilize this for quantities we are interested in

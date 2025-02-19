@@ -10,7 +10,7 @@ from . import trajectory as traj
 
 execution_path = os.getcwd()                                    # get bath to working directory
 sys.path.append(execution_path)
-print('tes', execution_path, flush = True)
+print('jjjjjj', execution_path, flush = True)
 
 # ORIGINAL_CWD = os.getcwd()
 # normalized_cwd = re.sub(r".*?/home", "/home", ORIGINAL_CWD)
