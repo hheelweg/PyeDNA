@@ -1,10 +1,12 @@
 import numpy as np
-import fileproc as fp
-import geomtools as geo
 import MDAnalysis as mda
 import subprocess
 import os
 from collections import defaultdict
+
+# from current package
+from . import fileproc as fp
+from . import geomtools as geo
 
 
 # class for attaching structure of DNA structure and chromophore

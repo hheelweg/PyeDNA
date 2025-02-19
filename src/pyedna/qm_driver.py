@@ -8,9 +8,9 @@ from joblib import load, dump
 # TODO : make this more flexible
 path_to_modules = '/home/hheelweg/Cy3Cy5/PyCY'
 sys.path.append(path_to_modules)
-import quantumTools as qm
-import trajectory as traj
-import const
+from . import quanttools as qm
+from . import trajectory as traj
+from . import const
 
 execution_path = os.getcwd()                                    # get bath to working directory
 sys.path.append(execution_path)

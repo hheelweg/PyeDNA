@@ -3,13 +3,16 @@ from pyscf import gto, scf, geomopt, tdscf, lib, dft, lo, solvent
 from MDAnalysis.coordinates.XYZ import XYZReader
 from MDAnalysis.coordinates.PDB import PDBWriter
 from Bio.PDB import PDBIO, Structure, Model, Chain, Residue, Atom
-import const
 import subprocess
 import scipy
-import fileproc as fp
+
 from joblib import dump, load
 import os
-import utils
+
+# from current package
+from . import utils
+from . import fileproc as fp
+from . import const
 
 
 # optimize molecular structure from *.xyz file into optimized structure in *.pdb file

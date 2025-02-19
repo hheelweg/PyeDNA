@@ -1,16 +1,18 @@
 import numpy as np
-import fileproc as fp
 import subprocess
 import os
 import matplotlib.pyplot as plt
 import MDAnalysis as mda
 import re
-import structure
-import quanttools as qm
 import time
 import pandas as pd
 # TODO : only for debugging
 from joblib import dump, load
+
+# from current package
+from . import structure
+from . import quanttools as qm
+from . import fileproc as fp
 
 
 # TODO : write class to perform MD simulation

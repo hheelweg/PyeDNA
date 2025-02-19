@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import os
-import trajectory as traj
+from . import trajectory as traj
 
 class PDB_DF():
 
