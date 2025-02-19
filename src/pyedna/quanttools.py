@@ -385,7 +385,6 @@ def doQM_gpu(molecules, output_keys):
     # [] stores data for both molecules in a list-type fashion
     output = {key: [] for key, value in output_keys.items() if value}
 
-
     # (1)run molecules on different GPUs in parallel
     procs = []
     for i, molecule in enumerate(molecules):

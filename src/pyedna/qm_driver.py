@@ -12,8 +12,8 @@ from . import quanttools as qm
 from . import trajectory as traj
 from . import const
 
-execution_path = os.getcwd()                                    # get bath to working directory
-sys.path.append(execution_path)
+#execution_path = os.getcwd()                                    # get bath to working directory
+#sys.path.append(execution_path)
 
 
 def main(molecule_id):
