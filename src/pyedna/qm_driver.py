@@ -10,7 +10,7 @@ from . import trajectory as traj
 
 execution_path = os.getcwd()                                    # get bath to working directory
 sys.path.append(execution_path)
-
+print('tes', execution_path, flush = True)
 
 # ORIGINAL_CWD = os.getcwd()
 # normalized_cwd = re.sub(r".*?/home", "/home", ORIGINAL_CWD)
@@ -49,10 +49,7 @@ if __name__ == "__main__":
     # parse arguments from command line
     parser = argparse.ArgumentParser(description="Run DFT and optional TDDFT simulations on molecule")
     parser.add_argument("molecule_id", type=int, help="Molecule ID (integer)")                              # specifies residue name of molecule
-    parser.add_argument("-o", "--output", type=str, default=None, help="Output log file name")
     args = parser.parse_args()
-
-    # set working directory
 
     # run main
     main(args.molecule_id)
