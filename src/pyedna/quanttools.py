@@ -392,7 +392,7 @@ def doQM_gpu(molecules, output_keys, verbosity = 0):
         # run subprocess
         procs.append(launchQMdriver(i, gpu_id = i))
     
-    # wait for both subprocesses to finish and sprint STDOUT or STDERR if desired
+    # wait for both subprocesses to finish and print STDOUT or STDERR if desired
     for i, molecule in enumerate(molecules):
         stdout, stderr = procs[i].communicate()
         if verbosity == 0:
