@@ -1,8 +1,6 @@
-# Ignore all NetCDF and DCD files
 *.nc
 *.dcd
 *.log
-*.txt
 .vscode/
 .DS_Store
 dump/
