@@ -13,6 +13,7 @@ from . import trajectory as traj
 from . import const
 
 execution_path = os.getcwd()                                    # get bath to working directory
+print('Test pattth', execution_path, flush = True)
 sys.path.append(execution_path)
 
 
