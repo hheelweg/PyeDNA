@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name            = "pyedna"
+version         = "0.1.0"
+description     = "Python package to create DNA/dye structures, run Amber MD and analyze trajectories with both classical and quantum tools..."
+readme          = "README.md"
+license         = { file = "LICENSE" }
+authors         = [
+                   { name = "Henrik J. Heelweg", email = "hheelweg@mit.edu" }
+                  ]
+dependencies    = { file = ["requirements.txt"] }
