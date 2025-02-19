@@ -50,8 +50,6 @@ if __name__ == "__main__":
     parser.add_argument("molecule_id", type=int, help="Molecule ID (integer)")                              # specifies residue name of molecule
     args = parser.parse_args()
 
-    print('jjjjjj', execution_path, flush = True)
-
     # run main
     main(args.molecule_id)
 
