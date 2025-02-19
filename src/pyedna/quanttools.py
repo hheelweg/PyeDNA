@@ -362,7 +362,7 @@ def launchQMdriver(molecule_no, gpu_id):
     """Launch a DFT/TDDFT calculation on a specific GPU."""
     env = os.environ.copy()
     env["CUDA_VISIBLE_DEVICES"] = str(gpu_id)  # Assign GPU
-
+    print('testdebug', molecule_no, flush=True)
     # path+file_name for execution of qm_driver.py
     script_dir = os.path.dirname(os.path.abspath(__file__))
     qm_driver_path = os.path.join(script_dir, "qm_driver.py")
@@ -380,6 +380,7 @@ def doQM_gpu(molecules, output_keys):
     # (0) initialize output dictionary for quantities of interest
     # [] stores data for both molecules in a list-type fashion
     output = {key: [] for key, value in output_keys.items() if value}
+
 
     # (1)run molecules on different GPUs in parallel
     procs = []

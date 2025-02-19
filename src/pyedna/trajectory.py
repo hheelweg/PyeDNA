@@ -325,7 +325,6 @@ class Trajectory():
         # (0) time (ps)
         self.output_quant.loc[time_idx, ("time", "")] = time_idx * self.dt
 
-
         # (1) loop over all specified transitions
         for i, states in enumerate(self.transitions):
 
