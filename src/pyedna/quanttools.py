@@ -369,16 +369,11 @@ def launchQMdriver(molecule_no, gpu_id):
 
     print('tdftijjk', qm_driver_path, flush = True)
     
-    # Capture original working directory
-    ORIGINAL_CWD = os.getcwd()
-    print('testghgh', ORIGINAL_CWD)
+    # # Capture original working directory
+    # ORIGINAL_CWD = os.getcwd()
+    # print('testghgh', ORIGINAL_CWD)
 
-    from . import trajectory as traj
-    settings_dft, settings_tddft = traj.Trajectory.setQMSettings('qm.params')
-    print('settings', settings_dft)
-
-
-    cmd = f"python {qm_driver_path} {molecule_no}"
+    cmd = f"python {qm_driver_path} {molecule_no} -o test_{molecule_no}.log"
     process = subprocess.Popen(cmd, env=env, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)        
 
     return process
