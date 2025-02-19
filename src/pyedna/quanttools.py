@@ -367,7 +367,7 @@ def launchQMdriver(molecule_no, gpu_id):
     script_dir = os.path.dirname(os.path.abspath(__file__))
     qm_driver_path = os.path.join(script_dir, "qm_driver.py")
 
-    cmd = f"python {qm_driver_path} {molecule_no}"
+    cmd = f"python -m {qm_driver_path} {molecule_no}"
     process = subprocess.Popen(cmd, env=env, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)       
 
     return process
