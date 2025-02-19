@@ -9,14 +9,6 @@ from . import quanttools as qm
 from . import trajectory as traj
 
 
-# execution_path = os.getcwd()                                    # get path to working directory
-# sys.path.append(execution_path)
-
-# ORIGINAL_CWD = os.getcwd()
-# normalized_cwd = re.sub(r".*?/home", "/home", ORIGINAL_CWD)
-# sys.path.append(normalized_cwd)
-
-
 
 def main(molecule_id):
 
