@@ -4,16 +4,15 @@ import argparse
 import sys
 from joblib import load, dump
 
-# import custom modules
-# TODO : make this more flexible
-path_to_modules = '/home/hheelweg/Cy3Cy5/PyCY'
-sys.path.append(path_to_modules)
+# # import custom modules
+# # TODO : make this more flexible
+# path_to_modules = '/home/hheelweg/Cy3Cy5/PyCY'
+# sys.path.append(path_to_modules)
 from . import quanttools as qm
 from . import trajectory as traj
-from . import const
 
-#execution_path = os.getcwd()                                    # get bath to working directory
-#sys.path.append(execution_path)
+execution_path = os.getcwd()                                    # get bath to working directory
+sys.path.append(execution_path)
 
 
 def main(molecule_id):
@@ -47,7 +46,10 @@ if __name__ == "__main__":
     # parse arguments from command line
     parser = argparse.ArgumentParser(description="Run DFT and optional TDDFT simulations on molecule")
     parser.add_argument("molecule_id", type=int, help="Molecule ID (integer)")                              # specifies residue name of molecule
+    parser.add_argument("cwd", type=str, help="original working directory")
     args = parser.parse_args()
+
+    # set working directory
 
     # run main
     main(args.molecule_id)
