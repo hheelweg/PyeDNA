@@ -1,0 +1,53 @@
+-s: Ignoring all leaprc startup files.
+-f: Source leap.in.
+-I: Adding /opt/homebrew/Caskroom/miniconda/base/envs/AmberTools23/dat/leap/cmd to search path.
+-I: Adding /opt/homebrew/Caskroom/miniconda/base/envs/AmberTools23/dat/leap/parm to search path.
+-I: Adding /opt/homebrew/Caskroom/miniconda/base/envs/AmberTools23/dat/leap/prep to search path.
+-I: Adding /opt/homebrew/Caskroom/miniconda/base/envs/AmberTools23/dat/leap/lib to search path.
+
+Welcome to LEaP!
+Sourcing: ./leap.in
+----- Source: /opt/homebrew/Caskroom/miniconda/base/envs/AmberTools23/dat/leap/cmd/oldff/leaprc.ff14SB
+----- Source of /opt/homebrew/Caskroom/miniconda/base/envs/AmberTools23/dat/leap/cmd/oldff/leaprc.ff14SB done
+Log file: ./leap.log
+Loading parameters: /opt/homebrew/Caskroom/miniconda/base/envs/AmberTools23/dat/leap/parm/parm10.dat
+Reading title:
+PARM99 + frcmod.ff99SB + frcmod.parmbsc0 + OL3 for RNA
+Loading parameters: /opt/homebrew/Caskroom/miniconda/base/envs/AmberTools23/dat/leap/parm/frcmod.ff14SB
+Reading force field modification type file (frcmod)
+Reading title:
+ff14SB protein backbone and sidechain parameters
+Loading library: /opt/homebrew/Caskroom/miniconda/base/envs/AmberTools23/dat/leap/lib/amino12.lib
+Loading library: /opt/homebrew/Caskroom/miniconda/base/envs/AmberTools23/dat/leap/lib/aminoct12.lib
+Loading library: /opt/homebrew/Caskroom/miniconda/base/envs/AmberTools23/dat/leap/lib/aminont12.lib
+Loading library: /opt/homebrew/Caskroom/miniconda/base/envs/AmberTools23/dat/leap/lib/nucleic12.lib
+Loading library: /opt/homebrew/Caskroom/miniconda/base/envs/AmberTools23/dat/leap/lib/atomic_ions.lib
+Loading library: /opt/homebrew/Caskroom/miniconda/base/envs/AmberTools23/dat/leap/lib/solvents.lib
+Loading PDB file: ./nab_tmp.pdb
+  total atoms in file: 404
+  Leap added 234 missing atoms according to residue templates:
+       234 H / lone pairs
+Writing pdb file: nab_tmp.pdb.lpdb
+Checking Unit.
+
+/opt/homebrew/Caskroom/miniconda/base/envs/AmberTools23/bin/teLeap: Warning!
+The unperturbed charge of the unit (-18.000000) is not zero.
+
+/opt/homebrew/Caskroom/miniconda/base/envs/AmberTools23/bin/teLeap: Note.
+Ignoring the warning from Unit Checking.
+
+Building topology.
+Building atom parameters.
+Building bond parameters.
+Building angle parameters.
+Building proper torsion parameters.
+Building improper torsion parameters.
+ total 130 improper torsions applied
+Building H-Bond parameters.
+Incorporating Non-Bonded adjustments.
+Not Marking per-residue atom chain types.
+Marking per-residue atom chain types.
+ (no restraints)
+	Quit
+
+Exiting LEaP: Errors = 0; Warnings = 1; Notes = 1.
