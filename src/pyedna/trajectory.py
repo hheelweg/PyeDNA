@@ -358,7 +358,7 @@ class Trajectory():
                 
             
     # analyze trajectory based on specific molecules of interest
-    def loopTrajectory(self, time_slice = None, **params):
+    def loopTrajectory(self, time_slice = None):
         # (0) unpack arguments, i.e. quantities of interest for the trajectory
         # TODO : make this more flexible and stream-line this better
  
@@ -520,7 +520,7 @@ class Trajectory():
     # TODO : might want to store convert_traj.sh in more global directory
     def convertTrajectory(self):
         cpptraj_command = f"bash convert_traj.sh {self.prmtop} {self.nc}"
-        run_conversion = subprocess.Popen(cpptraj_command, shell = True, cwd = self.path, stdout = subprocess.DEVNULL)
+        run_conversion = subprocess.Popen(cpptraj_command, shell = True, stdout = subprocess.DEVNULL)
 
 
     # analyze *.out file
