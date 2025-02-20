@@ -36,6 +36,8 @@ def main():
     # parameter file for trajectory analysis
     out_params = 'out.params'
 
+    print('debug0', os.getcwd())
+
 
     data = [name_prmtop, name_nc, name_out]
     dt = 10                                             # specify time step (ps)

@@ -54,10 +54,10 @@ class Trajectory():
         # make sure *.nc file is NetCDF3 (as required for MDAnalysis) and not NetCDF4 (as created by Amber)
         self.convertTrajectory()
         # print cwd
-        print(os.getcwd())
+        print('debug1', os.getcwd())
 
         # create MDAnalysis object
-        self.trajectory_u = mda.Universe(path + self.prmtop, path + self.nc)
+        self.trajectory_u = mda.Universe(self.prmtop, self.nc)
         self.num_frames = self.trajectory_u.trajectory.n_frames         # number of frames in trajectory
         self.dt = dt                                                    # time step in (ps) TODO : later load this from MDSimulation object
 
@@ -361,8 +361,7 @@ class Trajectory():
     def loopTrajectory(self, time_slice = None, **params):
         # (0) unpack arguments, i.e. quantities of interest for the trajectory
         # TODO : make this more flexible and stream-line this better
-        conversion = 'pyscf'
-        
+ 
         # (1) time range of interest: time_slice = [idx_start, idx_end]
         # TODO : change this to actual time and not just frame index
         if time_slice is None:                                          # study the whole trajectory
@@ -385,7 +384,7 @@ class Trajectory():
             self.chromophores = []
             self.chromophores_conv = []
             for molecule in self.molecules:
-                chromophore, chromophore_conv = self.getChromophoreSnapshot(idx, molecule, conversion)
+                chromophore, chromophore_conv = self.getChromophoreSnapshot(idx, molecule, conversion = 'pyscf')
                 self.chromophores.append(chromophore)
                 self.chromophores_conv.append(chromophore_conv)
 
