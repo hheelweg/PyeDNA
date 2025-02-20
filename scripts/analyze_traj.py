@@ -28,7 +28,10 @@ def main():
     traj_data = [name_prmtop, name_nc, name_out]
 
     # parameter file for trajectory analysis
-    out_params = pyedna.utils.findFileWithName('traj.params')
+    traj_params = pyedna.utils.findFileWithName('traj.params')
+
+    # parameter file for molecules (dyes)
+    mols_params = pyedna.utils.findFileWithName('mols.params')
 
     # TODO : ideally use some MDSim.dt thing in the future
     # specify time step (ps)
@@ -39,7 +42,7 @@ def main():
     # define Trajectory object
     test = pyedna.Trajectory(
                              MDsim, traj_data, dt,
-                             output_params_file = out_params
+                             traj_params_file = traj_params
                             )
 
     # define donor and acceptor molecules
@@ -49,7 +52,7 @@ def main():
     molecules = [donor, acceptor]
 
     # initialize (dye) molecules of interest
-    test.initMolecules(molecules)
+    test.initMolecules(mols_params)
 
     # loop through trajectory snapshots and analyze based on traj.params
     test.loopTrajectory()

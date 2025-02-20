@@ -47,7 +47,7 @@ class MDSimulation():
 
 class Trajectory():
 
-    def __init__(self, MDsim, trajectory_data, dt, output_params_file = 'traj.params'):
+    def __init__(self, MDsim, trajectory_data, dt, traj_params_file = 'traj.params'):
 
         self.prmtop = trajectory_data[0]                                # load *.prmtop
         self.nc = trajectory_data[1]                                    # load *.nc from Amber MD simulation
@@ -67,9 +67,9 @@ class Trajectory():
         
         # TODO : make this more flexible with regards to path
         # parse output information for QM and MD simulations
-        self.qm_outs, self.quant_info, self.class_info, self.time_slice = self.parseParameters(output_params_file, parse_trajectory_out=True)
+        self.qm_outs, self.quant_info, self.class_info, self.time_slice = self.parseParameters(traj_params_file, parse_trajectory_out=True)
 
-        #self.defined_molecules = False                                  # flag to track whether molecules have been defined
+        self.defined_molecules = False                                  # flag to track whether molecules have been defined
 
 
     # set parameters for QM (DFT/TDDFT) simulation
@@ -176,6 +176,45 @@ class Trajectory():
         else:
             return qm_outs
 
+
+    # initialize molecules of shape [molecule_A, molecule_B] where molecule_A/B list with residue indices
+    # TODO : add check whether molecule is actually valid (consecutive integers etc.)
+    @staticmethod
+    def parseMolecules(file):
+
+        # molecule default parameters
+        mols = {
+                "molecule_1" :      None,
+                "molecule_2" :      None,
+                "name_1" :          "D",
+                "name_2" :          "A",
+        }
+
+        # read user parameters for molecules
+        user_mols = fp.readParams(file)
+
+        # update default settings
+        mols.update(user_mols) 
+        print('sanity check', mols)
+
+        # store molecule IDs and make sure they are sorted
+        molecules = [key for key, value in mols.items() if key.startswith("molecule_") and value is not None]
+        molecules.sort(key=lambda x: int(x.split('_')[1]))
+        print('testt', molecules)
+        # store molecule names and make sure they are sorted
+        molecule_names = [key for key, value in mols.items() if key.startswith("name_") and value is not None]#.sort(key=lambda x: int(x.split('_')[1]))
+        molecule_names.sort(key=lambda x: int(x.split('_')[1]))
+
+        # checkpoint
+        assert(len(molecule_names) == len(molecules))
+        if len(molecules) == 0:
+            raise Warning("Need to specify at least one molecule in mols.params")
+        elif len(molecules) > 2:
+            raise NotImplementedError("More than 2 molecules (currently) not implemented!")
+
+        return molecules, molecule_names
+
+
     # write a function that produces string for storing transition
     @staticmethod
     def generateTransitionString(states, molecule_names = ["D", "A"]):
@@ -271,51 +310,10 @@ class Trajectory():
         else:
             raise TypeError("Output type does not exist!")
     
-        
 
-    # initialize molecules of shape [molecule_A, molecule_B] where molecule_A/B list with residue indices
-    # TODO : add check whether molecule is actually valid (consecutive integers etc.)
-    @staticmethod
-    def parseMolecules(file):
-
-        # molecule default parameters
-        mols = {
-                "molecule_1" :      None,
-                "molecule_2" :      None,
-                "name_1" :          "D",
-                "name_2" :          "A",
-        }
-
-        # read user parameters for molecules
-        user_mols = fp.readParams(file)
-
-        # update default settings
-        mols.update(user_mols) 
-        print('sanity check', mols)
-
-        # store molecule IDs and make sure they are sorted
-        molecules = [key for key, value in mols.items() if key.startswith("molecule_") and value is not None]
-        molecules.sort(key=lambda x: int(x.split('_')[1]))
-        print('testt', molecules)
-        # store molecule names and make sure they are sorted
-        molecule_names = [key for key, value in mols.items() if key.startswith("name_") and value is not None]#.sort(key=lambda x: int(x.split('_')[1]))
-        molecule_names.sort(key=lambda x: int(x.split('_')[1]))
-
-        # checkpoint
-        assert(len(molecule_names) == len(molecules))
-        if len(molecules) == 0:
-            raise Warning("Need to specify at least one molecule in mols.params")
-        elif len(molecules) > 2:
-            raise NotImplementedError("More than 2 molecules (currently) not implemented!")
-
-        return molecules, molecule_names
-
-
-    def initMolecules(self, molecules, molecule_names = ["D", "A"]):
-        self.molecules = molecules
-        if molecule_names is not None:
-            assert(len(molecule_names) == len(self.molecules))
-            self.molecule_names = molecule_names
+    # initialize molecules from params file
+    def initMolecules(self, file):
+        self.molecules, self.molecule_names = self.parseMolecules(file)
         self.defined_molecules = True                               
             
 
