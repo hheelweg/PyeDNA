@@ -68,9 +68,8 @@ class Trajectory():
         # TODO : make this more flexible with regards to path
         # parse output information for QM and MD simulations
         self.qm_outs, self.quant_info, self.class_info, self.time_slice = self.parseParameters(output_params_file, parse_trajectory_out=True)
-        print('debuggg', self.time_slice)
 
-        self.defined_molecules = False                                  # flag to track whether molecules have been defined
+        #self.defined_molecules = False                                  # flag to track whether molecules have been defined
 
 
     # set parameters for QM (DFT/TDDFT) simulation
@@ -110,7 +109,7 @@ class Trajectory():
 
         # output default parameters
         out = {
-                "time_slice" :  [0,0],
+                "time_slice" :  None,
                 "exc" :         True,
                 "mf"  :         False,
                 "occ" :         False,
@@ -123,16 +122,12 @@ class Trajectory():
         }
         # read user parameters four output
         user_out = fp.readParams(file)
-        print('user out', user_out)
-        time_range = out["time_slice"]
-        print('default time range', time_range)
 
         # update default settings
         out.update(user_out)
 
         # (0) time range of interest
         time_range = out["time_slice"]
-        print('parsed time range', time_range)
 
         # split the parameters into parameters that are relevant only to
         # conductiong QM (DFT/TDDFT) simulations or to post-processing of the trajectory 
@@ -251,11 +246,11 @@ class Trajectory():
 
     # read and parse DataFrame trajectory analysis output
     @staticmethod
-    def readOutputFiles(filename, output_type, output_info):
+    def readOutputFiles(file, output_type, output_info):
         # (1) read file and parse output info 
         # (1.1) DataFrame with quantum information
         if output_type == 'quantum':
-            df = pd.read_csv(filename, sep='\t', header=[0,1])
+            df = pd.read_csv(file, sep='\t', header=[0,1])
             df.columns = [(col[0] if col[0] == "time" else col) for col in df.columns]
             # parse output information contained within data_frame
             _, qm_info, _  = Trajectory.parseOutput(output_info, parse_trajectory_out=True, verbose=False)
@@ -268,7 +263,7 @@ class Trajectory():
             return df, transition_dict, qm_info
         # (1.2) DataFrame with classical information
         elif output_type == 'classical':
-            df = pd.read_csv(filename, sep='\t', header=0)
+            df = pd.read_csv(file, sep='\t', header=0)
             # parse output information contained within data_frame
             _, _, class_info  = Trajectory.parseOutput(output_info, parse_trajectory_out=True, verbose=False)
             # return df and output information
@@ -280,12 +275,38 @@ class Trajectory():
 
     # initialize molecules of shape [molecule_A, molecule_B] where molecule_A/B list with residue indices
     # TODO : add check whether molecule is actually valid (consecutive integers etc.)
-    def initMolecules(self, molecules, molecule_names = ["D", "A"]):
-        self.molecules = molecules
-        if molecule_names is not None:
-            assert(len(molecule_names) == len(self.molecules))
-            self.molecule_names = molecule_names
-        self.defined_molecules = True                               
+    @staticmethod
+    def parseMolecules(file):
+
+        # molecule default parameters
+        mols = {
+                "molecule_1" :      None,
+                "molecule_2" :      None,
+                "name_1" :          "D",
+                "name_2" :          "A",
+        }
+
+        # read user parameters for molecules
+        user_mols = fp.readParams(file)
+
+        # update default settings
+        mols.update(user_mols) 
+        print('sanity check', mols)
+
+        # store molecule IDs and make sure they are sorted
+        molecules = [key for key, value in mols.items() if key.startswith("molecule_") and value is not None].sort(key=lambda x: int(x.split('_')[1]))
+        # store molecule names and make sure they are sorted
+        molecule_names = [key for key, value in mols.items() if key.startswith("name_") and value is not None].sort(key=lambda x: int(x.split('_')[1]))
+
+        return molecules, molecule_names
+
+
+    # def parseMolecules(molecules, molecule_names = ["D", "A"]):
+    #     self.molecules = molecules
+    #     if molecule_names is not None:
+    #         assert(len(molecule_names) == len(self.molecules))
+    #         self.molecule_names = molecule_names
+    #     self.defined_molecules = True                               
             
 
     # get MDAnalysis object of specified residues at specified time slice
@@ -380,6 +401,8 @@ class Trajectory():
         if not self.defined_molecules:
             raise AttributeError("Molecules to study have not beend defined!")
         self.initOutput(self.time_slice[1]  - self.time_slice[0])       # initialize outputs
+
+        a , b = self.parseMolecules('mols.params')
 
         # (3) analyze trajectory
         for idx in range(self.time_slice[0], self.time_slice[1] + 1):
