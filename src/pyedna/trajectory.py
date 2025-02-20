@@ -129,6 +129,7 @@ class Trajectory():
 
         # (0) time range of interest
         time_range = out["time_slice"]
+        print('parsed time range', time_range)
 
         # split the parameters into parameters that are relevant only to
         # conductiong QM (DFT/TDDFT) simulations or to post-processing of the trajectory 
