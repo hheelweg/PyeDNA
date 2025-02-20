@@ -7,45 +7,35 @@ if [ "$#" -ne 1 ]; then
 fi
 
 NAB_FILE="$1"
-NAB_FILE_PATH="$(pwd)/$NAB_FILE"
 
-# ensure the provided file has a .nab extension 
+# Ensure the provided file has a .nab extension
 if [[ "$NAB_FILE" != *.nab ]]; then
     echo "Error: The file must have a .nab extension."
     exit 1
 fi
 
-# check if the NAB source file exists in the current working directory
+# Check if the NAB source file exists in the current working directory
 if [ ! -f "$NAB_FILE" ]; then
     echo "Error: $NAB_FILE not found in the current directory $(pwd)."
     exit 1
 fi
 
+# Define the path to the AmberClassic installation directory
+AMBERCLASSIC_DIR="/path/to/AmberClassic"
 
-# define the path to the AmberClassic installation directory
-AMBERCLASSIC_DIR="/home/hheelweg/opt/AmberClassic"
-
-
-# change to the AmberClassic directory
-cd "$AMBERCLASSIC_DIR" || {
-    echo "Error: Directory $AMBERCLASSIC_DIR does not exist. Check installation."
-    exit 1
-}
-
-# source the AmberClassic environment setup script, which sets paths
-if [ -f "AmberClassic.sh" ]; then
-    source AmberClassic.sh
+# Source the AmberClassic environment setup script without changing directories
+if [ -f "$AMBERCLASSIC_DIR/AmberClassic.sh" ]; then
+    source "$AMBERCLASSIC_DIR/AmberClassic.sh"
 else
     echo "Error: AmberClassic.sh not found in $AMBERCLASSIC_DIR."
     exit 1
 fi
 
-# Compile the NAB source file using its absolute path
-nab "$NAB_FILE_PATH"
-echo "$NAB_FILE_PATH"
+# Compile the NAB source file
+nab "$NAB_FILE"
 
-# wait for process to finish
-sleep 2
+# give process time to finish
+sleep 1
 
 if [ ! -f "a.out" ]; then
     echo "Error: Compilation failed. a.out not generated."
@@ -53,4 +43,4 @@ if [ ! -f "a.out" ]; then
 fi
 
 # Run the compiled program
-#./a.out
+./a.out
