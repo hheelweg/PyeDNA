@@ -57,10 +57,7 @@ def main():
     # TODO : specify desired names for output files
     
 
-
-
 if __name__ == "__main__":
 
-    # run main
     main()
 

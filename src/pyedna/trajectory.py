@@ -110,7 +110,7 @@ class Trajectory():
 
         # output default parameters
         out = {
-                "time_slice" :  None,
+                "time_slice" :  [0, 0],
                 "exc" :         True,
                 "mf"  :         False,
                 "occ" :         False,
@@ -123,6 +123,9 @@ class Trajectory():
         }
         # read user parameters four output
         user_out = fp.readParams(file)
+
+        time_range = out["time_slice"]
+        print('default time range', time_range)
 
         # update default settings
         out.update(user_out)
