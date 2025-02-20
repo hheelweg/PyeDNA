@@ -46,7 +46,7 @@ class MDSimulation():
 
 class Trajectory():
 
-    def __init__(self, MDsim, path, trajectory, dt):
+    def __init__(self, MDsim, path, trajectory, dt, output_params = 'out.params'):
         self.path = path
         self.prmtop = trajectory[0]                                     # load *.prmtop
         self.nc = trajectory[1]                                         # load *.nc from Amber MD simulation
@@ -66,7 +66,7 @@ class Trajectory():
         
         # TODO : make this more flexible with regards to path
         # parse output information for QM and MD simulations
-        self.qm_outs, self.quant_info, self.class_info = self.parseOutput(path + 'qm_out.params', parse_trajectory_out=True)
+        self.qm_outs, self.quant_info, self.class_info = self.parseOutput(output_params, parse_trajectory_out=True)
 
         self.defined_molecules = False                                  # flag to track whether molecules have been defined
 
@@ -101,7 +101,6 @@ class Trajectory():
         settings_tddft = {key: qm_settings[key] for key in ["state_ids", "TDA", "do_tddft"]}
 
         return settings_dft, settings_tddft
-
 
     # parse output information for trajectory analysis (classical + quantum) 
     @staticmethod
@@ -513,8 +512,6 @@ class Trajectory():
     
         molecule = attachHs(molecule, H_positions)
         return molecule
-
-
 
 
 
