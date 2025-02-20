@@ -47,7 +47,7 @@ class MDSimulation():
 
 class Trajectory():
 
-    def __init__(self, MDsim, trajectory_data, dt, output_params = 'traj.params'):
+    def __init__(self, MDsim, trajectory_data, dt, output_params_file = 'traj.params'):
 
         self.prmtop = trajectory_data[0]                                # load *.prmtop
         self.nc = trajectory_data[1]                                    # load *.nc from Amber MD simulation
@@ -67,7 +67,7 @@ class Trajectory():
         
         # TODO : make this more flexible with regards to path
         # parse output information for QM and MD simulations
-        self.qm_outs, self.quant_info, self.class_info = self.parseOutput(output_params, parse_trajectory_out=True)
+        self.qm_outs, self.quant_info, self.class_info = self.parseOutput(output_params_file, parse_trajectory_out=True)
 
         self.defined_molecules = False                                  # flag to track whether molecules have been defined
 

@@ -28,7 +28,7 @@ def main():
 
     # parameter file for trajectory analysis
     # TODO : add check that file exists and maybe call traj.params
-    out_params = 'traj.params'
+    out_params = pyedna.utils.findFileWithName('traj.params')
 
     traj_data = [name_prmtop, name_nc, name_out]
     # TODO : ideally use some MDSim.dt thing in the future
@@ -38,8 +38,8 @@ def main():
 
     # define Trajectory object
     test = pyedna.Trajectory(
-                            MDsim, traj_data, dt,
-                            output_params = out_params
+                             MDsim, traj_data, dt,
+                             output_params_file = out_params
                             )
 
     # define donor and acceptor molecules
