@@ -31,7 +31,8 @@ def main():
     out_params = pyedna.utils.findFileWithName('traj.params')
 
     # TODO : ideally use some MDSim.dt thing in the future
-    dt = 10                                             # specify time step (ps)
+    # specify time step (ps)
+    dt = 10                                             
 
     # TODO : specify file name for output files that we get out of this analysis
 
@@ -47,13 +48,13 @@ def main():
     acceptor = [14]
     molecules = [donor, acceptor]
 
-
-    # time slices we are interested in
-    # TODO : put this into *.params file
-    time_slice = [0, 0]
+    # initialize (dye) molecules of interest
     test.initMolecules(molecules)
+
+    # loop through trajectory snapshots and analyze based on traj.params
     test.loopTrajectory()
     
+    # TODO : specify desired names for output files
     
 
 

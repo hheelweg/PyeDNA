@@ -68,6 +68,7 @@ class Trajectory():
         # TODO : make this more flexible with regards to path
         # parse output information for QM and MD simulations
         self.qm_outs, self.quant_info, self.class_info, self.time_slice = self.parseParameters(output_params_file, parse_trajectory_out=True)
+        print('debuggg', self.time_slice)
 
         self.defined_molecules = False                                  # flag to track whether molecules have been defined
 
@@ -368,8 +369,8 @@ class Trajectory():
         # TODO : change this to actual time and not just frame index
         if self.time_slice is None:                                          # study the whole trajectory
             self.time_slice = [0, self.num_frames - 1]
-        # else:
-        #     self.time_slice = time_slice
+        else:
+            print('test debug', self.time_slice)
 
         # check whether molecules have been defined and initialized
         if not self.defined_molecules:
