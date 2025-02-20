@@ -56,6 +56,7 @@ class CompositeStructure():
         self.chromophore_list.append(self.chromophore)
         self.attachment[dye_name].append(self.chromophore.resid)
     
+    
     # get nt distance
     def getNTdistance(self): 
         if 'CY5' not in self.attachment or 'CY3' not in self.attachment:
