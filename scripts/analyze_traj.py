@@ -6,7 +6,7 @@ from joblib import dump, load
 # import PyeDNA
 import pyedna
 
-# Detect available GPUs 
+# detect available GPUs 
 num_gpus = torch.cuda.device_count()
 if num_gpus < 2:
     raise RuntimeError("Error: Less than 2 GPUs detected! Check SLURM \
@@ -14,6 +14,40 @@ if num_gpus < 2:
 
 
 def main():
+    """
+    Execute the trajectory analysis workflow.
+
+    This function performs the following steps:
+    1. Initializes the molecular dynamics (MD) simulation with parameters.
+    2. Identifies and loads necessary trajectory data files:
+       - Parameter/topology file (`.prmtop`)
+       - Trajectory file (`.nc`)
+       - Output file (`.out`)
+    3. Loads analysis parameters from 'traj.params'.
+    4. Loads molecular parameters from 'mols.params'.
+    5. Sets the simulation time step (`dt`).
+    6. Creates a `Trajectory` object with the loaded data and parameters.
+    7. Initializes molecules of interest for analysis.
+    8. Iterates over trajectory snapshots to perform analysis as specified in 'traj.params'.
+
+    Note:
+    - Ensure that the current working directory contains the required files:
+      'traj.params' and 'mols.params'.
+    - The `findFileWithExtension` and `findFileWithName` utility functions are
+      used to locate files in the current directory.
+    - The time step (`dt`) is currently set to a default value of 10 ps; consider
+      updating this to reflect the actual simulation parameters.
+
+    Raises:
+    - FileNotFoundError: If any of the required files are not found in the current directory.
+    - ValueError: If multiple files with the expected extension are found, indicating ambiguity.
+
+    To Do:
+    - Implement the `MDSimulation` class to handle MD simulation initialization.
+    - Modify the time step (`dt`) to be retrieved from the `MDSimulation` object
+      once it's implemented.
+    """
+
 
     # TODO : write class for MD simulation
     # ideally, read params from file
@@ -36,8 +70,6 @@ def main():
     # TODO : ideally use MDSim.dt thing in the future
     # specify time step (ps)
     dt = 10                                             
-
-    # TODO : specify file name for output files that we get out of this analysis
 
     # define Trajectory object
     test = pyedna.Trajectory(

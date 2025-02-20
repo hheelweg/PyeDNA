@@ -108,6 +108,7 @@ class Trajectory():
     def parseParameters(file, parse_trajectory_out = False, verbose = True):
 
         # default parameters
+        # TODO : extend this list to have every possible parameter defaulted to something
         out = {
                 "time_slice" :  None,
                 "exc" :         True,
@@ -125,6 +126,7 @@ class Trajectory():
         }
         # read user parameters
         user_out = fp.readParams(file)
+        # TODO : check if there is some key words not specified in out and throw parsing error
 
         # update default settings
         out.update(user_out)
