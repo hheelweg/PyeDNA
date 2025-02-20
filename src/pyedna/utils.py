@@ -44,3 +44,16 @@ def findFileWithName(desired_name):
         # Exactly one matching file
         target_file = matching_files[0]
         return target_file
+
+
+# in some specified directory, find directories with matching name
+def findSubdirWithName(dir, desired_name):
+
+    if not os.path.isdir(dir):
+        raise Warning(f"Base directory '{dir}' does not exist.")
+
+    target_dir = os.path.join(dir, desired_name)
+    if os.path.isdir(target_dir):
+        return target_dir
+    else:
+        raise NameError(f"No matching directory for {desired_name} found in {dir}")

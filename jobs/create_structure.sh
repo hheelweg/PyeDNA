@@ -11,7 +11,7 @@ export PYTHONPATH=$PYTHONPATH:/home/hheelweg/cy3cy5/PyeDNA/scripts
 export PYEDNA_HOME="/home/hheelweg/cy3cy5/PyeDNA"
 
 # Add path to dye library for structural information
-export STRUCTURE_DIR="/home/hheelweg/cy3cy5/bib"
+export DYE_DIR="/home/hheelweg/cy3cy5/bib"
 
 
 # run file for structure creation

@@ -15,8 +15,8 @@ def main():
     # dye names we want to attach to the DNA
     dye_names = ['CY5', 'CY3']
     # look for dyes in specified structure library
-    dye_dir = os.getenv("STRUCTURE_DIR")
-    print(dye_dir)
+    dye_dir = os.getenv("DYE_DIR")
+    print(pyedna.utils.findSubdirWithName(dye_dir, dye_names[0]))
 
 
 
