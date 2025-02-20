@@ -301,12 +301,12 @@ class Trajectory():
         return molecules, molecule_names
 
 
-    # def parseMolecules(molecules, molecule_names = ["D", "A"]):
-    #     self.molecules = molecules
-    #     if molecule_names is not None:
-    #         assert(len(molecule_names) == len(self.molecules))
-    #         self.molecule_names = molecule_names
-    #     self.defined_molecules = True                               
+    def iniutMolecules(self, molecules, molecule_names = ["D", "A"]):
+        self.molecules = molecules
+        if molecule_names is not None:
+            assert(len(molecule_names) == len(self.molecules))
+            self.molecule_names = molecule_names
+        self.defined_molecules = True                               
             
 
     # get MDAnalysis object of specified residues at specified time slice
