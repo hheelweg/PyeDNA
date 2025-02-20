@@ -1,4 +1,3 @@
-import os
 import torch
 import numpy as np
 from pyscf import gto, lib
@@ -10,32 +9,32 @@ import pyedna
 # Detect available GPUs 
 num_gpus = torch.cuda.device_count()
 if num_gpus < 2:
-    raise RuntimeError("Error: Less than 2 GPUs detected! Check SLURM allocation.")
+    raise RuntimeError("Error: Less than 2 GPUs detected! Check SLURM \
+                       allocation and adjust accordingly.")
 
 
 def main():
 
     # TODO : write class for MD simulation
+    # ideally, read params from file
     params = []
     MDsim = pyedna.MDSimulation(params)
 
-    # trajectory raw data
-    # name_prmtop = 'dna_test.prmtop'
-    # name_nc = 'dna_test_prod.nc'                        # need to NetCDF3 and not NetCDF4 (use cpptraj to convert)
-    # name_out = 'dna_test_prod.out'
+    # trajectory raw data from AMBER MD
+    # searches for files with specific ending in cwd (needs to be unique)
     name_prmtop = pyedna.utils.findFileWithExtension('.prmtop')
     name_nc = pyedna.utils.findFileWithExtension('.nc')
     name_out = pyedna.utils.findFileWithExtension('.out')
 
     # parameter file for trajectory analysis
+    # TODO : add check that file exists and maybe call traj.params
     out_params = 'out.params'
-
-    print('debug0', os.getcwd())
-    print('debug2', os.getenv('PYEDNA_HOME'))
 
     traj_data = [name_prmtop, name_nc, name_out]
     # TODO : ideally use some MDSim.dt thing in the future
     dt = 10                                             # specify time step (ps)
+
+    # TODO : specify file name for output files that we get out of this analysis
 
     # define Trajectory object
     test = pyedna.Trajectory(
@@ -51,6 +50,7 @@ def main():
 
 
     # time slices we are interested in
+    # TODO : put this into *.params file
     time_slice = [0, 0]
     test.initMolecules(molecules)
     test.loopTrajectory(time_slice)
