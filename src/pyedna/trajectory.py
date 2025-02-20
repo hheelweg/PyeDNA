@@ -361,7 +361,7 @@ class Trajectory():
     def loopTrajectory(self, time_slice = None, **params):
         # (0) unpack arguments, i.e. quantities of interest for the trajectory
         # TODO : make this more flexible and stream-line this better
-        #conversion = params['conversion']
+        conversion = 'pyscf'
         
         # (1) time range of interest: time_slice = [idx_start, idx_end]
         # TODO : change this to actual time and not just frame index
