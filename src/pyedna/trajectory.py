@@ -67,7 +67,7 @@ class Trajectory():
         
         # TODO : make this more flexible with regards to path
         # parse output information for QM and MD simulations
-        self.qm_outs, self.quant_info, self.class_info = self.parseParameters(output_params_file, parse_trajectory_out=True)
+        self.qm_outs, self.quant_info, self.class_info, self.time_slice = self.parseParameters(output_params_file, parse_trajectory_out=True)
 
         self.defined_molecules = False                                  # flag to track whether molecules have been defined
 
@@ -107,17 +107,18 @@ class Trajectory():
     @staticmethod
     def parseParameters(file, parse_trajectory_out = False, verbose = True):
 
-        # output default parameters of DFT/TDDFT calculations
+        # output default parameters
         out = {
-                "exc" : True,
-                "mf"  : False,
-                "occ" : False,
-                "virt": False,
-                "mol" : True,
-                "tdm" : True,
-                "dip" : False,
-                "osc" : False,
-                "idx" : False
+                "time_slice" :  None,
+                "exc" :         True,
+                "mf"  :         False,
+                "occ" :         False,
+                "virt":         False,
+                "mol" :         True,
+                "tdm" :         True,
+                "dip" :         False,
+                "osc" :         False,
+                "idx" :         False
         }
         # read user parameters four output
         user_out = fp.readParams(file)
@@ -125,7 +126,10 @@ class Trajectory():
         # update default settings
         out.update(user_out)
 
-        # split the output parameters into parameters that are relevant only to
+        # (0) time range of interest
+        time_range = out["time_slice"]
+
+        # split the parameters into parameters that are relevant only to
         # conductiong QM (DFT/TDDFT) simulations or to post-processing of the trajectory 
         # (1) QM (DFT/TDDFT) outputs (NOTE : only boolean)
         qm_outs = {key: out.get(key) for key in ["exc", "mol", "tdm", "mf", "occ", "virt", "dip", "osc", "idx"]}    
@@ -168,7 +172,7 @@ class Trajectory():
                 print(f"(2) we study the following state transitions [stateA, stateB]: {', '.join(str(transition) for transition in qm_flags['transitions'])}")
                 print(f"(2) quantum parameters to evaluate at each time step for each transition: {', '.join(key for key, value in qm_flags.items() if isinstance(value, bool))}")
                 print(f"(2) we use the following methods (in order): {', '.join(qm_methods.values())}")
-            return qm_outs, [qm_flags, qm_methods], [class_flags, class_methods]
+            return qm_outs, [qm_flags, qm_methods], [class_flags, class_methods], time_range
         else:
             return qm_outs
 
@@ -357,16 +361,16 @@ class Trajectory():
                 
             
     # analyze trajectory based on specific molecules of interest
-    def loopTrajectory(self, time_slice = None):
+    def loopTrajectory(self):
         # (0) unpack arguments, i.e. quantities of interest for the trajectory
         # TODO : make this more flexible and stream-line this better
  
         # (1) time range of interest: time_slice = [idx_start, idx_end]
         # TODO : change this to actual time and not just frame index
-        if time_slice is None:                                          # study the whole trajectory
+        if self.time_slice is None:                                          # study the whole trajectory
             self.time_slice = [0, self.num_frames - 1]
-        else:
-            self.time_slice = time_slice
+        # else:
+        #     self.time_slice = time_slice
 
         # check whether molecules have been defined and initialized
         if not self.defined_molecules:
