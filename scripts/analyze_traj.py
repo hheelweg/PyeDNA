@@ -10,15 +10,13 @@ import io
 import sys
 from joblib import dump, load
 
-# import PyeDNA and set home
+# import PyeDNA
 import pyedna
 
-
-# Detect available GPUs
+# Detect available GPUs 
 num_gpus = torch.cuda.device_count()
 if num_gpus < 2:
     raise RuntimeError("Error: Less than 2 GPUs detected! Check SLURM allocation.")
-
 
 
 def main():
