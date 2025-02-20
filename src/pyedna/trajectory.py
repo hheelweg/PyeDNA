@@ -13,6 +13,7 @@ from joblib import dump, load
 from . import structure
 from . import quanttools as qm
 from . import fileproc as fp
+from . import config 
 
 
 # TODO : write class to perform MD simulation
@@ -520,11 +521,11 @@ class Trajectory():
     # TODO : might want to store convert_traj.sh in more global directory
     def convertTrajectory(self):
 
-        # locate shell script 
-        print('debug45', os.getenv('PYEDNA_HOME'))
+        # shell script 
+        convert_traj_script = os.path.join(config.PROJECT_HOME, 'bin', 'convert_traj.sh')
 
         # run shell script
-        cpptraj_command = f"bash convert_traj.sh {self.prmtop} {self.nc}"
+        cpptraj_command = f"bash {convert_traj_script} {self.prmtop} {self.nc}"
         run_conversion = subprocess.Popen(cpptraj_command, shell = True, stdout = subprocess.DEVNULL)
 
 

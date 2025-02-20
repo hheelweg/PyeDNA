@@ -375,7 +375,7 @@ def launchQMdriver(molecule_no, gpu_id):
 
 # do PySCF on molecules = [mol1, mol2] where mol are the nuclear coordinates for PySCF calculations
 # TODO : make this also without GPU-support depending on the available resources
-def doQM_gpu(molecules, output_keys, verbosity = 2):
+def doQM_gpu(molecules, output_keys, verbosity = 0):
     # verbosity = 0 : suppress all the output from the QM calculations (default)
     # verbosity = 1 : only print STDOUT of QM calculations
     # verbosity = 2 : only print STDERR of QM calculations (for debugging)

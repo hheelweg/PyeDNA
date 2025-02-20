@@ -10,7 +10,9 @@ import io
 import sys
 from joblib import dump, load
 
+# import PyeDNA and set home
 import pyedna
+
 
 # Detect available GPUs
 num_gpus = torch.cuda.device_count()
