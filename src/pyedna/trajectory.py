@@ -118,7 +118,10 @@ class Trajectory():
                 "tdm" :         True,
                 "dip" :         False,
                 "osc" :         False,
-                "idx" :         False
+                "idx" :         False,
+                "out_qm" :      "out_quant.txt",
+                "out_class":    "out_class.txt"
+
         }
         # read user parameters four output
         user_out = fp.readParams(file)
@@ -141,6 +144,7 @@ class Trajectory():
         qm_options = ["transitions", "coupling", "coupling_type", "excited_energies", "dipole_moments", "osc_strengths"]
         post_qm = {key: out.get(key) for key in qm_options}                
         qm_flags = {key: value for key, value in post_qm.items() if isinstance(value, bool) and value}                          # NOTE : only bool/True param
+        qm_out_file = out["out_qm"]
         # checkpoints: manually check if flags in out match with qm_flags:
         # TODO : maybe there is a better way to do this?
         qm_outs['exc'] = True if post_qm["excited_energies"] else qm_outs['exc']
@@ -158,6 +162,7 @@ class Trajectory():
         # (2.2) classical parameters and methods
         post_class = {key: out.get(key) for key in ["distance", "distance_type"]}                                               # all MD options
         class_flags = {key: value for key, value in post_class.items() if isinstance(value, bool) and value}                    # NOTE : only bool/True param
+        class_out_file = out["out_class"]
         # for each flag we either set specified methods_type or default
         class_methods = {
             key: post_class.get(f"{key}_type", "default") for key in class_flags
@@ -172,7 +177,7 @@ class Trajectory():
                 print(f"(2) we study the following state transitions [stateA, stateB]: {', '.join(str(transition) for transition in qm_flags['transitions'])}")
                 print(f"(2) quantum parameters to evaluate at each time step for each transition: {', '.join(key for key, value in qm_flags.items() if isinstance(value, bool))}")
                 print(f"(2) we use the following methods (in order): {', '.join(qm_methods.values())}")
-            return qm_outs, [qm_flags, qm_methods], [class_flags, class_methods], time_range
+            return qm_outs, [qm_flags, qm_methods, qm_out_file], [class_flags, class_methods, class_out_file], time_range
         else:
             return qm_outs
 
@@ -209,6 +214,33 @@ class Trajectory():
             raise NotImplementedError("More than 2 molecules (currently) not implemented!")
 
         return molecules, molecule_names
+
+    # read and parse DataFrame trajectory analysis output
+    @staticmethod
+    def readOutputFiles(file, output_type, output_info):
+        # (1) read file and parse output info 
+        # (1.1) DataFrame with quantum information
+        if output_type == 'quantum':
+            df = pd.read_csv(file, sep='\t', header=[0,1])
+            df.columns = [(col[0] if col[0] == "time" else col) for col in df.columns]
+            # parse output information contained within data_frame
+            _, qm_info, _  = Trajectory.parseOutput(output_info, parse_trajectory_out=True, verbose=False)
+            # get names of the transitions under study
+            transition_dict = {}
+            for states in qm_info[0]["transitions"]:
+                key = Trajectory.generateTransitionString(states)
+                transition_dict[str(states)] = key
+            # return df, transition name dict, and output information
+            return df, transition_dict, qm_info
+        # (1.2) DataFrame with classical information
+        elif output_type == 'classical':
+            df = pd.read_csv(file, sep='\t', header=0)
+            # parse output information contained within data_frame
+            _, _, class_info  = Trajectory.parseOutput(output_info, parse_trajectory_out=True, verbose=False)
+            # return df and output information
+            return df, class_info
+        else:
+            raise TypeError("Output type does not exist!")
 
 
     # write a function that produces string for storing transition
@@ -267,7 +299,8 @@ class Trajectory():
         
 
     # TODO : write simulation data into the header
-    def writeOutputFiles(self, data_frame, file_name, write_meta_data = True):
+    @staticmethod
+    def writeOutputFiles(data_frame, file_name, write_meta_data = True):
         # TODO : write meta data into header
         # store DateFrame (classical or quantum) with meta data header (optional)
         if not data_frame.empty:
@@ -278,35 +311,7 @@ class Trajectory():
                 # write output
                 data_frame.to_csv(f, sep = "\t", index=False)
 
-
-    # read and parse DataFrame trajectory analysis output
-    @staticmethod
-    def readOutputFiles(file, output_type, output_info):
-        # (1) read file and parse output info 
-        # (1.1) DataFrame with quantum information
-        if output_type == 'quantum':
-            df = pd.read_csv(file, sep='\t', header=[0,1])
-            df.columns = [(col[0] if col[0] == "time" else col) for col in df.columns]
-            # parse output information contained within data_frame
-            _, qm_info, _  = Trajectory.parseOutput(output_info, parse_trajectory_out=True, verbose=False)
-            # get names of the transitions under study
-            transition_dict = {}
-            for states in qm_info[0]["transitions"]:
-                key = Trajectory.generateTransitionString(states)
-                transition_dict[str(states)] = key
-            # return df, transition name dict, and output information
-            return df, transition_dict, qm_info
-        # (1.2) DataFrame with classical information
-        elif output_type == 'classical':
-            df = pd.read_csv(file, sep='\t', header=0)
-            # parse output information contained within data_frame
-            _, _, class_info  = Trajectory.parseOutput(output_info, parse_trajectory_out=True, verbose=False)
-            # return df and output information
-            return df, class_info
-        else:
-            raise TypeError("Output type does not exist!")
     
-
     # initialize molecules from params file
     def initMolecules(self, file):
         self.molecules, self.molecule_names = self.parseMolecules(file)
@@ -455,9 +460,9 @@ class Trajectory():
 
         # (4) write output files
         # (4.1) quantum output
-        self.writeOutputFiles(self.output_quant, "out_quant.txt")
+        self.writeOutputFiles(self.output_quant, self.quant_info[2])
         # (4.2) classical output
-        self.writeOutputFiles(self.output_class, "out_class.txt")
+        self.writeOutputFiles(self.output_class, self.class_info[2])
 
 
 
@@ -471,6 +476,7 @@ class Trajectory():
 
     # TODO : might want to make this more general for atom types to cap etc.
     # especially when we want to move to differen molecules/chromophores
+    # TODO : might want to link this to the type of molecule that is under study here, e.g. by adding molecule_name and referring to some bib file
     def capResiduesH(self, molecule):
 
         # (1) compute position of H-caps 
