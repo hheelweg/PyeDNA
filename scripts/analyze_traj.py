@@ -2,8 +2,6 @@ import torch
 import numpy as np
 from pyscf import gto, lib
 from joblib import dump, load
-
-# import PyeDNA
 import pyedna
 
 # detect available GPUs 
@@ -42,7 +40,7 @@ def main():
     - FileNotFoundError: If any of the required files are not found in the current directory.
     - ValueError: If multiple files with the expected extension are found, indicating ambiguity.
 
-    To Do:
+    TODO:
     - Implement the `MDSimulation` class to handle MD simulation initialization.
     - Modify the time step (`dt`) to be retrieved from the `MDSimulation` object
       once it's implemented.
