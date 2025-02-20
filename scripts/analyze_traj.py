@@ -52,7 +52,7 @@ def main():
     # TODO : put this into *.params file
     time_slice = [0, 0]
     test.initMolecules(molecules)
-    test.loopTrajectory(time_slice)
+    test.loopTrajectory()
     
     
 

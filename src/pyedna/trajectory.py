@@ -176,7 +176,6 @@ class Trajectory():
         else:
             return qm_outs
 
-
     # write a function that produces string for storing transition
     @staticmethod
     def generateTransitionString(states, molecule_names = ["D", "A"]):
