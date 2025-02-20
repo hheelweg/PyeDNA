@@ -48,4 +48,4 @@ if [ ! -f "a.out" ]; then
 fi
 
 # Run the compiled program
-./a.out
+#./a.out
