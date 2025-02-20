@@ -25,8 +25,7 @@ def main():
     params = []
     MDsim = pyedna.MDSimulation(params)
 
-    # input path
-    path = './'
+
 
     # trajectory raw data
     name_prmtop = 'dna_test.prmtop'
@@ -38,13 +37,13 @@ def main():
 
     print('debug0', os.getcwd())
 
-
-    data = [name_prmtop, name_nc, name_out]
+    traj_data = [name_prmtop, name_nc, name_out]
+    # TODO : ideally use some MDSim.dt thing in the future
     dt = 10                                             # specify time step (ps)
 
     # define Trajectory object
     test = pyedna.Trajectory(
-                            MDsim, path, data, dt,
+                            MDsim, traj_data, dt,
                             output_params = out_params
                             )
 

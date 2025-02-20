@@ -46,11 +46,11 @@ class MDSimulation():
 
 class Trajectory():
 
-    def __init__(self, MDsim, path, trajectory, dt, output_params = 'out.params'):
-        self.path = path
-        self.prmtop = trajectory[0]                                     # load *.prmtop
-        self.nc = trajectory[1]                                         # load *.nc from Amber MD simulation
-        self.out = trajectory[2]                                        # load *.out file
+    def __init__(self, MDsim, trajectory_data, dt, output_params = 'out.params'):
+
+        self.prmtop = trajectory_data[0]                                # load *.prmtop
+        self.nc = trajectory_data[1]                                    # load *.nc from Amber MD simulation
+        self.out = trajectory_data[2]                                   # load *.out file
         # make sure *.nc file is NetCDF3 (as required for MDAnalysis) and not NetCDF4 (as created by Amber)
         self.convertTrajectory()
         # print cwd
