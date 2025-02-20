@@ -10,13 +10,18 @@ def main():
     # NOTE : the current implementation starts from the pdb structures of the DNA and the dyes
     # we want to load the dye information from some bib/lib directory that we have yet to implement
     dna_pdb = pyedna.utils.findFileWithName('dna.pdb')
-    print(dna_pdb)
 
     # dye names we want to attach to the DNA
-    dye_names = ['CY5', 'CY3']
+    dyes = ['CY5', 'CY3']
     # look for dyes in specified structure library
-    dye_dir = os.getenv("DYE_DIR")
-    print(pyedna.utils.findSubdirWithName(dye_dir, dye_names[0]))
+    dye_base_dir = os.getenv("DYE_DIR")
+    for dye in dyes:
+        # get directory name for dye
+        dye_dir = pyedna.utils.findSubdirWithName(dye, dir=dye_base_dir)
+        print(dye_dir)
+        dye_pdb = pyedna.utils.findFileWithName(dye + ".pdb", dir=dye_dir)
+        print(dye_pdb)
+
 
 
 

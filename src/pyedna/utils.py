@@ -8,38 +8,38 @@ def cleanCache():
         os.remove(file)
 
 
-# find unique file with specific extension
-def findFileWithExtension(desired_extension):
+# find unique file with specific extension (dir = None means cwd)
+def findFileWithExtension(desired_extension, dir = None):
 
-    cwd = os.getcwd()
+    search_dir = dir if dir else os.getcwd()
 
     # List all files in the current working directory with the desired extension
-    matching_files = [f for f in os.listdir(cwd) if f.endswith(desired_extension)]
+    matching_files = [f for f in os.listdir(search_dir) if f.endswith(desired_extension)]
 
     # Check the number of matching files and allow only one
     if len(matching_files) == 0:
-        raise FileNotFoundError(f"No file with the extension '{desired_extension}' found in {cwd}.")
+        raise FileNotFoundError(f"No file with the extension '{desired_extension}' found in {search_dir}.")
     elif len(matching_files) > 1:
-        raise ValueError(f"Multiple files with the extension '{desired_extension}' found in {cwd}.")
+        raise ValueError(f"Multiple files with the extension '{desired_extension}' found in {search_dir}.")
     else:
         # Exactly one matching file
         target_file = matching_files[0]
         return target_file
     
 
-# find unique file with specific name
-def findFileWithName(desired_name):
+# find unique file with specific name (dir = None means cwd)
+def findFileWithName(desired_name, dir = None):
 
-    cwd = os.getcwd()
+    search_dir = dir if dir else os.getcwd()
 
     # List all files in the current working directory with the desired name
-    matching_files = [f for f in os.listdir(cwd) if f.endswith(desired_name)]
+    matching_files = [f for f in os.listdir(search_dir) if f.endswith(desired_name)]
 
     # Check the number of matching files and allow only one
     if len(matching_files) == 0:
-        raise FileNotFoundError(f"No file with the name '{desired_name}' found in {cwd}.")
+        raise FileNotFoundError(f"No file with the name '{desired_name}' found in {search_dir}.")
     elif len(matching_files) > 1:
-        raise ValueError(f"Multiple files with the name '{desired_name}' found in {cwd}.")
+        raise ValueError(f"Multiple files with the name '{desired_name}' found in {search_dir}.")
     else:
         # Exactly one matching file
         target_file = matching_files[0]
@@ -47,7 +47,7 @@ def findFileWithName(desired_name):
 
 
 # in some specified directory, find directories with matching name
-def findSubdirWithName(dir, desired_name):
+def findSubdirWithName(desired_name, dir):
 
     if not os.path.isdir(dir):
         raise Warning(f"Base directory '{dir}' does not exist.")
