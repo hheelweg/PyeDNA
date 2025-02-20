@@ -8,7 +8,6 @@ def main():
 
     # NOTE : the current implementation starts from the pdb structures of the DNA and the dyes
     # we want to load the dye information from some bib/lib directory that we have yet to implement
-
     dna_pdb = pyedna.utils.findFileWithName('dna.pdb')
     print(dna_pdb)
 
