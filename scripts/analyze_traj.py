@@ -25,7 +25,8 @@ def main():
     params = []
     MDsim = pyedna.MDSimulation(params)
 
-    # ensure that 
+    # ensure that python cwd matches environment variable SLURM_SUBMIT_DIR
+    assert(os.getcwd() == os.getenv('SLURM_SUBMIT_DIR'))
 
     # trajectory raw data
     name_prmtop = 'dna_test.prmtop'
