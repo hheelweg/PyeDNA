@@ -28,7 +28,7 @@ def main():
 
     # parameter file for trajectory analysis
     # TODO : add check that file exists and maybe call traj.params
-    out_params = 'out.params'
+    out_params = 'traj.params'
 
     traj_data = [name_prmtop, name_nc, name_out]
     # TODO : ideally use some MDSim.dt thing in the future
