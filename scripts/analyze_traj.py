@@ -70,17 +70,17 @@ def main():
     dt = 10                                             
 
     # define Trajectory object
-    test = pyedna.Trajectory(
+    traj = pyedna.Trajectory(
                              MDsim, traj_data, dt,
                              traj_params_file = traj_params
                             )
 
 
     # initialize (dye) molecules of interest
-    test.initMolecules(mols_params)
+    traj.initMolecules(mols_params)
 
     # loop through trajectory snapshots and analyze based on traj.params
-    test.loopTrajectory()
+    traj.loopTrajectory()
     
     
 
