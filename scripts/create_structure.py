@@ -9,6 +9,10 @@ def main():
     # NOTE : the current implementation starts from the pdb structures of the DNA and the dyes
     # we want to load the dye information from some bib/lib directory that we have yet to implement
 
+    dna_pdb = pyedna.utils.findFileWithName('dna.pdb')
+    print(dna_pdb)
+
+    # dye names we want to attach to the DNA
     dye_names = ['CY5', 'CY3']
     print(dye_names)
 
