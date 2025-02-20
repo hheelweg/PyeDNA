@@ -298,10 +298,17 @@ class Trajectory():
         # store molecule names and make sure they are sorted
         molecule_names = [key for key, value in mols.items() if key.startswith("name_") and value is not None].sort(key=lambda x: int(x.split('_')[1]))
 
+        # checkpoint
+        assert(len(molecule_names) == len(molecules))
+        if len(molecules) == 0:
+            raise Warning("Need to specify at least one molecule in mols.params")
+        elif len(molecules) > 2:
+            raise NotImplementedError("More than 2 molecules (currently) not implemented!")
+
         return molecules, molecule_names
 
 
-    def iniutMolecules(self, molecules, molecule_names = ["D", "A"]):
+    def initMolecules(self, molecules, molecule_names = ["D", "A"]):
         self.molecules = molecules
         if molecule_names is not None:
             assert(len(molecule_names) == len(self.molecules))
