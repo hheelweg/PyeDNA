@@ -1,4 +1,5 @@
 import pyedna 
+import os
 
 # TODO : make this a function that feeds in information about the molecules (dyes) and 
 # about the DNA sequence and returns a DNA+dye structure (maybe .pdb) and also the necessary
@@ -13,7 +14,9 @@ def main():
 
     # dye names we want to attach to the DNA
     dye_names = ['CY5', 'CY3']
-    print(dye_names)
+    # look for dyes in specified structure library
+    dye_dir = os.getenv("STRUCTURE_DIR")
+    print(dye_dir)
 
 
 
