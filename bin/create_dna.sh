@@ -8,22 +8,22 @@ fi
 
 NAB_FILE="$1"
 
-# Ensure the provided file has a .nab extension
+# ensure the provided file has a .nab extension
 if [[ "$NAB_FILE" != *.nab ]]; then
     echo "Error: The file must have a .nab extension."
     exit 1
 fi
 
-# Check if the NAB source file exists in the current working directory
+# check if the NAB source file exists in the current working directory
 if [ ! -f "$NAB_FILE" ]; then
     echo "Error: $NAB_FILE not found in the current directory $(pwd)."
     exit 1
 fi
 
-# Define the path to the AmberClassic installation directory
+# define the path to the AmberClassic installation directory
 AMBERCLASSIC_DIR="/home/hheelweg/opt/AmberClassic"
 
-# Source the AmberClassic environment setup script without changing directories
+# source the AmberClassic environment setup script without changing directories
 if [ -f "$AMBERCLASSIC_DIR/AmberClassic.sh" ]; then
     source "$AMBERCLASSIC_DIR/AmberClassic.sh"
 else
@@ -31,7 +31,7 @@ else
     exit 1
 fi
 
-# Compile the NAB source file
+# compile the NAB source file
 nab "$NAB_FILE"
 
 # give process time to finish
@@ -42,5 +42,8 @@ if [ ! -f "a.out" ]; then
     exit 1
 fi
 
-# Run the compiled program
+# run the compiled program
 ./a.out
+
+# clean up generated files
+rm -f a.out *.c tleap.out
