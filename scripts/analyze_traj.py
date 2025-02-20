@@ -1,13 +1,7 @@
 import os
-import argparse
-import time
-import subprocess
 import torch
-import json
 import numpy as np
 from pyscf import gto, lib
-import io
-import sys
 from joblib import dump, load
 
 # import PyeDNA
@@ -25,13 +19,13 @@ def main():
     params = []
     MDsim = pyedna.MDSimulation(params)
 
-    # ensure that python cwd matches environment variable SLURM_SUBMIT_DIR
-    assert(os.getcwd() == os.getenv('SLURM_SUBMIT_DIR'))
-
     # trajectory raw data
-    name_prmtop = 'dna_test.prmtop'
-    name_nc = 'dna_test_prod.nc'                        # need to NetCDF3 and not NetCDF4 (use cpptraj to convert)
-    name_out = 'dna_test_prod.out'
+    # name_prmtop = 'dna_test.prmtop'
+    # name_nc = 'dna_test_prod.nc'                        # need to NetCDF3 and not NetCDF4 (use cpptraj to convert)
+    # name_out = 'dna_test_prod.out'
+    name_prmtop = pyedna.utils.findFileWithExtension('.prmtop')
+    name_nc = pyedna.utils.findFileWithExtension('.nc')
+    name_out = pyedna.utils.findFileWithExtension('.out')
 
     # parameter file for trajectory analysis
     out_params = 'out.params'
