@@ -10,8 +10,6 @@ import io
 import sys
 from joblib import dump, load
 
-# import PyeDNA package
-# for installation (in ediatble mode) first run "pip install -e . " in PyeDNA main directory
 import pyedna
 
 # Detect available GPUs
@@ -49,7 +47,7 @@ def main():
              'com': True}
 
     # time slices we are interested in
-    time_slice = [0, 0]
+    time_slice = [0, 1]
     test.initMolecules(molecules)
     test.loopTrajectory(time_slice, **traj_info)
     
