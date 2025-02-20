@@ -16,13 +16,11 @@ def findFileWithExtension(desired_extension):
     # List all files in the current working directory with the desired extension
     matching_files = [f for f in os.listdir(cwd) if f.endswith(desired_extension)]
 
-    # Check the number of matching files
+    # Check the number of matching files and allow only one
     if len(matching_files) == 0:
-        print(f"No files with the extension '{desired_extension}' found in {cwd}.")
-        sys.exit(1)
+        raise FileNotFoundError(f"No file with the extension '{desired_extension}' found in {cwd}.")
     elif len(matching_files) > 1:
-        print(f"Multiple files with the extension '{desired_extension}' found in {cwd}:")
-        sys.exit(1)
+        raise ValueError(f"Multiple files with the extension '{desired_extension}' found in {cwd}.")
     else:
         # Exactly one matching file
         target_file = matching_files[0]

@@ -16,7 +16,7 @@ def main(molecule_id):
     settings_dft, settings_tddft = traj.Trajectory.setQMSettings('qm.params')
 
     # (0) load output information
-    output_keys = traj.Trajectory.parseOutput('out.params')
+    output_keys = traj.Trajectory.parseOutput('traj.params')
     # intialize value dict for storing outputs
     values = {key: None for key in output_keys}
 
