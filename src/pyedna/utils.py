@@ -24,7 +24,7 @@ def findFileWithExtension(desired_extension, dir = None):
     else:
         # Exactly one matching file
         target_file = matching_files[0]
-        return target_file
+        return os.path.join(search_dir, target_file)
     
 
 # find unique file with specific name (dir = None means cwd)
@@ -43,7 +43,7 @@ def findFileWithName(desired_name, dir = None):
     else:
         # Exactly one matching file
         target_file = matching_files[0]
-        return target_file
+        return os.path.join(search_dir, target_file)
 
 
 # in some specified directory, find directories with matching name
