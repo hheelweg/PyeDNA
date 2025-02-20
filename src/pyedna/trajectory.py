@@ -294,10 +294,10 @@ class Trajectory():
         print('sanity check', mols)
 
         # store molecule IDs and make sure they are sorted
-        molecules = [key for key, value in mols.items() if key.startswith("molecule_") and value is not None].sort(key=lambda x: int(x.split('_')[1]))
+        molecules = [key for key, value in mols.items() if key.startswith("molecule_") and value is not None]#.sort(key=lambda x: int(x.split('_')[1]))
         print('testt', molecules)
         # store molecule names and make sure they are sorted
-        molecule_names = [key for key, value in mols.items() if key.startswith("name_") and value is not None].sort(key=lambda x: int(x.split('_')[1]))
+        molecule_names = [key for key, value in mols.items() if key.startswith("name_") and value is not None]#.sort(key=lambda x: int(x.split('_')[1]))
 
         # checkpoint
         assert(len(molecule_names) == len(molecules))
