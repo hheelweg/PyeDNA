@@ -25,7 +25,7 @@ def main():
     params = []
     MDsim = pyedna.MDSimulation(params)
 
-
+    # ensure that 
 
     # trajectory raw data
     name_prmtop = 'dna_test.prmtop'
