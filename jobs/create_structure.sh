@@ -8,6 +8,7 @@ source activate AmberTools24
 
 # Add path to PyeDNA and define PyeDNA home
 export PYTHONPATH=$PYTHONPATH:/home/hheelweg/cy3cy5/PyeDNA/scripts
+export PYEDNA_HOME="/home/hheelweg/cy3cy5/PyeDNA"
 
 # run file for structure creation
 python -m create_structure > output.log 2>&1
