@@ -25,36 +25,40 @@ def main():
     params = []
     MDsim = pyedna.MDSimulation(params)
 
-    # input data
+    # input path
     path = './'
+
+    # trajectory raw data
     name_prmtop = 'dna_test.prmtop'
     name_nc = 'dna_test_prod.nc'                        # need to NetCDF3 and not NetCDF4 (use cpptraj to convert)
     name_out = 'dna_test_prod.out'
+
+    # parameter file for trajectory analysis
     out_params = 'out.params'
+
+
     data = [name_prmtop, name_nc, name_out]
     dt = 10                                             # specify time step (ps)
 
     # define Trajectory object
-    test = pyedna.Trajectory(MDsim, path, data, dt, output_params = out_params)
-    print('test debug', flush=True)
+    test = pyedna.Trajectory(
+                            MDsim, path, data, dt,
+                            output_params = out_params
+                            )
 
     # define donor and acceptor molecules
+    # TODO : put this into *.params file
     donor = [9]
     acceptor = [14]
     molecules = [donor, acceptor]
 
-    # which information do we wish to extract from trajectory
-    # TODO : load that from a *.params file ?!
-    traj_info = {'conversion': 'pyscf',
-             'com': True}
 
     # time slices we are interested in
     time_slice = [0, 0]
     test.initMolecules(molecules)
-    test.loopTrajectory(time_slice, **traj_info)
+    test.loopTrajectory(time_slice)
     
     
-
 
 
 
