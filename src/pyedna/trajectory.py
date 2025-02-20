@@ -107,7 +107,7 @@ class Trajectory():
     @staticmethod
     def parseParameters(file, parse_trajectory_out = False, verbose = True):
 
-        # output default parameters
+        # default parameters
         out = {
                 "time_slice" :  None,
                 "exc" :         True,
@@ -119,11 +119,11 @@ class Trajectory():
                 "dip" :         False,
                 "osc" :         False,
                 "idx" :         False,
-                "out_qm" :      "out_quant.txt",
-                "out_class":    "out_class.txt"
+                "file_qm" :     "out_quant.txt",
+                "file_class":   "out_class.txt"
 
         }
-        # read user parameters four output
+        # read user parameters
         user_out = fp.readParams(file)
 
         # update default settings
@@ -144,7 +144,7 @@ class Trajectory():
         qm_options = ["transitions", "coupling", "coupling_type", "excited_energies", "dipole_moments", "osc_strengths"]
         post_qm = {key: out.get(key) for key in qm_options}                
         qm_flags = {key: value for key, value in post_qm.items() if isinstance(value, bool) and value}                          # NOTE : only bool/True param
-        qm_out_file = out["out_qm"]
+        qm_out_file = out["file_qm"]
         # checkpoints: manually check if flags in out match with qm_flags:
         # TODO : maybe there is a better way to do this?
         qm_outs['exc'] = True if post_qm["excited_energies"] else qm_outs['exc']
@@ -162,7 +162,7 @@ class Trajectory():
         # (2.2) classical parameters and methods
         post_class = {key: out.get(key) for key in ["distance", "distance_type"]}                                               # all MD options
         class_flags = {key: value for key, value in post_class.items() if isinstance(value, bool) and value}                    # NOTE : only bool/True param
-        class_out_file = out["out_class"]
+        class_out_file = out["file_class"]
         # for each flag we either set specified methods_type or default
         class_methods = {
             key: post_class.get(f"{key}_type", "default") for key in class_flags
