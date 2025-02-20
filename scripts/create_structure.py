@@ -21,6 +21,8 @@ def main():
         print(dye_dir)
         dye_pdb = pyedna.utils.findFileWithName(dye + ".pdb", dir=dye_dir)
         print(dye_pdb)
+    
+    # TODO : bring this into agreement with current implementation in structure.py
 
 
 

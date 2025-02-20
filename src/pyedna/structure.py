@@ -23,6 +23,7 @@ class CompositeStructure():
         self.attachment = defaultdict(list)
         self.charge = - (self.dna_nresidues - 2)                        # charge of DNA composite
 
+
     # parse attachment info, and overwrite DNA universe with DNA + chromophore
     def prepareAttachment(self, dye_name, attach_info_dna, orientation = -1):
 
