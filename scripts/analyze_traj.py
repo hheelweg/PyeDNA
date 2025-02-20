@@ -35,10 +35,7 @@ def main():
     dt = 10                                             # specify time step (ps)
 
     # define Trajectory object
-    test = pyedna.Trajectory(
-                             MDsim, path, data, dt,
-                             output_params = out_params
-                             )
+    test = pyedna.Trajectory(MDsim, path, data, dt, output_params = out_params)
 
     # define donor and acceptor molecules
     donor = [9]
