@@ -42,6 +42,11 @@ fi
 
 # Compile the NAB source file using its absolute path
 nab "$NAB_FILE_PATH"
+echo "$NAB_FILE_PATH"
+
+# wait for process to finish
+sleep 2
+
 if [ ! -f "a.out" ]; then
     echo "Error: Compilation failed. a.out not generated."
     exit 1
