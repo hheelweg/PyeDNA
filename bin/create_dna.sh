@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# USAGE:
+# bash this_script.sh nab_file.nab
+
+
 # check if a .nab file is provided as an argument
 if [ "$#" -ne 1 ]; then
     echo "Usage: $0 <filename.nab>"

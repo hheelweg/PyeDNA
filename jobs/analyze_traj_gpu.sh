@@ -16,5 +16,5 @@ export PYEDNA_HOME="/home/hheelweg/cy3cy5/PyeDNA"
 # Print allocated GPUs
 echo "Allocated GPUs: $CUDA_VISIBLE_DEVICES"
 
-# Run PySCF DFT calculation with GPU acceleration
+# Run tracjetory analysis calculation with GPU acceleration
 python -m analyze_traj
