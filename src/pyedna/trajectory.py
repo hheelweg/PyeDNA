@@ -197,10 +197,10 @@ class Trajectory():
         mols.update(user_mols) 
 
         # store molecule IDs and make sure they are sorted
-        molecules = [key for key, value in mols.items() if key.startswith("molecule_") and value is not None]
+        molecules = [value for key, value in mols.items() if key.startswith("molecule_") and value is not None]
         molecules.sort(key=lambda x: int(x.split('_')[1]))
         # store molecule names and make sure they are sorted
-        molecule_names = [key for key, value in mols.items() if key.startswith("name_") and value is not None]#.sort(key=lambda x: int(x.split('_')[1]))
+        molecule_names = [value for key, value in mols.items() if key.startswith("name_") and value is not None]#.sort(key=lambda x: int(x.split('_')[1]))
         molecule_names.sort(key=lambda x: int(x.split('_')[1]))
 
         # checkpoint
