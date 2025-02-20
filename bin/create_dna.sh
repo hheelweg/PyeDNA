@@ -7,10 +7,17 @@ if [ "$#" -ne 1 ]; then
 fi
 
 NAB_FILE="$1"
+NAB_FILE_PATH="$(pwd)/$NAB_FILE"
 
-# ensure the provided file has a .nab extension
+# ensure the provided file has a .nab extension 
 if [[ "$NAB_FILE" != *.nab ]]; then
     echo "Error: The file must have a .nab extension."
+    exit 1
+fi
+
+# check if the NAB source file exists in the current working directory
+if [ ! -f "$NAB_FILE" ]; then
+    echo "Error: $NAB_FILE not found in the current directory $(pwd)."
     exit 1
 fi
 
@@ -33,14 +40,8 @@ else
     exit 1
 fi
 
-# check if the NAB source file exists
-if [ ! -f "$NAB_FILE" ]; then
-    echo "Error: $NAB_FILE not found in $AMBERCLASSIC_DIR."
-    exit 1
-fi
-
-# compile the NAB source file
-nab "$NAB_FILE"
+# Compile the NAB source file using its absolute path
+nab "$NAB_FILE_PATH"
 if [ ! -f "a.out" ]; then
     echo "Error: Compilation failed. a.out not generated."
     exit 1
