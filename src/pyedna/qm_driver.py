@@ -18,7 +18,7 @@ def main(molecule_id):
 
     # (0) load output information to see which outputs we need to store
     output_params_file = utils.findFileWithName('traj.params')
-    output_keys = traj.Trajectory.parseOutput(output_params_file)
+    output_keys = traj.Trajectory.parseParameters(output_params_file)
     # intialize value dict for storing outputs
     values = {key: None for key in output_keys}
 

@@ -67,7 +67,7 @@ class Trajectory():
         
         # TODO : make this more flexible with regards to path
         # parse output information for QM and MD simulations
-        self.qm_outs, self.quant_info, self.class_info = self.parseOutput(output_params_file, parse_trajectory_out=True)
+        self.qm_outs, self.quant_info, self.class_info = self.parseParameters(output_params_file, parse_trajectory_out=True)
 
         self.defined_molecules = False                                  # flag to track whether molecules have been defined
 
@@ -105,7 +105,7 @@ class Trajectory():
 
     # parse output information for trajectory analysis (classical + quantum) 
     @staticmethod
-    def parseOutput(file, parse_trajectory_out = False, verbose = True):
+    def parseParameters(file, parse_trajectory_out = False, verbose = True):
 
         # output default parameters of DFT/TDDFT calculations
         out = {

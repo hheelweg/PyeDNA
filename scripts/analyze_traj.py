@@ -25,12 +25,11 @@ def main():
     name_prmtop = pyedna.utils.findFileWithExtension('.prmtop')
     name_nc = pyedna.utils.findFileWithExtension('.nc')
     name_out = pyedna.utils.findFileWithExtension('.out')
+    traj_data = [name_prmtop, name_nc, name_out]
 
     # parameter file for trajectory analysis
-    # TODO : add check that file exists and maybe call traj.params
     out_params = pyedna.utils.findFileWithName('traj.params')
 
-    traj_data = [name_prmtop, name_nc, name_out]
     # TODO : ideally use some MDSim.dt thing in the future
     dt = 10                                             # specify time step (ps)
 
