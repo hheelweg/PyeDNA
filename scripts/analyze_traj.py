@@ -36,6 +36,7 @@ def main():
     out_params = 'out.params'
 
     print('debug0', os.getcwd())
+    print('debug2', os.getenv('PYEDNA_HOME'))
 
     traj_data = [name_prmtop, name_nc, name_out]
     # TODO : ideally use some MDSim.dt thing in the future

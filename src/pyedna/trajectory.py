@@ -519,6 +519,11 @@ class Trajectory():
     # convert *.nc file to NetCDF3 and overwrite
     # TODO : might want to store convert_traj.sh in more global directory
     def convertTrajectory(self):
+
+        # locate shell script 
+        print('debug45', os.getenv('PYEDNA_HOME'))
+
+        # run shell script
         cpptraj_command = f"bash convert_traj.sh {self.prmtop} {self.nc}"
         run_conversion = subprocess.Popen(cpptraj_command, shell = True, stdout = subprocess.DEVNULL)
 
