@@ -21,7 +21,7 @@ if [ ! -f "$NAB_FILE" ]; then
 fi
 
 # Define the path to the AmberClassic installation directory
-AMBERCLASSIC_DIR="/path/to/AmberClassic"
+AMBERCLASSIC_DIR="/home/hheelweg/opt/AmberClassic"
 
 # Source the AmberClassic environment setup script without changing directories
 if [ -f "$AMBERCLASSIC_DIR/AmberClassic.sh" ]; then
