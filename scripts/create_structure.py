@@ -10,7 +10,8 @@ def main():
     # we want to load the dye information from some bib/lib directory that we have yet to implement
 
     dye_names = ['CY5', 'CY3']
-    
+    print(dye_names)
+
 
 
     pass

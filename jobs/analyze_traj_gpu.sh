@@ -6,7 +6,7 @@
 #SBATCH --cpus-per-task=48       # Request 48 CPU cores
 #SBATCH --output=out_gpu.log     # Output file
 
-# Activate conda environment
+# source conda environment
 source activate AmberTools24
 
 # Add path to PyeDNA and define PyeDNA home
