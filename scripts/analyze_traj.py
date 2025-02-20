@@ -36,6 +36,7 @@ def main():
 
     # define Trajectory object
     test = pyedna.Trajectory(MDsim, path, data, dt, output_params = out_params)
+    print('test debug', flush=True)
 
     # define donor and acceptor molecules
     donor = [9]
