@@ -127,6 +127,7 @@ class CompositeStructure():
     def writePDB(self, out_path):
         self.dna.DNA_u.atoms.write(out_path + 'out.pdb')
 
+
     # TODO : do we need this?
     def cleanDNA(self, st_atoms = 25):
         self.del_ids = [int(self.dna.target_res_ids[1])]

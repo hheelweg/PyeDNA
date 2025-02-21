@@ -9,7 +9,14 @@ def main():
 
     # NOTE : the current implementation starts from the pdb structures of the DNA and the dyes
     # we want to load the dye information from some bib/lib directory that we have yet to implement
-    dna_pdb = pyedna.utils.findFileWithName('dna.pdb')
+    path = './'
+    dna_pdb = pyedna.utils.findFileWithName('dna.pdb', path)
+
+
+    # set up composite structure starting from DNA
+    composite = pyedna.CompositeStructure(dna_pdb)
+    print(composite.dna.res_names)
+
 
     # dye names we want to attach to the DNA
     dyes = ['CY5', 'CY3']
