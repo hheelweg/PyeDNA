@@ -196,7 +196,8 @@ def writeLeap(pdb_file, leap_file,
         # f.write(f"desc mol\n")                            # prints all residue names to log file
         # f.write(f"desc mol.6\n")                          # prints all atoms and also connect0 connect1 for residue 6      
         f.write(f"charge mol\n")                          # prints total charge of the molecule (should be integer)
-        # f.write(f"charge mol.5\n")                        # prints charge of residue 5 
+        f.write(f"charge mol.8\n")                        # prints charge of residue 8 
+        f.write(f"charge mol.3\n")                        # prints charge of residue 3
 
         # (4) make bonds
         if len(bonds) > 0:
