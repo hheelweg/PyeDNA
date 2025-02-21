@@ -140,7 +140,7 @@ def deleteAtomsPDB(in_pdb, out_pdb, atoms_to_delete):
 
 
 # write leap file for AMBER input
-def writeLeap(path, pdb_file, leap_file, 
+def writeLeap(pdb_file, leap_file, 
               bonds, chromophore_list, charge,
               add_ions = ['NA', 'O'], save_pdb = True, water_box = 10.0):
     '''
@@ -149,7 +149,8 @@ def writeLeap(path, pdb_file, leap_file,
 
     loaded_dyes = dict()                                    # store which chromophore templates have already been imported
 
-    with open(os.path.join(path, leap_file), 'w') as f:
+    #with open(os.path.join(path, leap_file), 'w') as f:
+    with open(leap_file, 'w') as f:
         # (1) load force fields
         f.write("source leaprc.DNA.OL15\n")                 # load DNA forcefield 
         f.write("source leaprc.gaff\n")                     # load other forcefield 
@@ -187,11 +188,15 @@ def writeLeap(path, pdb_file, leap_file,
                 f.write(f"set {chromophore.dye_name}.1 connect1 {chromophore.dye_name}.1.O3'\n")
         
         # (3) load structure.pdb file
-        f.write(f"mol = loadpdb {os.path.join(path, pdb_file + '.pdb')} \n")
+        print(f'tesssst {pdb_file + '.pdb'}')
+        #f.write(f"mol = loadpdb {os.path.join(path, pdb_file + '.pdb')} \n")
+        f.write(f"mol = loadpdb {pdb_file + '.pdb'} \n")
+
+
         # NOTE : SANITY CHECK(S)   
         # f.write(f"desc mol\n")                            # prints all residue names to log file
         # f.write(f"desc mol.6\n")                          # prints all atoms and also connect0 connect1 for residue 6      
-        # f.write(f"charge mol\n")                          # prints total charge of the molecule (shoudl be zero)
+        # f.write(f"charge mol\n")                          # prints total charge of the molecule (should be integer)
         # f.write(f"charge mol.5\n")                        # prints charge of residue 5 
 
         # (4) make bonds
@@ -208,7 +213,8 @@ def writeLeap(path, pdb_file, leap_file,
         # (6) add water
         f.write(f"solvatebox mol TIP3PBOX {water_box}\n")
         # (7) export AMBER input
-        f.write(f"saveAmberParm mol {os.path.join(path, pdb_file)}.prmtop {os.path.join(path, pdb_file)}.rst7\n")
+        #f.write(f"saveAmberParm mol {os.path.join(path, pdb_file)}.prmtop {os.path.join(path, pdb_file)}.rst7\n")
+        f.write(f"saveAmberParm mol {pdb_file}.prmtop {pdb_file}.rst7\n")
         f.write(f"quit")
 
 
