@@ -14,7 +14,7 @@ def main():
 
 
     # set up composite structure starting from DNA
-    composite = pyedna.CompositeStructure(dna_pdb)
+    composite = pyedna.CompositeStructure(dna_pdb, path)
     print(composite.dna.res_names)
 
 
