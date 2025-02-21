@@ -4,7 +4,7 @@
 # bash this_script.sh
 
 # Source conda environment AmberTools24
-source activate AmberTools24
+conda activate AmberTools24
 
 # Add path to AMBER executuable in AmberTools24 environment
 export AMBERHOME="${CONDA_PREFIX}/amber24"
