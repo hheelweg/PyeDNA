@@ -294,6 +294,7 @@ class Chromophore():
     # store .pdb source and directory information
     def storeSourcePath(self, path_to_dye):
         self.path = path_to_dye
+        print('path test ', self.path)
 
 
     # parse structure
