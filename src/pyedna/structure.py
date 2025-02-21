@@ -215,7 +215,7 @@ class DNA():
         self.residues = self.chain_sel.residues         # ResidueGroup
         self.positions = self.atoms.positions           # atom positions
         self.names = self.atoms.names                   # atom names
-        self.com = self.atoms.center_of_mass()          # center of mass
+        self.com = self.atoms.center_of_geometry()      # center of geometry TODO : find out why center_of_mass() does not seem to work
         self.natoms = len(self.names)                   # number of atoms
         self.nresidues = len(self.residues)             # number of residues
 
