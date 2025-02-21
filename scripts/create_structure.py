@@ -25,7 +25,6 @@ def main():
     # set up composite structure starting from DNA
     composite = pyedna.CompositeStructure(dna_pdb)
 
-
     # load dye library with specified location
     # TODO : might want to add some sample/default dye library to PyeDNA
     dye_base_dir = os.getenv("DYE_DIR")
