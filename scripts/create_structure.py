@@ -35,13 +35,11 @@ def main():
         dye_dir = pyedna.utils.findSubdirWithName(dye, dir=dye_base_dir)
         print(dye_dir)
         dye_pdb = pyedna.utils.findFileWithName(dye + ".pdb", dir=dye_dir)
-        print('dye name: ', dye)
         # perform attachment
-        composite.prepareAttachment(dye_dir, dye, attach_residues[i])
-        print('check residue names: ', composite.dna.res_names)
-
+        composite.prepareAttachment(dye_dir, dye, attach_residues[i], orientation=-1)
     
-    # TODO : bring this into agreement with current implementation in structure.py
+    # test-wise printing of resulting .pdb file
+    # TODO : 
 
 
 

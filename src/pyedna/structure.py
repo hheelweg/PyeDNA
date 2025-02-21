@@ -7,6 +7,15 @@ from collections import defaultdict
 # from current package
 from . import fileproc as fp
 from . import geomtools as geo
+from . import utils
+
+
+# TODO : add class that constructs DNA structure with Nucleic Acid Builder (NAB) rather than manually
+class createDNA():
+
+    def __init__():
+        pass
+
 
 
 # class for attaching structure of DNA structure and chromophore
@@ -25,10 +34,12 @@ class CompositeStructure():
 
 
     # parse attachment info, and overwrite DNA universe with DNA + chromophore
+    # TODO : revisit orientation parameter to allow for various orientations of the dye to the DNA
     def prepareAttachment(self, path_to_dye, dye_name, attach_info_dna, orientation = -1):
 
         # (0) load chromophore
-        self.chromophore = Chromophore(mda.Universe(os.path.join(path_to_dye, f'{dye_name}.pdb'), format = "PDB"))      # create instance of Chromophore class
+        dye_pdb = utils.findFileWithName(f"{dye_name}.pdb", dir = path_to_dye)
+        self.chromophore = Chromophore(mda.Universe(dye_pdb, format = "PDB"))                                           # create instance of Chromophore class
         self.chromophore.storeSourcePath(path_to_dye)                                                                   # store path to chromophore file     
 
         # (1) parse attachment info for chromophore and dna; write bond information
