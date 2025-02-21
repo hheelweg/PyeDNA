@@ -27,7 +27,7 @@ def main():
     attach_residues = [3, 8]
 
     # name of DNA+sye-structure to create
-    name = 'dna_test'
+    name = 'dna_3nt'
 
     # look for dyes in specified structure library
     dye_base_dir = os.getenv("DYE_DIR")
