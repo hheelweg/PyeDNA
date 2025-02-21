@@ -151,12 +151,11 @@ def writeLeap(pdb_file, leap_file,
 
     #with open(os.path.join(path, leap_file), 'w') as f:
     with open(leap_file, 'w') as f:
+
         # (1) load force fields
         f.write("source leaprc.DNA.OL15\n")                 # load DNA forcefield 
-        f.write("source leaprc.gaff\n")                     # load other forcefield 
+        f.write("source leaprc.gaff\n")                     # load other forcefield for custom dyes
         f.write("source leaprc.water.tip3p\n")              # load water forcefield
-        # load forcefield parameters for overlap region between DNA 
-        #f.write(f"loadAmberParams ./createStructure/connectparms.frcmod\n")
 
         # (2) load information about parameters and connectivity for each attached chromophore
         for chromophore in chromophore_list:
@@ -165,18 +164,14 @@ def writeLeap(pdb_file, leap_file,
                 continue
             else:
                 loaded_dyes[chromophore.dye_name] = True       
-                # (a) lead molecule and AMBER parameters from 
-                # f.write(f"{chromophore.dye_name} = loadmol2 ./createStructure/{chromophore.dye_name}/ff_new/{chromophore.dye_name}_del.mol2\n")
-                # f.write(f"loadAmberParams ./createStructure/{chromophore.dye_name}/ff_new/{chromophore.dye_name}_del.frcmod\n")
-                # # f.write(f"loadAmberParams ./createStructure/{chromophore.dye_name}/ff/{chromophore.dye_name}.frcmod\n")
+                # (a) load molecule and AMBER ff parameters from 
+                #(a.1)  NOTE : load .mol2 and .frcmod created for the dye with deleted residues for attachment. If we don't use the structure with 
+                # deleted atoms, then tleap has problems processing the produced charges by antechamber for .frcmod. 
                 f.write(f"{chromophore.dye_name} = loadmol2 {os.path.join(chromophore.path, f'{chromophore.dye_name}_del.mol2')}\n")
                 f.write(f"loadAmberParams {os.path.join(chromophore.path, f'{chromophore.dye_name}_del.frcmod')}\n")
-                # load forcefield for connecting region (TODO : this is the same for CY3/CY5 but might be different if we add more dyes in the future)
+                # (a.2) load forcefield for connecting region (TODO : this is the same for CY3/CY5 but might be different if we add more dyes in the future)
                 f.write(f"loadAmberParams {os.path.join(chromophore.path, 'connectparms.frcmod')}\n")
 
-                # # delete atoms in mol2 template 
-                # for atom in chromophore.delete_atoms:
-                #     f.write(f"remove {chromophore.dye_name} {chromophore.dye_name}.1.{atom}\n")
                 # (b) change atom types in mol2 template to OL15 nomenclature and also adjust atom names
                 for atom in chromophore.rename_atoms:
                     f.write(f"set {chromophore.dye_name}.1.{atom} type {chromophore.rename_types[atom]}\n")     # types
@@ -195,9 +190,9 @@ def writeLeap(pdb_file, leap_file,
         # NOTE : SANITY CHECK(S)   
         # f.write(f"desc mol\n")                            # prints all residue names to log file
         # f.write(f"desc mol.6\n")                          # prints all atoms and also connect0 connect1 for residue 6      
-        f.write(f"charge mol\n")                          # prints total charge of the molecule (should be integer)
-        f.write(f"charge mol.8\n")                        # prints charge of residue 8 
-        f.write(f"charge mol.3\n")                        # prints charge of residue 3
+        # f.write(f"charge mol\n")                          # prints total charge of the molecule (should be integer)
+        # f.write(f"charge mol.8\n")                        # prints charge of residue 8 
+
 
         # (4) make bonds
         if len(bonds) > 0:
