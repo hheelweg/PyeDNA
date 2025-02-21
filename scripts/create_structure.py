@@ -26,6 +26,8 @@ def main():
     # where do we want to attach the dyes
     attach_residues = [3, 8]
 
+    # name of DNA+sye-structure to create
+    name = 'dna_test'
 
     # look for dyes in specified structure library
     dye_base_dir = os.getenv("DYE_DIR")
@@ -37,12 +39,9 @@ def main():
     print('tytst', composite.chromophore_list[0].path)
     print('tytst', composite.chromophore_list[1].path)
     
-    # test-wise printing of resulting .pdb file
-    # TODO : 
-    composite.writePDB()
 
     # write Amber input
-    composite.writeAMBERinput()
+    composite.writeAMBERinput(file_name = name)
 
 
 

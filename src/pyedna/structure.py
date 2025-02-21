@@ -93,18 +93,19 @@ class CompositeStructure():
 
 
     # write AMBER input after all the attachments have been done
-    def writeAMBERinput(self):
+    def writeAMBERinput(self, file_name):
         # # (0) get nt distance between donor and acceptor
         # nt = self.getNTdistance()
 
         # (1) write .pdb file of dna (unclean) in new directory
         # dir_name = 'dna' + '_'.join([chromophore.dye_name for chromophore in self.chromophore_list]) + f'_{nt}nt'
         # subprocess.run("mkdir -p " + dir_name, cwd = self.path, shell = True)
-        file_name = f'composite'
-        self.dna.DNA_u.atoms.write(os.path.join(file_name + "_unclean"))
+        #file_name = f'composite'
+        self.dna.DNA_u.atoms.write(f"{file_name}_unclean")
 
-        # (2) clean .pdb file with pdb4amber (clean)
+        # (2) clean .pdb file with pdb4amber (clean) and remove unclean file
         subprocess.run(f"pdb4amber -i {file_name}_unclean.pdb -o {file_name}.pdb", shell = True)
+        subprocess.run(f"rm {file_name}_unclean.pdb", shell = True)
 
         # delete pdb4amber cache files and unclean .pdb file
         for ftrash in ['sslink', 'renum.txt', 'nonprot.pdb']:
@@ -117,8 +118,10 @@ class CompositeStructure():
         # (3) write leap file to make bond and run it (this generates the AMBER input)
         suff_leap = '_tleap.in'
         fp.writeLeap(file_name, file_name + suff_leap,
-                    self.bonds, self.chromophore_list, self.charge)
+                    self.bonds, self.chromophore_list, self.charge, save_pdb=False)
         subprocess.run(f"tleap -f {os.path.join(file_name + suff_leap)}", shell = True)
+
+
 
     
     # merge coordinates together into DNA_u MDAnalysis object
@@ -137,7 +140,7 @@ class CompositeStructure():
         self.dna = DNA(self.dna.DNA_u)
     
     # TODO : can remove this, this only for DMREF picture
-    def writePDB(self, pdb_name = 'composite.pdb'):
+    def writePDB(self, file_name = 'composite.pdb'):
         self.dna.DNA_u.atoms.write(pdb_name)
 
 
