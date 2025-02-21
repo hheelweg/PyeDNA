@@ -188,7 +188,7 @@ def writeLeap(pdb_file, leap_file,
                 f.write(f"set {chromophore.dye_name}.1 connect1 {chromophore.dye_name}.1.O3'\n")
         
         # (3) load structure.pdb file
-        print(f'tesssst {pdb_file + '.pdb'}')
+        print(f"tesssst {pdb_file + '.pdb'}")
         #f.write(f"mol = loadpdb {os.path.join(path, pdb_file + '.pdb')} \n")
         f.write(f"mol = loadpdb {pdb_file + '.pdb'} \n")
 
