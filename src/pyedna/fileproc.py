@@ -160,7 +160,7 @@ def writeLeap(pdb_file, leap_file,
 
         # (2) load information about parameters and connectivity for each attached chromophore
         for chromophore in chromophore_list:
-            # avoid double loading of chromophore
+            # avoid double loading of chromophores
             if chromophore.dye_name in loaded_dyes:
                 continue
             else:
@@ -171,7 +171,7 @@ def writeLeap(pdb_file, leap_file,
                 # # f.write(f"loadAmberParams ./createStructure/{chromophore.dye_name}/ff/{chromophore.dye_name}.frcmod\n")
                 f.write(f"{chromophore.dye_name} = loadmol2 {os.path.join(chromophore.path, f'{chromophore.dye_name}_del.mol2')}\n")
                 f.write(f"loadAmberParams {os.path.join(chromophore.path, f'{chromophore.dye_name}_del.frcmod')}\n")
-                # load forcefield for connecting region
+                # load forcefield for connecting region (TODO : this is the same for CY3/CY5 but might be different if we add more dyes in the future)
                 f.write(f"loadAmberParams {os.path.join(chromophore.path, 'connectparms.frcmod')}\n")
 
                 # # delete atoms in mol2 template 
@@ -188,7 +188,6 @@ def writeLeap(pdb_file, leap_file,
                 f.write(f"set {chromophore.dye_name}.1 connect1 {chromophore.dye_name}.1.O3'\n")
         
         # (3) load structure.pdb file
-        print(f"tesssst {pdb_file + '.pdb'}")
         #f.write(f"mol = loadpdb {os.path.join(path, pdb_file + '.pdb')} \n")
         f.write(f"mol = loadpdb {pdb_file + '.pdb'} \n")
 
