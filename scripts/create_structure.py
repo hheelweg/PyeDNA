@@ -18,7 +18,6 @@ def main():
 
     # set up composite structure starting from DNA
     composite = pyedna.CompositeStructure(dna_pdb)
-    print(composite.dna.res_names)
 
 
     # dye names we want to attach to the DNA, these need to exist
@@ -33,13 +32,12 @@ def main():
     for i, dye in enumerate(dyes):
         # get directory name for dye
         dye_dir = pyedna.utils.findSubdirWithName(dye, dir=dye_base_dir)
-        print(dye_dir)
-        dye_pdb = pyedna.utils.findFileWithName(dye + ".pdb", dir=dye_dir)
         # perform attachment
         composite.prepareAttachment(dye_dir, dye, attach_residues[i], orientation=-1)
     
     # test-wise printing of resulting .pdb file
     # TODO : 
+    composite.writePDB()
 
 
 

@@ -134,8 +134,8 @@ class CompositeStructure():
         self.dna = DNA(self.dna.DNA_u)
     
     # TODO : can remove this, this only for DMREF picture
-    def writePDB(self, out_path):
-        self.dna.DNA_u.atoms.write(out_path + 'out.pdb')
+    def writePDB(self):
+        self.dna.DNA_u.atoms.write('out.pdb')
 
 
     # TODO : do we need this?
