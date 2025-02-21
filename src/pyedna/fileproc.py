@@ -168,7 +168,8 @@ def writeLeap(path, pdb_file, leap_file,
                 # f.write(f"{chromophore.dye_name} = loadmol2 ./createStructure/{chromophore.dye_name}/ff_new/{chromophore.dye_name}_del.mol2\n")
                 # f.write(f"loadAmberParams ./createStructure/{chromophore.dye_name}/ff_new/{chromophore.dye_name}_del.frcmod\n")
                 # # f.write(f"loadAmberParams ./createStructure/{chromophore.dye_name}/ff/{chromophore.dye_name}.frcmod\n")
-                f.write(f"{chromophore.dye_name} = loadmol2 ./createStructure/{chromophore.dye_name}/ff_new/{chromophore.dye_name}_del.mol2\n")
+                f.write(f"{chromophore.dye_name} = loadmol2 {os.path.join(chromophore.path, f'{chromophore.dye_name}_del.mol2')}\n")
+                f.write(f"loadAmberParams {os.path.join(chromophore.path, f'{chromophore.dye_name}_del.frcmod')}\n")
 
                 # # delete atoms in mol2 template 
                 # for atom in chromophore.delete_atoms:
