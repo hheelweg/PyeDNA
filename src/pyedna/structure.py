@@ -295,6 +295,7 @@ class Chromophore():
     def storeSourcePath(self, path_to_dye):
         self.path = path_to_dye
         print('path test ', self.path)
+        print('another test ', os.path.join(self.path, f"attach_{self.dye_name}.info"))
 
 
     # parse structure
