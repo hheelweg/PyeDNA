@@ -118,7 +118,7 @@ class CompositeStructure():
         suff_leap = '_tleap.in'
         fp.writeLeap(os.getcwd(), file_name, file_name + suff_leap,
                     self.bonds, self.chromophore_list, self.charge)
-        #subprocess.run(f"tleap -f {os.path.join(file_name + suff_leap)}", shell = True)
+        subprocess.run(f"tleap -f {os.path.join(file_name + suff_leap)}", shell = True)
 
     
     # merge coordinates together into DNA_u MDAnalysis object
