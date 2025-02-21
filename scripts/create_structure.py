@@ -9,25 +9,37 @@ def main():
 
     # NOTE : the current implementation starts from the pdb structures of the DNA and the dyes
     # we want to load the dye information from some bib/lib directory that we have yet to implement
-    path = './'
-    dna_pdb = pyedna.utils.findFileWithName('dna.pdb', path)
+
+
+    # NOTE : this rn assumes that the DNA .pdb file is located in the current directory
+    # TODO : we want to read in ideally a nucleotide string and crearte the DNA "on-the-fly"
+    dna_pdb = pyedna.utils.findFileWithName('dna.pdb')
 
 
     # set up composite structure starting from DNA
-    composite = pyedna.CompositeStructure(dna_pdb, path)
+    composite = pyedna.CompositeStructure(dna_pdb)
     print(composite.dna.res_names)
 
 
-    # dye names we want to attach to the DNA
+    # dye names we want to attach to the DNA, these need to exist
     dyes = ['CY5', 'CY3']
+
+    # where do we want to attach the dyes
+    attach_residues = [3, 8]
+
+
     # look for dyes in specified structure library
     dye_base_dir = os.getenv("DYE_DIR")
-    for dye in dyes:
+    for i, dye in enumerate(dyes):
         # get directory name for dye
         dye_dir = pyedna.utils.findSubdirWithName(dye, dir=dye_base_dir)
         print(dye_dir)
         dye_pdb = pyedna.utils.findFileWithName(dye + ".pdb", dir=dye_dir)
-        print(dye_pdb)
+        print('dye name: ', dye)
+        # perform attachment
+        composite.prepareAttachment(dye_dir, dye, attach_residues[i])
+        print('check residue names: ', composite.dna.res_names)
+
     
     # TODO : bring this into agreement with current implementation in structure.py
 

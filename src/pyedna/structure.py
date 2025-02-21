@@ -12,11 +12,11 @@ from . import geomtools as geo
 # class for attaching structure of DNA structure and chromophore
 class CompositeStructure():
 
-    def __init__(self, dnaPDB, path_to_structures):
+    def __init__(self, dnaPDB):#, path_to_structures):
         # create instance of DNA class
         self.dna = DNA(mda.Universe(dnaPDB, format = "PDB"))            # create instance of DNA class
         self.dna_nresidues = self.dna.nresidues                         # number of DNA residues (this should stay constant)  
-        self.path = path_to_structures                                  # path to structure directory (base directory)               
+        # self.path = path_to_structures                                  # path to structure directory (base directory)               
         # store attachments to DNA and bond information
         self.bonds = []                                                 # store bond information for tleap
         self.chromophore_list = []                                      # list of attached Chromophore objects
@@ -25,10 +25,9 @@ class CompositeStructure():
 
 
     # parse attachment info, and overwrite DNA universe with DNA + chromophore
-    def prepareAttachment(self, dye_name, attach_info_dna, orientation = -1):
+    def prepareAttachment(self, path_to_dye, dye_name, attach_info_dna, orientation = -1):
 
         # (0) load chromophore
-        path_to_dye = os.path.join(self.path, dye_name)
         self.chromophore = Chromophore(mda.Universe(os.path.join(path_to_dye, f'{dye_name}.pdb'), format = "PDB"))      # create instance of Chromophore class
         self.chromophore.storeSourcePath(path_to_dye)                                                                   # store path to chromophore file     
 
@@ -306,7 +305,7 @@ class Chromophore():
     def parseAttachment(self, change_atom_names = True):
         # (0) load attachment information from file
         try:
-            with open(os.path.join(self.path, f"attach_info_{self.dye_name}.txt"), "r") as file:
+            with open(os.path.join(self.path, f"attach_{self.dye_name}.info"), "r") as file:
                 self.attach_groups = [line.strip().split() for line in file]
         except FileNotFoundError:
             print("ERROR: Attachment information for this dye does not exist yet!")
