@@ -117,6 +117,8 @@ class CompositeStructure():
         # (3) write leap file to make bond and run it (this generates the AMBER input)
         suff_leap = '_tleap.in'
         print('debug print')
+        # NOTE : AmberTools24 and AmberTools23 tleap seems to handle charge calculation a little bit differently
+        self.charge += 1
         print('debug charge', self.charge)
         fp.writeLeap(file_name, file_name + suff_leap,
                     self.bonds, self.chromophore_list, self.charge)
