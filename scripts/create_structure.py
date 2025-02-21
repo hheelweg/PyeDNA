@@ -42,7 +42,7 @@ def main():
     composite.writePDB()
 
     # write Amber input
-
+    composite.writeAMBERinput()
 
 
 
