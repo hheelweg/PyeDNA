@@ -7,7 +7,7 @@
 #SBATCH --output=out_gpu.log     # Output file
 
 # source conda environment
-conda activate AmberTools24
+source activate AmberTools24
 
 # Add path to PyeDNA and define PyeDNA home
 export PYTHONPATH=$PYTHONPATH:/home/hheelweg/cy3cy5/PyeDNA/scripts
