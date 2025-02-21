@@ -69,6 +69,7 @@ class CompositeStructure():
     
     
     # get nt distance
+    # TODO : do we need this?
     def getNTdistance(self): 
         if 'CY5' not in self.attachment or 'CY3' not in self.attachment:
             raise Warning("Need to attach CY5 and CY3 before computing nt!")
@@ -93,19 +94,21 @@ class CompositeStructure():
 
     # write AMBER input after all the attachments have been done
     def writeAMBERinput(self):
-        # (0) get nt distance between donor and acceptor
-        nt = self.getNTdistance()
+        # # (0) get nt distance between donor and acceptor
+        # nt = self.getNTdistance()
+
         # (1) write .pdb file of dna (unclean) in new directory
-        dir_name = 'dna' + '_'.join([chromophore.dye_name for chromophore in self.chromophore_list]) + f'_{nt}nt'
-        subprocess.run("mkdir -p " + dir_name, cwd = self.path, shell = True)
-        file_name = f'dna_{nt}nt'
-        self.dna.DNA_u.atoms.write(os.path.join(self.path, dir_name, file_name + "_unclean"))
+        # dir_name = 'dna' + '_'.join([chromophore.dye_name for chromophore in self.chromophore_list]) + f'_{nt}nt'
+        # subprocess.run("mkdir -p " + dir_name, cwd = self.path, shell = True)
+        file_name = f'composite'
+        self.dna.DNA_u.atoms.write(os.path.join(file_name + "_unclean"))
 
         # (2) clean .pdb file with pdb4amber (clean)
-        subprocess.run(f"pdb4amber -i {file_name}_unclean.pdb -o {file_name}.pdb", cwd = os.path.join(self.path, dir_name), shell = True)
-        # delete pdb4amber cache files
+        subprocess.run(f"pdb4amber -i {file_name}_unclean.pdb -o {file_name}.pdb", shell = True)
+
+        # delete pdb4amber cache files and unclean .pdb file
         for ftrash in ['sslink', 'renum.txt', 'nonprot.pdb']:
-            myfile = os.path.join(self.path, dir_name, f"{file_name}_{ftrash}")
+            myfile = os.path.join(f"{file_name}_{ftrash}")
             if os.path.isfile(myfile):
                 os.remove(myfile)
             else:
@@ -113,9 +116,9 @@ class CompositeStructure():
         
         # (3) write leap file to make bond and run it (this generates the AMBER input)
         suff_leap = '_tleap.in'
-        fp.writeLeap(os.path.join(self.path, dir_name), file_name, file_name + suff_leap,
+        fp.writeLeap(os.getcwd(), file_name, file_name + suff_leap,
                     self.bonds, self.chromophore_list, self.charge)
-        subprocess.run(f"tleap -f {os.path.join(self.path, dir_name, file_name + suff_leap)}", shell = True)
+        subprocess.run(f"tleap -f {os.path.join(file_name + suff_leap)}", shell = True)
 
     
     # merge coordinates together into DNA_u MDAnalysis object
@@ -134,8 +137,8 @@ class CompositeStructure():
         self.dna = DNA(self.dna.DNA_u)
     
     # TODO : can remove this, this only for DMREF picture
-    def writePDB(self):
-        self.dna.DNA_u.atoms.write('out.pdb')
+    def writePDB(self, pdb_name = 'composite.pdb'):
+        self.dna.DNA_u.atoms.write(pdb_name)
 
 
     # TODO : do we need this?
@@ -256,6 +259,7 @@ class DNA():
         # label residues customized with name + ID
         self.res_labels = [self.res_names[i] + str(self.res_ids[i]) for i in range(len(self.res_names))]
 
+
     # parse attachment information:
     def parseAttachment(self, res_id):
         # residue with res_id is removed 
@@ -273,6 +277,7 @@ class DNA():
         
 
     # get DNA box
+    # TODO : do we need this?
     def getDNAbox(self, center, box_size = 20):
         '''
         creates box-shaped MDAnalysis selection around center coordinate
@@ -285,7 +290,6 @@ class DNA():
     def delete(self, delete_string):
         # delete atoms
         DNA_u_new = self.DNA_u.select_atoms('all' + delete_string)
-        # re-edit
         # overwrite 
         self.__init__(DNA_u_new)
 
@@ -305,8 +309,6 @@ class Chromophore():
     # store .pdb source and directory information
     def storeSourcePath(self, path_to_dye):
         self.path = path_to_dye
-        print('path test ', self.path)
-        print('another test ', os.path.join(self.path, f"attach_{self.dye_name}.info"))
 
 
     # parse structure
@@ -380,7 +382,7 @@ class Chromophore():
         # (1) write updated pdb file after deletion of groups for attachment
         fp.deleteAtomsPDB(self.path + f'{self.dye_name}' + '.pdb', self.path + f'{self.dye_name}' + '_del.pdb', self.delete_atoms)
         # (2) use antechamber 
-        makedir_ff = subprocess.run(f"mkdir -p {self.path}/ff_new", shell = True)       # make forecielf directory
+        makedir_ff = subprocess.run(f"mkdir -p {self.path}/ff_new", shell = True)       # make forefield directory
         command = f"antechamber -i '../{self.dye_name}_del.pdb' -fi pdb -o {self.dye_name}_del.mol2 -fo mol2 -c bcc -s 2 -nc {charge} -m 1 -at {ff}"
         run_antechamber = subprocess.Popen(command, cwd = f'{self.path}/ff_new', shell = True)
         run_antechamber.wait()

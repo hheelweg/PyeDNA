@@ -155,7 +155,7 @@ def writeLeap(path, pdb_file, leap_file,
         f.write("source leaprc.gaff\n")                     # load other forcefield 
         f.write("source leaprc.water.tip3p\n")              # load water forcefield
         # load forcefield parameters for overlap region between DNA 
-        f.write(f"loadAmberParams ./createStructure/connectparms.frcmod\n")
+        #f.write(f"loadAmberParams ./createStructure/connectparms.frcmod\n")
 
         # (2) load information about parameters and connectivity for each attached chromophore
         for chromophore in chromophore_list:
@@ -165,9 +165,10 @@ def writeLeap(path, pdb_file, leap_file,
             else:
                 loaded_dyes[chromophore.dye_name] = True       
                 # (a) lead molecule and AMBER parameters from 
+                # f.write(f"{chromophore.dye_name} = loadmol2 ./createStructure/{chromophore.dye_name}/ff_new/{chromophore.dye_name}_del.mol2\n")
+                # f.write(f"loadAmberParams ./createStructure/{chromophore.dye_name}/ff_new/{chromophore.dye_name}_del.frcmod\n")
+                # # f.write(f"loadAmberParams ./createStructure/{chromophore.dye_name}/ff/{chromophore.dye_name}.frcmod\n")
                 f.write(f"{chromophore.dye_name} = loadmol2 ./createStructure/{chromophore.dye_name}/ff_new/{chromophore.dye_name}_del.mol2\n")
-                f.write(f"loadAmberParams ./createStructure/{chromophore.dye_name}/ff_new/{chromophore.dye_name}_del.frcmod\n")
-                # f.write(f"loadAmberParams ./createStructure/{chromophore.dye_name}/ff/{chromophore.dye_name}.frcmod\n")
 
                 # # delete atoms in mol2 template 
                 # for atom in chromophore.delete_atoms:

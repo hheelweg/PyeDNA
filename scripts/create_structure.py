@@ -34,10 +34,14 @@ def main():
         dye_dir = pyedna.utils.findSubdirWithName(dye, dir=dye_base_dir)
         # perform attachment
         composite.prepareAttachment(dye_dir, dye, attach_residues[i], orientation=-1)
+    print('tytst', composite.chromophore_list[0].path)
+    print('tytst', composite.chromophore_list[1].path)
     
     # test-wise printing of resulting .pdb file
     # TODO : 
     composite.writePDB()
+
+    # write Amber input
 
 
 
