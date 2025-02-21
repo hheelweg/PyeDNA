@@ -10,13 +10,6 @@ source activate AmberTools24
 export AMBERHOME="${CONDA_PREFIX}/amber24"
 export PATH="$AMBERHOME/bin:$PATH"
 
-# # Source conda environment AmberTools23
-# source activate AmberTools23
-
-# # Add path to AMBER executuable in AmberTools23 environment
-# export AMBERHOME="${CONDA_PREFIX}/"
-# export PATH="$AMBERHOME/bin:$PATH"
-
 # Add path to PyeDNA and define PyeDNA home
 export PYTHONPATH=$PYTHONPATH:/home/hheelweg/cy3cy5/PyeDNA/scripts
 export PYEDNA_HOME="/home/hheelweg/cy3cy5/PyeDNA"
