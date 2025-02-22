@@ -11,7 +11,7 @@ from . import utils
 from . import config
 
 
-# TODO : add class that constructs DNA structure (.pdb) with Nucleic Acid Builder (NAB) rather than manually
+# class for creating DNA structure (.pdb) from DNA sequence
 class CreateDNA():
 
     def __init__(self, name = 'dna', type = 'double_helix'):
@@ -88,8 +88,6 @@ class CreateDNA():
 
         
         
-
-
 
 # class for attaching structure of DNA structure and chromophore
 class CompositeStructure():
