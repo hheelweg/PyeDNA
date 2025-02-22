@@ -55,7 +55,17 @@ class createDNA():
         with open(nab_name, "w") as file:
             file.write(self.nab_script)
 
-        
+    # run NAB to produce .pdb file
+    def runNAB(self, pdb_name = "test.pdb"):
+
+        # (1) locate shell script for running NAB and creating DNA pdb
+        run_nab_script = os.path.join(config.PROJECT_HOME, 'bin', 'create_dna.sh')
+
+        # (2) run NAB
+        nab_name = 'test.nab'
+        nab_command = f"bash {run_nab_script} {nab_name}"
+        run_nab = subprocess.Popen(nab_command, shell = True, stdout = subprocess.DEVNULL)
+        print(f"*** creation of {pdb_name} completed")
         
 
 

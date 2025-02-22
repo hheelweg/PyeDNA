@@ -563,7 +563,7 @@ class Trajectory():
     # TODO : might want to store convert_traj.sh in more global directory
     def convertTrajectory(self):
 
-        # shell script for trajectory conversion
+        # locate shell script for trajectory conversion
         convert_traj_script = os.path.join(config.PROJECT_HOME, 'bin', 'convert_traj.sh')
 
         # run shell script
