@@ -1,0 +1,12 @@
+// double-stranded AB-type DNA-helix
+
+molecule m;
+
+// below string of bases defines the string 5' -> 3'
+// the residue indices will increase from very left (1) to right
+// and then go back on the complementary string 5' -> 3'
+
+m = fd_helix( "abdna", "{DNA_SEQUENCE}", "dna" );
+
+putpdb( "dna.pdb", m, "-wwpdb"); 
+
