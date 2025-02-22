@@ -8,5 +8,5 @@ molecule m;
 
 m = fd_helix( "abdna", "{DNA_SEQUENCE}", "dna" );
 
-putpdb( "dna1.pdb", m, "-wwpdb"); 
+putpdb( "{PDB_NAME}", m, "-wwpdb"); 
 

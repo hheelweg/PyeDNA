@@ -43,14 +43,15 @@ class createDNA():
         return template
 
     # writes NAB .nad input file
-    def writeNAB(self, nab_name = 'test.nab'):
+    def writeNAB(self, nab_name = 'test.nab', pdb_name = 'test.pdb'):
         # (1) load DNA template
         self.template = self.loadTemplate()
         # (2) check if sequence is fed
         if not self.is_sequence:
             raise ValueError("Specify a DNA sequence first before proceeding!")
-        # (3) replace sequence placeholder in template
+        # (3) replace sequence placeholder in template and set pdb name
         self.nab_script = self.template.replace("{DNA_SEQUENCE}", self.sequence.lower())
+        self.nab_script = self.nab_script.replace("{PDB_NAME}", pdb_name)
         # (4) write .nab file
         with open(nab_name, "w") as file:
             file.write(self.nab_script)
