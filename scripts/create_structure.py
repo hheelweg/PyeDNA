@@ -15,14 +15,16 @@ def main():
     name = 'dna_3nt'
 
     # (0) read in parameters for DNA strcture creation and dye attachment from .params file
-    dna_params = pyedna.createDNA.parseDNAStructure('struc.params')
+    dna_params = pyedna.CreateDNA.parseDNAStructure('struc.params')
+    composite_params = pyedna.CompositeStructure.parseCompositeStructure('struc.params')
+    print(composite_params)
 
     # (1) Create DNA dna_name.pdb file
     dna_sequence = 'TGCACTCTCGATTTATGACCGAGCT'
     dna_type = 'double_helix'
     dna_name = 'dna'
 
-    create = pyedna.createDNA(name = dna_params["dna_name"], type = dna_params["dna_type"])
+    create = pyedna.CreateDNA(name = dna_params["dna_name"], type = dna_params["dna_type"])
     create.feedDNAseq(DNA_sequence = dna_params["dna_sequence"])
     create.createDNA()
     # NOTE : this creates DNA structure on-the-fly (alternatively) can set up DNA_DIR with DNA structure of interest

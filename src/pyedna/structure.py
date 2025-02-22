@@ -12,7 +12,7 @@ from . import config
 
 
 # TODO : add class that constructs DNA structure (.pdb) with Nucleic Acid Builder (NAB) rather than manually
-class createDNA():
+class CreateDNA():
 
     def __init__(self, name = 'dna', type = 'double_helix'):
 
@@ -106,6 +106,16 @@ class CompositeStructure():
         self.chromophore_list = []                                      # list of attached Chromophore objects
         self.attachment = defaultdict(list)
         self.charge = - (self.dna_nresidues - 2)                        # charge of DNA composite
+
+
+    @staticmethod
+    def parseCompositeStructure(file):
+        # read in parameters
+        struc_params = fp.readParams(file)
+        # key words relevant to the creation of the DNA strcture
+        composite_keys = ["dyes", "dye_positions", "structure_name"]
+        composite_params = {key : struc_params.get(key) for key in composite_keys}
+        return composite_params
 
 
     # parse attachment info, and overwrite DNA universe with DNA + chromophore
