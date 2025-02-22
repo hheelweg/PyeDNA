@@ -65,7 +65,7 @@ class createDNA():
         nab_name = 'test.nab'
         nab_command = f"bash {run_nab_script} {nab_name}"
         run_nab = subprocess.Popen(nab_command, shell = True, stdout = subprocess.DEVNULL)
-        print(f"*** creation of {pdb_name} completed")
+        print(f"*** Creation of {pdb_name} completed")
         
 
 

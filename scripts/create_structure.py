@@ -19,6 +19,7 @@ def main():
     create = pyedna.createDNA()
     create.feedDNAseq(dna_sequence)
     create.writeNAB()
+    create.runNAB()
 
 
 
