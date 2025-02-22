@@ -19,7 +19,7 @@ def main():
     name = 'dna_test'
     create = pyedna.createDNA(name)
     create.feedDNAseq(dna_sequence)
-    create.createDNA()
+    create.createDNA(remove_nab=False)
 
 
 
