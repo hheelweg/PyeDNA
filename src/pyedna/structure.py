@@ -73,7 +73,7 @@ class createDNA():
 
         # (2) run NAB
         nab_command = f"bash {run_nab_script} {self.name}.nab "
-        run_nab = subprocess.Popen(nab_command, shell = True, stdout = subprocess.DEVNULL)
+        subprocess.run(nab_command, shell = True, stdout = subprocess.DEVNULL)
         print(f"*** Creation of {self.name}.pdb completed: DNA type = {self.type}, DNA sequence = {self.sequence}")
         
         # (3) clean directory (auxiliary .nab file)
