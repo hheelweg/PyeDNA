@@ -33,6 +33,10 @@ def main():
     # (2) Set up composite structure starting from DNA
     composite = pyedna.CompositeStructure(f"{dna_name}.pdb")
 
+    dyes = composite_params["dyes"]
+    attach_residues = composite_params["dye_postions"]
+    structure_name = composite_params["structure_name"]
+
     # load dye library with specified location
     # TODO : might want to add some sample/default dye library to PyeDNA
     dye_base_dir = os.getenv("DYE_DIR")
