@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --nodes=1
-#SBATCH --partition=gpu   		    # GPU partition	
+#SBATCH --partition=gpu             # GPU partition	
 #SBATCH --nodelist=gpu001           # Run on GPU node gpu001	
 #SBATCH --ntasks=1                  # # of tasks
 #SBATCH --gres=gpu:2                # Request 2 GPU
