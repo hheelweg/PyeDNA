@@ -53,6 +53,7 @@ class createDNA():
         # (3) replace sequence placeholder in template and set pdb name
         self.nab_script = self.template.replace("{DNA_SEQUENCE}", self.sequence.lower())
         self.nab_script = self.nab_script.replace("{PDB_NAME}", f"{self.name}.pdb")
+        print(self.nab_script)
         # (4) write .nab file
         with open(f"{self.name}.nab", "w") as file:
             file.write(self.nab_script)
