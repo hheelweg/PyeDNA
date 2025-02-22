@@ -14,25 +14,22 @@ def main():
     # name of DNA+sye-structure to create
     name = 'dna_3nt'
 
-    # cretae DNA helix from sequence
+    dna_params = pyedna.createDNA.parseDNAStructure('struc.params')
+    print(dna_params)
+
+    # (1) Create DNA dna_name.pdb file
     dna_sequence = 'TGCACTCTCGATTTATGACCGAGCT'
+    dna_type = 'double_helix'
     dna_name = 'dna'
 
-    create = pyedna.createDNA(name = dna_name)
+    create = pyedna.createDNA(name = dna_name, type = dna_type)
     create.feedDNAseq(DNA_sequence = dna_sequence)
     create.createDNA()
+    # NOTE : this creates DNA structure on-the-fly (alternatively) can set up DNA_DIR with DNA structure of interest
 
 
-
-    # NOTE : this assumes that the DNA .pdb file is located in the current directory
-    # TODO : we want to read in ideally a nucleotide string and crearte the DNA "on-the-fly"
-    dna_pdb = pyedna.utils.findFileWithName('dna.pdb')
-
-    # NOTE : (alternatively) can set up DNA_DIR with DNA structure of interest
-
-
-    # set up composite structure starting from DNA
-    composite = pyedna.CompositeStructure(dna_pdb)
+    # (2) Set up composite structure starting from DNA
+    composite = pyedna.CompositeStructure(f"{dna_name}.pdb")
 
     # load dye library with specified location
     # TODO : might want to add some sample/default dye library to PyeDNA

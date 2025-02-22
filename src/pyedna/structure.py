@@ -30,6 +30,14 @@ class createDNA():
         self.sequence = DNA_sequence
         self.is_sequence = True
     
+    @staticmethod
+    def parseDNAStructure(file):
+        # read in parameters
+        struc_params = fp.readParams(file)
+        # key words relevant to the creation of the DNA strcture
+        dna_keys = ["dna_sequence", "dna_type", "dna_name"]
+        dna_params = {key : struc_params.get(key) for key in dna_keys}
+        return dna_params
 
     # load DNA template for self.type from DNA data library
     def loadTemplate(self):
