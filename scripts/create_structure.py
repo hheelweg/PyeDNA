@@ -15,11 +15,12 @@ def main():
     name = 'dna_3nt'
 
     # cretae DNA helix from sequence
-    dna_sequence = 'AATGCAAACGTTTtaT'
-    name = 'dna_test'
-    create = pyedna.createDNA(name)
-    create.feedDNAseq(dna_sequence)
-    create.createDNA(remove_nab=True)
+    dna_sequence = 'TGCACTCTCGATTTATGACCGAGCT'
+    dna_name = 'dna'
+
+    create = pyedna.createDNA(name = dna_name)
+    create.feedDNAseq(DNA_sequence = dna_sequence)
+    create.createDNA()
 
 
 
