@@ -28,7 +28,7 @@ def main():
 
 
     # (2) Set up composite structure starting from DNA
-    composite = pyedna.CompositeStructure(f"{dna_params["dna_name"]}.pdb")
+    composite = pyedna.CompositeStructure(f"{dna_params['dna_name']}.pdb")
 
 
     # load dye library with specified location
