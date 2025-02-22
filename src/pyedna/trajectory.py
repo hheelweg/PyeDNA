@@ -17,12 +17,21 @@ from . import config
 
 
 # TODO : write class to perform MD simulation
+# TODO : maybe put this in a own module dynamics.py
 class MDSimulation():
 
-    def __init__(self, params):
-        self.params = params                    # load MD simulation parameters
+    def __init__(self):
+        self.params = None                      # load MD simulation parameters
         self.trajectory_file = None             # placeholder for trajectory file from AMBER
     
+
+    @staticmethod
+    def parseMinimizationParams(file):
+        # default parameters
+        params = {}
+        pass
+
+
     # run initial minimization
     def runMin(self):
         pass

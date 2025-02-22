@@ -20,6 +20,12 @@ export AMBERHOME=/home/hheelweg/.conda/envs/AmberTools24/amber24
 export PATH=$AMBERHOME/bin:$PATH
 export LD_LIBRARY_PATH=$AMBERHOME/lib:$LD_LIBRARY_PATH
 
+
+# TODO : write this so that I can individually switch which minimizations/equilibration steps I want to do!
+# I guess the best way to do this is by executing through a python file 
+
+# don't to it like THIS:
+
 # (1) perform static minimizations
 
 # (2) perform equilibrations

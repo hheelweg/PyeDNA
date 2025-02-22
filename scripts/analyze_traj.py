@@ -49,8 +49,7 @@ def main():
 
     # TODO : write class for MD simulation
     # ideally, read params from file
-    params = []
-    MDsim = pyedna.MDSimulation(params)
+    MDsim = pyedna.MDSimulation()
 
     # trajectory raw data from AMBER MD
     # searches for files with specific ending in cwd (needs to be unique)
