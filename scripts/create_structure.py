@@ -18,7 +18,7 @@ def main():
     dna_params = pyedna.CreateDNA.parseDNAStructure('struc.params')
     composite_params = pyedna.CompositeStructure.parseCompositeStructure('struc.params')
     dyes = composite_params["dyes"]
-    dye_positions = composite_params["dye_postions"]
+    dye_positions = composite_params["dye_positions"]
 
 
     create = pyedna.CreateDNA(name = dna_params["dna_name"], type = dna_params["dna_type"])
