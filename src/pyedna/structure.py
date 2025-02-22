@@ -21,8 +21,9 @@ class createDNA():
         if type != 'double_helix':
             raise NotImplementedError("Other DNA structures not implemented yet!")
         # print test
-        dna_template_dir = os.path.join(config.PROJECT_HOME, 'data', 'dna_templates')
-        print('dir test ', dna_template_dir)
+        self.loadTemplate()
+        print('test', self.template)
+       
 
     
     # feed desired DNA sequence
@@ -31,7 +32,13 @@ class createDNA():
     
     # load DNA template for self.type from DNA data library
     def loadTemplate(self):
-        pass
+        # get directory for DNA templates
+        dna_template_dir = os.path.join(config.PROJECT_HOME, 'data', 'dna_templates')
+        # find template
+        template_file = utils.findFileWithName(f"{self.type}.nab", dir=dna_template_dir)
+        # load template
+        with open(template_file, "r") as file:
+            self.template = file.read()
 
     # writes NAB .nad input file
     def writeNAB(self):
