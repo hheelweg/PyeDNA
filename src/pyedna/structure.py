@@ -16,8 +16,7 @@ class CreateDNA():
 
     def __init__(self, name = 'dna', type = 'double_helix'):
 
-        # type of DNA strcuture we want to create
-        self.type = type
+        self.type = type                                        # type of DNA strcuture we want to create
         if type != 'double_helix':
             raise NotImplementedError("Other DNA structures not implemented yet!")
     
@@ -65,7 +64,6 @@ class CreateDNA():
         self.nab_script = self.nab_script.replace("{PDB_NAME}", f"{self.name}.pdb")
         
         # (4) write .nab file
-        print(f"{self.name}.nab")
         with open(f"{self.name}.nab", "w") as file:
             file.write(self.nab_script)
 
