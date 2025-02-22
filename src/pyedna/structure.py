@@ -46,7 +46,7 @@ class createDNA():
     def writeNAB(self):
 
         # (1) load DNA template
-        self.nab_script = self.loadTemplate()
+        self.template = self.loadTemplate()
         # (2) check if sequence is fed
         if not self.is_sequence:
             raise ValueError("Specify a DNA sequence first before proceeding!")
@@ -58,7 +58,7 @@ class createDNA():
             file.write(self.nab_script)
 
     # run NAB to produce .pdb file of DNA strcture
-    def createDNA(self, pdb_name = "test.pdb", remove_nab = True):
+    def createDNA(self, remove_nab = True):
 
         # (0) write .nab file
         self.writeNAB()
@@ -69,7 +69,7 @@ class createDNA():
         # (2) run NAB
         nab_command = f"bash {run_nab_script} {self.name}.nab "
         run_nab = subprocess.Popen(nab_command, shell = True, stdout = subprocess.DEVNULL)
-        print(f"*** Creation of {pdb_name} completed: DNA type = {self.type}, DNA sequence = {self.sequence}")
+        print(f"*** Creation of {self.name}.pdb completed: DNA type = {self.type}, DNA sequence = {self.sequence}")
         
         # (3) clean directory (auxiliary .nab file)
         if remove_nab:
