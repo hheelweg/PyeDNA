@@ -15,7 +15,7 @@ def main():
     name = 'dna_3nt'
 
     # cretae DNA helix from sequence
-    dna_sequence = 'AATGCAAACGTTTTT'
+    dna_sequence = 'AATGCAAACGTTTtaT'
     name = 'dna_test'
     create = pyedna.createDNA(name)
     create.feedDNAseq(dna_sequence)
