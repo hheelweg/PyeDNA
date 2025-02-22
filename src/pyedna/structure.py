@@ -25,7 +25,6 @@ class createDNA():
         print('test', self.template)
        
 
-    
     # feed desired DNA sequence
     def feedDNAseq(self):
         pass
