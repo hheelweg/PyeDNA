@@ -16,10 +16,10 @@ def main():
 
     # cretae DNA helix from sequence
     dna_sequence = 'AATGCAAACGTTTTT'
-    create = pyedna.createDNA()
+    name = 'dna_test'
+    create = pyedna.createDNA(name)
     create.feedDNAseq(dna_sequence)
-    create.writeNAB()
-    create.runNAB()
+    create.createDNA()
 
 
 

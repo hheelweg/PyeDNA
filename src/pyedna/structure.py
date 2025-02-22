@@ -14,23 +14,23 @@ from . import config
 # TODO : add class that constructs DNA structure (.pdb) with Nucleic Acid Builder (NAB) rather than manually
 class createDNA():
 
-    def __init__(self, type = 'double_helix'):
+    def __init__(self, name = 'dna', type = 'double_helix'):
 
         # type of DNA strcuture we want to create
         self.type = type
         if type != 'double_helix':
             raise NotImplementedError("Other DNA structures not implemented yet!")
-        # print test
-        test = self.loadTemplate()
-        print('test', test)
-        self.is_sequence = False
-       
+    
+        self.name = name                                        # name of DNA structure
+        self.is_sequence = False                                # flag to indicate whether DNA sequence has been specified
 
+       
     # feed desired DNA sequence
     def feedDNAseq(self, DNA_sequence):
         self.sequence = DNA_sequence
         self.is_sequence = True
     
+
     # load DNA template for self.type from DNA data library
     def loadTemplate(self):
         # get directory for DNA templates
@@ -43,34 +43,38 @@ class createDNA():
         return template
 
     # writes NAB .nad input file
-    def writeNAB(self, nab_name = 'test.nab', pdb_name = 'test.pdb'):
+    def writeNAB(self):
+
         # (1) load DNA template
         self.nab_script = self.loadTemplate()
         # (2) check if sequence is fed
         if not self.is_sequence:
             raise ValueError("Specify a DNA sequence first before proceeding!")
         # (3) replace sequence placeholder in template and set pdb name
-        self.nab_script.replace("{DNA_SEQUENCE}", self.sequence.lower())
-        #self.nab_script = self.template.replace("{DNA_SEQUENCE}", self.sequence.lower())
-        self.nab_script.replace("{PDB_NAME}", pdb_name)
-        # self.nab_script = self.nab_script.replace("{PDB_NAME}", pdb_name)
+        self.nab_script = self.template.replace("{DNA_SEQUENCE}", self.sequence.lower())
+        self.nab_script = self.nab_script.replace("{PDB_NAME}", f"{self.name}.pdb")
         # (4) write .nab file
-        with open(nab_name, "w") as file:
+        with open(f"{self.name}.nab", "w") as file:
             file.write(self.nab_script)
 
-    # run NAB to produce .pdb file
-    def runNAB(self, pdb_name = "test.pdb", clean_files = True):
+    # run NAB to produce .pdb file of DNA strcture
+    def createDNA(self, pdb_name = "test.pdb", remove_nab = True):
+
+        # (0) write .nab file
+        self.writeNAB()
 
         # (1) locate shell script for running NAB and creating DNA pdb
         run_nab_script = os.path.join(config.PROJECT_HOME, 'bin', 'create_dna.sh')
 
         # (2) run NAB
-        nab_name = 'test.nab'
-        nab_command = f"bash {run_nab_script} {nab_name}"
+        nab_command = f"bash {run_nab_script} {self.name}.nab "
         run_nab = subprocess.Popen(nab_command, shell = True, stdout = subprocess.DEVNULL)
-        print(f"*** Creation of {pdb_name} completed")
+        print(f"*** Creation of {pdb_name} completed: DNA type = {self.type}, DNA sequence = {self.sequence}")
         
-        # (3) clean directory
+        # (3) clean directory (auxiliary .nab file)
+        if remove_nab:
+            subprocess.run(f"rm -f {self.name}.nab", shell = True)
+
         
         
 
