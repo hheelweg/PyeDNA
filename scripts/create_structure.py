@@ -15,7 +15,11 @@ def main():
     name = 'dna_3nt'
 
     # cretae DNA helix from sequence
+    dna_sequence = 'AATGCAAACGTTTTT'
     create = pyedna.createDNA()
+    create.feedDNAseq(dna_sequence)
+    create.writeNAB()
+
 
 
     # NOTE : this assumes that the DNA .pdb file is located in the current directory

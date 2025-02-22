@@ -21,13 +21,15 @@ class createDNA():
         if type != 'double_helix':
             raise NotImplementedError("Other DNA structures not implemented yet!")
         # print test
-        self.loadTemplate()
-        print('test', self.template)
+        test = self.loadTemplate()
+        print('test', test)
+        self.is_sequence = False
        
 
     # feed desired DNA sequence
-    def feedDNAseq(self):
-        pass
+    def feedDNAseq(self, DNA_sequence):
+        self.sequence = DNA_sequence
+        self.is_sequence = True
     
     # load DNA template for self.type from DNA data library
     def loadTemplate(self):
@@ -37,14 +39,23 @@ class createDNA():
         template_file = utils.findFileWithName(f"{self.type}.nab", dir=dna_template_dir)
         # load template
         with open(template_file, "r") as file:
-            self.template = file.read()
+            template = file.read()
+        return template
 
     # writes NAB .nad input file
-    def writeNAB(self):
+    def writeNAB(self, nab_name = 'test.nab'):
         # (1) load DNA template
+        self.template = self.loadTemplate()
+        # (2) check if sequence is fed
+        if not self.is_sequence:
+            raise ValueError("Specify a DNA sequence first before proceeding!")
+        # (3) replace sequence placeholder in template
+        self.nab_script = self.template.replace("{DNA_SEQUENCE}", self.sequence.lower())
+        # (4) write .nab file
+        with open(nab_name, "w") as file:
+            file.write(self.nab_script)
 
-        # (2) 
-        pass
+        
         
 
 
