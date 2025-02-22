@@ -41,7 +41,7 @@ def main():
 
     # write AMBER input (.rst and .prmtop files)
     # TODO : write this s.t. we can select whether we want to have .pdb output file etc. 
-    composite.writeAMBERinput(file_name = name)
+    # composite.writeAMBERinput(file_name = name)
 
 
 
