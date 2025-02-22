@@ -14,8 +14,11 @@ def main():
     # name of DNA+sye-structure to create
     name = 'dna_3nt'
 
+    # cretae DNA helix from sequence
+    create = pyedna.createDNA()
 
-    # NOTE : this rn assumes that the DNA .pdb file is located in the current directory
+
+    # NOTE : this assumes that the DNA .pdb file is located in the current directory
     # TODO : we want to read in ideally a nucleotide string and crearte the DNA "on-the-fly"
     dna_pdb = pyedna.utils.findFileWithName('dna.pdb')
 

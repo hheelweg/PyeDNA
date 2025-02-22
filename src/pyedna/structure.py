@@ -8,13 +8,38 @@ from collections import defaultdict
 from . import fileproc as fp
 from . import geomtools as geo
 from . import utils
+from . import config
 
 
-# TODO : add class that constructs DNA structure with Nucleic Acid Builder (NAB) rather than manually
+# TODO : add class that constructs DNA structure (.pdb) with Nucleic Acid Builder (NAB) rather than manually
 class createDNA():
 
-    def __init__():
+    def __init__(self, type = 'double_helix'):
+
+        # type of DNA strcuture we want to create
+        self.type = type
+        if type != 'double_helix':
+            raise NotImplementedError("Other DNA structures not implemented yet!")
+        # print test
+        dna_template_dir = os.path.join(config.PROJECT_HOME, 'data', 'dna_templates')
+        print('dir test ', dna_template_dir)
+
+    
+    # feed desired DNA sequence
+    def feedDNAseq(self):
         pass
+    
+    # load DNA template for self.type from DNA data library
+    def loadTemplate(self):
+        pass
+
+    # writes NAB .nad input file
+    def writeNAB(self):
+        # (1) load DNA template
+
+        # (2) 
+        pass
+        
 
 
 
@@ -123,7 +148,6 @@ class CompositeStructure():
 
 
 
-    
     # merge coordinates together into DNA_u MDAnalysis object
     def mergeCoordinates(self, ordering = True):
         # (1) clean chromophore structure so that we only have one segment (might want to check this)
@@ -437,7 +461,7 @@ class Chromophore():
 
 
 # clean PDB files
-# TODO : do we actually need this ??
+# TODO : do we actually need this ?? If yes, put this somewhere else
 def cleanPDB(inPath, outPath, res_code='DYE', mol_title='Dye molecule', printCONNECT = False):
     from . import fileproc
     lpdb = fileproc.PDB_DF()
