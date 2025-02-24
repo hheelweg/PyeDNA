@@ -154,14 +154,16 @@ class MDSimulation():
     def checkFiles(run_type):
         pass
 
+
     # initialize Simulation by loading .prmtop and .rst7 files
     def initSimulation(self, prmtop_file, rst7_file):
         self.prmtop, self.prmtop_name = prmtop_file, os.path.basename(prmtop_file)
         self.rst7, self.rst7_name = rst7_file, os.path.basename(rst7_file)
 
+
     @staticmethod
     def makeCommand(executable, in_file, out_file,
-                    topology_file, in_coord_file, out_coord_file, ref_coord_file):
+                    topology_file, in_coord_file, out_coord_file, ref_coord_file, netcdf_file = None):
         command = " ".join([
                             f"srun {executable} -O",                                # -O to overwrite output
                             f"-i {in_file}", f"-o {out_file}",                      # names of .in and .out file
@@ -169,10 +171,14 @@ class MDSimulation():
                             f"-c {in_coord_file}", f"-r {out_coord_file}",          # in and out coordinate/sturcture files 
                             f"-ref {ref_coord_file}"                                # file with reference coordinates
                             ])
+        if netcdf_file:
+            command += f" -x {netcdf_file}"                                         # NetCDF file for trajectory data
         return command
+
 
     # run minimizations
     def runMinimization(self, delete_ins = True, delete_outs = True):
+
         # (1) write AMBER input for minimizations
         # (1.1) solvent + ion relaxation
         MDSimulation.writeAMBERInput(self.md_params, input_type = 'min1', name = self.simulation_name)
@@ -202,13 +208,59 @@ class MDSimulation():
                                             out_file = f"min2_{self.simulation_name}.out",
                                             topology_file = self.prmtop_name,
                                             in_coord_file = f"min1_{self.simulation_name}.ncrst",
-                                            out_coord_file = f"min2_{self.simulation_name}.ncrst",
+                                            out_coord_file = f"min_{self.simulation_name}.ncrst",
                                             ref_coord_file = f"min1_{self.simulation_name}.ncrst"
                                             )
         subprocess.run(command, shell = True)
-        # (4) clean 
+
+        # (4) clean files
+        # TODO : add functionality where one can also remove uneccesary .ncrst files
+        if delete_ins:
+            subprocess.run(f"rm -f min1_{self.simulation_name}.in min2_{self.simulation_name}.in", shell = True)
+        if delete_outs:
+            subprocess.run(f"rm -f min1_{self.simulation_name}.out min2_{self.simulation_name}.out", shell = True)
 
 
+    # run equilibration
+    def runEquilibration(self, delete_ins = True, delete_outs = False):
+
+        # (1) write AMBER input for equilibrations
+        # (1.1) heat system with DNA restraint 
+        MDSimulation.writeAMBERInput(self.md_params, input_type = 'eq1', name = self.simulation_name)
+        # (1.2) NPT equilibration and slowly remove DNA restraint
+        MDSimulation.writeAMBERInput(self.md_params, input_type = 'eq2', name = self.simulation_name)
+
+        # (2) TODO : check available files
+        
+        # (3) run equilibration
+        # (3.1) heat system with DNA restraint 
+        command = MDSimulation.makeCommand( executable = "pmemd.cuda",
+                                            in_file = f"eq1_{self.simulation_name}.in",
+                                            out_file = f"eq1_{self.simulation_name}.out",
+                                            topology_file = self.prmtop_name,
+                                            in_coord_file = f"min_{self.simulation_name}.ncrst",                # minimization output
+                                            out_coord_file = f"eq1_{self.simulation_name}.ncrst",
+                                            ref_coord_file = f"min_{self.simulation_name}.ncrst",               # minimization output
+                                            netcdf_file = f"eq1_{self.simulation_name}.nc"
+                                            )
+        subprocess.run(command, shell = True)
+        # (3.2) NPT equilibration and slowly remove DNA restraint
+        command = MDSimulation.makeCommand( executable = "pmemd.cuda",
+                                            in_file = f"eq2_{self.simulation_name}.in",
+                                            out_file = f"eq2_{self.simulation_name}.out",
+                                            topology_file = self.prmtop_name,
+                                            in_coord_file = f"eq1_{self.simulation_name}.ncrst",                # equilibration output
+                                            out_coord_file = f"eq_{self.simulation_name}.ncrst",
+                                            ref_coord_file = f"min_{self.simulation_name}.ncrst",               # minimization output
+                                            netcdf_file = f"eq_{self.simulation_name}.nc"
+                                            )
+        subprocess.run(command, shell = True)
+
+        # (4) clean files
+        if delete_ins:
+            subprocess.run(f"rm -f eq1_{self.simulation_name}.in eq2_{self.simulation_name}.in", shell = True)
+        if delete_outs:
+            subprocess.run(f"rm -f eq1_{self.simulation_name}.out eq2_{self.simulation_name}.out", shell = True)
 
 
 
