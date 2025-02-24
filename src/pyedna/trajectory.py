@@ -144,7 +144,7 @@ class MDSimulation():
                 
                 # Replace value if the parameter exists in `params`
                 print('test', value[1:-2])
-                if value[1:-2] in self.md_params:
+                if key in self.md_params:
                     value = str(self.md_params[key])
 
                 # Format with consistent spacing
