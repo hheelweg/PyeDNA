@@ -109,6 +109,8 @@ class MDSimulation():
                         'res_fweaker'   :       10.0,
                         'res_fweak'     :       5.0
         }
+
+        # add restraint information to md_params dict
         md_params.update(restr_params)
 
         return md_params
