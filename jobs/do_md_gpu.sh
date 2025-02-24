@@ -6,7 +6,7 @@
 #SBATCH --ntasks=1                              # # of tasks
 #SBATCH --gres=gpu:2                            # Request 2 GPU
 #SBATCH --cpus-per-task=8                       # use 4-8 CPUs per GPU
-#SBATCH --job-name=${1:-default_job}            # Use provided job name or "default_job" if none given
+#SBATCH --job-name=dummy                        # Use provided job name or "default_job" if none given
 #SBATCH --output=test.log                       # Name output log file
 
 # USAGE:
@@ -23,6 +23,12 @@ export PYEDNA_HOME="/home/hheelweg/cy3cy5/PyeDNA"
 export AMBERHOME=/home/hheelweg/.conda/envs/AmberTools24/amber24
 export PATH=$AMBERHOME/bin:$PATH
 export LD_LIBRARY_PATH=$AMBERHOME/lib:$LD_LIBRARY_PATH
+
+# Read job name from first argument or use default
+JOB_NAME=${1:-default_job}
+
+# Rename job dynamically
+scontrol update JobID=$SLURM_JOB_ID Name=$JOB_NAME
 
 
 # TODO : write this so that I can individually switch which minimizations/equilibration steps I want to do!
