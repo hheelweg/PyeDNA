@@ -52,11 +52,12 @@ class MDSimulation():
 
         # custom restraints for DNA structure based on DNA structure
         # NOTE : currently only implemented for dna_type = 'double_helix'
-        num_residues = len(dna_params["dna_sequence"])
+        seq_length = len(dna_params["dna_sequence"])
+        num_residues = 2 * seq_length
         restr_params = {
                         'res_start'     :       1,
                         'res_end'       :       num_residues,
-                        'res_mask'      :       f"(:1,{num_residues // 2},{num_residues // 2 + 1},{num_residues})"
+                        'res_mask'      :       f"(:1,{seq_length},{seq_length + 1},{num_residues})"
         }
         print('restraint params', restr_params)
 
