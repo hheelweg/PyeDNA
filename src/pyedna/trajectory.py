@@ -159,6 +159,10 @@ class MDSimulation():
         self.prmtop, self.prmtop_name = prmtop_file, os.path.basename(prmtop_file)
         self.rst7, self.rst7_name = rst7_file, os.path.basename(rst7_file)
 
+    @staticmethod
+    def makeCommand():
+        pass
+
     # run minimizations
     def runMinimization(self, delete_ins = True, delete_outs = True):
         # (1) write AMBER input for minimizations
@@ -170,7 +174,7 @@ class MDSimulation():
         cmd_min1 = " ".join([
                             f"srun sander -O -i min1_{self.simulation_name}.in",
                             f"-o min1_{self.simulation_name}.out",
-                            f"-p {self.prmtop_name} -c {self.rst7_name}.rst7",
+                            f"-p {self.prmtop_name} -c {self.rst7_name}",
                             f"-r min_1_{self.simulation_name}.ncrst {self.rst7_name}"
                             ])
         print(cmd_min1)
