@@ -7,8 +7,7 @@ def main():
     
     # parse simulation parameters
     dna_params = pyedna.CreateDNA('struc.params')
-    print(dna_params)
-
+    print(dna_params, flush = True)
 
 
     # load MDSimulation object
