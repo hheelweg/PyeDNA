@@ -168,7 +168,7 @@ class MDSimulation():
         MDSimulation.writeAMBERInput(self.md_params, input_type = 'min2', name = self.simulation_name)
         # (2) TODO check available topology files
         cmd_min1 = " ".join([
-                            f"srun sander -O min1_{self.simulation_name}.in",
+                            f"srun sander -O -i min1_{self.simulation_name}.in",
                             f"-o min1_{self.simulation_name}.out",
                             f"-p {self.prmtop_name} -c {self.rst7_name}.rst7",
                             f"-r min_1_{self.simulation_name}.ncrst {self.rst7_name}"
