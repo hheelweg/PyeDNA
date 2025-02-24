@@ -133,7 +133,7 @@ class MDSimulation():
         if input_type not in valid_input_types:
             raise KeyError("Specify valid input type to write .in file")
         # (1) load template
-        template = self.loadTemplate(template_name=input_type)
+        template = MDSimulation.loadTemplate(template_name=input_type)
         # (2) fill in template
         filled_template = template.format(**md_params)
         # (3) write AMBER input file
