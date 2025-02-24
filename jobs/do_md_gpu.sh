@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # dynamic job name
+JOB_NAME = $(scontrol show job $SLURM_JOB_ID | awk -F= '/JobName/ {print $2}')
 JOB_NAME = ${SLURM_JOB_NAME:-default_job}
-echo "$JOB_NAME"
 
 # SBATCH --nodes=1
 # SBATCH --partition=gpu                # GPU partition	
