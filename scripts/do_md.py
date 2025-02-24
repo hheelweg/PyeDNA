@@ -17,6 +17,7 @@ def main():
 
     # load MDSimulation object
     md = pyedna.MDSimulation(dna_params, 'md.params', sim_name = composite_params["structure_name"])
+    print(md.simulation_name)
     
     
 

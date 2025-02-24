@@ -24,7 +24,7 @@ class MDSimulation():
     def __init__(self, dna_params, params_file, sim_name = os.path.dirname(os.path.abspath(__file__))):
 
         self.params_file = params_file                              # load MD simulation parameters
-        self.sim_name = sim_name                                    # name of MD simulation
+        self.simulation_name = sim_name                             # name of MD simulation
         self.trajectory_file = None                                 # placeholder for trajectory file from AMBER
 
         self.dna_params = dna_params                                # load structural information of DNA structure
