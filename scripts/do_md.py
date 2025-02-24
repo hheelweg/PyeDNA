@@ -6,13 +6,13 @@ import os
 def main():
     
     # parse simulation parameters
-    struc_params = pyedna.CreateDNA('struc.params')
-    print(struc_params)
+    dna_params = pyedna.CreateDNA('struc.params')
+    print(dna_params)
 
 
 
     # load MDSimulation object
-    md = pyedna.MDSimulation()
+    md = pyedna.MDSimulation(dna_params)
     
 
 
