@@ -1,12 +1,12 @@
 dna_dye: Initial minimization (solvent + ions)
  &cntrl
-  imin   = {min_imin},			! Explicit solvent minimization
-  maxcyc = {min_maxcyc},		! # of minimization steps
-  ncyc   = {min_ncyc}, 		  ! # of initial steepest descent minimization steps
-  ntb    = {min_ntb},			  ! Volume periodic boundaries
-  ntr    = {min_ntr},			  ! Position restraint on GROUP (below)
-  iwrap  = {min_iwrap},			! Wrap molecules back into periodic box when they diffuse out
-  cut    = {min_cut}			  ! Cutoff radius (angstroms) beyond which interactions are ignored
+  imin   = {min_imin},      ! Explicit solvent minimization
+  maxcyc = {min_maxcyc},    ! # of minimization steps
+  ncyc   = {min_ncyc},      ! # of initial steepest descent minimization steps
+  ntb    = {min_ntb},       ! Volume periodic boundaries
+  ntr    = {min_ntr},       ! Position restraint on GROUP (below)
+  iwrap  = {min_iwrap},     ! Wrap molecules back into periodic box when they diffuse out
+  cut    = {min_cut}        ! Cutoff radius (angstroms) beyond which interactions are ignored
 /
 Hold the DNA fixed
 {res_fstrong}
