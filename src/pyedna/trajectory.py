@@ -137,7 +137,6 @@ class MDSimulation():
 
         formatted_lines = []
         for line in template:
-            print(line)
             if "=" in line and "!" in line:  # Match parameter lines
                 param, comment = line.split("!", 1)
                 key, value = param.split("=", 1)
