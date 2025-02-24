@@ -14,7 +14,7 @@ def main():
 
     # load MDSimulation object
     md = pyedna.MDSimulation(dna_params, 'md.params')
-    md.writeAMBERInput(md_params, input_type='min2')
+    md.writeAMBERInput(md_params, input_type='prod')
     
 
 
