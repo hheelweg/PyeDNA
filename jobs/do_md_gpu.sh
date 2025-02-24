@@ -47,4 +47,4 @@ python -m do_md
 
 # Rename output file dynamically
 NEW_OUTPUT="${JOB_NAME}-${SLURM_JOB_ID}.out"
-mv slurm-${SLURM_JOB_ID}.out 
+mv slurm-${SLURM_JOB_ID}.out $NEW_OUTPUT
