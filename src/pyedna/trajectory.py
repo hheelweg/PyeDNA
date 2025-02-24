@@ -43,13 +43,13 @@ class MDSimulation():
         # (1) default parameters
         # (1.1) solvent + ions minimization
         min_params = {
-                        'imin'      =       1,
-                        'maxcyc'    =       1000,		
-                        'ncyc'      =       500, 		
-                        'ntb'       =       1,			
-                        'ntr'       =       1,			
-                        'iwrap'     =       1,			
-                        'cut'       =       8.0			
+                        'imin'      :       1,
+                        'maxcyc'    :       1000,		
+                        'ncyc'      :       500, 		
+                        'ntb'       :       1,			
+                        'ntr'       :       1,			
+                        'iwrap'     :       1,			
+                        'cut'       :       8.0			
         }
         print(min_params)
         pass
