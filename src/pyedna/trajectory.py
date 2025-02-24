@@ -21,8 +21,10 @@ from . import utils
 # TODO : maybe put this in a own module dynamics.py
 class MDSimulation():
 
-    def __init__(self, dna_params, params_file):
+    def __init__(self, dna_params, params_file, sim_name = os.path.dirname(os.path.abspath(__file__))):
+
         self.params_file = params_file                              # load MD simulation parameters
+        self.sim_name = sim_name                                    # name of MD simulation
         self.trajectory_file = None                                 # placeholder for trajectory file from AMBER
 
         self.dna_params = dna_params                                # load structural information of DNA structure
@@ -84,7 +86,7 @@ class MDSimulation():
                         'irest'         :       1,
                         'prod_ntpr'     :       5000,
                         'prod_ntwx'     :       5000,
-                        'prod_ntwr'     :       5000
+                        'prod_ntwr'     :       50000
         }
 
         # merge all dicts together
@@ -145,9 +147,20 @@ class MDSimulation():
             file.write(filled_template)
 
 
-    # run initial minimization
-    def runMin(self):
+    # check if required topology and forcefield files are available
+    def checkFiles(run_type):
         pass
+
+    # run minimizations
+    def runMinimization(self):
+        # (1) write AMBER input for minimizations
+        # (1.1) solvent + ion relaxation
+        MDSimulation.writeAMBERInput(self.md_params, input_type = 'min1', name = self.sim_name)
+        # (1.2) entire system
+        MDSimulation.writeAMBERInput(self.md_params, input_type = 'min2', name = self.sim_name)
+        # (2) check available topology files
+
+
 
     def runMD(self):
         # (1) write *.in files for AMBER
