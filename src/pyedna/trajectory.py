@@ -64,6 +64,7 @@ class MDSimulation():
                         'res_weak'      :       5
         }
         print('restraint params', restr_params)
+        md_params.update(restr_params)
 
         return md_params
 
