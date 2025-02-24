@@ -189,7 +189,7 @@ class MDSimulation():
                                                 in_file = f"min1_{self.simulation_name}.in",
                                                 out_file = f"min1_{self.simulation_name}.out",
                                                 topology_file = self.prmtop_name,
-                                                in_restart_file = self.rst7_name,
+                                                in_coord_file = self.rst7_name,
                                                 out_coord_file = f"min1_{self.simulation_name}.ncrst",
                                                 ref_coord_file = self.rst7_name
                                                 )
