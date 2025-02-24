@@ -163,12 +163,16 @@ class MDSimulation():
     def runMinimization(self, delete_ins = True, delete_outs = True):
         # (1) write AMBER input for minimizations
         # (1.1) solvent + ion relaxation
-        MDSimulation.writeAMBERInput(self.md_params, input_type = 'min1', name = self.sim_name)
+        MDSimulation.writeAMBERInput(self.md_params, input_type = 'min1', name = self.simulation_name)
         # (1.2) entire system
-        MDSimulation.writeAMBERInput(self.md_params, input_type = 'min2', name = self.sim_name)
+        MDSimulation.writeAMBERInput(self.md_params, input_type = 'min2', name = self.simulation_name)
         # (2) TODO check available topology files
-        cmd_min1 = ""
-        subprocess.run()
+        cmd_min1 = f"""
+                        srun sander -O min1_{self.simulation_name}.in -o min1_{self.simulation_name}.out \
+                        -p {self.prmtop} -c {self.simulation_name}.rst7 -r min_1_{self.simulation_name}.ncrst {self.rst7}
+                    """.strip()
+        print(cmd_min1)
+        subprocess.run(cmd_min1, shell = True)
 
 
 

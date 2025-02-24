@@ -9,7 +9,7 @@ def main():
     dna_params = pyedna.CreateDNA.parseDNAStructure('struc.params')
     composite_params = pyedna.CompositeStructure.parseCompositeStructure('struc.params')
     
-    
+
     # locate topology and forcefield
     prmtop_file = pyedna.utils.findFileWithExtension('*.prmtop')
     rst7_file = pyedna.utils.findFileWithExtension('*.rst7')
@@ -17,7 +17,9 @@ def main():
     
     # load MDSimulation object
     md = pyedna.MDSimulation(dna_params, 'md.params', sim_name = composite_params["structure_name"])
-    print(md.simulation_name)
+    
+    # test perform minimization
+    md.runMinimization()
     
     
 

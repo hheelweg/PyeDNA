@@ -30,20 +30,8 @@ JOB_NAME=${1:-dna_md}
 scontrol update JobID=$SLURM_JOB_ID Name=$JOB_NAME
 
 
-# TODO : write this so that I can individually switch which minimizations/equilibration steps I want to do!
-# I guess the best way to do this is by executing through a python file 
-
-# don't to it like THIS:
-
-# (1) perform static minimizations
-
-# (2) perform equilibrations
-
-# (3) production run
-
 # run python module for MD simulation
 python -m do_md 
-
 
 # Rename output file dynamically
 NEW_OUTPUT="${JOB_NAME}.out"
