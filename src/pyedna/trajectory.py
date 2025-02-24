@@ -36,7 +36,7 @@ class MDSimulation():
             raise NotImplementedError("MD Simulations currently only implemented for 'double_helix' DNA type")
 
         # (1) default parameters
-        min_params = {
+        md_params = {
                         'min_imin'      :       1,
                         'min_maxcyc'    :       1000,		
                         'min_ncyc'      :       500, 		
@@ -47,11 +47,21 @@ class MDSimulation():
         }
         # read user parameters
         user_params = fp.readParams(file)
-
          # update default settings
-        min_params.update({key: user_params[key] for key in min_params if key in user_params})
+        md_params.update({key: user_params[key] for key in md_params if key in user_params})
 
-        return min_params
+        # custom restraints for DNA structure based on DNA structure
+        # NOTE : currently only implemented for dna_type = 'double_helix'
+        num_residues = len(dna_params["dna_sequence"])
+        restr_params = {
+                        'res_start'     :       1,
+                        'res_end'       :       num_residues,
+                        'res_mask'      :       f"(:1,{num_residues // 2},{num_residues // 2 + 1},{num_residues})"
+        }
+        print('restraint params', restr_params)
+
+
+        return md_params
 
 
     # run initial minimization
