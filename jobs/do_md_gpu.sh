@@ -6,11 +6,11 @@
 #SBATCH --ntasks=1                              # # of tasks
 #SBATCH --gres=gpu:2                            # Request 2 GPU
 #SBATCH --cpus-per-task=8                       # use 4-8 CPUs per GPU
-#SBATCH --job-name=test                        # Use provided job name or "default_job" if none given
-#SBATCH --output=%x-%j.out                      # Name output log file
+#SBATCH --job-name=dna_def                      # Use provided job name or "default_job" if none given
+#SBATCH --output=%x.out                         # Name output log file
 
 # USAGE:
-# sbatch this_script.sh --job-name=my_name
+# sbatch this_script.sh --job-name=my_job_name
 
 # Source conda environment AmberTools24
 source activate AmberTools24
