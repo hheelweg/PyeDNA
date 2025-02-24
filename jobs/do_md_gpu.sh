@@ -43,4 +43,4 @@ scontrol update JobID=$SLURM_JOB_ID Name=$JOB_NAME
 # (3) production run
 
 # run python module for MD simulation
-python -m do_md > output.log 2>&1
+python -m do_md 
