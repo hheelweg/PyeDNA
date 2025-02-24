@@ -179,25 +179,35 @@ class MDSimulation():
         # (1.2) entire system
         MDSimulation.writeAMBERInput(self.md_params, input_type = 'min2', name = self.simulation_name)
         # (2) TODO check available topology files
-        cmd_min1 = " ".join([
-                            f"srun sander -O -i min1_{self.simulation_name}.in",
-                            f"-o min1_{self.simulation_name}.out",
-                            f"-p {self.prmtop_name} -c {self.rst7_name}",
-                            f"-r min1_{self.simulation_name}.ncrst -ref {self.rst7_name}"
-                            ])
+        # cmd_min1 = " ".join([
+        #                     f"srun sander -O -i min1_{self.simulation_name}.in",
+        #                     f"-o min1_{self.simulation_name}.out",
+        #                     f"-p {self.prmtop_name} -c {self.rst7_name}",
+        #                     f"-r min1_{self.simulation_name}.ncrst -ref {self.rst7_name}"
+        #                     ])
         # (3) run minimization
         # (3.1) solvent + ions
-        command_min1 = MDSimulation.makeCommand(executable = "sander",
-                                                in_file = f"min1_{self.simulation_name}.in",
-                                                out_file = f"min1_{self.simulation_name}.out",
-                                                topology_file = self.prmtop_name,
-                                                in_coord_file = self.rst7_name,
-                                                out_coord_file = f"min1_{self.simulation_name}.ncrst",
-                                                ref_coord_file = self.rst7_name
-                                                )
-        print(command_min1)
-        subprocess.run(command_min1, shell = True)
+        command = MDSimulation.makeCommand( executable = "sander",
+                                            in_file = f"min1_{self.simulation_name}.in",
+                                            out_file = f"min1_{self.simulation_name}.out",
+                                            topology_file = self.prmtop_name,
+                                            in_coord_file = self.rst7_name,
+                                            out_coord_file = f"min1_{self.simulation_name}.ncrst",
+                                            ref_coord_file = self.rst7_name
+                                            )
+        subprocess.run(command, shell = True)
         # (3.2) entire system
+        command = MDSimulation.makeCommand( executable = "sander",
+                                            in_file = f"min2_{self.simulation_name}.in",
+                                            out_file = f"min2_{self.simulation_name}.out",
+                                            topology_file = self.prmtop_name,
+                                            in_coord_file = f"min1_{self.simulation_name}.ncrst",
+                                            out_coord_file = f"min2_{self.simulation_name}.ncrst",
+                                            ref_coord_file = f"min1_{self.simulation_name}.ncrst"
+                                            )
+        subprocess.run(command, shell = True)
+        # (4) clean 
+
 
 
 
