@@ -166,7 +166,7 @@ class MDSimulation():
                             f"srun {executable} -O",                                # -O to overwrite output
                             f"-i {in_file}", f"-o {out_file}",                      # names of .in and .out file
                             f"-p {topology_file}",                                  # topology files
-                            f"-c {in_coord_file}", f"-r {out_coord_file}"           # in and out coordinate/sturcture files 
+                            f"-c {in_coord_file}", f"-r {out_coord_file}",          # in and out coordinate/sturcture files 
                             f"-ref {ref_coord_file}"                                # file with reference coordinates
                             ])
         return command
@@ -185,6 +185,8 @@ class MDSimulation():
                             f"-p {self.prmtop_name} -c {self.rst7_name}",
                             f"-r min1_{self.simulation_name}.ncrst -ref {self.rst7_name}"
                             ])
+        # (3) run minimization
+        # (3.1) solvent + ions
         command_min1 = MDSimulation.makeCommand(executable = "sander",
                                                 in_file = f"min1_{self.simulation_name}.in",
                                                 out_file = f"min1_{self.simulation_name}.out",
@@ -195,6 +197,8 @@ class MDSimulation():
                                                 )
         print(command_min1)
         subprocess.run(command_min1, shell = True)
+        # (3.2) entire system
+
 
 
 
