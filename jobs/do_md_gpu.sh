@@ -26,7 +26,7 @@ export LD_LIBRARY_PATH=$AMBERHOME/lib:$LD_LIBRARY_PATH
 
 
 # Rename job dynamically
-JOB_NAME=${1:-default_job}
+JOB_NAME=${1:-dna_md}
 scontrol update JobID=$SLURM_JOB_ID Name=$JOB_NAME
 
 
@@ -46,5 +46,5 @@ python -m do_md
 
 
 # Rename output file dynamically
-NEW_OUTPUT="${JOB_NAME}-${SLURM_JOB_ID}.out"
+NEW_OUTPUT="${JOB_NAME}.out"
 mv slurm-${SLURM_JOB_ID}.out $NEW_OUTPUT
