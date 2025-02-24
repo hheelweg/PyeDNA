@@ -37,4 +37,4 @@ export LD_LIBRARY_PATH=$AMBERHOME/lib:$LD_LIBRARY_PATH
 # (3) production run
 
 # run python module for MD simulation
-python -m do_md > output.log 2>&1
+python -m do_md > ${1:-default_job}_output.log 2>&1
