@@ -2,7 +2,7 @@
 
 # dynamic job name
 JOB_NAME = ${SLURM_JOB_NAME:-default_job}
-echo $JOB_NAME
+echo "$JOB_NAME"
 
 # SBATCH --nodes=1
 # SBATCH --partition=gpu                # GPU partition	
