@@ -126,7 +126,8 @@ class MDSimulation():
         return template
     
     # function that writes Amber .in files 
-    def writeAMBERInput(self, input_type, name = 'test'):
+    @staticmethod
+    def writeAMBERInput(md_params, input_type, name = 'test'):
         # (0) check if input type is valid
         valid_input_types = ["eq1", "eq2", "min1", "min2", "prod"]
         if input_type not in valid_input_types:
@@ -134,36 +135,10 @@ class MDSimulation():
         # (1) load template
         template = self.loadTemplate(template_name=input_type)
         # (2) fill in template
-        filled_template = template.format(**self.md_params)
+        filled_template = template.format(**md_params)
         # (3) write AMBER input file
         with open(f"{input_type}_{name}.in", "w") as file:
             file.write(filled_template)
-
-        
-
-
-    def writeMinimizationInput(self, name = 'test.in'):
-        # (1) parse minimization parameters and load template
-        self.md_params = self.parseInputParams(self.dna_params, file=self.params_file)
-        template = self.loadTemplate(template_name='min1')
-        # (2) fill in template 
-        filled_template = template.format(**self.md_params)
-        # (3) write file
-        with open(name, "w") as file:
-            file.write(filled_template)
-
-
-    def writeEquilibrationInput(self, name = 'test.in'):
-         # (1) parse minimization parameters and load template
-        self.min_params = self.parseInputParams(self.dna_params, file=self.params_file)
-        template = self.loadTemplate(template_name='eq1')
-        # (2) fill in template 
-        filled_template = template.format(**self.md_params)
-        # (3) write file
-        with open(name, "w") as file:
-            file.write(filled_template)
-
-
 
 
     # run initial minimization
