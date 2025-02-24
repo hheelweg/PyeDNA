@@ -135,7 +135,9 @@ class MDSimulation():
         template = self.loadTemplate(template_name='eq1')
         # (2) fill in template 
         filled_template = template.format(**self.md_params)
-        print(filled_template)
+        # (3) write file
+        with open(name, "w") as file:
+            file.write(filled_template)
 
 
 
