@@ -30,13 +30,12 @@ class MDSimulation():
     # TODO : this is writen for double-helix DNA (constraints for MD/energy minimization might change if we move
     # to different DNA structures)
     @staticmethod
-    def parseMinimizationParams(file, dna_params):
+    def parseMinimizationParams(dna_params, file = None):
 
         if dna_params["dna_type"] != 'double_helix':
             raise NotImplementedError("MD Simulations currently only implemented for 'double_helix' DNA type")
 
         # (1) default parameters
-        # (1.1) solvent + ions minimization; hold DNA fixed
         min_params = {
                         'min_imin'      :       1,
                         'min_maxcyc'    :       1000,		
