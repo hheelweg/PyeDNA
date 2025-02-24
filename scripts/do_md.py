@@ -15,7 +15,7 @@ def main():
     rst7_file = pyedna.utils.findFileWithExtension('.rst7')
 
     
-    # load MDSimulation object and initialize simulation
+    # load MDSimulation object and initialize simulation by feeding topology and forcefield files
     md = pyedna.MDSimulation(dna_params, 'md.params', sim_name = composite_params["structure_name"])
     md.initSimulation(prmtop_file=prmtop_file, rst7_file=rst7_file)
     

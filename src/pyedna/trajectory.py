@@ -156,8 +156,8 @@ class MDSimulation():
 
     # initialize Simulation by loading .prmtop and .rst7 files
     def initSimulation(self, prmtop_file, rst7_file):
-        self.prmtop = prmtop_file
-        self.rst7 = rst7_file
+        self.prmtop, self.prmtop_name = prmtop_file, os.path.basename(prmtop_file)
+        self.rst7, self.rst7_name = rst7_file, os.path.basename(rst7_file)
 
     # run minimizations
     def runMinimization(self, delete_ins = True, delete_outs = True):
@@ -167,10 +167,12 @@ class MDSimulation():
         # (1.2) entire system
         MDSimulation.writeAMBERInput(self.md_params, input_type = 'min2', name = self.simulation_name)
         # (2) TODO check available topology files
-        cmd_min1 = f"""
-                        srun sander -O min1_{self.simulation_name}.in -o min1_{self.simulation_name}.out \
-                        -p {self.prmtop} -c {self.simulation_name}.rst7 -r min_1_{self.simulation_name}.ncrst {self.rst7}
-                    """.strip()
+        cmd_min1 = " ".join([
+                            f"srun sander -O min1_{self.simulation_name}.in",
+                            f"-o min1_{self.simulation_name}.out",
+                            f"-p {self.prmtop_name} -c {self.rst7_name}.rst7",
+                            f"-r min_1_{self.simulation_name}.ncrst {self.rst7_name}"
+                            ])
         print(cmd_min1)
         subprocess.run(cmd_min1, shell = True)
 
