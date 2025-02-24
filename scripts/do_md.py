@@ -14,6 +14,7 @@ def main():
 
     # load MDSimulation object
     md = pyedna.MDSimulation(dna_params, 'md.params')
+    md.writeMinimizationInput()
     
 
 
