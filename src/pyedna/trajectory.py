@@ -146,7 +146,7 @@ class MDSimulation():
                 print('test', value[1:-2])
                 print(self.md_params)
                 if value[1:-2] in self.md_params:
-                    value = str(self.md_params[key])
+                    value = str(self.md_params[value[1:-2]])
 
                 # Format with consistent spacing
                 formatted_line = f"  {key:<10} = {value:<8} ! {comment.strip()}\n"
