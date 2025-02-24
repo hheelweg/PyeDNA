@@ -1,13 +1,16 @@
 #!/bin/bash
-# TODO : comment out for debugging
+
+# dynamic job name
+JOB_NAME=${1:-default_job} 
+
 # SBATCH --nodes=1
 # SBATCH --partition=gpu                # GPU partition	
 # SBATCH --nodelist=gpu001              # Run on GPU node gpu001	
 # SBATCH --ntasks=1                     # # of tasks
 # SBATCH --gres=gpu:2                   # Request 2 GPU
 # #SBATCH --cpus-per-task=8             # use 4-8 CPUs per GPU
-#SBATCH --job-name=${1:-default_job}    # Use provided job name or "default_job" if none given
-#SBATCH --output=${1:-default_job}.log  # Name output log file
+#SBATCH --job-name=${JOB_NAME}          # Use provided job name or "default_job" if none given
+#SBATCH --output=${JOB_NAME}.log        # Name output log file
 
 # USAGE:
 # sbatch this_script.sh job_name
@@ -37,4 +40,4 @@ export LD_LIBRARY_PATH=$AMBERHOME/lib:$LD_LIBRARY_PATH
 # (3) production run
 
 # run python module for MD simulation
-python -m do_md > ${1:-default_job}_output.log 2>&1
+python -m do_md > ${JOB_NAME}_output.log 2>&1
