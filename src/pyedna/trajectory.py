@@ -24,35 +24,29 @@ class MDSimulation():
         self.params = None                      # load MD simulation parameters
         self.trajectory_file = None             # placeholder for trajectory file from AMBER
 
-        # parse information of DNA structure
-        self.struc_params = struc_params
+        self.struc_params = struc_params        # load sturctural information of DNA structure
         
-    
-    # load 
-    @staticmethod
-    def parseStructureParams(file):
-        # read in parameters
-        struc_params = fp.readParams(file)
-        pass
-
     
     # TODO : this is writen for double-helix DNA (constraints for MD/energy minimization might change if we move
     # to different DNA structures)
     @staticmethod
-    def parseMinimizationParams(file, type = 'double_helix'):
+    def parseMinimizationParams(file, dna_params):
+
+        if dna_params["dna_type"] != 'double_helix':
+            raise NotImplementedError("MD Simulations currently only implemented for 'double_helix' DNA type")
+
         # (1) default parameters
         # (1.1) solvent + ions minimization
         min_params = {
-                        'imin'      :       1,
-                        'maxcyc'    :       1000,		
-                        'ncyc'      :       500, 		
-                        'ntb'       :       1,			
-                        'ntr'       :       1,			
-                        'iwrap'     :       1,			
-                        'cut'       :       8.0			
+                        'min_imin'      :       1,
+                        'min_maxcyc'    :       1000,		
+                        'min_ncyc'      :       500, 		
+                        'min_ntb'       :       1,			
+                        'min_ntr'       :       1,			
+                        'min_iwrap'     :       1,			
+                        'min_cut'       :       8.0			
         }
         print(min_params)
-        pass
 
 
     # run initial minimization
