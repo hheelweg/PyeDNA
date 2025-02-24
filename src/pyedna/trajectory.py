@@ -29,7 +29,9 @@ class MDSimulation():
 
         self.dna_params = dna_params                                # load structural information of DNA structure
         # load input parameters for minimization/MD
-        self.md_params = self.parseInputParams(self.dna_params, params_file)         
+        self.md_params = self.parseInputParams(self.dna_params, params_file)   
+        # initialize prmtop and rst7 attributes
+        self.prmtop, self.rst7 = None, None      
         
     
     # TODO : this is writen for double-helix DNA (constraints for MD/energy minimization might change if we move
@@ -148,17 +150,26 @@ class MDSimulation():
 
 
     # check if required topology and forcefield files are available
+    # TODO : add this
     def checkFiles(run_type):
         pass
 
+    # initialize Simulation by loading .prmtop and .rst7 files
+    def initSimulation(self, prmtop_file, rst7_file):
+        self.prmtop = prmtop_file
+        self.rst7 = rst7_file
+
     # run minimizations
-    def runMinimization(self):
+    def runMinimization(self, delete_ins = True, delete_outs = True):
         # (1) write AMBER input for minimizations
         # (1.1) solvent + ion relaxation
         MDSimulation.writeAMBERInput(self.md_params, input_type = 'min1', name = self.sim_name)
         # (1.2) entire system
         MDSimulation.writeAMBERInput(self.md_params, input_type = 'min2', name = self.sim_name)
-        # (2) check available topology files
+        # (2) TODO check available topology files
+        cmd_min1 = ""
+        subprocess.run()
+
 
 
 

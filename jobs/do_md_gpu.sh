@@ -1,13 +1,16 @@
 #!/bin/bash
-## TODO : comment out for debugging
-## SBATCH --nodes=1
-## SBATCH --partition=gpu             # GPU partition	
-## SBATCH --nodelist=gpu001           # Run on GPU node gpu001	
-## SBATCH --ntasks=1                  # # of tasks
-## SBATCH --gres=gpu:2                # Request 2 GPU
-## #SBATCH --cpus-per-task=8          # use 4-8 CPUs per GPU
-## SBATCH --job-name=dna_test         # Job name
-## SBATCH --output=dna_test.log       # Output file
+# TODO : comment out for debugging
+# SBATCH --nodes=1
+# SBATCH --partition=gpu                # GPU partition	
+# SBATCH --nodelist=gpu001              # Run on GPU node gpu001	
+# SBATCH --ntasks=1                     # # of tasks
+# SBATCH --gres=gpu:2                   # Request 2 GPU
+# #SBATCH --cpus-per-task=8             # use 4-8 CPUs per GPU
+#SBATCH --job-name=${1:-default_job}    # Use provided job name or "default_job" if none given
+#SBATCH --output=${1:-default_job}.log  # Name output log file
+
+# USAGE:
+# sbatch this_script.sh job_name
 
 # Source conda environment AmberTools24
 source activate AmberTools24
