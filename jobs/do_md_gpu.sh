@@ -10,7 +10,7 @@
 #SBATCH --output=%x.out                         # Name output log file
 
 # USAGE:
-# sbatch this_script.sh --job-name=my_job_name
+# sbatch this_script.sh my_job_name
 
 # Source conda environment AmberTools24
 source activate AmberTools24
