@@ -160,7 +160,8 @@ class MDSimulation():
         self.rst7, self.rst7_name = rst7_file, os.path.basename(rst7_file)
 
     @staticmethod
-    def makeCommand():
+    def makeCommand(executable, input_file, output_file,
+                    topology_file, ):
         pass
 
     # run minimizations
@@ -175,7 +176,7 @@ class MDSimulation():
                             f"srun sander -O -i min1_{self.simulation_name}.in",
                             f"-o min1_{self.simulation_name}.out",
                             f"-p {self.prmtop_name} -c {self.rst7_name}",
-                            f"-r min_1_{self.simulation_name}.ncrst {self.rst7_name}"
+                            f"-r min_1_{self.simulation_name}.ncrst -ref {self.rst7_name}"
                             ])
         print(cmd_min1)
         subprocess.run(cmd_min1, shell = True)
