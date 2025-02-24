@@ -153,7 +153,7 @@ class MDSimulation():
                 formatted_lines.append(line)  # Preserve non-matching lines
 
 
-
+        print(formatted_lines)
 
         #filled_template = template.format(**self.md_params)
         # (3) write file
