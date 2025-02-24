@@ -153,12 +153,10 @@ class MDSimulation():
                 formatted_lines.append(line)  # Preserve non-matching lines
 
 
-        print(formatted_lines)
-
         #filled_template = template.format(**self.md_params)
         # (3) write file
         with open(name, "w") as file:
-            file.write(formatted_lines)
+            file.writelines(formatted_lines)
 
 
 
