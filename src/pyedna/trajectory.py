@@ -14,17 +14,18 @@ from . import structure
 from . import quanttools as qm
 from . import fileproc as fp
 from . import config 
+from . import utils
 
 
 # TODO : write class to perform MD simulation
 # TODO : maybe put this in a own module dynamics.py
 class MDSimulation():
 
-    def __init__(self, struc_params):
-        self.params = None                      # load MD simulation parameters
-        self.trajectory_file = None             # placeholder for trajectory file from AMBER
+    def __init__(self, dna_params, params_file):
+        self.params_file = params_file                  # load MD simulation parameters
+        self.trajectory_file = None                     # placeholder for trajectory file from AMBER
 
-        self.struc_params = struc_params        # load sturctural information of DNA structure
+        self.dna_params = dna_params                    # load sturctural information of DNA structure
         
     
     # TODO : this is writen for double-helix DNA (constraints for MD/energy minimization might change if we move
@@ -64,8 +65,32 @@ class MDSimulation():
         }
         print('restraint params', restr_params)
 
-
         return md_params
+
+    @staticmethod
+    def loadTemplate(template_name):
+        # get directory for MD templates
+        md_template_dir = os.path.join(config.PROJECT_HOME, 'data', 'md_templates')
+        # find template
+        template_file = utils.findFileWithName(f"{template_name}.in", dir=md_template_dir)
+        # load template
+        with open(template_file, "r") as file:
+            template = file.read()
+        return template
+
+
+    def writeMinimizationInput(self, name = 'test.in'):
+        # (1) parse minimization parameters and load templat
+        self.min_params = self.parseMinimizationParams(self.dna_params, file=self.params_file)
+        template = self.loadTemplate(template_name='min1')
+        # (2) fill in template 
+        filled_template = template.format(**self.min_params)
+        # (3) write file
+        with open(name, "w") as file:
+            file.write(filled_template)
+
+        print(filled_template)
+
 
 
     # run initial minimization
@@ -84,9 +109,6 @@ class MDSimulation():
         # (3) run SBATCH script
         pass
 
-    # write input for production run
-    def writeProductionInput(self):
-        pass
 
 
 
