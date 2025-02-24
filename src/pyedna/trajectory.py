@@ -99,7 +99,7 @@ class MDSimulation():
                         'res_mask'      :       f"'(:1,{seq_length},{seq_length + 1},{num_residues})'",
                         'res_fstrong'   :       500.0,
                         'res_fweaker'   :       10.0,
-                        'res_weak'      :       5.0
+                        'res_fweak'     :       5.0
         }
         md_params.update(restr_params)
 
