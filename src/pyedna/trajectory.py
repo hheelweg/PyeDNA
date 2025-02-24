@@ -56,6 +56,7 @@ class MDSimulation():
         # merge all dicts together
         md_params = dict()
         md_params.update(min_params)
+        md_params.update(eq_params)
 
         # (2) read user parameters
         user_params = fp.readParams(file)
@@ -63,7 +64,7 @@ class MDSimulation():
          # (3) update default settings
         md_params.update({key: user_params[key] for key in md_params if key in user_params})
 
-        # custom restraints for DNA structure based on DNA structure
+        # (4) custom restraints for DNA structure based on DNA structure
         # NOTE : currently only implemented for dna_type = 'double_helix'
         seq_length = len(dna_params["dna_sequence"])
         num_residues = 2 * seq_length
@@ -75,7 +76,6 @@ class MDSimulation():
                         'res_fweaker'   :       10,
                         'res_weak'      :       5
         }
-        print('restraint params', restr_params)
         md_params.update(restr_params)
 
         return md_params
