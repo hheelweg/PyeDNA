@@ -83,6 +83,7 @@ class MDSimulation():
         # (1) parse minimization parameters and load templat
         self.min_params = self.parseMinimizationParams(self.dna_params, file=self.params_file)
         template = self.loadTemplate(template_name='min1')
+        print('parameters parsed and tmplate loaded.')
         # (2) fill in template 
         filled_template = template.format(**self.min_params)
         # (3) write file
