@@ -1,25 +1,25 @@
 dna_dye: Heat system with restraint on DNA
  &cntrl
   imin   = {md_imin},       ! MD: Minimization turned off (run MD)
-  nstlim = {eq1_nstlim},		! MD: # of MD steps
-  dt = {dt},			          ! MD: Time step (fs)
-  irest  = {eq1_irest},			! INIT: Random initial velocities
-  ntx    = {eq1_ntx},			  ! INIT: Only read in coordinates from *.rst7 file
-  ntb    = {ntb},			      ! INIT: Volume periodic boundaries
-  iwrap  = {iwrap},			    ! INIT: Wrap molecules back into periodic box when they diffuse out
-  cut    = {cut}, 		      ! INIT: Cutoff radius (angstroms) beyond which interactions are ignored
-  ntr    = {ntr},			      ! INIT: Position restraint on GROUP (below)
-  ntc    = {ntc},			      ! INIT: Turn on SHAKE to constrain bonds involving hydrogen atoms
-  ntf    = {ntf},			      ! INIT: Do not compute forces for hydrogen atoms (since bonds are constrained)
-  tempi  = {temp_i},			  ! THERMOSTAT: Start temperature (K)
-  temp0  = {temp},		      ! THERMOSTAT: Final temperature (K)
-  ntt    = {ntt},			      ! THERMOSTAT: Langevin thermostat 
-  gamma_ln = {gamma_ln},		! THERMOSTAT: Collision frequency (ps-1), i.e. random force applied to maintain temperature 
-  ig = {ig},			          ! THERMOSTAT: Random seed chosen automatically for thermostat
-  ntpr = {eq1_ntpr},   			! OUT: How often to write in out file (energy/log data)
-  ntwx = {eq1_ntwx}, 			  ! OUT: How often to write in traj file (trajectory data)
-  ntwr = {eq1_ntwr}, 			  ! OUT: How often to write in restart file 
-  ioutfm = {ioutfm}			    ! OUT: trajectory output format ASCII
+  nstlim = {eq1_nstlim},    ! MD: # of MD steps
+  dt = {dt},                ! MD: Time step (fs)
+  irest  = {eq1_irest},     ! INIT: Random initial velocities
+  ntx    = {eq1_ntx},       ! INIT: Only read in coordinates from *.rst7 file
+  ntb    = {ntb},           ! INIT: Volume periodic boundaries
+  iwrap  = {iwrap},         ! INIT: Wrap molecules back into periodic box when they diffuse out
+  cut    = {cut},           ! INIT: Cutoff radius (angstroms) beyond which interactions are ignored
+  ntr    = {ntr},           ! INIT: Position restraint on GROUP (below)
+  ntc    = {ntc},           ! INIT: Turn on SHAKE to constrain bonds involving hydrogen atoms
+  ntf    = {ntf},           ! INIT: Do not compute forces for hydrogen atoms (since bonds are constrained)
+  tempi  = {temp_i},        ! THERMOSTAT: Start temperature (K)
+  temp0  = {temp},          ! THERMOSTAT: Final temperature (K)
+  ntt    = {ntt},           ! THERMOSTAT: Langevin thermostat 
+  gamma_ln = {gamma_ln},    ! THERMOSTAT: Collision frequency (ps-1), i.e. random force applied to maintain temperature 
+  ig = {ig},                ! THERMOSTAT: Random seed chosen automatically for thermostat
+  ntpr = {eq1_ntpr},        ! OUT: How often to write in out file (energy/log data)
+  ntwx = {eq1_ntwx},        ! OUT: How often to write in traj file (trajectory data)
+  ntwr = {eq1_ntwr},        ! OUT: How often to write in restart file 
+  ioutfm = {ioutfm}         ! OUT: trajectory output format ASCII
 /
 Hold the DNA fixed with weak restraints
 {res_fweaker}
