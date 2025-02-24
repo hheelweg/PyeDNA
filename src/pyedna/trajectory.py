@@ -77,11 +77,19 @@ class MDSimulation():
                         'eq1_ntwr'      :       100,
                         'eq2_ntwr'      :       5000
         }
+        # (1.3) production
+        prod_params = {
+                        'prod_nstlim'   :       1000000,
+                        'prod_ntpr'     :       5000,
+                        'prod_ntwx'     :       5000,
+                        'prod_ntwr'     :       5000
+        }
 
         # merge all dicts together
         md_params = dict()
         md_params.update(min_params)
         md_params.update(eq_params)
+        md_params.update(prod_params)
 
         # (2) read user parameters
         user_params = fp.readParams(file)
@@ -116,6 +124,22 @@ class MDSimulation():
         with open(template_file, "r") as file:
             template = file.read()
         return template
+    
+    # function that writes Amber .in files 
+    def writeAMBERInput(self, input_type, name = 'test'):
+        # (0) check if input type is valid
+        valid_input_types = ["eq1", "eq2", "min1", "min2", "prod"]
+        if input_type not in valid_input_types:
+            raise KeyError("Specify valid input type to write .in file")
+        # (1) load template
+        template = self.loadTemplate(template_name=input_type)
+        # (2) fill in template
+        filled_template = template.format(**self.md_params)
+        # (3) write AMBER input file
+        with open(f"{input_type}_{name}.in", "w") as file:
+            file.write(filled_template)
+
+        
 
 
     def writeMinimizationInput(self, name = 'test.in'):
