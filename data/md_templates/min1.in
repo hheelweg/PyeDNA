@@ -1,4 +1,4 @@
-dna_dye: Initial minimization solvent + ions
+dna_dye: Initial minimization (solvent + ions)
  &cntrl
   imin   = {min_imin},			! Explicit solvent minimization
   maxcyc = {min_maxcyc},		! # of minimization steps
