@@ -1,12 +1,12 @@
 dna_dye: Initial minimization entire system
  &cntrl
-  imin   = 1,				! Explicit solvent minimization
-  maxcyc = 1000,			! # of minimization steps
-  ncyc   = 500,  			! # of initial steepest descent minimization steps
-  ntb    = 1,				! Volume periodic boundaries
-  ntr    = 1,				! Position restraint on GROUP (below)
-  iwrap  = 1,				! Wrap molecules back into periodic box when they diffuse out
-  cut    = 8.0				! Cutoff radius (angstroms) beyond which interactions are ignored
-  restraint_wt = 5.0,     		! kcal mol-1 ang-2 force constant for restraint mask
-  restraintmask = '(:1,20,21,40)',	! Residue indices to restrain (here: terminal nucleotides)
+  imin   = {min_imin},				  ! Explicit solvent minimization
+  maxcyc = {min_maxcyc},			  ! # of minimization steps
+  ncyc   = {min_ncyc},  			  ! # of initial steepest descent minimization steps
+  ntb    = {min_ntb},				    ! Volume periodic boundaries
+  ntr    = {min_ntr},				    ! Position restraint on GROUP (below)
+  iwrap  = {min_iwrap},				  ! Wrap molecules back into periodic box when they diffuse out
+  cut    = {min_cut}				    ! Cutoff radius (angstroms) beyond which interactions are ignored
+  restraint_wt = {res_fweak},     	! kcal mol-1 ang-2 force constant for restraint mask
+  restraintmask = {res_mask},	! Residue indices to restrain (here: terminal nucleotides)
 /

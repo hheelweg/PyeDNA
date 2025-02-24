@@ -57,7 +57,10 @@ class MDSimulation():
         restr_params = {
                         'res_start'     :       1,
                         'res_end'       :       num_residues,
-                        'res_mask'      :       f"'(:1,{seq_length},{seq_length + 1},{num_residues})'"
+                        'res_mask'      :       f"'(:1,{seq_length},{seq_length + 1},{num_residues})'",
+                        'res_fstrong'   :       500,
+                        'res_fweaker'   :       10,
+                        'res_weak'      :       5
         }
         print('restraint params', restr_params)
 
