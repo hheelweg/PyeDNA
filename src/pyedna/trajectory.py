@@ -36,7 +36,7 @@ class MDSimulation():
             raise NotImplementedError("MD Simulations currently only implemented for 'double_helix' DNA type")
 
         # (1) default parameters
-        # (1.1) solvent + ions minimization
+        # (1.1) solvent + ions minimization; hold DNA fixed
         min_params = {
                         'min_imin'      :       1,
                         'min_maxcyc'    :       1000,		
@@ -46,7 +46,13 @@ class MDSimulation():
                         'min_iwrap'     :       1,			
                         'min_cut'       :       8.0			
         }
-        print(min_params)
+        # read user parameters
+        user_params = fp.readParams(file)
+
+         # update default settings
+        min_params.update({key: user_params[key] for key in min_params if key in user_params})
+
+        return min_params
 
 
     # run initial minimization
