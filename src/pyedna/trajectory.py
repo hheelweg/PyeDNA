@@ -160,9 +160,16 @@ class MDSimulation():
         self.rst7, self.rst7_name = rst7_file, os.path.basename(rst7_file)
 
     @staticmethod
-    def makeCommand(executable, input_file, output_file,
-                    topology_file, ):
-        pass
+    def makeCommand(executable, in_file, out_file,
+                    topology_file, in_coord_file, out_coord_file, ref_coord_file):
+        command = " ".join([
+                            f"srun {executable} -O",                                # -O to overwrite output
+                            f"-i {in_file}", f"-o {out_file}",                      # names of .in and .out file
+                            f"-p {topology_file}",                                  # topology files
+                            f"-c {in_coord_file}", f"-r {out_coord_file}"           # in and out coordinate/sturcture files 
+                            f"-ref {ref_coord_file}"                                # file with reference coordinates
+                            ])
+        return command
 
     # run minimizations
     def runMinimization(self, delete_ins = True, delete_outs = True):
@@ -176,10 +183,18 @@ class MDSimulation():
                             f"srun sander -O -i min1_{self.simulation_name}.in",
                             f"-o min1_{self.simulation_name}.out",
                             f"-p {self.prmtop_name} -c {self.rst7_name}",
-                            f"-r min_1_{self.simulation_name}.ncrst -ref {self.rst7_name}"
+                            f"-r min1_{self.simulation_name}.ncrst -ref {self.rst7_name}"
                             ])
-        print(cmd_min1)
-        subprocess.run(cmd_min1, shell = True)
+        command_min1 = MDSimulation.makeCommand(executable = "sander",
+                                                in_file = f"min1_{self.simulation_name}.in",
+                                                out_file = f"min1_{self.simulation_name}.out",
+                                                topology_file = self.prmtop_name,
+                                                in_restart_file = self.rst7_name,
+                                                out_coord_file = f"min1_{self.simulation_name}.ncrst",
+                                                ref_coord_file = self.rst7_name
+                                                )
+        print(command_min1)
+        subprocess.run(command_min1, shell = True)
 
 
 
