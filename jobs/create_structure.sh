@@ -18,5 +18,5 @@ export PYEDNA_HOME="/home/hheelweg/cy3cy5/PyeDNA"
 export DYE_DIR="/home/hheelweg/cy3cy5/bib"
 
 
-# run file for structure creation
+# run python module for structure creation
 python -m create_structure > output.log 2>&1

@@ -31,3 +31,6 @@ export LD_LIBRARY_PATH=$AMBERHOME/lib:$LD_LIBRARY_PATH
 # (2) perform equilibrations
 
 # (3) production run
+
+# run python module for MD simulation
+python -m do_md_gpu > output.log 2>&1

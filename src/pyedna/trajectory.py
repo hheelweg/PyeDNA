@@ -20,15 +20,38 @@ from . import config
 # TODO : maybe put this in a own module dynamics.py
 class MDSimulation():
 
-    def __init__(self):
+    def __init__(self, struc_params):
         self.params = None                      # load MD simulation parameters
         self.trajectory_file = None             # placeholder for trajectory file from AMBER
-    
 
+        # parse information of DNA structure
+        self.struc_params = struc_params
+        
+    
+    # load 
     @staticmethod
-    def parseMinimizationParams(file):
-        # default parameters
-        params = {}
+    def parseStructureParams(file):
+        # read in parameters
+        struc_params = fp.readParams(file)
+        pass
+
+    
+    # TODO : this is writen for double-helix DNA (constraints for MD/energy minimization might change if we move
+    # to different DNA structures)
+    @staticmethod
+    def parseMinimizationParams(file, type = 'double_helix'):
+        # (1) default parameters
+        # (1.1) solvent + ions minimization
+        min_params = {
+                        'imin'      =       1,
+                        'maxcyc'    =       1000,		
+                        'ncyc'      =       500, 		
+                        'ntb'       =       1,			
+                        'ntr'       =       1,			
+                        'iwrap'     =       1,			
+                        'cut'       =       8.0			
+        }
+        print(min_params)
         pass
 
 
