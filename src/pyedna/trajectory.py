@@ -31,13 +31,14 @@ class MDSimulation():
     # TODO : this is writen for double-helix DNA (constraints for MD/energy minimization might change if we move
     # to different DNA structures)
     @staticmethod
-    def parseMinimizationParams(dna_params, file = None):
+    def parseInputParams(dna_params, file = None):
 
         if dna_params["dna_type"] != 'double_helix':
             raise NotImplementedError("MD Simulations currently only implemented for 'double_helix' DNA type")
 
-        # (1) default parameters
-        md_params = {
+        # (1) set default parameters
+        # (1.1.) static energy minimization 
+        min_params = {
                         'min_imin'      :       1,
                         'min_maxcyc'    :       1000,		
                         'min_ncyc'      :       500, 		
@@ -46,9 +47,20 @@ class MDSimulation():
                         'min_iwrap'     :       1,			
                         'min_cut'       :       8.0			
         }
-        # read user parameters
+        # (1.2) equilibration
+        eq_params = {
+                        'eq_imin'       :       0,
+                        'eq_nstlim'     :       10000
+        }
+
+        # merge all dicts together
+        md_params = dict()
+        md_params.update(min_params)
+
+        # (2) read user parameters
         user_params = fp.readParams(file)
-         # update default settings
+
+         # (3) update default settings
         md_params.update({key: user_params[key] for key in md_params if key in user_params})
 
         # custom restraints for DNA structure based on DNA structure
@@ -81,10 +93,9 @@ class MDSimulation():
 
 
     def writeMinimizationInput(self, name = 'test.in'):
-        # (1) parse minimization parameters and load templat
-        self.min_params = self.parseMinimizationParams(self.dna_params, file=self.params_file)
+        # (1) parse minimization parameters and load template
+        self.min_params = self.parseInputParams(self.dna_params, file=self.params_file)
         template = self.loadTemplate(template_name='min1')
-        print('parameters parsed and tmplate loaded.')
         # (2) fill in template 
         filled_template = template.format(**self.min_params)
         # (3) write file

@@ -5,11 +5,11 @@ import os
 # function to run MD simulation on .prmtop and .rst7 input 
 def main():
     
-    # parse simulation parameters
+    # parse structure parameters
     dna_params = pyedna.CreateDNA.parseDNAStructure('struc.params')
-    print('DNA test', dna_params)
-    min_params = pyedna.MDSimulation.parseMinimizationParams(dna_params = dna_params, file='md.params')
-    print('min_params', min_params)
+    # parse input parameters for minimization/MD
+    md_params = pyedna.MDSimulation.parseInputParams(dna_params = dna_params, file='md.params')
+    print('min_params', md_params) 
 
 
     # load MDSimulation object
