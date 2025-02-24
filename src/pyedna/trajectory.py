@@ -80,6 +80,7 @@ class MDSimulation():
         # (1.3) production
         prod_params = {
                         'prod_nstlim'   :       1000000,
+                        'ntx'           :       5,
                         'irest'         :       1,
                         'prod_ntpr'     :       5000,
                         'prod_ntwx'     :       5000,
