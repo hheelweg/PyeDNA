@@ -8,7 +8,7 @@ def main():
     # parse simulation parameters
     dna_params = pyedna.CreateDNA.parseDNAStructure('struc.params')
     print('DNA test', dna_params)
-    min_params = pyedna.MDSimulation.parseMinimizationParams('md.params')
+    min_params = pyedna.MDSimulation.parseMinimizationParams('md.params', dna_params = dna_params)
     print('min_params', min_params)
 
 
