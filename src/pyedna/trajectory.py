@@ -132,7 +132,7 @@ class MDSimulation():
     def writeEquilibrationInput(self, name = 'test.in'):
          # (1) parse minimization parameters and load template
         self.min_params = self.parseInputParams(self.dna_params, file=self.params_file)
-        template = self.loadTemplate(template_name='eq1')
+        template = self.loadTemplate(template_name='eq2')
         # (2) fill in template 
         filled_template = template.format(**self.md_params)
         print(filled_template)

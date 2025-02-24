@@ -21,7 +21,7 @@ dna_dye: Heat system with restraint on DNA
   ntwr = {eq1_ntwr}, 			  ! OUT: How often to write in restart file 
   ioutfm = {ioutfm}			    ! OUT: trajectory output format ASCII
 /
-Hold the DNA fixed with weak restrains
+Hold the DNA fixed with weak restraints
 {res_fweaker}
 RES {res_start} {res_end}
 END

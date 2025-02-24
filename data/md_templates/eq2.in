@@ -23,7 +23,7 @@ dna_dye: NPT equilibration and slowly remove DNA restraint
   ntwr = {eq2_ntwr}, 			  ! OUT: How often to write in restart file 
   ioutfm = {ioutfm}			    ! OUT: trajectory output format ASCII
 /
-Hold the DNA fixed with weaker restrains
+Hold the DNA fixed with weaker restraints
 {res_fweak}
 RES {res_start} {res_end}
 END
