@@ -143,6 +143,7 @@ class MDSimulation():
                 key, value = key.strip(), value.strip()
                 
                 # Replace value if the parameter exists in `params`
+                print(key)
                 if key in self.md_params:
                     value = str(self.md_params[key])
 
