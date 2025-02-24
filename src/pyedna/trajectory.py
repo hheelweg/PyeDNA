@@ -22,10 +22,11 @@ from . import utils
 class MDSimulation():
 
     def __init__(self, dna_params, params_file):
-        self.params_file = params_file                  # load MD simulation parameters
-        self.trajectory_file = None                     # placeholder for trajectory file from AMBER
+        self.params_file = params_file                              # load MD simulation parameters
+        self.trajectory_file = None                                 # placeholder for trajectory file from AMBER
 
-        self.dna_params = dna_params                    # load sturctural information of DNA structure
+        self.dna_params = dna_params                                # load structural information of DNA structure
+        self.md_params = self.parseInputParams(params_file)         # load input parameters
         
     
     # TODO : this is writen for double-helix DNA (constraints for MD/energy minimization might change if we move
@@ -42,15 +43,38 @@ class MDSimulation():
                         'min_imin'      :       1,
                         'min_maxcyc'    :       1000,		
                         'min_ncyc'      :       500, 		
-                        'min_ntb'       :       1,			
-                        'min_ntr'       :       1,			
-                        'min_iwrap'     :       1,			
-                        'min_cut'       :       8.0			
+                        'ntb'           :       1,			
+                        'ntr'           :       1,			
+                        'iwrap'         :       1,			
+                        'cut'           :       8.0			
         }
         # (1.2) equilibration
         eq_params = {
-                        'eq_imin'       :       0,
-                        'eq_nstlim'     :       10000
+                        'md_imin'       :       0,
+                        'eq1_nstlim'    :       10000,
+                        'eq2_nstlim'    :       50000,
+                        'dt'            :       0.002,
+                        'eq1_irest'     :       0,
+                        'eq2_irest'     :       1,
+                        'eq1_ntx'       :       1,
+                        'eq2_ntx'       :       5,
+                        'ntc'           :       2,
+                        'ntf'           :       2,
+                        'temp_i'        :       0.0,
+                        'temp'          :       300.0,
+                        'ntp'           :       2,
+                        'pres'          :       1,
+                        'taup'          :       2,
+                        'ntt'           :       3,
+                        'gamma_ln'      :       5.0,
+                        'ig'            :       -1,
+                        'ioutfm'        :       0,
+                        'eq1_nptr'      :       100,
+                        'eq2_nptr'      :       5000,
+                        'eq1_ntwx'      :       100,
+                        'eq2_ntwx'      :       5000,
+                        'eq1_ntwr'      :       100,
+                        'eq2_ntwr'      :       5000
         }
 
         # merge all dicts together
@@ -72,14 +96,15 @@ class MDSimulation():
                         'res_start'     :       1,
                         'res_end'       :       num_residues,
                         'res_mask'      :       f"'(:1,{seq_length},{seq_length + 1},{num_residues})'",
-                        'res_fstrong'   :       500,
-                        'res_fweaker'   :       10,
-                        'res_weak'      :       5
+                        'res_fstrong'   :       500.0,
+                        'res_fweaker'   :       10.0,
+                        'res_weak'      :       5.0
         }
         md_params.update(restr_params)
 
         return md_params
 
+    # load MD templates for AMBER input
     @staticmethod
     def loadTemplate(template_name):
         # get directory for MD templates
@@ -94,15 +119,23 @@ class MDSimulation():
 
     def writeMinimizationInput(self, name = 'test.in'):
         # (1) parse minimization parameters and load template
-        self.min_params = self.parseInputParams(self.dna_params, file=self.params_file)
+        self.md_params = self.parseInputParams(self.dna_params, file=self.params_file)
         template = self.loadTemplate(template_name='min1')
         # (2) fill in template 
-        filled_template = template.format(**self.min_params)
+        filled_template = template.format(**self.md_params)
         # (3) write file
         with open(name, "w") as file:
             file.write(filled_template)
 
+
+    def writeEquilibrationInput(self, name = 'test.in'):
+         # (1) parse minimization parameters and load template
+        self.min_params = self.parseInputParams(self.dna_params, file=self.params_file)
+        template = self.loadTemplate(template_name='eq1')
+        # (2) fill in template 
+        filled_template = template.format(**self.md_params)
         print(filled_template)
+
 
 
 

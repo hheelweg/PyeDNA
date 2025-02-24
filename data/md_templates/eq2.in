@@ -1,0 +1,30 @@
+dna_dye: NPT equilibration and slowly remove DNA restraint
+ &cntrl
+  imin   = {md_imin},			  ! MD: Minimization turned off (run MD)
+  nstlim = {eq2_nstlim},		! MD: # of MD steps
+  dt = {dt},			          ! MD: Time step (fs)
+  irest  = {eq2_irest},			! INIT: read velocities from previous run
+  ntx    = {eq2_ntx},			  ! INIT: read in coordinates and box dimensions from previous run (for NPT simulations)
+  iwrap  = {iwrap},			    ! INIT: Wrap molecules back into periodic box when they diffuse out
+  cut    = {cut}, 		      ! INIT: Cutoff radius (angstroms) beyond which interactions are ignored
+  ntr    = {ntr},			      ! INIT: Position restraint on GROUP (below)
+  ntc    = {ntc},			      ! INIT: Turn on SHAKE to constrain bonds involving hydrogen atoms
+  ntf    = {ntf},			      ! INIT: Do not compute forces for hydrogen atoms (since bonds are constrained)
+  ntp    = {ntp},			      ! BAROSTAT: Constant pressure (NPT) using Berendsen thermostat
+  pres0  = {pres}, 		      ! BAROSTAT: Target pressure (atm)
+  taup   = {taup}, 		      ! BAROSTAT: Pressure relaxation time (ps)
+  tempi  = {temp},		      ! THERMOSTAT: Start temperature (K)
+  temp0  = {temp},		      ! THERMOSTAT: Final temperature (K)
+  ntt    = {ntt},			      ! THERMOSTAT: Langevin thermostat 
+  gamma_ln = {gamma_ln},		! THERMOSTAT: Collision frequency (ps-1), i.e. random force applied to maintain temperature 
+  ig = {ig},			          ! THERMOSTAT: Random seed chosen automatically for thermostat
+  ntpr = {eq2_ntpr}, 			  ! OUT: How often to write in out file (energy/log data)
+  ntwx = {eq2_ntwx}, 			  ! OUT: How often to write in traj file (trajectory data)
+  ntwr = {eq2_ntwr}, 			  ! OUT: How often to write in restart file 
+  ioutfm = {ioutfm}			    ! OUT: trajectory output format ASCII
+/
+Hold the DNA fixed with weaker restrains
+{res_fweak}
+RES {res_start} {res_end}
+END
+END
