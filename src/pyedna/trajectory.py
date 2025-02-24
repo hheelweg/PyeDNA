@@ -114,7 +114,7 @@ class MDSimulation():
         template_file = utils.findFileWithName(f"{template_name}.in", dir=md_template_dir)
         # load template
         with open(template_file, "r") as file:
-            template = file.readlines()
+            template = file.read()
         return template
 
 
@@ -134,31 +134,10 @@ class MDSimulation():
         self.min_params = self.parseInputParams(self.dna_params, file=self.params_file)
         template = self.loadTemplate(template_name='eq1')
         # (2) fill in template 
-
-        formatted_lines = []
-        for line in template:
-            if "=" in line and "!" in line:  # Match parameter lines
-                param, comment = line.split("!", 1)
-                key, value = param.split("=", 1)
-                key, value = key.strip(), value.strip()
-                
-                # Replace value if the parameter exists in `params`
-                print('test', value[1:-2])
-                print(self.md_params)
-                if value[1:-2] in self.md_params:
-                    value = str(self.md_params[value[1:-2]])
-
-                # Format with consistent spacing
-                formatted_line = f"  {key:<10} = {value:<8} ! {comment.strip()}\n"
-                formatted_lines.append(formatted_line)
-            else:
-                formatted_lines.append(line)  # Preserve non-matching lines
-
-
-        #filled_template = template.format(**self.md_params)
+        filled_template = template.format(**self.md_params)
         # (3) write file
         with open(name, "w") as file:
-            file.writelines(formatted_lines)
+            file.write(filled_template)
 
 
 
