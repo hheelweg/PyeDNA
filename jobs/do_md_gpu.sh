@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # dynamic job name
-JOB_NAME=${2:-default_job} 
+JOB_NAME = ${2:-default_job}
+echo JOB_NAME
 
 # SBATCH --nodes=1
 # SBATCH --partition=gpu                # GPU partition	
