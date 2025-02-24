@@ -26,7 +26,8 @@ class MDSimulation():
         self.trajectory_file = None                                 # placeholder for trajectory file from AMBER
 
         self.dna_params = dna_params                                # load structural information of DNA structure
-        self.md_params = self.parseInputParams(params_file)         # load input parameters
+        # load input parameters for minimization/MD
+        self.md_params = self.parseInputParams(self.dna_params, params_file)         
         
     
     # TODO : this is writen for double-helix DNA (constraints for MD/energy minimization might change if we move
