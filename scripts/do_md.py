@@ -6,7 +6,7 @@ import os
 def main():
     
     # parse simulation parameters
-    dna_params = pyedna.CreateDNA('struc.params')
+    dna_params = pyedna.CreateDNA.parseDNAStructure('struc.params')
     print(dna_params, flush = True)
 
 
