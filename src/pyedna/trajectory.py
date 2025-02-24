@@ -114,7 +114,7 @@ class MDSimulation():
         template_file = utils.findFileWithName(f"{template_name}.in", dir=md_template_dir)
         # load template
         with open(template_file, "r") as file:
-            template = file.read()
+            template = file.readlines()
         return template
 
 
