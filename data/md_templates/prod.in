@@ -1,4 +1,4 @@
-dna_dye: 2ns production run (NPT)
+dna_dye: production run (NPT)
  &cntrl
   imin   = {md_imin},         ! MD: Minimization turned off (run MD)
   nstlim = {prod_nstlim},		  ! MD: # of MD steps
