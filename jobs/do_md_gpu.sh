@@ -1,13 +1,13 @@
 #!/bin/bash
 
 #SBATCH --nodes=1
-#SBATCH --partition=gpu                 # GPU partition	
-#SBATCH --nodelist=gpu001               # Run on GPU node gpu001	
-#SBATCH --ntasks=1                      # # of tasks
-#SBATCH --gres=gpu:2                    # Request 2 GPU
-#SBATCH --cpus-per-task=8               # use 4-8 CPUs per GPU
-#SBATCH --job-name=test                 # Use provided job name or "default_job" if none given
-#SBATCH --output=test.log               # Name output log file
+#SBATCH --partition=gpu                         # GPU partition	
+#SBATCH --nodelist=gpu001                       # Run on GPU node gpu001	
+#SBATCH --ntasks=1                              # # of tasks
+#SBATCH --gres=gpu:2                            # Request 2 GPU
+#SBATCH --cpus-per-task=8                       # use 4-8 CPUs per GPU
+#SBATCH --job-name=${1:-default_job}            # Use provided job name or "default_job" if none given
+#SBATCH --output=test.log                       # Name output log file
 
 # USAGE:
 # sbatch this_script.sh --job-name=my_name
