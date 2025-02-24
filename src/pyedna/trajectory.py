@@ -33,7 +33,8 @@ class MDSimulation():
     # to different DNA structures)
     @staticmethod
     def parseInputParams(dna_params, file = None):
-
+        
+        print('test ', dna_params)
         if dna_params["dna_type"] != 'double_helix':
             raise NotImplementedError("MD Simulations currently only implemented for 'double_helix' DNA type")
 
