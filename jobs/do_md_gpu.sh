@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # dynamic job name
-JOB_NAME = ${2:-default_job}
+JOB_NAME = ${SLURM_JOB_NAME:-default_job}
 echo JOB_NAME
 
 # SBATCH --nodes=1
@@ -14,7 +14,7 @@ echo JOB_NAME
 #SBATCH --output=${JOB_NAME}.log        # Name output log file
 
 # USAGE:
-# sbatch this_script.sh job_name
+# sbatch this_script.sh --job-name=my_name
 
 # Source conda environment AmberTools24
 source activate AmberTools24
