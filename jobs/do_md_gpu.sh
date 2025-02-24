@@ -6,7 +6,7 @@
 #SBATCH --ntasks=1                              # # of tasks
 #SBATCH --gres=gpu:2                            # Request 2 GPU
 #SBATCH --cpus-per-task=8                       # use 4-8 CPUs per GPU
-#SBATCH --job-name=dna_def                      # Use provided job name or "default_job" if none given
+#SBATCH --job-name=dummy                        # Use provided job name or "default_job" if none given
 #SBATCH --output=slurm-%j.out                   # Name output log file
 
 # USAGE:
@@ -29,10 +29,6 @@ export LD_LIBRARY_PATH=$AMBERHOME/lib:$LD_LIBRARY_PATH
 JOB_NAME=${1:-default_job}
 scontrol update JobID=$SLURM_JOB_ID Name=$JOB_NAME
 
-# Rename output file based on new job name
-NEW_OUTPUT="${JOB_NAME}-${SLURM_JOB_ID}.out"
-mv slurm-${SLURM_JOB_ID}.out 
-
 
 # TODO : write this so that I can individually switch which minimizations/equilibration steps I want to do!
 # I guess the best way to do this is by executing through a python file 
@@ -47,3 +43,8 @@ mv slurm-${SLURM_JOB_ID}.out
 
 # run python module for MD simulation
 python -m do_md 
+
+
+# Rename output file dynamically
+NEW_OUTPUT="${JOB_NAME}-${SLURM_JOB_ID}.out"
+mv slurm-${SLURM_JOB_ID}.out 
