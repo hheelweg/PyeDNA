@@ -36,6 +36,12 @@ def main(args):
         md.runMinimization()
     elif args.sim == 1:
         md.runEquilibration()
+    elif args.sim == 2:
+        md.runProduction()
+    elif args.sim == 3:
+        md.runMinimization()
+        md.runEquilibration()
+        md.runProduction()
 
     
     # test : perform minimization
