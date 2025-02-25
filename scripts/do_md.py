@@ -19,31 +19,19 @@ def main(args):
     md = pyedna.MDSimulation(dna_params, 'md.params', sim_name = composite_params["structure_name"])
     md.initSimulation(prmtop_file=prmtop_file, rst7_file=rst7_file)
 
-    print('test dt, traj_steps ', md.dt, md.traj_steps)
-
-    # do check on parameter parsing
-    debug = pyedna.MDSimulation.parseInputParams(dna_params, 'md.params')
-    print('test print MD parameters ', debug)
 
     # perform minimization, equilibration, production run with parameters specified in 'md.params'
-
-    print(f"Running MD simulation")
-    print(f"Simulation type selected: {args.sim}")
-    print(f"Level of file verbosity selected: {args.clean}")
-
-
-
-    # # run one of various simulation programs 
-    # if args.sim == 0:                               # minimization only
-    #     md.runMinimization()                
-    # elif args.sim == 1:                             # equilibration only             
-    #     md.runEquilibration()
-    # elif args.sim == 2:                             # production only
-    #     md.runProduction()
-    # elif args.sim == 3:                             # minimization, equilibration and production
-    #     md.runMinimization()
-    #     md.runEquilibration()
-    #     md.runProduction()
+    # run one of various simulation programs 
+    if args.sim == 0:                               # minimization only
+        md.runMinimization()                
+    elif args.sim == 1:                             # equilibration only             
+        md.runEquilibration()
+    elif args.sim == 2:                             # production only
+        md.runProduction()
+    elif args.sim == 3:                             # minimization, equilibration and production
+        md.runMinimization()
+        md.runEquilibration()
+        md.runProduction()
 
     # clean directory (set clean to 3 in order to keep everything)
     md.cleanFiles(args.clean)
