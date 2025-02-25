@@ -21,7 +21,7 @@ def main():
     
     # test : perform minimization
     # md.runMinimization()
-    md.runEquilibration(delete_ins=False, delete_outs=False)
+    md.runMinimization(delete_ins=False, delete_outs=False)
     
     
 
