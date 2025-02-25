@@ -164,9 +164,10 @@ class MDSimulation():
             file.write(filled_template)
 
 
-    # check if required topology and forcefield files are available
+    # check if required input files for user-defined simulation-type are available
     # TODO : add this
-    def checkFiles(run_type):
+    @staticmethod
+    def checkInputFiles(run_type):
         pass
 
 
@@ -201,10 +202,8 @@ class MDSimulation():
         # (1.2) entire system
         MDSimulation.writeAMBERInput(self.md_params, input_type = 'min2', name = self.simulation_name)
 
-        # (2) TODO check available topology files
-
-        # (3) run minimization
-        # (3.1) solvent + ions
+        # (2) run minimization
+        # (2.1) solvent + ions
         command = MDSimulation.makeCommand( executable = "sander",
                                             in_file = f"min1_{self.simulation_name}.in",
                                             out_file = f"min1_{self.simulation_name}.out",
@@ -213,9 +212,8 @@ class MDSimulation():
                                             out_coord_file = f"min1_{self.simulation_name}.ncrst",
                                             ref_coord_file = self.rst7_name
                                             )
-        print(command)
         subprocess.run(command, shell = True)
-        # (3.2) entire system
+        # (2.2) entire system
         command = MDSimulation.makeCommand( executable = "sander",
                                             in_file = f"min2_{self.simulation_name}.in",
                                             out_file = f"min2_{self.simulation_name}.out",
@@ -224,7 +222,6 @@ class MDSimulation():
                                             out_coord_file = f"min_{self.simulation_name}.ncrst",
                                             ref_coord_file = f"min1_{self.simulation_name}.ncrst"
                                             )
-        print(command)
         subprocess.run(command, shell = True)
 
 
@@ -238,10 +235,8 @@ class MDSimulation():
         # (1.2) NPT equilibration and slowly remove DNA restraint
         MDSimulation.writeAMBERInput(self.md_params, input_type = 'eq2', name = self.simulation_name)
 
-        # (2) TODO : check available files
-        
-        # (3) run equilibration
-        # (3.1) heat system with DNA restraint 
+        # (2) run equilibration
+        # (2.1) heat system with DNA restraint 
         command = MDSimulation.makeCommand( executable = "pmemd.cuda",
                                             in_file = f"eq1_{self.simulation_name}.in",
                                             out_file = f"eq1_{self.simulation_name}.out",
@@ -251,9 +246,8 @@ class MDSimulation():
                                             ref_coord_file = f"min_{self.simulation_name}.ncrst",               # minimization output
                                             netcdf_file = f"eq1_{self.simulation_name}.nc"
                                             )
-        print(command)
         subprocess.run(command, shell = True)
-        # (3.2) NPT equilibration and slowly remove DNA restraint
+        # (2.2) NPT equilibration and slowly remove DNA restraint
         command = MDSimulation.makeCommand( executable = "pmemd.cuda",
                                             in_file = f"eq2_{self.simulation_name}.in",
                                             out_file = f"eq2_{self.simulation_name}.out",
@@ -263,7 +257,6 @@ class MDSimulation():
                                             ref_coord_file = f"min_{self.simulation_name}.ncrst",               # minimization output
                                             netcdf_file = f"eq_{self.simulation_name}.nc"
                                             )
-        print(command)
         subprocess.run(command, shell = True)
 
 
@@ -271,12 +264,10 @@ class MDSimulation():
     # run production
     def runProduction(self):
 
-        # (1) write AMBER input for MD production run 
+        # (2) write AMBER input for MD production run 
         MDSimulation.writeAMBERInput(self.md_params, input_type = 'prod', name = self.simulation_name)
 
-        # (2) TODO : check required files
-
-        # (3) run production run
+        # (2) run production run
         command = MDSimulation.makeCommand( executable = "pmemd.cuda",
                                             in_file = f"prod_{self.simulation_name}.in",
                                             out_file = f"prod_{self.simulation_name}.out",
@@ -286,7 +277,6 @@ class MDSimulation():
                                             ref_coord_file = f"min_{self.simulation_name}.ncrst",               # minimization output
                                             netcdf_file = f"{self.simulation_name}.nc"                          # trajectory file of interest
                                             )
-        print(command)
         subprocess.run(command, shell = True)
 
 

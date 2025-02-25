@@ -25,6 +25,8 @@ def main(args):
     md = pyedna.MDSimulation(dna_params, 'md.params', sim_name = composite_params["structure_name"])
     md.initSimulation(prmtop_file=prmtop_file, rst7_file=rst7_file)
 
+    # TODO : based on args.sim, add a checkpoint function here that checks whether required files are available!
+    # use function checkInputFiles for this
 
     # perform minimization, equilibration, production run with parameters specified in 'md.params'
     # run one of various simulation programs 
