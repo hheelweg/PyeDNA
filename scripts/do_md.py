@@ -29,7 +29,7 @@ def main(args):
 
     print(f"Running MD simulation")
     print(f"Simulation type selected: {args.sim}")
-    print(f"Level of file verbosity selected: {args.sim}")
+    print(f"Level of file verbosity selected: {args.clean}")
 
     # abjust file verbosity 
     if args.clean == 0:
