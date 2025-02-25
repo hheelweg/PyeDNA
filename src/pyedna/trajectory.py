@@ -67,9 +67,9 @@ class MDSimulation():
                         'ntf'           :       2,
                         'temp_i'        :       0.0,
                         'temp'          :       300.0,
-                        'ntp'           :       2.0,
+                        'ntp'           :       2,
                         'pres'          :       1.0,
-                        'taup'          :       2,
+                        'taup'          :       2.0,
                         'ntt'           :       3,
                         'gamma_ln'      :       5.0,
                         'ig'            :       -1,
@@ -248,7 +248,7 @@ class MDSimulation():
                                             topology_file = self.prmtop_name,
                                             in_coord_file = f"eq1_{self.simulation_name}.ncrst",                # equilibration output
                                             out_coord_file = f"eq_{self.simulation_name}.ncrst",
-                                            ref_coord_file = f"eq1_{self.simulation_name}.ncrst",               # minimization output
+                                            ref_coord_file = f"min_{self.simulation_name}.ncrst",               # minimization output
                                             netcdf_file = f"eq_{self.simulation_name}.nc"
                                             )
         print(command)
