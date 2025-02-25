@@ -272,7 +272,23 @@ class MDSimulation():
         # (2) TODO : check required files
 
         # (3) run production run
-        
+        command = MDSimulation.makeCommand( executable = "pmemd.cuda",
+                                            in_file = f"prod_{self.simulation_name}.in",
+                                            out_file = f"prod_{self.simulation_name}.out",
+                                            topology_file = self.prmtop_name,
+                                            in_coord_file = f"eq_{self.simulation_name}.ncrst",                 # equilibration output
+                                            out_coord_file = f"{self.simulation_name}.ncrst",
+                                            ref_coord_file = f"min_{self.simulation_name}.ncrst",               # minimization output
+                                            netcdf_file = f"{self.simulation_name}.nc"                          # trajectory file of interest
+                                            )
+        print(command)
+        subprocess.run(command, shell = True)
+
+        # (4) clean files
+        if delete_ins:
+            subprocess.run(f"rm -f prod_{self.simulation_name}.in", shell = True)
+        if delete_outs:
+            subprocess.run(f"rm -f prod_{self.simulation_name}.out prod_{self.simulation_name}.out", shell = True)
 
 
         pass
