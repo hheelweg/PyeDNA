@@ -2,7 +2,8 @@
 
 #SBATCH --nodes=1	
 #SBATCH --ntasks=16                             # # of tasks
-#SBATCH --cpus-per-task=3                       # 3 CPUs per task
+#SBATCH --nodelist=n002                         # Run on specific CPU node
+#SBATCH --cpus-per-task=2                       # 2 CPUs per task
 #SBATCH --job-name=dummy                        # Use provided job name or "default_job" if none given
 #SBATCH --output=slurm-%j.log                   # Name output log file
 
