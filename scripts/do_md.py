@@ -1,8 +1,15 @@
 import pyedna 
 import argparse
 
+# detect available GPUs 
+num_gpus = torch.cuda.device_count()
+if num_gpus < 2:
+    raise RuntimeError("Error: Less than 2 GPUs detected! Check SLURM \
+                       allocation and adjust accordingly.")
 
-# function to run MD simulation on .prmtop and .rst7 input 
+
+
+
 def main(args):
     
     # parse structure parameters
@@ -40,11 +47,9 @@ def main(args):
 
 if __name__ == '__main__':
 
-    # read command line arguments
     parser = argparse.ArgumentParser(description="Molecular Dynamics Simulation")
     parser.add_argument("--sim", type=int, choices=[0, 1, 2, 3], required=True, help="Simulation type (0-3)")
     parser.add_argument("--clean", type=int, choices=[0, 1, 2, 3], required=True, help="File verbosity (0-3)")
-
     args = parser.parse_args()
 
     main(args)

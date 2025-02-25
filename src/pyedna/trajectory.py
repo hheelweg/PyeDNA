@@ -17,7 +17,6 @@ from . import config
 from . import utils
 
 
-# TODO : write class to perform MD simulation
 # TODO : maybe put this in a own module dynamics.py
 class MDSimulation():
 
@@ -323,7 +322,7 @@ class MDSimulation():
 
 class Trajectory():
 
-    def __init__(self, MDsim, trajectory_data, dt, traj_params_file = 'traj.params'):
+    def __init__(self, MDsim, trajectory_data, traj_params_file = 'traj.params'):
 
         self.prmtop = trajectory_data[0]                                # load *.prmtop
         self.nc = trajectory_data[1]                                    # load *.nc from Amber MD simulation
@@ -334,12 +333,12 @@ class Trajectory():
         # create MDAnalysis object
         self.trajectory_u = mda.Universe(self.prmtop, self.nc)
         self.num_frames = self.trajectory_u.trajectory.n_frames         # number of frames in trajectory
-        self.dt = dt                                                    # time step in (ps) TODO : later load this from MDSimulation object
 
         # load MDSimulation object which contains all information
-        self.MD = MDsim                                                 # TODO : do we need this?
+        self.MD = MDsim                                                 
         if not isinstance(self.MD, MDSimulation):
             raise ValueError("MDsim needs to be instance of MDSimulation class!")
+        self.dt = self.MD.dt
         
         # TODO : make this more flexible with regards to path
         # parse output information for QM and MD simulations

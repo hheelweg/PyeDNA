@@ -46,10 +46,9 @@ def main():
       once it's implemented.
     """
 
-
-    # TODO : write class for MD simulation
-    # ideally, read params from file
-    MDsim = pyedna.MDSimulation()
+    # load structure parameters and define instance of MDSimulation class
+    dna_params = pyedna.CreateDNA.parseDNAStructure('struc.params')
+    MDsim = pyedna.MDSimulation(dna_params, 'md.params')
 
     # trajectory raw data from AMBER MD
     # searches for files with specific ending in cwd (needs to be unique)
@@ -64,15 +63,12 @@ def main():
     # parameter file for molecules (dyes)
     mols_params = pyedna.utils.findFileWithName('mols.params')
 
-    # TODO : ideally use MDSim.dt thing in the future
-    # specify time step (ps)
-    dt = 10                                             
 
     # define Trajectory object
     trajectory = pyedna.Trajectory(
-                             MDsim, traj_data, dt,
-                             traj_params_file = traj_params
-                            )
+                                    MDsim, traj_data,
+                                    traj_params_file = traj_params
+                                  )
 
 
     # initialize (dye) molecules of interest
