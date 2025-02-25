@@ -199,7 +199,7 @@ class CompositeStructure():
         # (3) write leap file to make bond and run it (this generates the AMBER input)
         suff_leap = '_tleap.in'
         fp.writeLeap(file_name, file_name + suff_leap,
-                    self.bonds, self.chromophore_list, self.charge, save_pdb=True)
+                    self.bonds, self.chromophore_list, self.charge, save_pdb=True, water_box=20)
         subprocess.run(f"tleap -f {os.path.join(file_name + suff_leap)}", shell = True)
 
 
@@ -221,7 +221,7 @@ class CompositeStructure():
     
     # TODO : can remove this, this only for DMREF picture
     def writePDB(self, file_name = 'composite.pdb'):
-        self.dna.DNA_u.atoms.write(pdb_name)
+        self.dna.DNA_u.atoms.write(file_name)
 
 
     # TODO : do we need this?

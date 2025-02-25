@@ -1,8 +1,10 @@
 #!/bin/bash
 
+# NOTE : convert .prmtop & .rst7 into .pdb 
+
 # USAGE:
 # bash this_script.sh structure_name
-# reuires files: sturcture_name.prmtop and structure_name.rst7
+# requires files: sturcture_name.prmtop and structure_name.rst7
 
 # check if argument provided
 if [ "$#" -ne 1 ]; then
