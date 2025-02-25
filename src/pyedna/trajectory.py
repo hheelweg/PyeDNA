@@ -25,14 +25,30 @@ class MDSimulation():
 
         self.params_file = params_file                              # load MD simulation parameters
         self.simulation_name = sim_name                             # name of MD simulation
-        self.trajectory_file = None                                 # placeholder for trajectory file from AMBER
 
-        self.dna_params = dna_params                                # load structural information of DNA structure
+        # load structural information of DNA structure
+        self.dna_params = dna_params                                
         # load input parameters for minimization/MD
-        self.md_params = self.parseInputParams(self.dna_params, params_file)   
-        # initialize prmtop and rst7 attributes
+        self.md_params = self.parseInputParams(self.dna_params, params_file) 
+        # store important parameters to class
+        self.storeMDinfo()
+
+        # initialize prmtop and rst7 file attributes
         self.prmtop, self.rst7 = None, None      
-        
+    
+    
+    # store Productiopn run attributes to class for later reference
+    def storeMDinfo(self):
+        # external parameters (temperature, pressure)
+        self.temp = self.md_params["temp"]
+        self.pressure = self.md_params["pres"]
+        # time step parameters
+        self.dt = self.md_params["dt"]                                      # in ps
+        self.total_time = self.md_params["prod_nstlim"] * self.dt           # in ps
+        # number of timesteps
+        self.traj_steps = self.md_params["prod_nstlim"] // self.md_params["prod_ntwx"]
+        self.total_steps = self.md_params["prod_nstlim"]
+
     
     # TODO : this is writen for double-helix DNA (constraints for MD/energy minimization might change if we move
     # to different DNA structures)
@@ -161,6 +177,7 @@ class MDSimulation():
         self.rst7, self.rst7_name = rst7_file, os.path.basename(rst7_file)
 
 
+    # make AMBER executbale command
     @staticmethod
     def makeCommand(executable, in_file, out_file,
                     topology_file, in_coord_file, out_coord_file, ref_coord_file, netcdf_file = None):

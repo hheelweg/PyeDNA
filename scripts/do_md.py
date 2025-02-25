@@ -17,6 +17,14 @@ def main():
     
     # load MDSimulation object and initialize simulation by feeding topology and forcefield files
     md = pyedna.MDSimulation(dna_params, 'md.params', sim_name = composite_params["structure_name"])
+
+    print('test dt, traj_steps ', md.dt, md.traj_steps)
+
+    # do check on parameter parsing
+    debug = pyedna.MDSimulation.parseInputParams(dna_params, 'md.params')
+    print('test print MD parameters ', debug)
+
+    # initialize simulation
     md.initSimulation(prmtop_file=prmtop_file, rst7_file=rst7_file)
     
     # test : perform minimization
