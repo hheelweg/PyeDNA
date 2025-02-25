@@ -172,7 +172,7 @@ class MDSimulation():
                             f"-ref {ref_coord_file}"                                # file with reference coordinates
                             ])
         if netcdf_file:
-            command += f" -x {netcdf_file}"                                         # NetCDF file for trajectory data
+            command += f" -x {netcdf_file}"                                         # NetCDF file for trajectory analysis
         return command
 
 
@@ -184,13 +184,9 @@ class MDSimulation():
         MDSimulation.writeAMBERInput(self.md_params, input_type = 'min1', name = self.simulation_name)
         # (1.2) entire system
         MDSimulation.writeAMBERInput(self.md_params, input_type = 'min2', name = self.simulation_name)
+
         # (2) TODO check available topology files
-        # cmd_min1 = " ".join([
-        #                     f"srun sander -O -i min1_{self.simulation_name}.in",
-        #                     f"-o min1_{self.simulation_name}.out",
-        #                     f"-p {self.prmtop_name} -c {self.rst7_name}",
-        #                     f"-r min1_{self.simulation_name}.ncrst -ref {self.rst7_name}"
-        #                     ])
+
         # (3) run minimization
         # (3.1) solvent + ions
         command = MDSimulation.makeCommand( executable = "sander",
@@ -243,6 +239,7 @@ class MDSimulation():
                                             ref_coord_file = f"min_{self.simulation_name}.ncrst",               # minimization output
                                             netcdf_file = f"eq1_{self.simulation_name}.nc"
                                             )
+        print(command)
         subprocess.run(command, shell = True)
         # (3.2) NPT equilibration and slowly remove DNA restraint
         command = MDSimulation.makeCommand( executable = "pmemd.cuda",
@@ -263,6 +260,14 @@ class MDSimulation():
             subprocess.run(f"rm -f eq1_{self.simulation_name}.out eq2_{self.simulation_name}.out", shell = True)
 
 
+    # run production
+    def runProduction(self, delete_ins = True, delete_outs = False):
+
+        # (1) write AMBER input for MD production run
+        # (1.1) heat system with DNA restraint 
+        MDSimulation.writeAMBERInput(self.md_params, input_type = 'prod', name = self.simulation_name)
+
+        pass
 
 
     def runMD(self):
