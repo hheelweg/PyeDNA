@@ -30,24 +30,20 @@ def main(args):
     print(f"Running MD simulation")
     print(f"Simulation type selected: {args.sim}")
 
-    
-    # perform minimization only
-    if args.sim == 0:
-        md.runMinimization()
-    elif args.sim == 1:
+
+    # run one of various simulation programs 
+    if args.sim == 0:                               # minimization only
+        md.runMinimization()                
+    elif args.sim == 1:                             # equilibration only             
         md.runEquilibration()
-    elif args.sim == 2:
+    elif args.sim == 2:                             # production only
         md.runProduction()
-    elif args.sim == 3:
+    elif args.sim == 3:                             # minimization, equilibration and production
         md.runMinimization()
         md.runEquilibration()
         md.runProduction()
 
-    
-    # test : perform minimization
-    #md.runMinimization(delete_ins=False, delete_outs=False)
-    #md.runEquilibration(delete_ins=False, delete_outs=False)
-    #md.runProduction(delete_ins=False, delete_outs=False)
+
     
     
 

@@ -24,9 +24,16 @@ export AMBERHOME=/home/hheelweg/.conda/envs/AmberTools24/amber24
 export PATH=$AMBERHOME/bin:$PATH
 export LD_LIBRARY_PATH=$AMBERHOME/lib:$LD_LIBRARY_PATH
 
+# Default job name
+JOB_NAME="dna_md"
 
-# Rename job dynamically
-JOB_NAME=${1:-dna_md}
+# Check if first argument is not an option (i.e., doesn't start with "--")
+if [[ $# -gt 0 && "$1" != --* ]]; then
+    JOB_NAME=$1
+    shift  
+fi
+
+# Update SLURM job name
 scontrol update JobID=$SLURM_JOB_ID Name=$JOB_NAME
 
 
