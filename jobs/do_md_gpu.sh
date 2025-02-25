@@ -10,7 +10,7 @@
 #SBATCH --output=slurm-%j.log                   # Name output log file
 
 # USAGE:
-# sbatch this_script.sh my_job_name
+# sbatch this_script.sh [my_job_name] --sim [sim_program]
 
 # Source conda environment AmberTools24
 source activate AmberTools24
@@ -31,7 +31,7 @@ scontrol update JobID=$SLURM_JOB_ID Name=$JOB_NAME
 
 
 # run python module for MD simulation
-python -m do_md 
+python -m do_md "$@"
 
 # Rename output file dynamically
 NEW_OUTPUT="${JOB_NAME}.log"
