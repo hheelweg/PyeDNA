@@ -10,7 +10,7 @@
 #SBATCH --output=slurm-%j.log                   # Name output log file
 
 # USAGE:
-# sbatch this_script.sh [my_job_name] --sim [sim_program]
+# sbatch this_script.sh [my_job_name] --sim [sim_program] --clean [clean_level]
 
 # Source conda environment AmberTools24
 source activate AmberTools24

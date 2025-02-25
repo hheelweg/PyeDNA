@@ -29,6 +29,15 @@ def main(args):
 
     print(f"Running MD simulation")
     print(f"Simulation type selected: {args.sim}")
+    print(f"Level of file verbosity selected: {args.sim}")
+
+    # abjust file verbosity 
+    if args.clean == 0:
+        delete_ins = True
+        delte_outs = True
+    elif args.clean == 1:
+        delete_ins = True
+        delete_outs = False
 
 
     # # run one of various simulation programs 
@@ -52,6 +61,7 @@ if __name__ == '__main__':
     # read command line arguments
     parser = argparse.ArgumentParser(description="Molecular Dynamics Simulation")
     parser.add_argument("--sim", type=int, choices=[0, 1, 2, 3], required=True, help="Simulation type (0-3)")
+    parser.add_argument("--clean", type=int, choices=[0, 1, 2, 3], required=True, help="File verbosity (0-3)")
 
 
     args = parser.parse_args()
