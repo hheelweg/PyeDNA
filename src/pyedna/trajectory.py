@@ -314,7 +314,7 @@ class MDSimulation():
             subprocess.run("rm *.ncrst")
         # keep everything
         elif clean_level == 3:
-            continue
+            pass
 
 
 
