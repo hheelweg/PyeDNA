@@ -20,7 +20,7 @@ Future versions will include:
 Stay tuned 🚨
 
 
-#### Installtion
+### Installation
 
 add this!
 
