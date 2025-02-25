@@ -38,7 +38,6 @@ scontrol update JobID=$SLURM_JOB_ID Name=$JOB_NAME
 
 
 # run python module for MD simulation
-shift
 python -m do_md "$@"
 
 # Rename output file dynamically
