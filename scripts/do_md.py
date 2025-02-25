@@ -20,8 +20,8 @@ def main():
     md.initSimulation(prmtop_file=prmtop_file, rst7_file=rst7_file)
     
     # test : perform minimization
-    md.runMinimization(delete_ins=False, delete_outs=False)
-    #md.runEquilibration(delete_ins=False, delete_outs=False)
+    #md.runMinimization(delete_ins=False, delete_outs=False)
+    md.runEquilibration(delete_ins=False, delete_outs=False)
     
     
 
