@@ -1,11 +1,8 @@
 #!/bin/bash
 
-#SBATCH --nodes=1
-#SBATCH --partition=gpu                         # GPU partition	
-#SBATCH --nodelist=gpu001                       # Run on GPU node gpu001	
-#SBATCH --ntasks=1                              # # of tasks
-#SBATCH --gres=gpu:2                            # Request 2 GPU
-#SBATCH --cpus-per-task=8                       # use 4-8 CPUs per GPU
+#SBATCH --nodes=1	
+#SBATCH --ntasks=16                             # # of tasks
+#SBATCH --cpus-per-task=3                       # 3 CPUs per task
 #SBATCH --job-name=dummy                        # Use provided job name or "default_job" if none given
 #SBATCH --output=slurm-%j.log                   # Name output log file
 
@@ -26,7 +23,7 @@ export LD_LIBRARY_PATH=$AMBERHOME/lib:$LD_LIBRARY_PATH
 
 
 # Rename job dynamically
-JOB_NAME=${1:-dna_md}
+JOB_NAME=${1:-dna_min}
 scontrol update JobID=$SLURM_JOB_ID Name=$JOB_NAME
 
 
