@@ -194,7 +194,7 @@ class MDSimulation():
 
 
     # run minimizations
-    def runMinimization(self, delete_ins = True, delete_outs = True):
+    def runMinimization(self):
 
         # (1) write AMBER input for minimizations
         # (1.1) solvent + ion relaxation
@@ -228,16 +228,10 @@ class MDSimulation():
         print(command)
         subprocess.run(command, shell = True)
 
-        # (4) clean files
-        # TODO : add functionality where one can also remove uneccesary .ncrst files
-        if delete_ins:
-            subprocess.run(f"rm -f min1_{self.simulation_name}.in min2_{self.simulation_name}.in", shell = True)
-        if delete_outs:
-            subprocess.run(f"rm -f min1_{self.simulation_name}.out min2_{self.simulation_name}.out", shell = True)
 
 
     # run equilibration
-    def runEquilibration(self, delete_ins = True, delete_outs = False):
+    def runEquilibration(self):
 
         # (1) write AMBER input for equilibrations
         # (1.1) heat system with DNA restraint 
@@ -273,15 +267,10 @@ class MDSimulation():
         print(command)
         subprocess.run(command, shell = True)
 
-        # (4) clean files
-        if delete_ins:
-            subprocess.run(f"rm -f eq1_{self.simulation_name}.in eq2_{self.simulation_name}.in", shell = True)
-        if delete_outs:
-            subprocess.run(f"rm -f eq1_{self.simulation_name}.out eq2_{self.simulation_name}.out", shell = True)
 
 
     # run production
-    def runProduction(self, delete_ins = True, delete_outs = False):
+    def runProduction(self):
 
         # (1) write AMBER input for MD production run 
         MDSimulation.writeAMBERInput(self.md_params, input_type = 'prod', name = self.simulation_name)
@@ -301,27 +290,33 @@ class MDSimulation():
         print(command)
         subprocess.run(command, shell = True)
 
-        # (4) clean files
-        if delete_ins:
-            subprocess.run(f"rm -f prod_{self.simulation_name}.in", shell = True)
-        if delete_outs:
-            subprocess.run(f"rm -f prod_{self.simulation_name}.out prod_{self.simulation_name}.out", shell = True)
+
+    # clean desired files as desired by user
+    def cleanFiles(self, clean_level):
+        # only keep trajectory output file .nc and .out for production run
+        if clean_level == 0:
+            # remove all .in files in cwd
+            subprocess.run("rm *.in") 
+            # remove all .out files in cwd except for production run          
+            keep_file = f"prod_{self.simulation_name}.out"
+            subprocess.run(["find", ".", "-type", "f", "-name", "*.out", "!", "-name", keep_file, "-delete"])
+            # remove all .ncrst files in cwd
+            subprocess.run("rm *.ncrst")
+        # only keep trajectory output file .nc for production run and all .out files
+        elif clean_level == 1:
+            # remove all .in files in cwd
+            subprocess.run("rm *.in")
+            # remove all .ncrst files in cwd
+            subprocess.run("rm *.ncrst") 
+        # keep everythin but the .ncrst files
+        elif clean_level == 2:
+            # remove all .ncrst files in cwd
+            subprocess.run("rm *.ncrst")
+        # keep everything
+        elif clean_level == 3:
+            continue
 
 
-        pass
-
-
-    def runMD(self):
-        # (1) write *.in files for AMBER
-        # TODO : add for initial equilibration etc
-        # (1.1) production run
-        self.writeProductionInput()
-
-        # (2) write SBATCH script
-        # TODO : add function in fp
-
-        # (3) run SBATCH script
-        pass
 
 
 
