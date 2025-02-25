@@ -20,20 +20,18 @@ export PATH="$AMBERHOME/bin:$PATH"
 # Get the structure name from the command line
 STRUCTURE=$1  
 
-# Create a temporary .leap file
-LEAP_SCRIPT=$(mktemp)
+# Create a temporary cpptraj input file
+CPPTRAJ_SCRIPT=$(mktemp)
 
-# Write tleap commands to the temporary file
-cat > "$LEAP_SCRIPT" << EOF
-source leaprc.protein.ff14SB
-mol = loadamberparams ${STRUCTURE}.prmtop
-loadambercoords mol ${STRUCTURE}.rst7
-savepdb mol ${STRUCTURE}.pdb
-quit
+# Write cpptraj commands to the temporary file
+cat > "$CPPTRAJ_SCRIPT" << EOF
+parm ${STRUCTURE}.prmtop
+trajin ${STRUCTURE}.rst7
+trajout ${STRUCTURE}.pdb pdb
 EOF
 
-# Run tleap with the generated script
-tleap -f "$LEAP_SCRIPT"
+# Run cpptraj with the generated script
+cpptraj -i "$CPPTRAJ_SCRIPT"
 
 # Remove the temporary file
-rm "$LEAP_SCRIPT"
+rm "$CPPTRAJ_SCRIPT"
