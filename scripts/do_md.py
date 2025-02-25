@@ -26,11 +26,17 @@ def main(args):
     print('test print MD parameters ', debug)
 
     # perform minimization, equilibration, production run with parameters specified in 'md.params'
-    
+
     print(f"Running MD simulation")
     print(f"Simulation type selected: {args.sim}")
 
     
+    # perform minimization only
+    if args.sim == 0:
+        md.runMinimization()
+    elif args.sim == 1:
+        md.runEquilibration()
+
     
     # test : perform minimization
     #md.runMinimization(delete_ins=False, delete_outs=False)
