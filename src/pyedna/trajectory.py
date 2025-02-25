@@ -248,7 +248,7 @@ class MDSimulation():
                                             topology_file = self.prmtop_name,
                                             in_coord_file = f"eq1_{self.simulation_name}.ncrst",                # equilibration output
                                             out_coord_file = f"eq_{self.simulation_name}.ncrst",
-                                            ref_coord_file = f"eq1_{self.simulation_name}.ncrst",               # minimization output
+                                            ref_coord_file = f"min_{self.simulation_name}.ncrst",               # minimization output
                                             netcdf_file = f"eq_{self.simulation_name}.nc"
                                             )
         print(command)

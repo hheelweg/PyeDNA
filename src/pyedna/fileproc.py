@@ -207,8 +207,12 @@ def writeLeap(pdb_file, leap_file,
 
         # (6) add water
         f.write(f"solvatebox mol TIP3PBOX {water_box}\n")
-        # (7) export AMBER input
-        #f.write(f"saveAmberParm mol {os.path.join(path, pdb_file)}.prmtop {os.path.join(path, pdb_file)}.rst7\n")
+
+        # (7) optional: save .pdb file
+        if save_pdb:
+            f.write(f"savepdb mol {pdb_file}.pdb\n")
+
+        # (8) export AMBER input
         f.write(f"saveAmberParm mol {pdb_file}.prmtop {pdb_file}.rst7\n")
         f.write(f"quit")
 

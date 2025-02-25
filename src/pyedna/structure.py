@@ -199,7 +199,7 @@ class CompositeStructure():
         # (3) write leap file to make bond and run it (this generates the AMBER input)
         suff_leap = '_tleap.in'
         fp.writeLeap(file_name, file_name + suff_leap,
-                    self.bonds, self.chromophore_list, self.charge, save_pdb=False)
+                    self.bonds, self.chromophore_list, self.charge, save_pdb=True)
         subprocess.run(f"tleap -f {os.path.join(file_name + suff_leap)}", shell = True)
 
 
