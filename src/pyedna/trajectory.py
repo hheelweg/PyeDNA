@@ -189,7 +189,7 @@ class MDSimulation():
 
         # (3) run minimization
         # (3.1) solvent + ions
-        command = MDSimulation.makeCommand( executable = "sander",
+        command = MDSimulation.makeCommand( executable = "pmemd.MPI",
                                             in_file = f"min1_{self.simulation_name}.in",
                                             out_file = f"min1_{self.simulation_name}.out",
                                             topology_file = self.prmtop_name,
@@ -199,7 +199,7 @@ class MDSimulation():
                                             )
         subprocess.run(command, shell = True)
         # (3.2) entire system
-        command = MDSimulation.makeCommand( executable = "sander",
+        command = MDSimulation.makeCommand( executable = "pmemd.MPI",
                                             in_file = f"min2_{self.simulation_name}.in",
                                             out_file = f"min2_{self.simulation_name}.out",
                                             topology_file = self.prmtop_name,
