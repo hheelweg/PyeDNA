@@ -67,8 +67,8 @@ class MDSimulation():
                         'ntf'           :       2,
                         'temp_i'        :       0.0,
                         'temp'          :       300.0,
-                        'ntp'           :       2,
-                        'pres'          :       1,
+                        'ntp'           :       2.0,
+                        'pres'          :       1.0,
                         'taup'          :       2,
                         'ntt'           :       3,
                         'gamma_ln'      :       5.0,
@@ -251,6 +251,7 @@ class MDSimulation():
                                             ref_coord_file = f"min_{self.simulation_name}.ncrst",               # minimization output
                                             netcdf_file = f"eq_{self.simulation_name}.nc"
                                             )
+        print(command)
         subprocess.run(command, shell = True)
 
         # (4) clean files
@@ -263,9 +264,13 @@ class MDSimulation():
     # run production
     def runProduction(self, delete_ins = True, delete_outs = False):
 
-        # (1) write AMBER input for MD production run
-        # (1.1) heat system with DNA restraint 
+        # (1) write AMBER input for MD production run 
         MDSimulation.writeAMBERInput(self.md_params, input_type = 'prod', name = self.simulation_name)
+
+        # (2) TODO : check required files
+
+        # (3) run production run
+
 
         pass
 

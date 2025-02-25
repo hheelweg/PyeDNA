@@ -7,7 +7,7 @@
 #SBATCH --gres=gpu:2                            # Request 2 GPU
 #SBATCH --cpus-per-task=8                       # use 4-8 CPUs per GPU
 #SBATCH --job-name=dummy                        # Use provided job name or "default_job" if none given
-#SBATCH --output=slurm-%j.out                   # Name output log file
+#SBATCH --output=slurm-%j.log                   # Name output log file
 
 # USAGE:
 # sbatch this_script.sh my_job_name
@@ -34,5 +34,5 @@ scontrol update JobID=$SLURM_JOB_ID Name=$JOB_NAME
 python -m do_md 
 
 # Rename output file dynamically
-NEW_OUTPUT="${JOB_NAME}.out"
-mv slurm-${SLURM_JOB_ID}.out $NEW_OUTPUT
+NEW_OUTPUT="${JOB_NAME}.log"
+mv slurm-${SLURM_JOB_ID}.log $NEW_OUTPUT
