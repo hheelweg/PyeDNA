@@ -31,17 +31,17 @@ def main(args):
     print(f"Simulation type selected: {args.sim}")
 
 
-    # run one of various simulation programs 
-    if args.sim == 0:                               # minimization only
-        md.runMinimization()                
-    elif args.sim == 1:                             # equilibration only             
-        md.runEquilibration()
-    elif args.sim == 2:                             # production only
-        md.runProduction()
-    elif args.sim == 3:                             # minimization, equilibration and production
-        md.runMinimization()
-        md.runEquilibration()
-        md.runProduction()
+    # # run one of various simulation programs 
+    # if args.sim == 0:                               # minimization only
+    #     md.runMinimization()                
+    # elif args.sim == 1:                             # equilibration only             
+    #     md.runEquilibration()
+    # elif args.sim == 2:                             # production only
+    #     md.runProduction()
+    # elif args.sim == 3:                             # minimization, equilibration and production
+    #     md.runMinimization()
+    #     md.runEquilibration()
+    #     md.runProduction()
 
 
     
@@ -49,9 +49,10 @@ def main(args):
 
 if __name__ == '__main__':
 
-
+    # read command line arguments
     parser = argparse.ArgumentParser(description="Molecular Dynamics Simulation")
     parser.add_argument("--sim", type=int, choices=[0, 1, 2, 3], required=True, help="Simulation type (0-3)")
+
 
     args = parser.parse_args()
 
