@@ -1,4 +1,4 @@
-# PyeDNA
+# PyeDNA 🧬
 #### Create DNA structures, attache dye molecules, run AMBER MD, analyze trajectories...
 
 *credits: Maria A. Castellanos*
