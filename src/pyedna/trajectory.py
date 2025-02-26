@@ -325,8 +325,6 @@ class Trajectory():
         self.out = trajectory_data[2]                                   # load *.out file
         # make sure *.nc file is NetCDF3 (as required for MDAnalysis) and not NetCDF4 (as created by Amber)
         self.convertTrajectory()
-        print(self.prmtop)
-        print(self.nc)
 
         # create MDAnalysis object
         self.trajectory_u = mda.Universe(self.prmtop, self.nc)
@@ -843,7 +841,7 @@ class Trajectory():
 
         # run shell script
         cpptraj_command = f"bash {convert_traj_script} {self.prmtop} {self.nc}"
-        run_conversion = subprocess.Popen(cpptraj_command, shell = True, stdout = subprocess.DEVNULL)
+        subprocess.run(cpptraj_command, shell = True, stdout = subprocess.DEVNULL)
 
 
     # analyze *.out file
