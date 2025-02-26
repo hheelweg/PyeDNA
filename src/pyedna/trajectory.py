@@ -680,14 +680,14 @@ class Trajectory():
         if self.time_slice is None:                                          # study the whole trajectory
             self.time_slice = [0, self.num_frames - 1]
         else:
-            print('test debug', self.time_slice)
+            pass
 
         # check whether molecules have been defined and initialized
         if not self.defined_molecules:
             raise AttributeError("Molecules to study have not beend defined!")
         self.initOutput(self.time_slice[1]  - self.time_slice[0])       # initialize outputs
 
-        a , b = self.parseMolecules('mols.params')
+        #a , b = self.parseMolecules('mols.params')
 
         # (3) analyze trajectory
         for idx in range(self.time_slice[0], self.time_slice[1] + 1):
