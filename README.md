@@ -41,7 +41,7 @@ Then set the Python environment `[env-name]`, as well as the paths to `AMBERHOME
 In order to create/customize DNA structures, a local installation of the Nucleid Acid Builder ([NAB](https://github.com/Amber-MD/AmberClassic.git)) is required. The most well-maintained code base is found in the linked *AmberClassic* repository. The only exectuable that we need effectively is `nab`. Refer to the linked GitHub for installation details. After succesfull installation, we need to set environment variable `AMBERCLASSIC_HOME`. 
 
 #### Amber24
-For the Molecular Dynamics simulation we require AmberTools24 and Amber24. See the Amber24 [manual](https://ambermd.org/doc12/Amber24.pdf) for installation instructions. **Note**: We use GPU assisted MD executables like `pmemd.cuda` for running the MD simulations. Make sure that the Amber code is complied with the right CUDA version of your computing cluster or local machine.   
+For the Molecular Dynamics simulation we require AmberTools24 and Amber24. See the Amber24 [manual](https://ambermd.org/doc12/Amber24.pdf) for installation instructions. **Note**: We use GPU-assisted MD executables like `pmemd.cuda` for running the MD simulations. Make sure that the Amber code is complied with the right CUDA version of your computing cluster or local machine.   
 
 #### Python
 add this! Detailled list: see `requirements.txt`.
