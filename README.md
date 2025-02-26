@@ -13,6 +13,7 @@ Currenty has the following functions implemented:
 
 Future versions will include:
 - Creation of more complex DNA structure
+- Curated `DYE_DIR` with topologies and GAFF parameters for dyes
 - Module for constructing dye input structures from ChemDraw (`.cdx`) files
 - More functionality to analyze trajectories classically
 - More functionality to analyze trajectories quantum-mechanically
@@ -24,7 +25,7 @@ Stay tuned for more 🚨
 
 ### Installation
 
-In order to make sure user-specific environment variables are set, the user needs to set up a `config.sh` file in `PYEDNA_HOME`. A mask (`config.sh.mask`) is provided in the root directory. Navigate to `PYEDNA_HOME`, and then type 
+In order to make sure user-specific environment variables are set, the user needs to set up a `config.sh` file in `PYEDNA_HOME`. A mask (`config.sh.mask`) is provided in the root directory. Navigate to `PYEDNA_HOME`, and then type.  
 
 ```
 cp config.sh.mask config.sh
@@ -46,7 +47,7 @@ Before running *any* type of calculation, make sure the `PYEDNA_HOME` variable i
 ```
 export PYEDNA_HOME="/path/to/PyeDNA"
 ```
-
+One can also add this to the `~/.zshrc` or `~/.bashrc` for a permanent addition to the shell configuration.
 Before executing job scripts from `jobs` directory, type
 
 ```
