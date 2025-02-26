@@ -291,16 +291,25 @@ class MDSimulation():
             subprocess.run(["find", ".", "-type", "f", "-name", "*.out", "!", "-name", keep_file, "-delete"])
             # remove all .ncrst files in cwd
             subprocess.run("rm *.ncrst", shell = True)
+            # remove all .nc files except for production run
+            keep_file = f"{self.simulation_name}.nc"
+            subprocess.run(["find", ".", "-type", "f", "-name", "*.nc", "!", "-name", keep_file, "-delete"])
         # only keep trajectory output file .nc for production run and all .out files
         elif clean_level == 1:
             # remove all .in files in cwd
             subprocess.run("rm *.in", shell = True)
             # remove all .ncrst files in cwd
-            subprocess.run("rm *.ncrst", shell = True) 
+            subprocess.run("rm *.ncrst", shell = True)
+            # remove all .nc files except for production run
+            keep_file = f"{self.simulation_name}.nc"
+            subprocess.run(["find", ".", "-type", "f", "-name", "*.nc", "!", "-name", keep_file, "-delete"]) 
         # keep everythin but the .ncrst files
         elif clean_level == 2:
             # remove all .ncrst files in cwd
             subprocess.run("rm *.ncrst", shell = True)
+            # remove all .nc files except for production run
+            keep_file = f"{self.simulation_name}.nc"
+            subprocess.run(["find", ".", "-type", "f", "-name", "*.nc", "!", "-name", keep_file, "-delete"])
         # keep everything
         elif clean_level == 3:
             pass
