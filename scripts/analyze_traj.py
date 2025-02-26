@@ -46,35 +46,35 @@ def main():
       once it's implemented.
     """
 
-    # load structure parameters and define instance of MDSimulation class
+    # (1) load structure parameters and define instance of MDSimulation class
     dna_params = pyedna.CreateDNA.parseDNAStructure('struc.params')
     MDsim = pyedna.MDSimulation(dna_params, 'md.params')
 
-    # trajectory raw data from AMBER MD
+    # (2) trajectory raw data from AMBER MD
     # searches for files with specific ending in cwd (needs to be unique)
     name_prmtop = pyedna.utils.findFileWithExtension('.prmtop')
     name_nc = pyedna.utils.findFileWithExtension('.nc')
     name_out = pyedna.utils.findFileWithExtension('.out')
     traj_data = [name_prmtop, name_nc, name_out]
 
-    # parameter file for trajectory analysis
+    # (3) parameter file for trajectory analysis
     traj_params = pyedna.utils.findFileWithName('traj.params')
 
-    # parameter file for molecules (dyes)
+    # (4) parameter file for molecules (dyes)
     mols_params = pyedna.utils.findFileWithName('mols.params')
 
 
-    # define Trajectory object
+    # (5) define Trajectory object
     trajectory = pyedna.Trajectory(
                                     MDsim, traj_data,
                                     traj_params_file = traj_params
                                   )
 
 
-    # initialize (dye) molecules of interest
+    # (6) initialize (dye) molecules of interest
     trajectory.initMolecules(mols_params)
 
-    # loop through trajectory snapshots and analyze based on traj.params
+    # (7) loop through trajectory snapshots and analyze based on traj.params
     trajectory.loopTrajectory()
     
     
