@@ -12,17 +12,28 @@
 # USAGE:
 # sbatch this_script.sh [my_job_name] --sim [sim_program] --clean [clean_level]
 
-# Source conda environment AmberTools24
-source activate AmberTools24
+# # Source conda environment AmberTools24
+# source activate AmberTools24
 
-# Add path to PyeDNA and define PyeDNA home
-export PYTHONPATH=$PYTHONPATH:/home/hheelweg/cy3cy5/PyeDNA/scripts
-export PYEDNA_HOME="/home/hheelweg/cy3cy5/PyeDNA"
+# # Add path to PyeDNA and define PyeDNA home
+# export PYTHONPATH=$PYTHONPATH:/home/hheelweg/cy3cy5/PyeDNA/scripts
+# export PYEDNA_HOME="/home/hheelweg/cy3cy5/PyeDNA"
 
-# Add path to AMBER MD executables
-export AMBERHOME=/home/hheelweg/.conda/envs/AmberTools24/amber24
-export PATH=$AMBERHOME/bin:$PATH
-export LD_LIBRARY_PATH=$AMBERHOME/lib:$LD_LIBRARY_PATH
+# # Add path to AMBER MD executables
+# export AMBERHOME=/home/hheelweg/.conda/envs/AmberTools24/amber24
+# export PATH=$AMBERHOME/bin:$PATH
+# export LD_LIBRARY_PATH=$AMBERHOME/lib:$LD_LIBRARY_PATH
+
+
+# Load user-defined paths
+CONFIG_FILE="$(dirname "$0")/../config.sh"
+if [[ -f "$CONFIG_FILE" ]]; then
+    source "$CONFIG_FILE"
+else
+    echo "Error: Configuration file ($CONFIG_FILE) not found!"
+    exit 1
+fi
+
 
 # Default job name
 JOB_NAME="dna_md"
