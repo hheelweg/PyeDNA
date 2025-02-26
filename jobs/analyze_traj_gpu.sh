@@ -6,6 +6,9 @@
 #SBATCH --cpus-per-task=48       # Request 48 CPU cores
 #SBATCH --output=out_gpu.log     # Output file
 
+# USAGE:
+# sbatch this_script.sh
+
 # Check if PYEDNA_HOME is set
 if [[ -z "$PYEDNA_HOME" ]]; then
     echo "Error: PYEDNA_HOME is not set. Please set it in shell."
