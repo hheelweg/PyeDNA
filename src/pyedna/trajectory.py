@@ -15,7 +15,7 @@ from . import config
 from . import utils
 
 
-# TODO : maybe put this in a own module dynamics.py
+
 class MDSimulation():
 
     def __init__(self, dna_params, params_file, sim_name = os.path.dirname(os.path.abspath(__file__))):
