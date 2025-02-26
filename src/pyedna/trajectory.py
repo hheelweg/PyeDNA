@@ -682,6 +682,8 @@ class Trajectory():
         else:
             pass
 
+        print('time', self.time_slice, flush = True)
+
         # check whether molecules have been defined and initialized
         if not self.defined_molecules:
             raise AttributeError("Molecules to study have not beend defined!")
