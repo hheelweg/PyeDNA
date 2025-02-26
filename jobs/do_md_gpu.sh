@@ -12,18 +12,6 @@
 # USAGE:
 # sbatch this_script.sh [my_job_name] --sim [sim_program] --clean [clean_level]
 
-# # Source conda environment AmberTools24
-# source activate AmberTools24
-
-# # Add path to PyeDNA and define PyeDNA home
-# export PYTHONPATH=$PYTHONPATH:/home/hheelweg/cy3cy5/PyeDNA/scripts
-# export PYEDNA_HOME="/home/hheelweg/cy3cy5/PyeDNA"
-
-# # Add path to AMBER MD executables
-# export AMBERHOME=/home/hheelweg/.conda/envs/AmberTools24/amber24
-# export PATH=$AMBERHOME/bin:$PATH
-# export LD_LIBRARY_PATH=$AMBERHOME/lib:$LD_LIBRARY_PATH
-
 
 # Check if PYEDNA_HOME is set
 if [[ -z "$PYEDNA_HOME" ]]; then

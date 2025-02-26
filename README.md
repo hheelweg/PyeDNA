@@ -25,7 +25,7 @@ Stay tuned for more 🚨
 
 ### Installation
 
-In order to make sure user-specific environment variables are set, the user needs to set up a `config.sh` file in `PYEDNA_HOME`. A mask (`config.sh.mask`) is provided in the root directory. Navigate to `PYEDNA_HOME`, and then type.  
+In order to make sure user-specific environment variables are set, the user needs to set up a `config.sh` file in `PYEDNA_HOME` (root directory). A mask (`config.sh.mask`) is provided in the root directory. Navigate to `PYEDNA_HOME`, and then type.  
 
 ```
 cp config.sh.mask config.sh

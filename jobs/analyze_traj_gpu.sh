@@ -6,12 +6,21 @@
 #SBATCH --cpus-per-task=48       # Request 48 CPU cores
 #SBATCH --output=out_gpu.log     # Output file
 
-# Source conda environment AmberTools24
-source activate AmberTools24
+# Check if PYEDNA_HOME is set
+if [[ -z "$PYEDNA_HOME" ]]; then
+    echo "Error: PYEDNA_HOME is not set. Please set it in shell."
+    exit 1
+fi
 
-# Add path to PyeDNA and define PyeDNA home
-export PYTHONPATH=$PYTHONPATH:/home/hheelweg/cy3cy5/PyeDNA/scripts
-export PYEDNA_HOME="/home/hheelweg/cy3cy5/PyeDNA"
+# Load config.sh from the root of PyeDNA to set user-specific environment variables
+CONFIG_FILE="$PYEDNA_HOME/config.sh"
+
+if [[ -f "$CONFIG_FILE" ]]; then
+    source "$CONFIG_FILE"
+else
+    echo "Error: Configuration file ($CONFIG_FILE) not found!"
+    exit 1
+fi
 
 # Print allocated GPUs
 echo "Allocated GPUs: $CUDA_VISIBLE_DEVICES"
