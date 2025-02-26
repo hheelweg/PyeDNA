@@ -6,8 +6,6 @@ import MDAnalysis as mda
 import re
 import time
 import pandas as pd
-# TODO : only for debugging
-from joblib import dump, load
 
 # from current package
 from . import structure
@@ -219,7 +217,7 @@ class MDSimulation():
                                             out_file = f"min2_{self.simulation_name}.out",
                                             topology_file = self.prmtop_name,
                                             in_coord_file = f"min1_{self.simulation_name}.ncrst",
-                                            out_coord_file = f"min_{self.simulation_name}.ncrst",
+                                            out_coord_file = f"min2_{self.simulation_name}.ncrst",
                                             ref_coord_file = f"min1_{self.simulation_name}.ncrst"
                                             )
         subprocess.run(command, shell = True)
@@ -241,9 +239,9 @@ class MDSimulation():
                                             in_file = f"eq1_{self.simulation_name}.in",
                                             out_file = f"eq1_{self.simulation_name}.out",
                                             topology_file = self.prmtop_name,
-                                            in_coord_file = f"min_{self.simulation_name}.ncrst",                # minimization output
+                                            in_coord_file = f"min2_{self.simulation_name}.ncrst",                # minimization output
                                             out_coord_file = f"eq1_{self.simulation_name}.ncrst",
-                                            ref_coord_file = f"min_{self.simulation_name}.ncrst",               # minimization output
+                                            ref_coord_file = f"min2_{self.simulation_name}.ncrst",               # minimization output
                                             netcdf_file = f"eq1_{self.simulation_name}.nc"
                                             )
         subprocess.run(command, shell = True)
@@ -253,9 +251,9 @@ class MDSimulation():
                                             out_file = f"eq2_{self.simulation_name}.out",
                                             topology_file = self.prmtop_name,
                                             in_coord_file = f"eq1_{self.simulation_name}.ncrst",                # equilibration output
-                                            out_coord_file = f"eq_{self.simulation_name}.ncrst",
-                                            ref_coord_file = f"min_{self.simulation_name}.ncrst",               # minimization output
-                                            netcdf_file = f"eq_{self.simulation_name}.nc"
+                                            out_coord_file = f"eq2_{self.simulation_name}.ncrst",
+                                            ref_coord_file = f"min2_{self.simulation_name}.ncrst",              # minimization output
+                                            netcdf_file = f"eq2_{self.simulation_name}.nc"
                                             )
         subprocess.run(command, shell = True)
 
@@ -274,7 +272,7 @@ class MDSimulation():
                                             topology_file = self.prmtop_name,
                                             in_coord_file = f"eq_{self.simulation_name}.ncrst",                 # equilibration output
                                             out_coord_file = f"{self.simulation_name}.ncrst",
-                                            ref_coord_file = f"min_{self.simulation_name}.ncrst",               # minimization output
+                                            ref_coord_file = f"min2_{self.simulation_name}.ncrst",              # minimization output
                                             netcdf_file = f"{self.simulation_name}.nc"                          # trajectory file of interest
                                             )
         subprocess.run(command, shell = True)
