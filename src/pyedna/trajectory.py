@@ -588,7 +588,9 @@ class Trajectory():
     # initialize molecules from params file
     def initMolecules(self, file):
         self.molecules, self.molecule_names = self.parseMolecules(file)
-        print('rest', self.molecules)
+        comp = structure.CompositeStructure.parseCompositeStructure('struc.params')
+        print(self.molecules, self.molecule_names, flush = True)
+        print('testtfgh', comp["dye"], comp["dye_positions"], flush = True)
         self.defined_molecules = True                               
             
 
