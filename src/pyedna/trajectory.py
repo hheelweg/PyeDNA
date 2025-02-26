@@ -162,13 +162,6 @@ class MDSimulation():
             file.write(filled_template)
 
 
-    # check if required input files for user-defined simulation-type are available
-    # TODO : add this
-    @staticmethod
-    def checkInputFiles(run_type):
-        pass
-
-
     # initialize Simulation by loading .prmtop and .rst7 files
     def initSimulation(self, prmtop_file, rst7_file):
         self.prmtop, self.prmtop_name = prmtop_file, os.path.basename(prmtop_file)

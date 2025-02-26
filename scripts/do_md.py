@@ -11,38 +11,46 @@ if num_gpus < 2:
 
 def main(args):
     
-    # parse structure parameters
+    # (1) parse structure parameters
     dna_params = pyedna.CreateDNA.parseDNAStructure('struc.params')
     composite_params = pyedna.CompositeStructure.parseCompositeStructure('struc.params')
     
 
-    # locate topology and forcefield
+    # (2) locate topology and forcefield files
     prmtop_file = pyedna.utils.findFileWithExtension('.prmtop')
     rst7_file = pyedna.utils.findFileWithExtension('.rst7')
 
     
-    # load MDSimulation object and initialize simulation by feeding topology and forcefield files
+    # (3) define MDSimulation object and initialize simulation by feeding topology and forcefield files
     md = pyedna.MDSimulation(dna_params, 'md.params', sim_name = composite_params["structure_name"])
     md.initSimulation(prmtop_file=prmtop_file, rst7_file=rst7_file)
 
-    # TODO : based on args.sim, add a checkpoint function here that checks whether required files are available!
-    # use function checkInputFiles for this
 
-    # run one of three simulation programs 
+    # (4) run one of three simulation programs 
     if args.sim == 0:                               # minimization only
-        # TODO : check for files
+        # (4.1) check for necessary topology files
+        pyedna.utils.checkFileWithName(f"{composite_params['structure_name']}.prmtop")
+        pyedna.utils.checkFileWithName(f"{composite_params['structure_name']}.rst7")
+        # (4.2) perform minimization
         md.runMinimization()                
     elif args.sim == 1:                             # equilibration and production only
-        # TODO : check for files
+        # (4.1) check for necessary topology files
+        pyedna.utils.checkFileWithName(f"{composite_params['structure_name']}.prmtop")
+        pyedna.utils.checkFileWithName(f"min_{composite_params['structure_name']}.ncrst")
+        # (4.2) perform equilibration and production
         md.runEquilibration()
         md.runProduction()
     elif args.sim == 2:                             # minimization, equilibration and production
-        # TODO : check for files
+        # # (4.1) check for necessary topology files
+        pyedna.utils.checkFileWithName(f"{composite_params['structure_name']}.prmtop")
+        pyedna.utils.checkFileWithName(f"{composite_params['structure_name']}.rst7")
+        # (4.2) perform minimization, equilibration, and production
         md.runMinimization()
         md.runEquilibration()
         md.runProduction()
 
-    # clean directory (set clean to 3 in order to keep everything)
+
+    # (5) clean directory (set clean to 3 in order to keep everything)
     md.cleanFiles(args.clean)
     
     

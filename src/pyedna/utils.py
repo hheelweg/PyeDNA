@@ -45,6 +45,18 @@ def findFileWithName(desired_name, dir = None):
         target_file = matching_files[0]
         return os.path.join(search_dir, target_file)
 
+# do check whether file with specified name exists in dir (dir = None means cwd)
+def checkFileWithName(desired_name, dir = None):
+    search_dir = dir if dir else os.getcwd()
+
+    # List all files in the current working directory with the desired name
+    matching_files = [f for f in os.listdir(search_dir) if f.endswith(desired_name)]
+
+    # Check the number of matching files and allow only one
+    if len(matching_files) == 0:
+        raise FileNotFoundError(f"No file with the name '{desired_name}' found in {search_dir}.")
+    else:
+        pass
 
 # in some specified directory, find directories with matching name
 def findSubdirWithName(desired_name, dir):
