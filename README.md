@@ -6,7 +6,7 @@
 Future high-throughput platform for creating DNA/chromophore structures, performing all-atom MD and analyzing trajectories with classical and quantum methods.
 Currenty has the following functions implemented:
 
-- Create double stranded DNA helix (`double_helix`) with NAB
+- Create double stranded DNA helix (`double_helix`) with [NAB](https://github.com/Amber-MD/AmberClassic.git)
 - Attach dye molecules (currently only `CY3`, `CY5`) in desired orientation
 - Run all-atom AMBER MD on the DNA/dye composite with GPU support
 - Analyze trajectories classicaly and quantum-mechanically (DFT/TDDFT) with `pyscf` and `gpu4pyscf`
