@@ -31,7 +31,7 @@ if [[ -f "$CONFIG_FILE" ]]; then
 else
     echo "Error: Configuration file ($CONFIG_FILE) not found!"
     exit 1
-
+fi
 
 # run python module for structure creation
 python -m create_structure > output.log 2>&1
