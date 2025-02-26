@@ -28,15 +28,16 @@ def main(args):
     # TODO : based on args.sim, add a checkpoint function here that checks whether required files are available!
     # use function checkInputFiles for this
 
-    # perform minimization, equilibration, production run with parameters specified in 'md.params'
-    # run one of various simulation programs 
+    # run one of three simulation programs 
     if args.sim == 0:                               # minimization only
+        # TODO : check for files
         md.runMinimization()                
-    elif args.sim == 1:                             # equilibration only             
+    elif args.sim == 1:                             # equilibration and production only
+        # TODO : check for files
         md.runEquilibration()
-    elif args.sim == 2:                             # production only
         md.runProduction()
-    elif args.sim == 3:                             # minimization, equilibration and production
+    elif args.sim == 2:                             # minimization, equilibration and production
+        # TODO : check for files
         md.runMinimization()
         md.runEquilibration()
         md.runProduction()
@@ -49,7 +50,7 @@ def main(args):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description="Molecular Dynamics Simulation")
-    parser.add_argument("--sim", type=int, choices=[0, 1, 2, 3], required=True, help="Simulation type (0-3)")
+    parser.add_argument("--sim", type=int, choices=[0, 1, 2], required=True, help="Simulation type (0-2)")
     parser.add_argument("--clean", type=int, choices=[0, 1, 2, 3], required=True, help="File verbosity (0-3)")
     args = parser.parse_args()
 

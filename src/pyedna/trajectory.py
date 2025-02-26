@@ -202,7 +202,7 @@ class MDSimulation():
 
         # (2) run minimization
         # (2.1) solvent + ions
-        command = MDSimulation.makeCommand( executable = "mpirun -np 8 sander.MPI",
+        command = MDSimulation.makeCommand( executable = "sander",
                                             in_file = f"min1_{self.simulation_name}.in",
                                             out_file = f"min1_{self.simulation_name}.out",
                                             topology_file = self.prmtop_name,
@@ -212,12 +212,12 @@ class MDSimulation():
                                             )
         subprocess.run(command, shell = True)
         # (2.2) entire system
-        command = MDSimulation.makeCommand( executable = "mpirun -np 8 sander.MPI",
+        command = MDSimulation.makeCommand( executable = "sander",
                                             in_file = f"min2_{self.simulation_name}.in",
                                             out_file = f"min2_{self.simulation_name}.out",
                                             topology_file = self.prmtop_name,
                                             in_coord_file = f"min1_{self.simulation_name}.ncrst",
-                                            out_coord_file = f"min2_{self.simulation_name}.ncrst",
+                                            out_coord_file = f"min_{self.simulation_name}.ncrst",
                                             ref_coord_file = f"min1_{self.simulation_name}.ncrst"
                                             )
         subprocess.run(command, shell = True)
@@ -239,9 +239,9 @@ class MDSimulation():
                                             in_file = f"eq1_{self.simulation_name}.in",
                                             out_file = f"eq1_{self.simulation_name}.out",
                                             topology_file = self.prmtop_name,
-                                            in_coord_file = f"min2_{self.simulation_name}.ncrst",                # minimization output
+                                            in_coord_file = f"min_{self.simulation_name}.ncrst",                # minimization output
                                             out_coord_file = f"eq1_{self.simulation_name}.ncrst",
-                                            ref_coord_file = f"min2_{self.simulation_name}.ncrst",               # minimization output
+                                            ref_coord_file = f"min_{self.simulation_name}.ncrst",               # minimization output
                                             netcdf_file = f"eq1_{self.simulation_name}.nc"
                                             )
         subprocess.run(command, shell = True)
@@ -252,7 +252,7 @@ class MDSimulation():
                                             topology_file = self.prmtop_name,
                                             in_coord_file = f"eq1_{self.simulation_name}.ncrst",                # equilibration output
                                             out_coord_file = f"eq2_{self.simulation_name}.ncrst",
-                                            ref_coord_file = f"min2_{self.simulation_name}.ncrst",              # minimization output
+                                            ref_coord_file = f"min_{self.simulation_name}.ncrst",               # minimization output
                                             netcdf_file = f"eq2_{self.simulation_name}.nc"
                                             )
         subprocess.run(command, shell = True)
@@ -270,9 +270,9 @@ class MDSimulation():
                                             in_file = f"prod_{self.simulation_name}.in",
                                             out_file = f"prod_{self.simulation_name}.out",
                                             topology_file = self.prmtop_name,
-                                            in_coord_file = f"eq2_{self.simulation_name}.ncrst",                 # equilibration output
+                                            in_coord_file = f"eq2_{self.simulation_name}.ncrst",                # equilibration output
                                             out_coord_file = f"{self.simulation_name}.ncrst",
-                                            ref_coord_file = f"min2_{self.simulation_name}.ncrst",              # minimization output
+                                            ref_coord_file = f"min_{self.simulation_name}.ncrst",               # minimization output
                                             netcdf_file = f"{self.simulation_name}.nc"                          # trajectory file of interest
                                             )
         subprocess.run(command, shell = True)
@@ -287,27 +287,33 @@ class MDSimulation():
             # remove all .out files in cwd except for production run          
             keep_file = f"prod_{self.simulation_name}.out"
             subprocess.run(["find", ".", "-type", "f", "-name", "*.out", "!", "-name", keep_file, "-delete"])
-            # remove all .ncrst files in cwd
-            subprocess.run("rm *.ncrst", shell = True)
+            # remove all .ncrst files in cwd except for the one from minimization
+            keep_file = f"min_{self.simulation_name}.ncrst"
+            subprocess.run(["find", ".", "-type", "f", "-name", "*.ncrst", "!", "-name", keep_file, "-delete"])
             # remove all .nc files except for production run
             keep_file = f"{self.simulation_name}.nc"
             subprocess.run(["find", ".", "-type", "f", "-name", "*.nc", "!", "-name", keep_file, "-delete"])
+
         # only keep trajectory output file .nc for production run and all .out files
         elif clean_level == 1:
             # remove all .in files in cwd
             subprocess.run("rm *.in", shell = True)
-            # remove all .ncrst files in cwd
-            subprocess.run("rm *.ncrst", shell = True)
+            # remove all .ncrst files in cwd except for the one from minimization
+            keep_file = f"min_{self.simulation_name}.ncrst"
+            subprocess.run(["find", ".", "-type", "f", "-name", "*.ncrst", "!", "-name", keep_file, "-delete"])
             # remove all .nc files except for production run
             keep_file = f"{self.simulation_name}.nc"
             subprocess.run(["find", ".", "-type", "f", "-name", "*.nc", "!", "-name", keep_file, "-delete"]) 
-        # keep everythin but the .ncrst files
+
+        # keep everything but the .ncrst files
         elif clean_level == 2:
-            # remove all .ncrst files in cwd
-            subprocess.run("rm *.ncrst", shell = True)
+            # remove all .ncrst files in cwd except for the one from minimization
+            keep_file = f"min_{self.simulation_name}.ncrst"
+            subprocess.run(["find", ".", "-type", "f", "-name", "*.ncrst", "!", "-name", keep_file, "-delete"])
             # remove all .nc files except for production run
             keep_file = f"{self.simulation_name}.nc"
             subprocess.run(["find", ".", "-type", "f", "-name", "*.nc", "!", "-name", keep_file, "-delete"])
+
         # keep everything
         elif clean_level == 3:
             pass
