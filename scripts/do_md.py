@@ -2,11 +2,11 @@ import pyedna
 import argparse
 import torch
 
-# detect available GPUs 
-num_gpus = torch.cuda.device_count()
-if num_gpus < 2:
-    raise RuntimeError("Error: Less than 2 GPUs detected! Check SLURM \
-                       allocation and adjust accordingly.")
+# # detect available GPUs 
+# num_gpus = torch.cuda.device_count()
+# if num_gpus < 2:
+#     raise RuntimeError("Error: Less than 2 GPUs detected! Check SLURM \
+#                        allocation and adjust accordingly.")
 
 
 def main(args):
