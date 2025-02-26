@@ -24,7 +24,14 @@ Stay tuned for more 🚨
 
 ### Installation
 
-add this!
+In order to make sure user-specific environment variables are set, the user needs to set up a `config.sh` file in `PYEDNA_HOME`. A mask (`config.sh.mask`) is provided in the root directory. Navigate to `PYEDNA_HOME`, and then type 
+
+```
+cp config.sh.mask config.sh
+nano config.sh
+```
+
+Then set the Python environment `[env-name]`, as well as the paths to `AMBERHOME` and the (custom) `DYE_DIR` in order to reference constructed (custom) dyes.
 
 
 ### Requirements
@@ -33,6 +40,12 @@ add this!
 
 
 ### Usage
+
+Before running *any* type of calculation, make sure the `PYEDNA_HOME` variable is set up correctly. In order to do that, run the following command in the shell
+
+```
+export PYEDNA_HOME="/path/to/PyeDNA"
+```
 
 Before executing job scripts from `jobs` directory, type
 
