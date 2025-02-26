@@ -37,7 +37,7 @@ Then set the Python environment `[env-name]`, as well as the paths to `AMBERHOME
 
 ### Requirements
 
-add this! 
+add this! Detailled list: see `requirements.txt`.
 
 
 ### Usage
