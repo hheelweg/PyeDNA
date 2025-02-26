@@ -8,16 +8,18 @@ Currenty has the following functions implemented:
 
 - Create double stranded DNA helix (`double_helix`) with NAB
 - Attach dye molecules (currently only `CY3`, `CY5`) in desired orientation
-- Run AMBER MD on the DNA/dye composite with GPU support
+- Run all-atom AMBER MD on the DNA/dye composite with GPU support
 - Analyze trajectories classicaly and quantum-mechanically (DFT/TDDFT) with `pyscf` and `gpu4pyscf`
 
-Future versions will include:
+🚧 Future versions will include:
 - Creation of more complex DNA structure
 - Modules for construct dye input structures from ChemDraw (`.cdx`) files
 - More functionality to analyze trajectories classically
+- More functionality to analyze trajectories quantum-mechanically
+- Extension to perform high-troughput analysis for optoelectronic properties 
 - ...
 
-Stay tuned 🚨
+Stay tuned for more 🚨
 
 
 ### Installation
