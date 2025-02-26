@@ -710,11 +710,11 @@ class Trajectory():
             # (3) analyze with respect to QM quantities of interest
             # NOTE : test-wise DFT/TDDFT calculation
             # (3.1) run QM calculation
-            output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, verbosity=0)
+            output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, verbosity=2)
             # # temporarily store ouput_qm for debugging
-            print('time idx', idx)
+            #print('time idx', idx)
             #dump(output_qm, f"output_qm_{idx}.joblib")
-            print(output_qm['exc'][0], flush=True)
+            #print(output_qm['exc'][0], flush=True)
 
 
             # # (3.2) post-processing of QM output
@@ -731,7 +731,6 @@ class Trajectory():
             # take time per time step
             end_time = time.time()
             print(f"Elapsed time for step {idx}: {end_time- start_time} seconds")
-            print('TT', self.output_quant)
 
         # (4) write output files
         # (4.1) quantum output
