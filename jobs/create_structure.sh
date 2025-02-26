@@ -19,7 +19,7 @@
 
 # Check if PYEDNA_HOME is set
 if [[ -z "$PYEDNA_HOME" ]]; then
-    echo "Error: PYEDNA_HOME is not set. Please set it in config.sh."
+    echo "Error: PYEDNA_HOME is not set. Please set it in shell."
     exit 1
 fi
 
