@@ -11,7 +11,7 @@ Currenty has the following functions implemented:
 - Run all-atom AMBER MD on the DNA/dye composite with GPU support
 - Analyze trajectories classicaly and quantum-mechanically (DFT/TDDFT) with `pyscf` and `gpu4pyscf`
 
-🚧 Future versions will include:
+Future versions will include:
 - Creation of more complex DNA structure
 - Modules for construct dye input structures from ChemDraw (`.cdx`) files
 - More functionality to analyze trajectories classically
@@ -30,3 +30,15 @@ add this!
 ### Requirements
 
 add this! 
+
+
+### Usage
+
+Before executing job scripts from `jobs` directory, type
+
+```
+export $PATH:/path/to/PyeDNA/jobs
+```
+
+
+Before executing bash scripts from `bins` directory, type
