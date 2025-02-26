@@ -360,6 +360,7 @@ def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = Tru
 # TODO : make this more flexible with regards to the path where the launcher (DFT_gpu.py) is
 def launchQMdriver(molecule_no, gpu_id):
     """Launch a DFT/TDDFT calculation on a specific GPU."""
+
     env = os.environ.copy()
     env["CUDA_VISIBLE_DEVICES"] = str(gpu_id)  # Assign GPU
 
@@ -375,7 +376,7 @@ def launchQMdriver(molecule_no, gpu_id):
 
 # do PySCF on molecules = [mol1, mol2] where mol are the nuclear coordinates for PySCF calculations
 # TODO : make this also without GPU-support depending on the available resources
-def doQM_gpu(molecules, output_keys, verbosity = 2):
+def doQM_gpu(molecules, output_keys, verbosity = 0):
     # verbosity = 0 : suppress all the output from the QM calculations (default)
     # verbosity = 1 : only print STDOUT of QM calculations
     # verbosity = 2 : only print STDERR of QM calculations (for debugging)

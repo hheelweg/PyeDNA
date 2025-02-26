@@ -712,7 +712,7 @@ class Trajectory():
             # (3) analyze with respect to QM quantities of interest
             # NOTE : test-wise DFT/TDDFT calculation
             # (3.1) run QM calculation
-            output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs)
+            output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, verbosity=0)
             # # temporarily store ouput_qm for debugging
             print('time idx', idx)
             #dump(output_qm, f"output_qm_{idx}.joblib")
