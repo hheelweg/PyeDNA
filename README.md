@@ -20,7 +20,7 @@ Future versions will include:
 - Extension to perform high-troughput analysis of optoelectronic properties 
 - ...
 
-Stay tuned for more 🚨
+Stay tuned for more 🚨!
 
 
 ### Installation
