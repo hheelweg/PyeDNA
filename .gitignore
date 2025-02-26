@@ -1,6 +1,7 @@
 *.nc
 *.dcd
 *.log
+config.sh
 .vscode/
 .DS_Store
 *.egg-info/

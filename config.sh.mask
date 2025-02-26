@@ -1,0 +1,17 @@
+# config.sh to set environment variables
+
+# Source conda environment with Python installation
+source activate [env-name]
+
+# Add path to AMBER executuable
+export AMBERHOME="$/path/to/amber24"
+export PATH="$AMBERHOME/bin:$PATH"
+
+# Add path to PyeDNA and define PyeDNA home
+export PYTHONPATH=$PYTHONPATH:/path/to/PyeDNA/scripts
+export PYEDNA_HOME="/path/to/PyeDNA"
+
+# Add path to dye library for structural information of dyes
+export DYE_DIR="/path/to/bib"
+
+# TODO : (optional) add path to AMBERCLASSIC for NAB
