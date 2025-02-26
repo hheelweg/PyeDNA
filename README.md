@@ -40,5 +40,8 @@ Before executing job scripts from `jobs` directory, type
 export $PATH:/path/to/PyeDNA/jobs
 ```
 
+Before executing bash scripts from `bin` directory, type
 
-Before executing bash scripts from `bins` directory, type
+```
+export $PATH:/path/to/PyeDNA/bin
+```
