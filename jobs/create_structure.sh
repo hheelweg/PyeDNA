@@ -33,6 +33,5 @@ else
     exit 1
 
 
-
 # run python module for structure creation
 python -m create_structure > output.log 2>&1
