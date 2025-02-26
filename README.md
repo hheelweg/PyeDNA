@@ -13,10 +13,10 @@ Currenty has the following functions implemented:
 
 Future versions will include:
 - Creation of more complex DNA structure
-- Modules for construct dye input structures from ChemDraw (`.cdx`) files
+- Module for constructing dye input structures from ChemDraw (`.cdx`) files
 - More functionality to analyze trajectories classically
 - More functionality to analyze trajectories quantum-mechanically
-- Extension to perform high-troughput analysis for optoelectronic properties 
+- Extension to perform high-troughput analysis of optoelectronic properties 
 - ...
 
 Stay tuned for more 🚨
