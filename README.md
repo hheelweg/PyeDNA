@@ -12,7 +12,7 @@ Currenty has the following functions implemented:
 - Analyze trajectories classicaly and quantum-mechanically (DFT/TDDFT) with `pyscf` and `gpu4pyscf`
 
 Future versions will include:
-- Creation of more complex DNA structure
+- Creation of more complex DNA structures
 - Curated library with topologies and GAFF parameters for dyes (`DYE_DIR`)
 - Module for constructing dye input structures from ChemDraw (`.cdx`) files
 - More functionality to analyze trajectories classically
