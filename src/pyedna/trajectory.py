@@ -590,7 +590,7 @@ class Trajectory():
         self.molecules, self.molecule_names = self.parseMolecules(file)
         comp = structure.CompositeStructure.parseCompositeStructure('struc.params')
         print(self.molecules, self.molecule_names, flush = True)
-        print('testtfgh', comp["dye"], comp["dye_positions"], flush = True)
+        print('testtfgh', comp["dyes"], comp["dye_positions"], flush = True)
         self.defined_molecules = True                               
             
 
