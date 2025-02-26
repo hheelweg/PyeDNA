@@ -725,7 +725,7 @@ class Trajectory():
             # TODO : only do this if we have quantum aspects to analyze
             self.analyzeSnapshotQuantum(idx, output_qm)
             # TODO : only do the following if we have classical aspects to study
-            self.analyzeSnapshotClassical(idx)
+            # self.analyzeSnapshotClassical(idx)
             
 
             # take time per time step
