@@ -325,7 +325,8 @@ class Trajectory():
         self.out = trajectory_data[2]                                   # load *.out file
         # make sure *.nc file is NetCDF3 (as required for MDAnalysis) and not NetCDF4 (as created by Amber)
         self.convertTrajectory()
-        print("trajectory converted!", flush = True)
+        print(self.prmtop)
+        print(self.nc)
 
         # create MDAnalysis object
         self.trajectory_u = mda.Universe(self.prmtop, self.nc)
