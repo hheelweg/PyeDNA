@@ -686,7 +686,7 @@ class Trajectory():
 
         # check whether molecules have been defined and initialized
         if not self.defined_molecules:
-            raise AttributeError("Molecules to study have not beend defined!")
+            raise AttributeError("Molecules to study have not been defined!")
         self.initOutput(self.time_slice[1]  - self.time_slice[0])       # initialize outputs
 
         #a , b = self.parseMolecules('mols.params')
