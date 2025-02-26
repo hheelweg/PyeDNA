@@ -13,7 +13,7 @@ Currenty has the following functions implemented:
 
 Future versions will include:
 - Creation of more complex DNA structure
-- Curated `DYE_DIR` with topologies and GAFF parameters for dyes
+- Curated library with topologies and GAFF parameters for dyes (`DYE_DIR`)
 - Module for constructing dye input structures from ChemDraw (`.cdx`) files
 - More functionality to analyze trajectories classically
 - More functionality to analyze trajectories quantum-mechanically
