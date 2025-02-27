@@ -588,19 +588,18 @@ class Trajectory():
     # initialize molecules from params file
     def initMolecules(self, file):
         self.molecules, self.molecule_names = self.parseMolecules(file)
-        comp = structure.CompositeStructure.parseCompositeStructure('struc.params')
-        print(self.molecules, self.molecule_names, flush = True)
-        print('testtfgh', comp["dyes"], comp["dye_positions"], flush = True)
         self.defined_molecules = True                               
             
 
     # get MDAnalysis object of specified residues at specified time slice
-    def getChromophoreSnapshot(self, idx, molecule, conversion = None, cap = True):
+    def getChromophoreSnapshot(self, idx, molecule, molecule_name, conversion = None, cap = True):
         # (1) set time step
         self.trajectory_u.trajectory[idx]
         # (2) get positions of all residues specified in residue_ids
         for id in molecule:
             molecule_u = self.trajectory_u.select_atoms(f'resid {id}')
+            print('check name', self.trajectory_u.select_atoms(f'resname {id}'), flush = True)
+            assert(self.trajectory_u.select_atoms(f'resid {id}') == molecule_name)
         # (3) need to cap residues with hydrogens (O3' and OP1)
         molecule_u = self.capResiduesH(molecule_u) if cap else molecule_u
         # (4) define instance of Chromophore class 
@@ -672,24 +671,22 @@ class Trajectory():
             
     # analyze trajectory based on specific molecules of interest
     def loopTrajectory(self):
-        # (0) unpack arguments, i.e. quantities of interest for the trajectory
-        # TODO : make this more flexible and stream-line this better
+
  
         # (1) time range of interest: time_slice = [idx_start, idx_end]
-        # TODO : change this to actual time and not just frame index
-        if self.time_slice is None:                                          # study the whole trajectory
+        if self.time_slice is None:                                             # study the whole trajectory
             self.time_slice = [0, self.num_frames - 1]
-        else:
+        else:                                                                   # study specified time-slice 
             pass
 
-        print('time', self.time_slice, flush = True)
 
-        # check whether molecules have been defined and initialized
+        # (2) check whether molecules have been defined and initialized
         if not self.defined_molecules:
             raise AttributeError("Molecules to study have not been defined!")
-        self.initOutput(self.time_slice[1]  - self.time_slice[0])       # initialize outputs
+        
+        # (3) initialize output DataFrames
+        self.initOutput(self.time_slice[1]  - self.time_slice[0]) 
 
-        #a , b = self.parseMolecules('mols.params')
 
         # (3) analyze trajectory
         for idx in range(self.time_slice[0], self.time_slice[1] + 1):
@@ -700,37 +697,26 @@ class Trajectory():
             # (1) get Chromophores of interest 
             self.chromophores = []
             self.chromophores_conv = []
-            for molecule in self.molecules:
-                chromophore, chromophore_conv = self.getChromophoreSnapshot(idx, molecule, conversion = 'pyscf')
+            for i, molecule in enumerate(self.molecules):
+                chromophore, chromophore_conv = self.getChromophoreSnapshot(idx, molecule, self.molecule_names[i], conversion = 'pyscf')
                 self.chromophores.append(chromophore)
                 self.chromophores_conv.append(chromophore_conv)
 
 
-            # # (2) get distance between chromophores:
-            # distances.append(self.getDistance(self.chromophores[0], self.chromophores[1]))
 
-            # (3) analyze with respect to QM quantities of interest
-            # NOTE : test-wise DFT/TDDFT calculation
-            # (3.1) run QM calculation
+            # (2) analyze with respect to QM quantities of interest
+            # TODO : only execute this when we have quantum quantities to analyze
+            # (2.1) run QM calculation
             output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, verbosity=2)
-            # # temporarily store ouput_qm for debugging
-            #print('time idx', idx)
-            #dump(output_qm, f"output_qm_{idx}.joblib")
-            #print(output_qm['exc'][0], flush=True)
-
-
-            # # (3.2) post-processing of QM output
-            # # TODO : load for simplicity here
-            # output_qm = load(f"output_qm_{idx}.joblib")
-            # print('output DFT/TDDFT', output_qm['exc'])
-
-            # TODO : only do this if we have quantum aspects to analyze
+            # (2.2) post-processing of QM output
             self.analyzeSnapshotQuantum(idx, output_qm)
+
+            # (3) analyze with respect to classical quantities of interest
             # TODO : only do the following if we have classical aspects to study
             # self.analyzeSnapshotClassical(idx)
             
 
-            # take time per time step
+            # (4) take time per time step
             end_time = time.time()
             print(f"Elapsed time for step {idx}: {end_time- start_time} seconds")
 
