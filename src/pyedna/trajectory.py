@@ -613,7 +613,7 @@ class Trajectory():
         
     # converts Chromophore instance into desired format for trajectory processing
     # TODO : might want to add this to Chromophore class
-    def convertChromophore(self, chromophore, conversion):
+    def convertChromophore(self, chromophore, conversion = 'pyscf'):
         # can only convert to PySCF or QChem input
         if conversion not in ['pyscf', 'qchem']:
             raise ValueError("Specify valid format to Chromophore object to.")
@@ -679,6 +679,8 @@ class Trajectory():
             self.time_slice = [0, self.num_frames - 1]
         else:                                                                   # study specified time-slice 
             pass
+
+        print(f'*** We loop through {self.time_slice[1] + 1 - self.time_slice[0]} frames for the trajectory analysis!')
 
 
         # (2) check whether molecules have been defined and initialized
