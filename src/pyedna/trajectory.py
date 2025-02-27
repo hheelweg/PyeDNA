@@ -87,11 +87,11 @@ class MDSimulation():
                         'gamma_ln'      :       5.0,
                         'ig'            :       -1,
                         'ioutfm'        :       0,
-                        'eq1_ntpr'      :       100,
+                        'eq1_ntpr'      :       5000,
                         'eq2_ntpr'      :       5000,
-                        'eq1_ntwx'      :       100,
+                        'eq1_ntwx'      :       5000,
                         'eq2_ntwx'      :       5000,
-                        'eq1_ntwr'      :       100,
+                        'eq1_ntwr'      :       5000,
                         'eq2_ntwr'      :       5000
         }
         # (1.3) production
