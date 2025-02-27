@@ -598,8 +598,8 @@ class Trajectory():
         # (2) get positions of all residues specified in residue_ids
         for id in molecule:
             molecule_u = self.trajectory_u.select_atoms(f'resid {id}')
-            print('check name', self.trajectory_u.select_atoms(f'resname {id}'), flush = True)
-            assert(self.trajectory_u.select_atoms(f'resid {id}') == molecule_name)
+            print('check name', self.trajectory_u.select_atoms(f'resid {id}').resname, flush = True)
+            assert(self.trajectory_u.select_atoms(f'resid {id}').resname == molecule_name)
         # (3) need to cap residues with hydrogens (O3' and OP1)
         molecule_u = self.capResiduesH(molecule_u) if cap else molecule_u
         # (4) define instance of Chromophore class 
@@ -694,14 +694,13 @@ class Trajectory():
             start_time = time.time()
             print(f"*** Running Time Step {idx} ...")
 
-            # (1) get Chromophores of interest 
+            # (1) get chromophores of interest 
             self.chromophores = []
             self.chromophores_conv = []
             for i, molecule in enumerate(self.molecules):
                 chromophore, chromophore_conv = self.getChromophoreSnapshot(idx, molecule, self.molecule_names[i], conversion = 'pyscf')
                 self.chromophores.append(chromophore)
                 self.chromophores_conv.append(chromophore_conv)
-
 
 
             # (2) analyze with respect to QM quantities of interest
@@ -715,10 +714,10 @@ class Trajectory():
             # TODO : only do the following if we have classical aspects to study
             # self.analyzeSnapshotClassical(idx)
             
-
             # (4) take time per time step
             end_time = time.time()
             print(f"Elapsed time for step {idx}: {end_time- start_time} seconds")
+
 
         # (4) write output files
         # (4.1) quantum output
