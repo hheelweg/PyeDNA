@@ -670,7 +670,6 @@ class Trajectory():
             self.output_class.loc[time_idx, "distance"] = 4
         
                 
-            
     # analyze trajectory based on specific molecules of interest
     def loopTrajectory(self):
 
@@ -708,7 +707,7 @@ class Trajectory():
             # (2) analyze with respect to QM quantities of interest
             # TODO : only execute this when we have quantum quantities to analyze
             # (2.1) run QM calculation
-            output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, verbosity=2)
+            output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, verbosity=0)
             # (2.2) post-processing of QM output
             self.analyzeSnapshotQuantum(idx, output_qm)
 
