@@ -598,8 +598,10 @@ class Trajectory():
         # (2) get positions of all residues specified in residue_ids
         for id in molecule:
             molecule_u = self.trajectory_u.select_atoms(f'resid {id}')
-            print('check name', self.trajectory_u.select_atoms(f'resid {id}').resnames, flush = True)
-            assert(self.trajectory_u.select_atoms(f'resid {id}').resnames == molecule_name)
+            # selected residue name
+            selected_name = np.unique(self.trajectory_u.select_atoms(f'resid {id}').resnames)[0]
+            print('check name', selected_name, flush = True)
+            assert(selected_name == molecule_name)
         # (3) need to cap residues with hydrogens (O3' and OP1)
         molecule_u = self.capResiduesH(molecule_u) if cap else molecule_u
         # (4) define instance of Chromophore class 
