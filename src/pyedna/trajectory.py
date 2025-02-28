@@ -612,6 +612,7 @@ class Trajectory():
         return chromophore, chromophore_conv
         
     # converts Chromophore instance into desired format for trajectory processing
+    # TODO ; might want to extend this to QChem input
     # TODO : might want to add this to Chromophore class
     def convertChromophore(self, chromophore, conversion = 'pyscf'):
         # can only convert to PySCF or QChem input
@@ -658,7 +659,7 @@ class Trajectory():
                 self.output_quant.loc[time_idx, [(self.transition_names[i], key) for key in energies_out.keys()]] = list(energies_out.values())
 
 
-    # TODO : this function needs to be updated a lot and more functionalities implemeted
+    # TODO : this function needs to be updated a lot and more functionalities implemented
     def analyzeSnapshotClassical(self, time_idx):
 
          # (0) time (ps)
@@ -722,6 +723,8 @@ class Trajectory():
             print(f"Elapsed time for step {idx}: {end_time- start_time} seconds")
 
 
+        print('*** Successfully looped through all trajectory snapshots!')
+        
         # (4) write output files
         # (4.1) quantum output
         self.writeOutputFiles(self.output_quant, self.quant_info[2])
