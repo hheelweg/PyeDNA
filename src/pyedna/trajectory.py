@@ -497,7 +497,7 @@ class Trajectory():
             df = pd.read_csv(file, sep='\t', header=[0,1])
             df.columns = [(col[0] if col[0] == "time" else col) for col in df.columns]
             # parse output information contained within data_frame
-            _, qm_info, _  = Trajectory.parseOutput(output_info, parse_trajectory_out=True, verbose=False)
+            _, qm_info, _, _  = Trajectory.parseParameters(output_info, parse_trajectory_out=True, verbose=False)
             # get names of the transitions under study
             transition_dict = {}
             for states in qm_info[0]["transitions"]:
@@ -509,7 +509,7 @@ class Trajectory():
         elif output_type == 'classical':
             df = pd.read_csv(file, sep='\t', header=0)
             # parse output information contained within data_frame
-            _, _, class_info  = Trajectory.parseOutput(output_info, parse_trajectory_out=True, verbose=False)
+            _, _, class_info, _  = Trajectory.parseParameters(output_info, parse_trajectory_out=True, verbose=False)
             # return df and output information
             return df, class_info
         else:
