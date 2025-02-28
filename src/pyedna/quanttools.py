@@ -490,6 +490,17 @@ def getExcEnergies(excs, states, molecule_names = ['D', 'A'], excitation_energy_
     results[f'energy {molecule_names[1]}'] = excB[stateB]
     return results
 
+# get straight TDDFT outputs as specified in list which_outs for molecules
+def getTDDFToutput(output_qm, which_outs, state_ids, molecule_names = ["D", "A"]):
+
+    results = {}
+    for i, molecule_name in enumerate(molecule_names):
+        for which_out in which_outs:
+            for state_id in state_ids:
+                results[f"{molecule_name} {which_out} {state_id}"] = output_qm[which_out][i][state_id]
+
+    return results 
+
 
 # compute absorption spectrum from oscillator strength and excitation energies
 def getAbsorptionSpectrum(osc_strengths, exc_energies, sigma = 0.1, energy_units = 'eV'):

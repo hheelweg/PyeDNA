@@ -318,7 +318,7 @@ class MDSimulation():
 
 class Trajectory():
 
-    def __init__(self, MDsim, trajectory_data, traj_params_file = 'traj.params'):
+    def __init__(self, MDsim, trajectory_data, traj_params_file = 'traj.params', qm_params_file = 'qm.params'):
 
         self.prmtop = trajectory_data[0]                                # load *.prmtop
         self.nc = trajectory_data[1]                                    # load *.nc from Amber MD simulation
@@ -336,9 +336,10 @@ class Trajectory():
             raise ValueError("MDsim needs to be instance of MDSimulation class!")
         self.dt = self.MD.dt
         
-        # TODO : make this more flexible with regards to path
         # parse output information for QM and MD simulations
         self.qm_outs, self.quant_info, self.class_info, self.time_slice = self.parseParameters(traj_params_file, parse_trajectory_out=True)
+        # parse details on QM (DFT/TDDFT) calculations
+        self.settings_dft, self.setting_tddft = self.setQMSettings(qm_params_file)
 
         self.defined_molecules = False                                  # flag to track whether molecules have been defined
 
@@ -409,17 +410,19 @@ class Trajectory():
         # conductiong QM (DFT/TDDFT) simulations or to post-processing of the trajectory 
         # (1) QM (DFT/TDDFT) outputs (NOTE : only boolean)
         qm_outs = {key: out.get(key) for key in ["exc", "mol", "tdm", "mf", "occ", "virt", "dip", "osc", "idx"]}    
-        # TODO : in order to evaluate some of the post-processing output, we need to have some of this flags set to True
+        # TODO : in order to evaluate some of the post-processing output, we need to have some of these flags set to True
         # might want to implement a checkpoint here               
 
         # (2) trajectory-based outputs per time steps
         # (2.1) quantum-mechanical based parameters and methods
-        qm_options = ["transitions", "coupling", "coupling_type", "excited_energies", "dipole_moments", "osc_strengths"]
+        qm_options = ["transitions", "coupling", "coupling_type", "excited_energies", "dipole_moments", "osc_strengths", "abs_spec"]
         post_qm = {key: out.get(key) for key in qm_options}                
         qm_flags = {key: value for key, value in post_qm.items() if isinstance(value, bool) and value}                          # NOTE : only bool/True param
         qm_out_file = out["file_qm"]
         # checkpoints: manually check if flags in out match with qm_flags:
         # TODO : maybe there is a better way to do this?
+        qm_outs['exc'] = True if post_qm["abs_spec"] else qm_outs['exc']
+        qm_outs['osc'] = True if post_qm["abs_spec"] else qm_outs['osc']
         qm_outs['exc'] = True if post_qm["excited_energies"] else qm_outs['exc']
         qm_outs['dip'] = True if post_qm["dipole_moments"] else qm_outs['dip']
         qm_outs['osc'] = True if post_qm["osc_strengths"] else qm_outs['osc']
@@ -490,7 +493,7 @@ class Trajectory():
 
     # read and parse DataFrame trajectory analysis output
     @staticmethod
-    def readOutputFiles(file, output_type, output_info):
+    def readOutputFiles(file, output_type, output_info, molecule_names = ["D", "A"]):
         # (1) read file and parse output info 
         # (1.1) DataFrame with quantum information
         if output_type == 'quantum':
@@ -501,7 +504,7 @@ class Trajectory():
             # get names of the transitions under study
             transition_dict = {}
             for states in qm_info[0]["transitions"]:
-                key = Trajectory.generateTransitionString(states)
+                key = Trajectory.generateTransitionString(states, molecule_names=molecule_names)
                 transition_dict[str(states)] = key
             # return df, transition name dict, and output information
             return df, transition_dict, qm_info
@@ -529,6 +532,7 @@ class Trajectory():
 
         # (1) define QM states we are interested in (0-indexed), i.e. (S_0^A , S_{stateB + 1}^B) <--> (S_{stateA + 1}^A, S_0^B)
         self.transitions = self.quant_info[0]["transitions"]
+        print('transitions params ', self.transitions)
 
         # TODO : might also want to add DataFrame for the direct QM (DFT/TDDFT) outputs 
 
@@ -540,33 +544,53 @@ class Trajectory():
             self.output_class = pd.DataFrame()
         else:
             self.output_class = pd.DataFrame(index = range(output_length), columns = ["time"] + columns_class)
-            
         
-        # (2.2) quantum output parameters (output the same outputs for every transition in self.transitions)
-        # NOTE : since states are 0-indexed, 0 actually corresponds to the 1st excited state of molecule A/B, 1 to the
-        # 2nd excited state of molecule A/B etc.
-        self.transition_names = [self.generateTransitionString(states, self.molecule_names) for states in self.transitions]
-        self.quant_info[0].pop("transitions")
-        columns_per_transitions = [key for key, value in self.quant_info[0].items() if isinstance(value, bool) and value]
-        # get columns for each transition
-        columns_per_transitions = []
-        # initialize columns for Coulomb coupling
-        if self.quant_info[0]["coupling"]:
-            columns_per_transitions += ['coupling cJ', 'coupling cK', 'coupling V_C']
-        # initialize columns for excitaion energies
-        if self.quant_info[1]["excited_energies"]:
-            columns_per_transitions += [f'energy {self.molecule_names[0]}', f'energy {self.molecule_names[1]}']
+        # (2.2) quantum output parameters 
+        if self.transitions is not None:
+            # (output the same outputs for every transition in self.transitions)
+            # NOTE : since states are 0-indexed, 0 actually corresponds to the 1st excited state of molecule A/B, 1 to the
+            # 2nd excited state of molecule A/B etc.
+            self.transition_names = [self.generateTransitionString(states, self.molecule_names) for states in self.transitions]
+            self.quant_info[0].pop("transitions")
+            columns_per_transitions = [key for key, value in self.quant_info[0].items() if isinstance(value, bool) and value]
+            # get columns for each transition
+            columns_per_transitions = []
+            # initialize columns for Coulomb coupling
+            if self.quant_info[0]["coupling"]:
+                columns_per_transitions += ['coupling cJ', 'coupling cK', 'coupling V_C']
+            # initialize columns for excitaion energies
+            if self.quant_info[1]["excited_energies"]:
+                columns_per_transitions += [f'energy {self.molecule_names[0]}', f'energy {self.molecule_names[1]}']
 
-        # TODO : add more as desired later
+            # TODO : add more as desired later
+            
+            if not columns_per_transitions:
+                self.output_quant = pd.DataFrame()
+            else:
+                columns_quant = pd.MultiIndex.from_tuples(
+                    [("time", "")] +
+                    [(transition_name, value_name) for transition_name in self.transition_names for value_name in columns_per_transitions]
+                )
+                self.output_quant = pd.DataFrame(index = range(output_length), columns = columns_quant)
         
-        if not columns_per_transitions:
-            self.output_quant = pd.DataFrame()
-        else:
-            columns_quant = pd.MultiIndex.from_tuples(
-                [("time", "")] +
-                [(transition_name, value_name) for transition_name in self.transition_names for value_name in columns_per_transitions]
-            )
-            self.output_quant = pd.DataFrame(index = range(output_length), columns = columns_quant)
+        # if we want to print direct TDDFT output per each time step (e.g. if abs_spec = True), do this here
+        # NOTE : currentlt only implemented for abs_spec = True
+        else: 
+            self.quant_info[0].pop("transitions")
+
+            if self.quant_info[0]["abs_spec"]:
+                # which direct outputs of the TDDFT calculations do we need
+                which_outs = ['exc', 'osc']
+                columns_per_molecule = [f"{which_out} {state_id}" for which_out in which_outs for state_id in self.setting_tddft["state_ids"]]
+
+                columns_quant = pd.MultiIndex.from_tuples(
+                    [("time", "")] +
+                    [(molecule_name, value_name) for molecule_name in self.molecule_names for value_name in columns_per_molecule]
+                )
+                self.output_quant = pd.DataFrame(index = range(output_length), columns = columns_quant)
+            else:
+                self.output_quant = pd.DataFrame()
+
 
         print("*** Intialization of output done!")
         
@@ -641,22 +665,42 @@ class Trajectory():
         # (0) time (ps)
         self.output_quant.loc[time_idx, ("time", "")] = time_idx * self.dt
 
-        # (1) loop over all specified transitions
-        for i, states in enumerate(self.transitions):
+        # (1) loop over all specified transitions 
+        if self.transitions is not None:
+            for i, states in enumerate(self.transitions):
 
-            # (a) get Coulombic coupling information if desired
-            if self.quant_info[0]["coupling"]: 
-                # compute coupling based on QM (DFT/TDDFT) output
-                coupling_out = qm.getVCoulombic(output_qm['mol'], output_qm['tdm'], states, coupling_type=self.quant_info[1]['coupling'])
-                # add to output dict
-                self.output_quant.loc[time_idx, [(self.transition_names[i], key) for key in coupling_out.keys()]] = list(coupling_out.values())
+                # (a) get Coulombic coupling information if desired
+                if self.quant_info[0]["coupling"]: 
+                    # compute coupling based on QM (DFT/TDDFT) output
+                    coupling_out = qm.getVCoulombic(output_qm['mol'], output_qm['tdm'], states, coupling_type=self.quant_info[1]['coupling'])
+                    # add to output dict
+                    self.output_quant.loc[time_idx, [(self.transition_names[i], key) for key in coupling_out.keys()]] = list(coupling_out.values())
 
-            # (b) get excitation energies
-            if self.quant_info[0]["excited_energies"]:
-                # get excited state energies based on QM (DFT/TDDFT) output
-                energies_out = qm.getExcEnergies(output_qm['exc'], states, molecule_names=self.molecule_names, excitation_energy_type=self.quant_info[1]['excited_energies'])
+                # (b) get excitation energies
+                if self.quant_info[0]["excited_energies"]:
+                    # get excited state energies based on QM (DFT/TDDFT) output
+                    energies_out = qm.getExcEnergies(output_qm['exc'], states, molecule_names=self.molecule_names, excitation_energy_type=self.quant_info[1]['excited_energies'])
+                    # add to output dict
+                    self.output_quant.loc[time_idx, [(self.transition_names[i], key) for key in energies_out.keys()]] = list(energies_out.values())
+
+
+        # (1) look at direct output quantities of QM (DFT/TDDFT) (if self.transitions = None)
+        else:
+
+            # (a) get quantities necessary to compute absorption spectrums
+            if self.quant_info[0]["abs_spec"]:
+                which_outs = ["exc", "osc"]
+                # get desire TDDFT output
+                tddft_out = qm.getTDDFToutput(output_qm, which_outs, self.setting_tddft["state_ids"], molecule_names = self.molecule_names)
                 # add to output dict
-                self.output_quant.loc[time_idx, [(self.transition_names[i], key) for key in energies_out.keys()]] = list(energies_out.values())
+                for molecule_name in self.molecule_names:
+                    for which_out in which_outs:
+                        for state_id in self.setting_tddft["state_ids"]:
+                            self.output_quant.loc[time_idx, (molecule_name, f"{which_out} {state_id}")] = tddft_out[f"{molecule_name} {which_out} {state_id}"]
+
+            else:
+                pass
+
 
 
     # TODO : this function needs to be updated a lot and more functionalities implemented
