@@ -502,7 +502,8 @@ def getTDDFToutput(output_qm, which_outs, state_ids, molecule_names = ["D", "A"]
     return results 
 
 
-# compute absorption spectrum from oscillator strength and excitation energies
+# compute absorption spectrum from oscillator strength and excitation energies along strajectory
+# TODO : need to revisit this function
 def getAbsorptionSpectrum(osc_strengths, exc_energies, sigma = 0.1, energy_units = 'eV'):
 
     # (0) convert excitation energies and oscillator strength to appropriate units
@@ -521,6 +522,7 @@ def getAbsorptionSpectrum(osc_strengths, exc_energies, sigma = 0.1, energy_units
         spectrum += osc_strengths[i] * np.exp(-((energy_grid - exc_energy) ** 2) / (2 * sigma ** 2))
 
     return energy_grid, spectrum
+
 
 
 # function that handles energy conversion from Hartree to energy_units

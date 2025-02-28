@@ -495,29 +495,42 @@ class Trajectory():
     # read and parse DataFrame trajectory analysis output
     @staticmethod
     def readOutputFiles(file, output_type, output_info, molecule_names = ["D", "A"]):
+
         # (1) read file and parse output info 
+
         # (1.1) DataFrame with quantum information
+        output = {}
         if output_type == 'quantum':
             df = pd.read_csv(file, sep='\t', header=[0,1])
             df.columns = [(col[0] if col[0] == "time" else col) for col in df.columns]
             # parse output information contained within data_frame
             _, qm_info, _, _  = Trajectory.parseParameters(output_info, parse_trajectory_out=True, verbose=False)
-            # get names of the transitions under study
-            transition_dict = {}
-            for states in qm_info[0]["transitions"]:
-                key = Trajectory.generateTransitionString(states, molecule_names=molecule_names)
-                transition_dict[str(states)] = key
-            # return df, transition name dict, and output information
-            return df, transition_dict, qm_info
+            # store df and output information
+            output["df"] = df 
+            output["qm_info"] = qm_info
+            # (a) study quantities resolved by transition
+            if qm_info[0]["transitions"]:
+                # get names of the transitions under study
+                transition_dict = {}
+                for states in qm_info[0]["transitions"]:
+                    key = Trajectory.generateTransitionString(states, molecule_names=molecule_names)
+                    transition_dict[str(states)] = key
+                # store transition dictionary
+                output["transition_dict"] = transition_dict
+
         # (1.2) DataFrame with classical information
         elif output_type == 'classical':
             df = pd.read_csv(file, sep='\t', header=0)
             # parse output information contained within data_frame
             _, _, class_info, _  = Trajectory.parseParameters(output_info, parse_trajectory_out=True, verbose=False)
-            # return df and output information
-            return df, class_info
+            # store df and output information
+            output["df"] = df
+            output["class_info"] = class_info
+        
         else:
             raise TypeError("Output type does not exist!")
+        
+        return output
 
 
     # write a function that produces string for storing transition
