@@ -533,7 +533,6 @@ class Trajectory():
 
         # (1) define QM states we are interested in (0-indexed), i.e. (S_0^A , S_{stateB + 1}^B) <--> (S_{stateA + 1}^A, S_0^B)
         self.transitions = self.quant_info[0]["transitions"]
-        print('transitions params ', self.transitions)
 
         # TODO : might also want to add DataFrame for the direct QM (DFT/TDDFT) outputs 
 
