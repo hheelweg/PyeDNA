@@ -490,7 +490,7 @@ def getExcEnergies(excs, states, molecule_names = ['D', 'A'], excitation_energy_
     results[f'energy {molecule_names[1]}'] = excB[stateB]
     return results
 
-# get straight TDDFT outputs as specified in list which_outs for molecules
+# get TDDFT outputs as specified in list which_outs for molecules
 def getTDDFToutput(output_qm, which_outs, state_ids, molecule_names = ["D", "A"]):
 
     results = {}
