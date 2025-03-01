@@ -299,7 +299,8 @@ def doDFT_gpu(molecule, basis = '6-31g', xc = 'b3lyp',
                 spin = spin)
     mol.verbose = verbosity
 
-
+    print('basis', basis)
+    print('xc flag', xc)
     # (2) initialize SCF object
     mf = rks.RKS(mol)
     mf.xc = xc
@@ -332,7 +333,6 @@ def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = Fal
 
     # (1) number of states
     nstates = len(state_ids)
-    print('basis', basis)
     print('TDAflag', TDA)
     # (2) run TDDFT with or without TDA (Tamm-Dancoff approximation)
     td = molecule_mf.TDA().run(nstates = nstates) if TDA else molecule_mf.TDDFT().run(nstates = nstates)
