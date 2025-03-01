@@ -342,7 +342,7 @@ def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = Fal
     # (4) compute oscillator strengths
     # (4.1) for all possible transitions
     osc_strengths = [2/3 * exc_energies[i] * np.linalg.norm(trans_dipoles[i])**2 for i in range(len(exc_energies))]
-    osc_strengths = np.array(td.oscillator_strength())
+    #osc_strengths = np.array(td.oscillator_strength())
     # (4.2) find strongest transition
     osc_idx = np.argmax(osc_strengths) if not any(np.array(osc_strengths) > 0.1) else np.argwhere(np.array(osc_strengths) > 0.1)[0][0]
 
