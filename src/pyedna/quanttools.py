@@ -299,8 +299,6 @@ def doDFT_gpu(molecule, basis = '6-31g', xc = 'b3lyp',
                 spin = spin)
     mol.verbose = verbosity
 
-    print('basis', basis)
-    print('xc flag', xc)
     # (2) initialize SCF object
     mf = rks.RKS(mol)
     mf.xc = xc

@@ -15,6 +15,7 @@ def main(molecule_id):
 
     # (0) set settings for QM (DFT/TDDFT) calculation
     settings_dft, settings_tddft = traj.Trajectory.setQMSettings('qm.params')
+    print(settings_dft, settings_tddft)
 
     # (0) load output information to see which outputs we need to store
     output_params_file = utils.findFileWithName('traj.params')
