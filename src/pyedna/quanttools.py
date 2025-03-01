@@ -304,7 +304,7 @@ def doDFT_gpu(molecule, basis = '6-31g', xc = 'b3lyp',
     mf = rks.RKS(mol)
     mf.xc = xc
     mf.max_cycle = scf_cycles               
-    mf.conv_tol = 1e-7                      # TODO : only did this for debugging
+    mf.conv_tol = 1e-9                      
     mf = mf.SMD()                           # TODO : look up this model
     mf.with_solvent.method = 'DDCOSMO'      # COSMO implicit solvent model 
     if density_fit:                         # optional: use density fit for accelerating computation
@@ -343,6 +343,7 @@ def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = Fal
     # (4) compute oscillator strengths
     # (4.1) for all possible transitions
     osc_strengths = [2/3 * exc_energies[i] * np.linalg.norm(trans_dipoles[i])**2 for i in range(len(exc_energies))]
+    osc_strengths = np.array(td.osc_strength())
     # (4.2) find strongest transition
     osc_idx = np.argmax(osc_strengths) if not any(np.array(osc_strengths) > 0.1) else np.argwhere(np.array(osc_strengths) > 0.1)[0][0]
 
