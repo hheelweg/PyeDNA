@@ -334,7 +334,6 @@ class Trajectory():
         # create MDAnalysis object
         self.trajectory_u = mda.Universe(self.prmtop, self.nc)
         self.num_frames = self.trajectory_u.trajectory.n_frames         # number of frames in trajectory
-        self.trajectory_u.trajectory.dt = self.MD.traj_dt               # trajectory time step
         
         # parse output information for QM and MD simulations
         self.qm_outs, self.quant_info, self.class_info, self.time_slice = self.parseParameters(traj_params_file, parse_trajectory_out=True)
