@@ -304,7 +304,7 @@ def doDFT_gpu(molecule, basis = '6-31g', xc = 'b3lyp',
     mf = rks.RKS(mol)
     mf.xc = xc
     mf.max_cycle = scf_cycles               
-    mf.conv_tol = 1e-5                      # TODO : only did this for debugging
+    mf.conv_tol = 1e-7                      # TODO : only did this for debugging
     mf = mf.SMD()                           # TODO : look up this model
     mf.with_solvent.method = 'DDCOSMO'      # COSMO implicit solvent model 
     if density_fit:                         # optional: use density fit for accelerating computation
@@ -323,7 +323,7 @@ def doDFT_gpu(molecule, basis = '6-31g', xc = 'b3lyp',
 
 # do TDDFT with GPU support
 # TODO : merge with doTDDFT()
-def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = True):
+def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = False):
 
     # (0) import gou4pyscf and GPU support
     from gpu4pyscf import scf, solvent, tdscf
@@ -511,7 +511,6 @@ def getAbsorptionSpectrum(osc_strengths, exc_energies, sigma = 0.1, energy_units
     conv = energyConversion(energy_units)
     exc_energies *= conv
     osc_strengths *= conv
-    print(exc_energies, osc_strengths)
 
     # (1) define energy grid for the plot
     energy_grid = np.linspace(0, max(exc_energies) + 1, 1000)
