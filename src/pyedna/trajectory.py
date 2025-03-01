@@ -40,7 +40,8 @@ class MDSimulation():
         self.temp = self.md_params["temp"]
         self.pressure = self.md_params["pres"]
         # time step parameters
-        self.dt = self.md_params["dt"]                                      # in ps
+        self.dt = self.md_params["dt"]                                      # in ps (MD time step)
+        self.traj_dt = self.md_params["prod_ntwx"] * self.dt                # in ps (trajectory time step)
         self.total_time = self.md_params["prod_nstlim"] * self.dt           # in ps
         # number of timesteps
         self.traj_steps = self.md_params["prod_nstlim"] // self.md_params["prod_ntwx"]
@@ -216,7 +217,6 @@ class MDSimulation():
         subprocess.run(command, shell = True)
 
 
-
     # run equilibration
     def runEquilibration(self):
 
@@ -249,7 +249,6 @@ class MDSimulation():
                                             netcdf_file = f"eq2_{self.simulation_name}.nc"
                                             )
         subprocess.run(command, shell = True)
-
 
 
     # run production
@@ -326,15 +325,16 @@ class Trajectory():
         # make sure *.nc file is NetCDF3 (as required for MDAnalysis) and not NetCDF4 (as created by Amber)
         self.convertTrajectory()
 
-        # create MDAnalysis object
-        self.trajectory_u = mda.Universe(self.prmtop, self.nc)
-        self.num_frames = self.trajectory_u.trajectory.n_frames         # number of frames in trajectory
-
         # load MDSimulation object which contains all information
         self.MD = MDsim                                                 
         if not isinstance(self.MD, MDSimulation):
             raise ValueError("MDsim needs to be instance of MDSimulation class!")
-        self.dt = self.MD.dt
+        self.dt = self.MD.traj_dt
+
+        # create MDAnalysis object
+        self.trajectory_u = mda.Universe(self.prmtop, self.nc)
+        self.num_frames = self.trajectory_u.trajectory.n_frames         # number of frames in trajectory
+        self.trajectory_u.trajectory.dt = self.MD.traj_dt               # trajectory time step
         
         # parse output information for QM and MD simulations
         self.qm_outs, self.quant_info, self.class_info, self.time_slice = self.parseParameters(traj_params_file, parse_trajectory_out=True)
