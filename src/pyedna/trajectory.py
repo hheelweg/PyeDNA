@@ -6,6 +6,7 @@ import MDAnalysis as mda
 import re
 import time
 import pandas as pd
+import warnings
 
 # from current package
 from . import structure
@@ -326,6 +327,7 @@ class Trajectory():
         self.convertTrajectory()
 
         # load MDSimulation object which contains all information
+        warnings.filterwarnings("ignore", message="Reader has no dt information")
         self.MD = MDsim                                                 
         if not isinstance(self.MD, MDSimulation):
             raise ValueError("MDsim needs to be instance of MDSimulation class!")
