@@ -291,7 +291,6 @@ def doDFT_gpu(molecule, basis = '6-31g', xc = 'b3lyp',
     from gpu4pyscf.dft import rks
     import cupy as cp
 
-
     # (1) make PySCF molecular structure object 
     mol = gto.M(atom = molecule,
                 basis = basis,
@@ -303,21 +302,71 @@ def doDFT_gpu(molecule, basis = '6-31g', xc = 'b3lyp',
     mf = rks.RKS(mol)
     mf.xc = xc
     mf.max_cycle = scf_cycles               
-    mf.conv_tol = 1e-9                      
-    # mf = mf.SMD()                           # TODO : look up this model
-    # mf.with_solvent.method = 'DDCOSMO'      # COSMO implicit solvent model 
+    mf.conv_tol = 1e-10                      
+    # mf = mf.SMD()                             # TODO : look up this model
+    # mf.with_solvent.method = 'DDCOSMO'        # COSMO implicit solvent model 
     mf = mf.PCM()
     mf.with_solvent.method = 'COSMO'
-    if density_fit:                         # optional: use density fit for accelerating computation
+    if density_fit:                             # optional: use density fit for accelerating computation
         mf.density_fit()
 
     # (3) run DFT
     mf.kernel()       
 
     # (4) output
-    mo = mf.mo_coeff                        # MO Coefficients
-    occ = mo[:, mf.mo_occ != 0]             # occupied orbitals
-    virt = mo[:, mf.mo_occ == 0]            # virtual orbitals
+    mo = mf.mo_coeff                            # MO Coefficients
+    occ = mo[:, mf.mo_occ != 0]                 # occupied orbitals
+    virt = mo[:, mf.mo_occ == 0]                # virtual orbitals
+
+    return mol, mf, occ, virt
+
+# do DFT with geometr optimization in each step
+def doDFT_geomopt(molecule, basis = '6-31g', xc = 'b3lyp', 
+              density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4):
+    
+    # (0) import gpu4pyscf and GPU support
+    from gpu4pyscf import scf, solvent, tdscf
+    from gpu4pyscf.dft import rks
+    from pyscf.geomopt.geometric_solver import optimize
+    from pyscf import tdscf
+
+    # (1) make PySCF molecular structure object 
+    mol = gto.M(atom = molecule,
+                basis = basis,
+                charge = charge,
+                spin = spin)
+    mol.verbose = verbosity
+
+    # (2) geometry optimization
+    mf_GPU = rks.RKS(mol)
+    mf_GPU.xc = xc
+    mf_GPU.max_cycle = scf_cycles               
+    mf_GPU.conv_tol = 1e-10   
+    mf_GPU.max_cycle = 50
+    mf_GPU = mf_GPU.PCM()
+    mf_GPU.with_solvent.method = 'COSMO'
+
+    # Store gradients for analysis
+    gradients = []
+    def callback(envs):
+        gradients.append(envs['gradients'])
+    
+    mol_eq = optimize(mf_GPU, maxsteps=20, callback=callback)
+
+    # (3) get DFT at optimized geometry
+    mf = rks.RKS(mol_eq)
+    mf.xc = xc
+    mf.max_cycle = scf_cycles               
+    mf.conv_tol = 1e-10   
+    mf.max_cycle = 50
+    mf = mf.PCM()
+    mf.with_solvent.method = 'COSMO'
+    mf.kernel() 
+
+    # (4) output
+    mo = mf.mo_coeff                            # MO Coefficients
+    occ = mo[:, mf.mo_occ != 0]                 # occupied orbitals
+    virt = mo[:, mf.mo_occ == 0]                # virtual orbitals
 
     return mol, mf, occ, virt
 
@@ -326,14 +375,13 @@ def doDFT_gpu(molecule, basis = '6-31g', xc = 'b3lyp',
 # TODO : merge with doTDDFT()
 def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = False):
 
-    # (0) import gou4pyscf and GPU support
+    # (0) import gpu4pyscf and GPU support
     from gpu4pyscf import scf, solvent, tdscf
     from gpu4pyscf.dft import rks
     import cupy as cp
 
     # (1) number of states
     nstates = len(state_ids)
-    print('TDAflag', TDA)
     # (2) run TDDFT with or without TDA (Tamm-Dancoff approximation)
     td = molecule_mf.TDA().run(nstates = nstates) if TDA else molecule_mf.TDDFT().run(nstates = nstates)
 
