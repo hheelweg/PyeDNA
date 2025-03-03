@@ -210,7 +210,8 @@ def optimizeStructureSymmetryFF(path, moleculeNamePDB, stepsNo = 50000, econv = 
     obConversion.WriteFile(mol, output_file)
 
 
-# NOTE : new function for geometry optimization
+# NOTE : new function for geometry optimization with pyscf in the beginning
+# might also want to make this a constra8ined optimization s.t. the P-P bond-length is "roughly" equal to the one in DNA
 def geometryOptimization(path, moleculeName, constrained = True):
 
     from pyscf.geomopt.geometric_solver import optimize
@@ -304,7 +305,7 @@ def doTDDFT(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = True):
 # do DFT with GPU support
 # TODO : merge with doDFT()
 def doDFT_gpu(molecule, basis = '6-31g', xc = 'b3lyp', 
-              density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4):
+              density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4, opt_cap = False):
     
     # (0) import gou4pyscf and GPU support
     from gpu4pyscf import scf, solvent, tdscf
@@ -318,8 +319,15 @@ def doDFT_gpu(molecule, basis = '6-31g', xc = 'b3lyp',
                 spin = spin)
     mol.verbose = verbosity
 
+    # # (2) (optional) only optimize the capped atoms first
+    # if opt_cap:
+    #      mf = scf.RHF(mol)
+    #      mol = contrained_opt(mf, opt_cap)
+
+
     # (2) initialize SCF object
-    mf = rks.RKS(mol)
+    #mf = rks.RKS(mol)
+    mf = scf.RHF(mol)
     mf.xc = xc
     mf.max_cycle = scf_cycles               
     mf.conv_tol = 1e-10                      
