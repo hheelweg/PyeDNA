@@ -210,6 +210,26 @@ def optimizeStructureSymmetryFF(path, moleculeNamePDB, stepsNo = 50000, econv = 
     obConversion.WriteFile(mol, output_file)
 
 
+# NOTE : new function for geometry optimization
+def geometryOptimization(path, moleculeName, constrained = True):
+
+    from pyscf.geomopt.geometric_solver import optimize
+    from openbabel import openbabel
+
+    # (1) convert *.cdx into *.smi (SMILES string)
+    command = f'obabel -icdx {path + moleculeName}.cdx -osmi -O {path + moleculeName}.smi'
+    subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
+    
+    # (2) read smiles string:
+    with open(path + moleculeName + '.smi', "r") as file:
+        smiles = file.readline().strip()
+    smiles = fr"{smiles}" # convert into raw string
+    
+    # (3) read SMILES string into OpenBabbel
+    obConversion = openbabel.OBConversion()
+    obConversion.SetInAndOutFormats("smi", "pdb")
+    pass
+
 #--------------------------------------------------------------------------------------------------------------------------------------------
 # functions e.g. for analyzing MD trajectories
 
@@ -320,7 +340,7 @@ def doDFT_gpu(molecule, basis = '6-31g', xc = 'b3lyp',
 
     return mol, mf, occ, virt
 
-# do DFT with geometr optimization in each step
+# do DFT with geometry optimization in each step
 def doDFT_geomopt(molecule, basis = '6-31g', xc = 'b3lyp', 
               density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4):
     
