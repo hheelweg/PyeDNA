@@ -324,13 +324,11 @@ class Trajectory():
         self.nc = trajectory_data[1]                                    # load *.nc from Amber MD simulation
         self.out = trajectory_data[2]                                   # load *.out file
         # make sure *.nc file is NetCDF3 (as required for MDAnalysis) and not NetCDF4 (as created by Amber)
-        self.convertTrajectory()
+        #self.convertTrajectory()
 
         # load MDSimulation object which contains all information
         warnings.filterwarnings("ignore", message="Reader has no dt information")
-        self.MD = MDsim                                                 
-        if not isinstance(self.MD, MDSimulation):
-            raise ValueError("MDsim needs to be instance of MDSimulation class!")
+        self.MD = MDsim                                                
         self.dt = self.MD.traj_dt
 
         # create MDAnalysis object
@@ -641,14 +639,20 @@ class Trajectory():
             assert(selected_name == molecule_name)
         # (3) need to cap residues with hydrogens (O3' and OP1)
         # TODO : might want to make this more general for other dyes
-        molecule_u = self.capResiduesH(molecule_u) if cap else molecule_u
+        #molecule_u = self.capResiduesH(molecule_u) if cap else molecule_u
+        molecule_u = self.capResiduesHNew(molecule_u) if cap else molecule_u
         # (4) define instance of Chromophore class 
         chromophore = structure.Chromophore(molecule_u)
         # (5) convert to other input format for processing of trajectory
         chromophore_conv = self.convertChromophore(chromophore, conversion) if conversion else None
 
         return chromophore, chromophore_conv
-        
+
+
+    def getChromophoreSnapshotNew(self, idx, molecule, molecule_name, conversion = None, cap = True):
+        pass
+
+
     # converts Chromophore instance into desired format for trajectory processing
     # TODO ; might want to extend this to QChem input
     # TODO : might want to add this to Chromophore class
@@ -802,7 +806,7 @@ class Trajectory():
     # TODO : might want to make this more general for atom types to cap etc.
     # especially when we want to move to differen molecules/chromophores
     # TODO : might want to link this to the type of molecule that is under study here, e.g. by adding molecule_name and referring to some bib file
-    def capResiduesH(self, molecule):
+    def capResiduesH(self, molecule, capped_atom_names = ["O3'", "OP1"]):
 
         # (1) compute position of H-caps 
 
@@ -843,7 +847,7 @@ class Trajectory():
             return H_pos
 
         H_positions = []                            
-        for name in ["O3'", "OP1"]:
+        for name in capped_atom_names:
             # (1.1) get capped atoms
             atom2cap = getAtom2Cap(molecule, name)
             # (1.2) get bond neighbor
@@ -880,6 +884,14 @@ class Trajectory():
         molecule = attachHs(molecule, H_positions)
         return molecule
 
+    # NOTE : new function that is also removing the phosphate group from the dye molecule before capping with H's
+    def capResiduesHNew(self, molecule):
+        # (0) remove phosphate group first
+        molecule = molecule.select_atoms("not name P OP1 OP2")
+        # (1) now only cap O3' and O5'
+        capped_atom_names = ["O3'", "O5'"]
+        molecule = self.capResiduesH(molecule, capped_atom_names)
+        return molecule
 
 
     # convert *.nc file to NetCDF3 and overwrite it
