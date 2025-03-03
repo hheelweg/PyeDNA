@@ -656,7 +656,8 @@ class Trajectory():
     # converts Chromophore instance into desired format for trajectory processing
     # TODO ; might want to extend this to QChem input
     # TODO : might want to add this to Chromophore class
-    def convertChromophore(self, chromophore, conversion = 'pyscf'):
+    @staticmethod
+    def convertChromophore(chromophore, conversion = 'pyscf'):
         # can only convert to PySCF or QChem input
         if conversion not in ['pyscf', 'qchem']:
             raise ValueError("Specify valid format to Chromophore object to.")

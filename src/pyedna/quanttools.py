@@ -1,8 +1,6 @@
 import numpy as np 
 from pyscf import gto, scf, geomopt, tdscf, lib, dft, lo, solvent
-from MDAnalysis.coordinates.XYZ import XYZReader
-from MDAnalysis.coordinates.PDB import PDBWriter
-from Bio.PDB import PDBIO, Structure, Model, Chain, Residue, Atom
+import MDAnalysis as mda
 import subprocess
 import scipy
 
@@ -13,6 +11,8 @@ import os
 from . import utils
 from . import fileproc as fp
 from . import const
+from . import structure
+from . import trajectory
 
 
 # optimize molecular structure from *.xyz file into optimized structure in *.pdb file
@@ -211,25 +211,28 @@ def optimizeStructureSymmetryFF(path, moleculeNamePDB, stepsNo = 50000, econv = 
 
 
 # NOTE : new function for geometry optimization with pyscf in the beginning
+# NOTE : curenlty implemented for .pdb input file
 # might also want to make this a constra8ined optimization s.t. the P-P bond-length is "roughly" equal to the one in DNA
-def geometryOptimization(path, moleculeName, constrained = False):
+def geometryOptimization_gpu(path_to_pdb, out_pdb, settings_dft):
 
     from pyscf.geomopt.geometric_solver import optimize
-    from openbabel import openbabel
 
-    # (1) convert *.cdx into *.smi (SMILES string)
-    command = f'obabel -icdx {path + moleculeName}.cdx -osmi -O {path + moleculeName}.smi'
-    subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
-    
-    # (2) read smiles string:
-    with open(path + moleculeName + '.smi', "r") as file:
-        smiles = file.readline().strip()
-    smiles = fr"{smiles}" # convert into raw string
-    
-    # (3) read SMILES string into OpenBabbel
-    obConversion = openbabel.OBConversion()
-    obConversion.SetInAndOutFormats("smi", "pdb")
-    pass
+    # (0) define instance of Chromophore class
+    dye = structure.Chromophore(mda.Universe(path_to_pdb, format = "PDB"))
+
+    # (1) transform .pdb to readable format for pyscf
+    molecule_conv = trajectory.Trajectory.convertChromophore(dye, conversion='pyscf')
+
+    # (2) perform geometry optimization 
+    mol, _, _, _ = doDFT_geomopt(molecule_conv, **settings_dft)
+
+    # (3) update coordinates
+    optimized_coords = mol.atom_coords()
+    dye.chromophore_u.atoms.positions = optimized_coords
+
+    # (4) write output .pdb
+    dye.chromophore_u.atoms.write(out_pdb)
+
 
 #--------------------------------------------------------------------------------------------------------------------------------------------
 # functions e.g. for analyzing MD trajectories
