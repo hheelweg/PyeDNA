@@ -212,7 +212,7 @@ def optimizeStructureSymmetryFF(path, moleculeNamePDB, stepsNo = 50000, econv = 
 
 # NOTE : new function for geometry optimization with pyscf in the beginning
 # might also want to make this a constra8ined optimization s.t. the P-P bond-length is "roughly" equal to the one in DNA
-def geometryOptimization(path, moleculeName, constrained = True):
+def geometryOptimization(path, moleculeName, constrained = False):
 
     from pyscf.geomopt.geometric_solver import optimize
     from openbabel import openbabel
@@ -308,7 +308,7 @@ def constrainedOptimization(mf, molecule_idx, freeze_atom_string):
 
     from pyscf.geomopt.geometric_solver import optimize
 
-    # (1) Write constraints file
+    # (1) Write (temporary) constraints file
     f = open(f"constraints_{molecule_idx}.txt", "w")
     f.write("$freeze\n")
     f.write("xyz " + freeze_atom_string)
@@ -347,7 +347,7 @@ def doDFT_gpu(molecule, molecule_idx, basis = '6-31g', xc = 'b3lyp',
                 basis = basis,
                 charge = charge,
                 spin = spin)
-    mol.verbose = verbosity
+    mol.verbose = 0#verbosity
 
 
     # (2) (optional) only optimize the capped atoms first
