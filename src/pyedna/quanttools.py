@@ -315,7 +315,9 @@ def constrainedOptimization(mf, molecule_idx, freeze_atom_string):
     f.close()
 
     # (2) Load parameters for constrained optimization
-    params = {"constraints" : f"constraints_{molecule_idx}.txt"}
+    params = {"constraints" : f"constraints_{molecule_idx}.txt",
+              "verbose"     : 1
+              }
 
     # (3) Store gradients for analysis and optimize molecule subject to constraints
     gradients = []
@@ -323,6 +325,9 @@ def constrainedOptimization(mf, molecule_idx, freeze_atom_string):
         gradients.append(envs['gradients'])
 
     molecule_eq = optimize(mf, maxsteps=10, callback=callback, **params)
+
+    # (4) delete constraints.txt file
+    subprocess.run(f"rm -f constraints_{molecule_idx}.txt")
 
     return molecule_eq
 
@@ -346,9 +351,10 @@ def doDFT_gpu(molecule, molecule_idx, basis = '6-31g', xc = 'b3lyp',
     # (2) (optional) only optimize the capped atoms first
     # NOTE : the capped atoms are the last ones to have been added to molecule, so their indices are the last two ones
     if optimize_cap:
-         mf = rks.RKS(mol)
+         mf_opt = rks.RKS(mol, xc = xc, basis = basis).density_fit()
+         # NOTE : atoms are 1-index for pyscf geometric solvers
          freeze_atom_string = f'1-{len(molecule) - 2}'
-         mol = constrainedOptimization(mf, molecule_idx, freeze_atom_string)
+         mol = constrainedOptimization(mf_opt, molecule_idx, freeze_atom_string)
 
 
     # (3) initialize SCF object
