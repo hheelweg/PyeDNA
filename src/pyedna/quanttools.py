@@ -302,10 +302,34 @@ def doTDDFT(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = True):
 
     return exc_energies, trans_dipoles, osc_strengths, tdms, osc_idx
 
+
+# perform constrained optimization on capped H-atoms first
+def constrainedOptimization(mf, molecule_idx, freeze_atom_string):
+
+    from pyscf.geomopt.geometric_solver import optimize
+
+    # (1) Write constraints file
+    f = open(f"constraints_{molecule_idx}.txt", "w")
+    f.write("$freeze\n")
+    f.write("xyz " + freeze_atom_string)
+    f.close()
+
+    # (2) Load parameters for constrained optimization
+    params = {"constraints" : f"constraints_{molecule_idx}.txt"}
+
+    # (3) Store gradients for analysis and optimize molecule subject to constraints
+    gradients = []
+    def callback(envs):
+        gradients.append(envs['gradients'])
+
+    molecule_eq = optimize(mf, maxsteps=10, callback=callback, **params)
+
+    return molecule_eq
+
 # do DFT with GPU support
 # TODO : merge with doDFT()
-def doDFT_gpu(molecule, basis = '6-31g', xc = 'b3lyp', 
-              density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4, opt_cap = False):
+def doDFT_gpu(molecule, molecule_idx, basis = '6-31g', xc = 'b3lyp', 
+              density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4, optimize_cap = True):
     
     # (0) import gou4pyscf and GPU support
     from gpu4pyscf import scf, solvent, tdscf
@@ -319,15 +343,16 @@ def doDFT_gpu(molecule, basis = '6-31g', xc = 'b3lyp',
                 spin = spin)
     mol.verbose = verbosity
 
-    # # (2) (optional) only optimize the capped atoms first
-    # if opt_cap:
-    #      mf = scf.RHF(mol)
-    #      mol = contrained_opt(mf, opt_cap)
+    # (2) (optional) only optimize the capped atoms first
+    # NOTE : the capped atoms are the last ones to have been added to molecule, so their indices are the last two ones
+    if optimize_cap:
+         mf = rks.RHF(mol)
+         freeze_atom_string = f'1-{len(molecule) - 2}'
+         mol = constrainedOptimization(mf, molecule_idx, freeze_atom_string)
 
 
-    # (2) initialize SCF object
-    #mf = rks.RKS(mol)
-    mf = scf.RHF(mol)
+    # (3) initialize SCF object
+    mf = rks.RKS(mol)
     mf.xc = xc
     mf.max_cycle = scf_cycles               
     mf.conv_tol = 1e-10                      
@@ -338,15 +363,16 @@ def doDFT_gpu(molecule, basis = '6-31g', xc = 'b3lyp',
     if density_fit:                             # optional: use density fit for accelerating computation
         mf.density_fit()
 
-    # (3) run DFT
+    # (4) run DFT
     mf.kernel()       
 
-    # (4) output
+    # (5) output
     mo = mf.mo_coeff                            # MO Coefficients
     occ = mo[:, mf.mo_occ != 0]                 # occupied orbitals
     virt = mo[:, mf.mo_occ == 0]                # virtual orbitals
 
     return mol, mf, occ, virt
+
 
 # do DFT with geometry optimization in each step
 def doDFT_geomopt(molecule, basis = '6-31g', xc = 'b3lyp', 

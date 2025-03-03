@@ -649,9 +649,6 @@ class Trajectory():
         return chromophore, chromophore_conv
 
 
-    def getChromophoreSnapshotNew(self, idx, molecule, molecule_name, conversion = None, cap = True):
-        pass
-
 
     # converts Chromophore instance into desired format for trajectory processing
     # TODO ; might want to extend this to QChem input

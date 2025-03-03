@@ -15,7 +15,6 @@ def main(molecule_id):
 
     # (0) set settings for QM (DFT/TDDFT) calculation
     settings_dft, settings_tddft = traj.Trajectory.setQMSettings('qm.params')
-    print(settings_dft, settings_tddft)
 
     # (0) load output information to see which outputs we need to store
     output_params_file = utils.findFileWithName('traj.params')
@@ -27,7 +26,7 @@ def main(molecule_id):
     chromophore_conv = load(f"input_{molecule_id}.joblib")
 
     # (2) perform DFT/TDDFT calculation and store outputs
-    values['mol'], values['mf'], values['occ'], values['virt'] = qm.doDFT_gpu(chromophore_conv, **settings_dft)
+    values['mol'], values['mf'], values['occ'], values['virt'] = qm.doDFT_gpu(chromophore_conv, molecule_id, **settings_dft)
     #values['mol'], values['mf'], values['occ'], values['virt'] = qm.doDFT_geomopt(chromophore_conv, **settings_dft)
     if settings_tddft.pop("do_tddft", False):
         values['exc'], values['tdm'], values['dip'], values['osc'], values['idx'] = qm.doTDDFT_gpu(values['mf'], values['occ'], values['virt'], **settings_tddft)
