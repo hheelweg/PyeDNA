@@ -535,9 +535,12 @@ class Trajectory():
     # write a function that produces string for storing transition
     @staticmethod
     def generateTransitionString(states, molecule_names = ["D", "A"]):
-        stateA, stateB = states[0], states[1]
+        if states == ['strongest', 'strongest']:
+            stateA, stateB = 's', 's'
+        else:
+            stateA, stateB = states[0] + 1, states[1] + 1
         nameA, nameB = molecule_names[0], molecule_names[1]
-        return f"[{nameA}({stateA + 1}), {nameB}(0)] <--> [{nameA}(0), {nameB}({stateB + 1})]"
+        return f"[{nameA}({stateA}), {nameB}(0)] <--> [{nameA}(0), {nameB}({stateB})]"
 
 
     # initialize output based on desired output parameters 
@@ -684,8 +687,12 @@ class Trajectory():
         if self.transitions is not None:
             for i, states in enumerate(self.transitions):
 
+                # if we specify ['strongest', 'strongest], then we consider the states with the largest oscillator strength
+                if states == ['strongest', 'strongest']:
+                    states = [output_qm["idx"][0], output_qm["idx"][1]]
+
                 # (a) get Coulombic coupling information if desired
-                if self.quant_info[0]["coupling"]: 
+                if self.quant_info[0]["coupling"]:
                     # compute coupling based on QM (DFT/TDDFT) output
                     coupling_out = qm.getVCoulombic(output_qm['mol'], output_qm['tdm'], states, coupling_type=self.quant_info[1]['coupling'])
                     # add to output dict
