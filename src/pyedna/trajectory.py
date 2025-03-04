@@ -769,6 +769,7 @@ class Trajectory():
 
             start_time = time.time()
             print(f"*** Running Time Step {idx} ...")
+            print(f"molecules", self.molecules, self.molecule_names)
 
             # (1) get chromophores of interest 
             self.chromophores = []
