@@ -684,6 +684,8 @@ class Trajectory():
         # (0) time (ps)
         self.output_quant.loc[time_idx, ("time", "")] = time_idx * self.dt
 
+        print('trans. debug', self.transitions)
+
         # (1) loop over all specified transitions 
         if self.transitions is not None:
             for i, states in enumerate(self.transitions):
