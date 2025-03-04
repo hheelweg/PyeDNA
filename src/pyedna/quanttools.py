@@ -224,6 +224,9 @@ def geometryOptimization_gpu(path_to_pdb, out_pdb, basis = '6-31g', xc = 'b3lyp'
     # (1) transform .pdb to readable format for pyscf
     molecule_conv = trajectory.Trajectory.convertChromophore(dye, conversion='pyscf')
 
+    print(molecule_conv)
+    print('charge', charge)
+
     # (2) perform geometry optimization 
     mol, _, _, _ = doDFT_geomopt(molecule_conv, basis = '6-31g', xc = 'b3lyp', 
               density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4)
