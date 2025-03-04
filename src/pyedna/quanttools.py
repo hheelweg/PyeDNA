@@ -337,7 +337,7 @@ def constrainedOptimization(mf, molecule_idx, freeze_atom_string):
 
 # do DFT with GPU support
 # TODO : merge with doDFT()
-def doDFT_gpu(molecule, molecule_idx, basis = '6-31g', xc = 'b3lyp', 
+def doDFT_gpu(molecule, basis = '6-31g', xc = 'b3lyp', 
               density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4, optimize_cap = False):
     
     # (0) import gou4pyscf and GPU support
@@ -369,7 +369,7 @@ def doDFT_gpu(molecule, molecule_idx, basis = '6-31g', xc = 'b3lyp',
     mf = rks.RKS(mol)
     mf.xc = xc
     mf.max_cycle = scf_cycles               
-    mf.conv_tol = 1e-10                      
+    mf.conv_tol = 1e-8                      
     # mf = mf.SMD()                             # TODO : look up this model
     # mf.with_solvent.method = 'DDCOSMO'        # COSMO implicit solvent model 
     mf = mf.PCM()
