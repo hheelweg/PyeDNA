@@ -354,15 +354,15 @@ def doDFT_gpu(molecule, molecule_idx, basis = '6-31g', xc = 'b3lyp',
     mol.verbose = verbosity
 
 
-    # (2) (optional) only optimize the capped atoms first
-    # NOTE : the capped atoms are the last ones to have been added to molecule, so their indices are the last two ones
-    if optimize_cap:
-         # optimize with densiy fitting
-         mf_opt = rks.RKS(mol, xc = xc).density_fit()
-         mf_opt.verbose = 0
-         # NOTE : atoms are 1-index for pyscf geometric solvers
-         freeze_atom_string = f'1-{len(molecule) - 2}'
-         mol = constrainedOptimization(mf_opt, molecule_idx, freeze_atom_string)
+    # # (2) (optional) only optimize the capped atoms first
+    # # NOTE : the capped atoms are the last ones to have been added to molecule, so their indices are the last two ones
+    # if optimize_cap:
+    #      # optimize with densiy fitting
+    #      mf_opt = rks.RKS(mol, xc = xc).density_fit()
+    #      mf_opt.verbose = 0
+    #      # NOTE : atoms are 1-index for pyscf geometric solvers
+    #      freeze_atom_string = f'1-{len(molecule) - 2}'
+    #      mol = constrainedOptimization(mf_opt, molecule_idx, freeze_atom_string)
 
 
     # (3) initialize SCF object

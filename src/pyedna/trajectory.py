@@ -660,7 +660,7 @@ class Trajectory():
     def convertChromophore(chromophore, conversion = 'pyscf'):
         # can only convert to PySCF or QChem input
         if conversion not in ['pyscf', 'qchem']:
-            raise ValueError("Specify valid format to Chromophore object to.")
+            raise ValueError("Specify valid format to convert Chromophore object to.")
         # convert Chromophore object to PySCF input 
         if conversion == 'pyscf':
             xyz, names = chromophore.xyz, chromophore.names
