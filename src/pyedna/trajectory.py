@@ -686,8 +686,6 @@ class Trajectory():
         # (0) time (ps)
         self.output_quant.loc[time_idx, ("time", "")] = time_idx * self.dt
 
-        print('trans. debug', self.transitions, flush = True)
-
         # (1) loop over all specified transitions 
         if self.transitions is not None:
             for i, states in enumerate(self.transitions):
@@ -695,7 +693,8 @@ class Trajectory():
                 # if we specify ['strongest', 'strongest], then we consider the states with the largest oscillator strength
                 if states == ['strongest', 'strongest']:
                     states = [output_qm["idx"][0], output_qm["idx"][1]]
-                    print('states debug ', states, flush = True)
+                    print('osc. strengths ', output_qm["osc"][0], output_qm["osc"][1])
+                    print('max osc. strength ', output_qm["idx"][0], output_qm["idx"][1])
 
                 # (a) get Coulombic coupling information if desired
                 if self.quant_info[0]["coupling"]:
@@ -769,7 +768,6 @@ class Trajectory():
 
             start_time = time.time()
             print(f"*** Running Time Step {idx} ...")
-            print(f"molecules", self.molecules, self.molecule_names)
 
             # (1) get chromophores of interest 
             self.chromophores = []
