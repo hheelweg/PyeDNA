@@ -504,6 +504,7 @@ def doQM_gpu(molecules, output_keys, verbosity = 0):
 
     # (1)run molecules on different GPUs in parallel
     procs = []
+    print('number of molecules in atoms ', len(molecules[1]), len(molecules[0]))
     for i, molecule in enumerate(molecules):
         # create pyscf input for subprocess and store in cache
         dump(molecule, f"input_{i}.joblib")
