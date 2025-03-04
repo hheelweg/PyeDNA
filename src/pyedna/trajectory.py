@@ -644,8 +644,8 @@ class Trajectory():
             assert(selected_name == molecule_name)
         # (3) need to cap residues with hydrogens (O3' and OP1)
         # TODO : might want to make this more general for other dyes
-        #molecule_u = self.capResiduesH(molecule_u) if cap else molecule_u
-        molecule_u = self.capResiduesHNew(molecule_u) if cap else molecule_u
+        molecule_u = self.capResiduesH(molecule_u) if cap else molecule_u
+        #molecule_u = self.capResiduesHNew(molecule_u) if cap else molecule_u
         # (4) define instance of Chromophore class 
         chromophore = structure.Chromophore(molecule_u)
         # (5) convert to other input format for processing of trajectory
