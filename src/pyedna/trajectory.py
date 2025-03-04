@@ -691,6 +691,7 @@ class Trajectory():
                 # if we specify ['strongest', 'strongest], then we consider the states with the largest oscillator strength
                 if states == ['strongest', 'strongest']:
                     states = [output_qm["idx"][0], output_qm["idx"][1]]
+                    print('states', states, flush = True)
 
                 # (a) get Coulombic coupling information if desired
                 if self.quant_info[0]["coupling"]:
