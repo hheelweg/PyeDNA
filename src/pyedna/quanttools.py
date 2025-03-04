@@ -508,6 +508,7 @@ def doQM_gpu(molecules, output_keys, verbosity = 0):
         # create pyscf input for subprocess and store in cache
         dump(molecule, f"input_{i}.joblib")
         # run subprocess
+        print('start process on molecule {i}', flush = True)
         procs.append(launchQMdriver(i, gpu_id = i))
     
     # wait for both subprocesses to finish and print STDOUT or STDERR if desired

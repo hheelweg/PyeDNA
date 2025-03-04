@@ -324,7 +324,7 @@ class Trajectory():
         self.nc = trajectory_data[1]                                    # load *.nc from Amber MD simulation
         self.out = trajectory_data[2]                                   # load *.out file
         # make sure *.nc file is NetCDF3 (as required for MDAnalysis) and not NetCDF4 (as created by Amber)
-        #self.convertTrajectory()
+        self.convertTrajectory()
 
         # load MDSimulation object which contains all information
         warnings.filterwarnings("ignore", message="Reader has no dt information")
@@ -686,7 +686,7 @@ class Trajectory():
         # (0) time (ps)
         self.output_quant.loc[time_idx, ("time", "")] = time_idx * self.dt
 
-        print('trans. debug', self.transitions)
+        print('trans. debug', self.transitions, flush = True)
 
         # (1) loop over all specified transitions 
         if self.transitions is not None:
@@ -782,7 +782,7 @@ class Trajectory():
             # (2) analyze with respect to QM quantities of interest
             # TODO : only execute this when we have quantum quantities to analyze
             # (2.1) run QM calculation
-            output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, verbosity = 0)
+            output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, verbosity = 2)
             # (2.2) post-processing of QM output
             self.analyzeSnapshotQuantum(idx, output_qm)
 
