@@ -390,7 +390,7 @@ class Trajectory():
                 "tdm" :         True,
                 "dip" :         False,
                 "osc" :         False,
-                "idx" :         False,
+                "idx" :         True,
                 "file_qm" :     "out_quant.txt",
                 "file_class":   "out_class.txt"
 
