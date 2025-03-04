@@ -338,7 +338,9 @@ class Trajectory():
         # parse output information for QM and MD simulations
         self.qm_outs, self.quant_info, self.class_info, self.time_slice = self.parseParameters(traj_params_file, parse_trajectory_out=True)
         # parse details on QM (DFT/TDDFT) calculations
-        self.settings_dft, self.setting_tddft = self.setQMSettings(qm_params_file)
+        self.settings_dft, self.settings_tddft = self.setQMSettings(qm_params_file)
+        print('settings dft', self.settings_dft, flush=True)
+        print('settings tddft', self.settings_tddft, flush=True)
 
         self.defined_molecules = False                                  # flag to track whether molecules have been defined
 
