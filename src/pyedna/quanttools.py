@@ -337,8 +337,8 @@ def constrainedOptimization(mf, molecule_idx, freeze_atom_string):
 
 # do DFT with GPU support
 # TODO : merge with doDFT()
-def doDFT_gpu(molecule, basis = '6-31g', xc = 'b3lyp', 
-              density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4):
+def doDFT_gpu(molecule, molecule_id, basis = '6-31g', xc = 'b3lyp', 
+              density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4, optimize_cap = True):
     
     # (0) import gou4pyscf and GPU support
     from gpu4pyscf import scf, solvent, tdscf
@@ -362,7 +362,7 @@ def doDFT_gpu(molecule, basis = '6-31g', xc = 'b3lyp',
     #      mf_opt.verbose = 0
     #      # NOTE : atoms are 1-index for pyscf geometric solvers
     #      freeze_atom_string = f'1-{len(molecule) - 2}'
-    #      mol = constrainedOptimization(mf_opt, molecule_idx, freeze_atom_string)
+    #      mol = constrainedOptimization(mf_opt, molecule_id, freeze_atom_string)
 
 
     # (3) initialize SCF object
