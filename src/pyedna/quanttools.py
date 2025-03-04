@@ -228,8 +228,7 @@ def geometryOptimization_gpu(path_to_pdb, out_pdb, basis = '6-31g', xc = 'b3lyp'
     print('charge', charge)
 
     # (2) perform geometry optimization 
-    mol, _, _, _ = doDFT_geomopt(molecule_conv, basis = '6-31g', xc = 'b3lyp', 
-              density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4)
+    mol, _, _, _ = doDFT_geomopt(molecule_conv, basis, xc, density_fit, charge, spin, scf_cycles, verbosity)
 
     # (3) update coordinates
     optimized_coords = mol.atom_coords()
