@@ -5,6 +5,7 @@ def main():
 
     # (0) set settings for QM (DFT/TDDFT) calculation
     settings_dft, settings_tddft = pyedna.Trajectory.setQMSettings('qm.params')
+    print(settings_dft)
 
     # need to have dye.pdb in file to perform geometry optimization on it
     # TODO : read in from command line
