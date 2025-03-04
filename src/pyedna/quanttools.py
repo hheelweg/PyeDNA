@@ -396,7 +396,6 @@ def doDFT_geomopt(molecule, basis = '6-31g', xc = 'b3lyp',
     from gpu4pyscf import scf, solvent, tdscf
     from gpu4pyscf.dft import rks
     from pyscf.geomopt.geometric_solver import optimize
-    from pyscf import tdscf
 
     # (1) make PySCF molecular structure object 
     mol = gto.M(atom = molecule,
@@ -406,7 +405,7 @@ def doDFT_geomopt(molecule, basis = '6-31g', xc = 'b3lyp',
     mol.verbose = verbosity
 
     # (2) geometry optimization
-    mf_GPU = rks.RKS(mol)
+    mf_GPU = rks.RKS(mol).density_fit()
     mf_GPU.xc = xc
     mf_GPU.max_cycle = scf_cycles               
     mf_GPU.conv_tol = 1e-10   
