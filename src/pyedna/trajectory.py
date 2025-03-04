@@ -598,7 +598,7 @@ class Trajectory():
             if self.quant_info[0]["abs_spec"]:
                 # which direct outputs of the TDDFT calculations do we need
                 which_outs = ['exc', 'osc']
-                columns_per_molecule = [f"{which_out} {state_id}" for which_out in which_outs for state_id in self.setting_tddft["state_ids"]]
+                columns_per_molecule = [f"{which_out} {state_id}" for which_out in which_outs for state_id in self.settings_tddft["state_ids"]]
 
                 columns_quant = pd.MultiIndex.from_tuples(
                     [("time", "")] +
@@ -718,11 +718,11 @@ class Trajectory():
             if self.quant_info[0]["abs_spec"]:
                 which_outs = ["exc", "osc"]
                 # get desire TDDFT output
-                tddft_out = qm.getTDDFToutput(output_qm, which_outs, self.setting_tddft["state_ids"], molecule_names = self.molecule_names)
+                tddft_out = qm.getTDDFToutput(output_qm, which_outs, self.settings_tddft["state_ids"], molecule_names = self.molecule_names)
                 # add to output dict
                 for molecule_name in self.molecule_names:
                     for which_out in which_outs:
-                        for state_id in self.setting_tddft["state_ids"]:
+                        for state_id in self.settings_tddft["state_ids"]:
                             self.output_quant.loc[time_idx, (molecule_name, f"{which_out} {state_id}")] = tddft_out[f"{molecule_name} {which_out} {state_id}"]
 
             else:
