@@ -402,6 +402,7 @@ def doDFT_geomopt(molecule, basis = '6-31g', xc = 'b3lyp',
     from pyscf.geomopt.geometric_solver import optimize
     from pyscf import tdscf
 
+    print('charge1', charge)
     # (1) make PySCF molecular structure object 
     mol = gto.M(atom = molecule,
                 basis = basis,
