@@ -212,7 +212,7 @@ def optimizeStructureSymmetryFF(path, moleculeNamePDB, stepsNo = 50000, econv = 
 
 # NOTE : new function for geometry optimization with pyscf in the beginning
 # NOTE : curenlty implemented for .pdb input file
-# might also want to make this a constra8ined optimization s.t. the P-P bond-length is "roughly" equal to the one in DNA
+# might also want to make this a constrained optimization s.t. the P-P bond-length is "roughly" equal to the one in DNA
 def geometryOptimization_gpu(path_to_pdb, out_pdb, basis = '6-31g', xc = 'b3lyp', 
               density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4):
 
@@ -223,9 +223,6 @@ def geometryOptimization_gpu(path_to_pdb, out_pdb, basis = '6-31g', xc = 'b3lyp'
 
     # (1) transform .pdb to readable format for pyscf
     molecule_conv = trajectory.Trajectory.convertChromophore(dye, conversion='pyscf')
-
-    print(molecule_conv)
-    print('charge', charge)
 
     # (2) perform geometry optimization 
     mol, _, _, _ = doDFT_geomopt(molecule_conv, basis, xc, density_fit, charge, spin, scf_cycles, verbosity)
@@ -401,7 +398,6 @@ def doDFT_geomopt(molecule, basis = '6-31g', xc = 'b3lyp',
     from pyscf.geomopt.geometric_solver import optimize
     from pyscf import tdscf
 
-    print('charge1', charge)
     # (1) make PySCF molecular structure object 
     mol = gto.M(atom = molecule,
                 basis = basis,
@@ -415,8 +411,8 @@ def doDFT_geomopt(molecule, basis = '6-31g', xc = 'b3lyp',
     mf_GPU.max_cycle = scf_cycles               
     mf_GPU.conv_tol = 1e-10   
     mf_GPU.max_cycle = 50
-    mf_GPU = mf_GPU.PCM()
-    mf_GPU.with_solvent.method = 'COSMO'
+    #mf_GPU = mf_GPU.PCM()
+    #mf_GPU.with_solvent.method = 'COSMO'
 
     # Store gradients for analysis
     gradients = []
