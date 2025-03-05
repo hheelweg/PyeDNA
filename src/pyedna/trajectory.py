@@ -684,7 +684,7 @@ class Trajectory():
         # TODO : implement check whether we even have to run this if nothing specified
 
         # (0) time (ps)
-        self.output_quant.loc[time_idx, ("time", "")] = time_idx * self.dt
+        self.output_quant.loc[time_idx, ("time", "")] = (time_idx + 1) * self.dt
 
         # (1) loop over all specified transitions 
         if self.transitions is not None:
@@ -732,7 +732,7 @@ class Trajectory():
     def analyzeSnapshotClassical(self, time_idx):
 
          # (0) time (ps)
-        self.output_class.loc[time_idx, "time"] = time_idx * self.dt
+        self.output_class.loc[time_idx, "time"] = (time_idx + 1) * self.dt
 
         # (1) compute distance metric:
         # TODO : add an actual function here and not just some kind of dummy
