@@ -339,8 +339,8 @@ class Trajectory():
         self.qm_outs, self.quant_info, self.class_info, self.time_slice = self.parseParameters(traj_params_file, parse_trajectory_out=True)
         # parse details on QM (DFT/TDDFT) calculations
         self.settings_dft, self.settings_tddft = self.setQMSettings(qm_params_file)
-        print('settings dft', self.settings_dft, flush=True)
-        print('settings tddft', self.settings_tddft, flush=True)
+        print('Settings for DFT: ', self.settings_dft, flush=True)
+        print('Settings for TDDFT: ', self.settings_tddft, flush=True)
 
         self.defined_molecules = False                                  # flag to track whether molecules have been defined
 
@@ -692,7 +692,7 @@ class Trajectory():
         if self.transitions is not None:
             for i, states in enumerate(self.transitions):
 
-                # if we specify ['strongest', 'strongest], then we consider the states with the largest oscillator strength
+                # if we specify ['strongest', 'strongest], then we consider the states with the largest oscillator strengths
                 if states == ['strongest', 'strongest']:
                     states = [output_qm["idx"][0], output_qm["idx"][1]]
 
@@ -774,7 +774,7 @@ class Trajectory():
         for idx in range(self.time_slice[0], self.time_slice[1] + 1):
 
             start_time = time.time()
-            print(f"*** Running Time Step {idx} ...")
+            print(f"*** Running Time Step {idx + 1} ...")
 
             # (1) get chromophores of interest 
             self.chromophores = []
@@ -798,7 +798,7 @@ class Trajectory():
             
             # (4) take time per time step
             end_time = time.time()
-            print(f"Elapsed time for step {idx}: {end_time- start_time} seconds")
+            print(f"Elapsed time for step {idx + 1}: {end_time- start_time:0f} seconds")
 
 
         print('*** Successfully looped through all trajectory snapshots!')
