@@ -331,7 +331,7 @@ class Trajectory():
         self.MD = MDsim                                                
         self.dt = self.MD.traj_dt
 
-        # create MDAnalysis object
+        # create MDAnalysis object for trajectory
         self.trajectory_u = mda.Universe(self.prmtop, self.nc)
         self.num_frames = self.trajectory_u.trajectory.n_frames         # number of frames in trajectory
         
@@ -798,7 +798,7 @@ class Trajectory():
             
             # (4) take time per time step
             end_time = time.time()
-            print(f"Elapsed time for step {idx + 1}: {end_time- start_time:0f} seconds")
+            print(f"Elapsed time for step {idx + 1}: {end_time- start_time:.0f} seconds")
 
 
         print('*** Successfully looped through all trajectory snapshots!')
