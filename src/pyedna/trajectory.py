@@ -411,8 +411,7 @@ class Trajectory():
         # conductiong QM (DFT/TDDFT) simulations or to post-processing of the trajectory 
         # (1) QM (DFT/TDDFT) outputs (NOTE : only boolean)
         qm_outs = {key: out.get(key) for key in ["exc", "mol", "tdm", "mf", "occ", "virt", "dip", "osc", "idx"]}    
-        # TODO : in order to evaluate some of the post-processing output, we need to have some of these flags set to True
-        # might want to implement a checkpoint here               
+        # TODO : in order to evaluate some of the post-processing output, we need to have some of these flags set to True            
 
         # (2) trajectory-based outputs per time steps
         # (2.1) quantum-mechanical based parameters and methods
@@ -576,8 +575,11 @@ class Trajectory():
             if self.quant_info[0]["coupling"]:
                 columns_per_transitions += ['coupling cJ', 'coupling cK', 'coupling V_C']
             # initialize columns for excitaion energies
-            if self.quant_info[1]["excited_energies"]:
+            if self.quant_info[0]["excited_energies"]:
                 columns_per_transitions += [f'energy {self.molecule_names[0]}', f'energy {self.molecule_names[1]}']
+            # intialize columns for oscillator strengths
+            if self.quant_info[0]["osc_strengths"]:
+                columns_per_transitions += [f'osc_strength {self.molecule_names[0]}', f'osc_strength {self.molecule_names[1]}']
 
             # TODO : add more as desired later
             
@@ -707,6 +709,13 @@ class Trajectory():
                     energies_out = qm.getExcEnergies(output_qm['exc'], states, molecule_names=self.molecule_names, excitation_energy_type=self.quant_info[1]['excited_energies'])
                     # add to output dict
                     self.output_quant.loc[time_idx, [(self.transition_names[i], key) for key in energies_out.keys()]] = list(energies_out.values())
+                
+                # (c) get oscillator strengths
+                if self.quant_info[0]["osc_strengths"]:
+                    # get oscillator strengths based on QM (DFT/TDDFT) output
+                    osc_out = qm.getOscillatorStrengths(output_qm['osc'], states, molecule_names=self.molecule_names,osc_strength_energy_type=self.quant_info[1]['osc_strengths'])
+                    # add to output dict
+                    self.output_quant.loc[time_idx, [(self.transition_names[i], key) for key in osc_out.keys()]] = list(osc_out.values())
 
 
         # (1) look at direct output quantities of QM (DFT/TDDFT) (if self.transitions = None)

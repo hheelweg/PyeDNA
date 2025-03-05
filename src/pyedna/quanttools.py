@@ -597,7 +597,7 @@ def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
     return results
 
 # get excitation energies for specified states
-def getExcEnergies(excs, states, molecule_names = ['D', 'A'], excitation_energy_type = 'default'):
+def getExcEnergies(excs, states, molecule_names = ["D", "A"], excitation_energy_type = 'default'):
 
     stateA, stateB = states[0], states[1]
     excA, excB = excs[0], excs[1]
@@ -605,6 +605,17 @@ def getExcEnergies(excs, states, molecule_names = ['D', 'A'], excitation_energy_
     results = {}
     results[f'energy {molecule_names[0]}'] = excA[stateA]
     results[f'energy {molecule_names[1]}'] = excB[stateB]
+    return results
+
+# get oscillator strengths for specified states
+def getOscillatorStrengths(oscs, states, molecule_names = ["D", "A"], osc_strength_energy_type = 'default'):
+
+    stateA, stateB = states[0], states[1]
+    oscA, oscB = oscs[0], oscs[1]
+
+    results = {}
+    results[f'osc_strength {molecule_names[0]}'] = oscA[stateA]
+    results[f'osc_strength {molecule_names[1]}'] = oscB[stateB]
     return results
 
 # get TDDFT outputs as specified in list which_outs for molecules
