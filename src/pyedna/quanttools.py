@@ -534,6 +534,7 @@ def doQM_gpu(molecules, output_keys, verbosity = 0):
 
 
 # coupling terms for the computation cJ and cK 
+# NOTE : this returns (by default) the couplings in Hartree units 
 def getCJCK(molA, molB, tdmA, tdmB, get_cK = False):
 
     from pyscf.scf import jk, _vhf
