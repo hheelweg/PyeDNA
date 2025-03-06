@@ -211,7 +211,7 @@ def optimizeStructureSymmetryFF(path, moleculeNamePDB, stepsNo = 50000, econv = 
 
 
 # NOTE : new function for geometry optimization with pyscf in the beginning
-# NOTE : curenlty implemented for .pdb input file
+# NOTE : currently implemented for .pdb input file
 # might also want to make this a constrained optimization s.t. the P-P bond-length is "roughly" equal to the one in DNA
 def geometryOptimization_gpu(path_to_pdb, out_pdb, basis = '6-31g', xc = 'b3lyp', 
               density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4):
