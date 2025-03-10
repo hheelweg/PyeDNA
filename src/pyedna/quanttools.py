@@ -225,6 +225,9 @@ def geometryOptimization_gpu(path_to_pdb, out_pdb, basis = '6-31g', xc = 'b3lyp'
     molecule_conv = trajectory.Trajectory.convertChromophore(dye, conversion='pyscf')
 
     # (2) perform geometry optimization 
+    print('basis', basis, flush = True)
+    print('charge', charge, flush = True)
+    print(scf_cycles, flush = True)
     mol, _, _, _ = doDFT_geomopt(molecule_conv, basis, xc, density_fit, charge, spin, scf_cycles, verbosity)
 
     # (3) update coordinates
@@ -408,8 +411,8 @@ def doDFT_geomopt(molecule, basis = '6-31g', xc = 'b3lyp',
     mf_GPU = rks.RKS(mol).density_fit()
     mf_GPU.xc = xc
     mf_GPU.max_cycle = scf_cycles               
-    mf_GPU.conv_tol = 1e-10   
-    mf_GPU.max_cycle = 50
+    mf_GPU.conv_tol = 1e-5   
+    mf_GPU.max_cycle = 20
     #mf_GPU = mf_GPU.PCM()
     #mf_GPU.with_solvent.method = 'COSMO'
 
