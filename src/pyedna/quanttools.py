@@ -412,7 +412,7 @@ def doDFT_geomopt(molecule, basis = '6-31g', xc = 'b3lyp',
     mf_GPU.xc = xc
     mf_GPU.max_cycle = scf_cycles               
     mf_GPU.conv_tol = 1e-5   
-    mf_GPU.max_cycle = 20
+    mf_GPU.max_cycle = scf_cycles
     #mf_GPU = mf_GPU.PCM()
     #mf_GPU.with_solvent.method = 'COSMO'
 
@@ -428,7 +428,7 @@ def doDFT_geomopt(molecule, basis = '6-31g', xc = 'b3lyp',
     mf.xc = xc
     mf.max_cycle = scf_cycles               
     mf.conv_tol = 1e-10   
-    mf.max_cycle = 50
+    mf.max_cycle = scf_cycles
     mf = mf.PCM()
     mf.with_solvent.method = 'COSMO'
     mf.kernel() 
