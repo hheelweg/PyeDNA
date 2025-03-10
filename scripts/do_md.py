@@ -41,7 +41,7 @@ def main(args):
         md.runEquilibration()
         md.runProduction()
     elif args.sim == 2:                             # minimization, equilibration and production
-        # # (4.1) check for necessary topology files
+        # (4.1) check for necessary topology files
         pyedna.utils.checkFileWithName(f"{composite_params['structure_name']}.prmtop")
         pyedna.utils.checkFileWithName(f"{composite_params['structure_name']}.rst7")
         # (4.2) perform minimization, equilibration, and production
