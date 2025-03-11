@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --partition=normal          # normal partition
 #SBATCH --ntasks=16                 # 16 MPI tasks
-#SBATCH --cpus-per-task=3           # Request 48 CPU cores
+#SBATCH --cpus-per-task=2           # Request 48 CPU cores
 #SBATCH --job-name=dye              # Job name
 #SBATCH --output=dye.log            # Output file
 
@@ -31,4 +31,4 @@ export PYTHONUNBUFFERED=1
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 
 # Run trajectory analysis calculation with GPU acceleration
-mpirun -np $SLURM_NTASKS python -m analyze_traj
+mpirun -np $SLURM_NTASKS python -m create_dye
