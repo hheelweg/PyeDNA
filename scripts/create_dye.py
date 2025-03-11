@@ -13,7 +13,8 @@ def main():
     test_out = 'test_constraint.pdb'
 
     # (1) perform geometry optimization
-    pyedna.quanttools.geometryOptimization_gpu(pdb_file, test_out, **settings_dft)
+    constrained = ['P1', 'P2', 'distance', 6.49]
+    pyedna.quanttools.geometryOptimization_normal(pdb_file, test_out, constraint=constrained, **settings_dft)
 
 
 
