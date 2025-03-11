@@ -418,7 +418,7 @@ def doDFT_geomopt(molecule, basis = '6-31g', xc = 'b3lyp',
     # def callback(envs):
     #     gradients.append(envs['gradients'])
     
-    mol_eq = optimize(mf_GPU, maxsteps=100)#, callback=callback)
+    mol_eq = optimize(mf_GPU, maxsteps=20)#, callback=callback)
 
     # (3) get DFT at optimized geometry
     mf = dft.RKS(mol_eq)
@@ -458,7 +458,7 @@ def doDFT_opt_normal(molecule, basis = '6-31g', xc = 'b3lyp',
     mf_GPU = mpi_dft.RKS(mol, xc = xc)
     mf_GPU.grids.level = 4
             
-    mol_eq = optimize(mf_GPU, maxsteps=100)
+    mol_eq = optimize(mf_GPU, maxsteps=20)
 
     # (3) get DFT at optimized geometry
     mf = mpi_dft.RKS(mol_eq)

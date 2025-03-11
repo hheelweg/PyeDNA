@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --partition=normal          # normal partition
-#SBATCH --ntasks=4                  # 2 MPI tasks
-#SBATCH --cpus-per-task=24          # 24 OpenMP threads per MPI task
+#SBATCH --ntasks=2                  # 2 MPI tasks
+#SBATCH --cpus-per-task=48          # 48 OpenMP threads per MPI task
 #SBATCH --job-name=dye              # Job name
 #SBATCH --output=dye.log            # Output file
 
