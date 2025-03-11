@@ -408,14 +408,16 @@ def doDFT_geomopt(molecule, basis = '6-31g', xc = 'b3lyp',
     mol.verbose = verbosity
 
     # (2) geometry optimization
-    mf_GPU = rks.RKS(mol, xc = xc).density_fit()            
+    mf_GPU = rks.RKS(mol, xc = xc).density_fit()
+    mf_GPU.grids.level = 10
+            
 
-    # Store gradients for analysis
-    gradients = []
-    def callback(envs):
-        gradients.append(envs['gradients'])
+    # # Store gradients for analysis
+    # gradients = []
+    # def callback(envs):
+    #     gradients.append(envs['gradients'])
     
-    mol_eq = optimize(mf_GPU, maxsteps=100, callback=callback)
+    mol_eq = optimize(mf_GPU, maxsteps=100)#, callback=callback)
 
     # (3) get DFT at optimized geometry
     mf = rks.RKS(mol_eq)
