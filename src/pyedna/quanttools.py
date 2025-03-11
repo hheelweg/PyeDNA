@@ -226,8 +226,8 @@ def geometryOptimization_gpu(path_to_pdb, out_pdb, basis = '6-31g', xc = 'b3lyp'
     #mol, _, _, _ = doDFT_geomopt(molecule_conv, basis, xc, density_fit, charge, spin, scf_cycles, verbosity)
     mol, _, _, _ = doDFT_opt_normal(molecule_conv, basis, xc, density_fit, charge, spin, scf_cycles, verbosity)
 
-    # (3) update coordinates
-    optimized_coords = mol.atom_coords()
+    # (3) update coordinates in Angstrom
+    optimized_coords = mol.atom_coords() * const.BOHR2AA
     dye.chromophore_u.atoms.positions = optimized_coords
 
     # (4) write output .pdb
@@ -405,7 +405,9 @@ def doDFT_geomopt(molecule, basis = '6-31g', xc = 'b3lyp',
     mol = gto.M(atom = molecule,
                 basis = basis,
                 charge = charge,
-                spin = spin)
+                spin = spin,
+                unit = 'Angstrom'
+                )
     mol.verbose = verbosity
 
     # (2) geometry optimization
@@ -434,7 +436,7 @@ def doDFT_geomopt(molecule, basis = '6-31g', xc = 'b3lyp',
     occ = mo[:, mf.mo_occ != 0]                 # occupied orbitals
     virt = mo[:, mf.mo_occ == 0]                # virtual orbitals
 
-    return mol, mf, occ, virt
+    return mol_eq, mf, occ, virt
 
 
 def doDFT_opt_normal(molecule, basis = '6-31g', xc = 'b3lyp', 

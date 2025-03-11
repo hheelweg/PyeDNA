@@ -1,5 +1,5 @@
-# conversion for Bohr in Agström 
-BOHR = 0.529177249
+# conversion for Bohr 2 Agström 
+BOHR2AA = 0.529177249
 
 # energy conversion
 EH2EV = 27.2114                         # Hartree -> eV
