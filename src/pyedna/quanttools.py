@@ -213,25 +213,40 @@ def optimizeStructureSymmetryFF(path, moleculeNamePDB, stepsNo = 50000, econv = 
 # NOTE : new function for geometry optimization with pyscf in the beginning
 # NOTE : currently implemented for .pdb input file
 # might also want to make this a constrained optimization s.t. the P-P bond-length is "roughly" equal to the one in DNA
-def geometryOptimization_gpu(path_to_pdb, out_pdb, basis = '6-31g', xc = 'b3lyp', 
+# usage for constraint: constraint = [atom_name1, atom_name2, distance, x]
+# this means that we enforce a distance of x (Angstrom) between atom_name1 and atom_name2
+def geometryOptimization_gpu(path_to_pdb, out_pdb, constraint = None, basis = '6-31g', xc = 'b3lyp', 
               density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4):
 
     # (0) define instance of Chromophore class
     dye = structure.Chromophore(mda.Universe(path_to_pdb, format = "PDB"))
-
+    # find atoms to constrain with specific name
+    if constraint is not None:
+        if not constraint[2] == 'distance':
+            raise NotImplementedError("Only distance constraints implemented for DFT geometry optimization!")
+        # find (1-indexed) indices of atoms to constrain
+        atom1 = np.where(dye.names == constraint[0])[0][0] + 1
+        atom2 = np.where(dye.names == constraint[1])[0][0] + 1
+        # write (temporary) constraint file
+        f = open(f"constraints.txt", "w")
+        f.write("$set\n")
+        f.write(f"distance {atom1} {atom2} {constraint[3]}")
+        f.close()
+        
     # (1) transform .pdb to readable format for pyscf
     molecule_conv = trajectory.Trajectory.convertChromophore(dye, conversion='pyscf')
 
     # (2) perform geometry optimization 
     mol, _, _, _ = doDFT_geomopt(molecule_conv, basis, xc, density_fit, charge, spin, scf_cycles, verbosity)
-    #mol, _, _, _ = doDFT_opt_normal(molecule_conv, basis, xc, density_fit, charge, spin, scf_cycles, verbosity)
 
     # (3) update coordinates in Angstrom
     optimized_coords = mol.atom_coords() * const.BOHR2AA
     dye.chromophore_u.atoms.positions = optimized_coords
 
-    # (4) write output .pdb
+    # (4) write output .pdb and delete "constraints.txt" file
     dye.chromophore_u.atoms.write(out_pdb)
+    if os.path.isfile("constraints.txt"):
+        subprocess.run(f"rm -f constraints.txt", shell = True)
 
 
 #--------------------------------------------------------------------------------------------------------------------------------------------
@@ -413,14 +428,10 @@ def doDFT_geomopt(molecule, basis = '6-31g', xc = 'b3lyp',
     # (2) geometry optimization
     mf_GPU = dft.RKS(mol, xc = xc)
     mf_GPU.grids.level = 8
-            
-
-    # # # Store gradients for analysis
-    # gradients = []
-    # def callback(envs):
-    #     gradients.append(envs['gradients'])
-    
-    mol_eq = optimize(mf_GPU, maxsteps=20)#, callback=callback)
+    params = {}
+    if os.path.isfile("constraints.txt"):
+        params["constraints"] = "constraints.txt"
+    mol_eq = optimize(mf_GPU, maxsteps=20, **params)
 
     # (3) get DFT at optimized geometry
     mf = dft.RKS(mol_eq)
@@ -439,44 +450,44 @@ def doDFT_geomopt(molecule, basis = '6-31g', xc = 'b3lyp',
     return mol_eq, mf, occ, virt
 
 
-def doDFT_opt_normal(molecule, basis = '6-31g', xc = 'b3lyp', 
-              density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4):
+# def doDFT_opt_normal(molecule, basis = '6-31g', xc = 'b3lyp', 
+#               density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4):
     
-    from pyscf import dft
-    from mpi4pyscf import dft as mpi_dft
-    from pyscf.geomopt.geometric_solver import optimize
+#     from pyscf import dft
+#     from mpi4pyscf import dft as mpi_dft
+#     from pyscf.geomopt.geometric_solver import optimize
 
-    # (0) Set OpenMP threads dynamically
-    os.environ["OMP_NUM_THREADS"] = str(os.environ.get("SLURM_CPUS_PER_TASK", "1"))
+#     # (0) Set OpenMP threads dynamically
+#     os.environ["OMP_NUM_THREADS"] = str(os.environ.get("SLURM_CPUS_PER_TASK", "1"))
 
-    # (1) make PySCF molecular structure object 
-    mol = gto.M(atom = molecule,
-                basis = basis,
-                charge = charge,
-                spin = spin)
-    mol.verbose = verbosity
+#     # (1) make PySCF molecular structure object 
+#     mol = gto.M(atom = molecule,
+#                 basis = basis,
+#                 charge = charge,
+#                 spin = spin)
+#     mol.verbose = verbosity
 
-    # (2) geometry optimization
-    mf_GPU = mpi_dft.RKS(mol, xc = xc)
-    mf_GPU.grids.level = 4
+#     # (2) geometry optimization
+#     mf_GPU = mpi_dft.RKS(mol, xc = xc)
+#     mf_GPU.grids.level = 4
             
-    mol_eq = optimize(mf_GPU, maxsteps=20)
+#     mol_eq = optimize(mf_GPU, maxsteps=20)
 
-    # (3) get DFT at optimized geometry
-    mf = mpi_dft.RKS(mol_eq)
-    mf.xc = xc
-    mf.max_cycle = scf_cycles               
-    mf.conv_tol = 1e-9   
-    mf = mf.PCM()
-    mf.with_solvent.method = 'COSMO'
-    mf.kernel() 
+#     # (3) get DFT at optimized geometry
+#     mf = mpi_dft.RKS(mol_eq)
+#     mf.xc = xc
+#     mf.max_cycle = scf_cycles               
+#     mf.conv_tol = 1e-9   
+#     mf = mf.PCM()
+#     mf.with_solvent.method = 'COSMO'
+#     mf.kernel() 
 
-    # (4) output
-    mo = mf.mo_coeff                            # MO Coefficients
-    occ = mo[:, mf.mo_occ != 0]                 # occupied orbitals
-    virt = mo[:, mf.mo_occ == 0]                # virtual orbitals
+#     # (4) output
+#     mo = mf.mo_coeff                            # MO Coefficients
+#     occ = mo[:, mf.mo_occ != 0]                 # occupied orbitals
+#     virt = mo[:, mf.mo_occ == 0]                # virtual orbitals
 
-    return mol_eq, mf, occ, virt
+#     return mol_eq, mf, occ, virt
 
 
 

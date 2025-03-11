@@ -10,7 +10,7 @@ def main():
     # need to have dye.pdb in file to perform geometry optimization on it
     # TODO : read in from command line
     pdb_file = 'cy3_unopt.pdb'
-    test_out = 'test.pdb'
+    test_out = 'test_constraint.pdb'
 
     # (1) perform geometry optimization
     pyedna.quanttools.geometryOptimization_gpu(pdb_file, test_out, **settings_dft)
