@@ -403,14 +403,14 @@ def doDFT_geomopt(molecule, basis = '6-31g', xc = 'b3lyp',
 
     # (1) make PySCF molecular structure object 
     mol = gto.M(atom = molecule,
-                basis = basis,
+                basis = 'cc-pVDZ',
                 charge = charge,
                 spin = spin)
     mol.verbose = verbosity
 
     # (2) geometry optimization
     mf_GPU = dft.RKS(mol, xc = xc)
-    mf_GPU.grids.level = 3
+    mf_GPU.grids.level = 8
             
 
     # # Store gradients for analysis
