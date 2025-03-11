@@ -410,7 +410,9 @@ def doDFT_geomopt(molecule, basis = '6-31g', xc = 'b3lyp',
 
     # (2) geometry optimization
     mf_GPU = dft.RKS(mol, xc = xc).density_fit()
-    mf_GPU.grids.level = 4
+    mf_GPU.grids.level = 8
+    mf_GPU.init_guess = 'atom'
+    mf_GPU.diis = True
             
 
     # # Store gradients for analysis
