@@ -443,6 +443,9 @@ def doDFT_opt_normal(molecule, basis = '6-31g', xc = 'b3lyp',
     from pyscf import dft
     from pyscf.geomopt.geometric_solver import optimize
 
+    # (0) Set OpenMP threads dynamically
+    os.environ["OMP_NUM_THREADS"] = str(os.environ.get("SLURM_CPUS_PER_TASK", "1"))
+
     # (1) make PySCF molecular structure object 
     mol = gto.M(atom = molecule,
                 basis = basis,
