@@ -392,6 +392,9 @@ def doDFT_gpu(molecule, molecule_id, basis = '6-31g', xc = 'b3lyp',
 def doDFT_geomopt(molecule, basis = '6-31g', xc = 'b3lyp', 
               density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 0):
     
+    env = os.environ.copy()
+    env["CUDA_VISIBLE_DEVICES"] = "0"                       # Assign GPU
+    
     # (0) import gpu4pyscf and GPU support
     from gpu4pyscf import scf, solvent, tdscf
     from gpu4pyscf.dft import rks
