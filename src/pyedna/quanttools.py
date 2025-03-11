@@ -225,9 +225,6 @@ def geometryOptimization_gpu(path_to_pdb, out_pdb, basis = '6-31g', xc = 'b3lyp'
     molecule_conv = trajectory.Trajectory.convertChromophore(dye, conversion='pyscf')
 
     # (2) perform geometry optimization 
-    print('basis', basis, flush = True)
-    print('charge', charge, flush = True)
-    print(scf_cycles, flush = True)
     mol, _, _, _ = doDFT_geomopt(molecule_conv, basis, xc, density_fit, charge, spin, scf_cycles, verbosity)
 
     # (3) update coordinates
@@ -393,7 +390,7 @@ def doDFT_gpu(molecule, molecule_id, basis = '6-31g', xc = 'b3lyp',
 
 # do DFT with geometry optimization in each step
 def doDFT_geomopt(molecule, basis = '6-31g', xc = 'b3lyp', 
-              density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4):
+              density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 0):
     
     # (0) import gpu4pyscf and GPU support
     from gpu4pyscf import scf, solvent, tdscf
@@ -408,27 +405,20 @@ def doDFT_geomopt(molecule, basis = '6-31g', xc = 'b3lyp',
     mol.verbose = verbosity
 
     # (2) geometry optimization
-    mf_GPU = rks.RKS(mol).density_fit()
-    mf_GPU.xc = xc
-    mf_GPU.max_cycle = scf_cycles               
-    mf_GPU.conv_tol = 1e-5   
-    mf_GPU.max_cycle = scf_cycles
-    #mf_GPU = mf_GPU.PCM()
-    #mf_GPU.with_solvent.method = 'COSMO'
+    mf_GPU = rks.RKS(mol, xc = xc).density_fit()            
 
     # Store gradients for analysis
     gradients = []
     def callback(envs):
         gradients.append(envs['gradients'])
     
-    mol_eq = optimize(mf_GPU, maxsteps=20, callback=callback)
+    mol_eq = optimize(mf_GPU, maxsteps=100, callback=callback)
 
     # (3) get DFT at optimized geometry
     mf = rks.RKS(mol_eq)
     mf.xc = xc
     mf.max_cycle = scf_cycles               
     mf.conv_tol = 1e-10   
-    mf.max_cycle = scf_cycles
     mf = mf.PCM()
     mf.with_solvent.method = 'COSMO'
     mf.kernel() 
