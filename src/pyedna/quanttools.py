@@ -498,7 +498,8 @@ def doDFT_opt_normal(molecule, basis = '6-31g', xc = 'b3lyp',
     mol = gto.M(atom = molecule,
                 basis = basis,
                 charge = charge,
-                spin = spin)
+                spin = spin,
+                unit = 'Angstrom')
     mol.verbose = verbosity
 
     # (2) geometry optimization
