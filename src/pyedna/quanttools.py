@@ -390,7 +390,7 @@ def doDFT_gpu(molecule, molecule_id, basis = '6-31g', xc = 'b3lyp',
 
 # do DFT with geometry optimization in each step
 def doDFT_geomopt(molecule, basis = '6-31g', xc = 'b3lyp', 
-              density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 0):
+              density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4):
     
     env = os.environ.copy()
     env["CUDA_VISIBLE_DEVICES"] = "0"                       # Assign GPU
@@ -399,11 +399,12 @@ def doDFT_geomopt(molecule, basis = '6-31g', xc = 'b3lyp',
     from gpu4pyscf import scf, solvent, tdscf
     from gpu4pyscf.dft import rks
     from gpu4pyscf import dft
+    from pyscf import dft
     from pyscf.geomopt.geometric_solver import optimize
 
     # (1) make PySCF molecular structure object 
     mol = gto.M(atom = molecule,
-                basis = 'cc-pVDZ',
+                basis = basis,
                 charge = charge,
                 spin = spin)
     mol.verbose = verbosity
@@ -413,12 +414,12 @@ def doDFT_geomopt(molecule, basis = '6-31g', xc = 'b3lyp',
     mf_GPU.grids.level = 8
             
 
-    # # Store gradients for analysis
-    gradients = []
-    def callback(envs):
-        gradients.append(envs['gradients'])
+    # # # Store gradients for analysis
+    # gradients = []
+    # def callback(envs):
+    #     gradients.append(envs['gradients'])
     
-    mol_eq = optimize(mf_GPU, maxsteps=100, callback=callback)
+    mol_eq = optimize(mf_GPU, maxsteps=100)#, callback=callback)
 
     # (3) get DFT at optimized geometry
     mf = dft.RKS(mol_eq)
