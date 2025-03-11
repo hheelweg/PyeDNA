@@ -216,8 +216,6 @@ def optimizeStructureSymmetryFF(path, moleculeNamePDB, stepsNo = 50000, econv = 
 def geometryOptimization_gpu(path_to_pdb, out_pdb, basis = '6-31g', xc = 'b3lyp', 
               density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4):
 
-    from pyscf.geomopt.geometric_solver import optimize
-
     # (0) define instance of Chromophore class
     dye = structure.Chromophore(mda.Universe(path_to_pdb, format = "PDB"))
 
@@ -225,7 +223,8 @@ def geometryOptimization_gpu(path_to_pdb, out_pdb, basis = '6-31g', xc = 'b3lyp'
     molecule_conv = trajectory.Trajectory.convertChromophore(dye, conversion='pyscf')
 
     # (2) perform geometry optimization 
-    mol, _, _, _ = doDFT_geomopt(molecule_conv, basis, xc, density_fit, charge, spin, scf_cycles, verbosity)
+    #mol, _, _, _ = doDFT_geomopt(molecule_conv, basis, xc, density_fit, charge, spin, scf_cycles, verbosity)
+    mol, _, _, _ = doDFT_opt_normal(molecule_conv, basis, xc, density_fit, charge, spin, scf_cycles, verbosity)
 
     # (3) update coordinates
     optimized_coords = mol.atom_coords()
@@ -398,7 +397,7 @@ def doDFT_geomopt(molecule, basis = '6-31g', xc = 'b3lyp',
     # (0) import gpu4pyscf and GPU support
     from gpu4pyscf import scf, solvent, tdscf
     from gpu4pyscf.dft import rks
-    from gpu4pyscf import dft
+    #from gpu4pyscf import dft
     from pyscf import dft
     from pyscf.geomopt.geometric_solver import optimize
 
@@ -436,6 +435,43 @@ def doDFT_geomopt(molecule, basis = '6-31g', xc = 'b3lyp',
     virt = mo[:, mf.mo_occ == 0]                # virtual orbitals
 
     return mol, mf, occ, virt
+
+
+def doDFT_opt_normal(molecule, basis = '6-31g', xc = 'b3lyp', 
+              density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4):
+    
+    from pyscf import dft
+    from pyscf.geomopt.geometric_solver import optimize
+
+    # (1) make PySCF molecular structure object 
+    mol = gto.M(atom = molecule,
+                basis = basis,
+                charge = charge,
+                spin = spin)
+    mol.verbose = verbosity
+
+    # (2) geometry optimization
+    mf_GPU = dft.RKS(mol, xc = xc)
+    mf_GPU.grids.level = 4
+            
+    mol_eq = optimize(mf_GPU, maxsteps=100)
+
+    # (3) get DFT at optimized geometry
+    mf = dft.RKS(mol_eq)
+    mf.xc = xc
+    mf.max_cycle = scf_cycles               
+    mf.conv_tol = 1e-9   
+    mf = mf.PCM()
+    mf.with_solvent.method = 'COSMO'
+    mf.kernel() 
+
+    # (4) output
+    mo = mf.mo_coeff                            # MO Coefficients
+    occ = mo[:, mf.mo_occ != 0]                 # occupied orbitals
+    virt = mo[:, mf.mo_occ == 0]                # virtual orbitals
+
+    return mol, mf, occ, virt
+
 
 
 # do TDDFT with GPU support
