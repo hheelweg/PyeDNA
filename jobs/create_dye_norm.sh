@@ -1,7 +1,6 @@
 #!/bin/bash
 #SBATCH --partition=normal          # normal partition
-#SBATCH --ntasks=16                 # 16 MPI tasks
-#SBATCH --cpus-per-task=2           # Request 48 CPU cores
+#SBATCH --ntasks=8                  # 16 MPI tasks
 #SBATCH --job-name=dye              # Job name
 #SBATCH --output=dye.log            # Output file
 
