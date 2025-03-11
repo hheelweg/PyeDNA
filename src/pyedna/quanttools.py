@@ -441,6 +441,7 @@ def doDFT_opt_normal(molecule, basis = '6-31g', xc = 'b3lyp',
               density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4):
     
     from pyscf import dft
+    from mpi4pyscf import dft as mpi_dft
     from pyscf.geomopt.geometric_solver import optimize
 
     # (0) Set OpenMP threads dynamically
@@ -454,13 +455,13 @@ def doDFT_opt_normal(molecule, basis = '6-31g', xc = 'b3lyp',
     mol.verbose = verbosity
 
     # (2) geometry optimization
-    mf_GPU = dft.RKS(mol, xc = xc)
+    mf_GPU = mpi_dft.RKS(mol, xc = xc)
     mf_GPU.grids.level = 4
             
     mol_eq = optimize(mf_GPU, maxsteps=100)
 
     # (3) get DFT at optimized geometry
-    mf = dft.RKS(mol_eq)
+    mf = mpi_dft.RKS(mol_eq)
     mf.xc = xc
     mf.max_cycle = scf_cycles               
     mf.conv_tol = 1e-9   
