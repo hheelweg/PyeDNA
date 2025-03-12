@@ -10,7 +10,7 @@ def main():
     # need to have dye.pdb in file to perform geometry optimization on it
     # TODO : read in from command line
     pdb_file = 'cy3_unopt.pdb'
-    test_out = 'test_constraint.pdb'
+    test_out = 'test_constraint_1.pdb'
 
     # (1) perform geometry optimization
     constrained = ['P1', 'P2', 'distance', 6.49]
