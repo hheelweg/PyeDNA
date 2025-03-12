@@ -10,9 +10,12 @@ def main():
     # need to have dye.pdb in file to perform geometry optimization on it
     # TODO : read in from command line
     pdb_file = 'cy3_unopt.pdb'
-    test_out = 'test_constraint_1.pdb'
+    test_out = 'cy3_opt.pdb'
 
-    # (1) perform geometry optimization
+    # (0) TODO : do preoptimization with Open Babel
+    
+
+    # (1) perform geometry optimization with DFT
     constrained = ['P1', 'P2', 'distance', 6.49]
     pyedna.quanttools.geometryOptimization_gpu(pdb_file, test_out, constraint=constrained, **settings_dft)
 

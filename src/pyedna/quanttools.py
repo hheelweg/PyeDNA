@@ -15,71 +15,71 @@ from . import structure
 from . import trajectory
 
 
-# optimize molecular structure from *.xyz file into optimized structure in *.pdb file
-def optimizeStructureQM(molecule, basis = 'sto-3g'):
+# # optimize molecular structure from *.xyz file into optimized structure in *.pdb file
+# def optimizeStructureQM(molecule, basis = 'sto-3g'):
 
-    from pyscf.geomopt.berny_solver import optimize
+#     from pyscf.geomopt.berny_solver import optimize
 
-    # load molecule
-    mol = gto.M(
-        atom = molecule,            # Path to the XYZ file
-        basis = '3-21G',            # Choose a basis set (e.g., sto-3g, 6-31G, cc-pVDZ)
-        charge = 1,
-        symmetry = True
-    )
-    # Perform SCF calculation
-    # mf = scf.RHF(mol)  # Restricted Hartree-Fock
+#     # load molecule
+#     mol = gto.M(
+#         atom = molecule,            # Path to the XYZ file
+#         basis = '3-21G',            # Choose a basis set (e.g., sto-3g, 6-31G, cc-pVDZ)
+#         charge = 1,
+#         symmetry = True
+#     )
+#     # Perform SCF calculation
+#     # mf = scf.RHF(mol)  # Restricted Hartree-Fock
 
-    mf = scf.KS(mol)  # Use DFT instead of HF
-    mf.xc = 'b3lyp'   # Specify the B3LYP functional
+#     mf = scf.KS(mol)  # Use DFT instead of HF
+#     mf.xc = 'b3lyp'   # Specify the B3LYP functional
 
-    # Optimize the geometry
-    optimizedMol = optimize(mf, maxsteps = 2)
-    optimizedMol.kernel()
+#     # Optimize the geometry
+#     optimizedMol = optimize(mf, maxsteps = 2)
+#     optimizedMol.kernel()
 
-    # Step 2: Define a function to infer bonds based on distances
-    def infer_bonds(coords, elements, bond_threshold = 1.6):
-        bonds = []
-        num_atoms = len(coords)
-        for i in range(num_atoms):
-            for j in range(i + 1, num_atoms):
-                dist = np.linalg.norm(coords[i] - coords[j])
-                # Use covalent radii to determine bonding
-                if dist < bond_threshold:
-                    bonds.append((i + 1, j + 1))  # PDB uses 1-based indexing
-        return bonds
+#     # Step 2: Define a function to infer bonds based on distances
+#     def infer_bonds(coords, elements, bond_threshold = 1.6):
+#         bonds = []
+#         num_atoms = len(coords)
+#         for i in range(num_atoms):
+#             for j in range(i + 1, num_atoms):
+#                 dist = np.linalg.norm(coords[i] - coords[j])
+#                 # Use covalent radii to determine bonding
+#                 if dist < bond_threshold:
+#                     bonds.append((i + 1, j + 1))  # PDB uses 1-based indexing
+#         return bonds
 
-    # Step 3: Write the PDB file
-    def write_pdb(filename, coords, elements, bonds=None):
-        with open(filename, 'w') as pdb_file:
-            pdb_file.write("HEADER    Optimized structure from PySCF\n")
-            pdb_file.write("TITLE     PySCF Optimization Output\n")
+#     # Step 3: Write the PDB file
+#     def write_pdb(filename, coords, elements, bonds=None):
+#         with open(filename, 'w') as pdb_file:
+#             pdb_file.write("HEADER    Optimized structure from PySCF\n")
+#             pdb_file.write("TITLE     PySCF Optimization Output\n")
             
-            # Write atom coordinates
-            for idx, (element, coord) in enumerate(zip(elements, coords), start=1):
-                pdb_file.write(
-                    f"ATOM  {idx:5d}  {element:<2}  MOL     1    "
-                    f"{coord[0]:8.3f}{coord[1]:8.3f}{coord[2]:8.3f}  1.00  0.00\n"
-                )
+#             # Write atom coordinates
+#             for idx, (element, coord) in enumerate(zip(elements, coords), start=1):
+#                 pdb_file.write(
+#                     f"ATOM  {idx:5d}  {element:<2}  MOL     1    "
+#                     f"{coord[0]:8.3f}{coord[1]:8.3f}{coord[2]:8.3f}  1.00  0.00\n"
+#                 )
             
-            # Write bonds if available
-            if len(bonds) > 0:
-                pdb_file.write("CONECT\n")
-                for bond in bonds:
-                    pdb_file.write(f"CONECT{bond[0]:5d}{bond[1]:5d}\n")
+#             # Write bonds if available
+#             if len(bonds) > 0:
+#                 pdb_file.write("CONECT\n")
+#                 for bond in bonds:
+#                     pdb_file.write(f"CONECT{bond[0]:5d}{bond[1]:5d}\n")
             
-            pdb_file.write("END\n")
+#             pdb_file.write("END\n")
 
-    # Step 4: Get coordinates and elements from the optimized molecule
-    coords = optimizedMol.atom_coords(unit="angstrom")
-    elements = [mol.atom_symbol(i) for i in range(mol.natm)]
+#     # Step 4: Get coordinates and elements from the optimized molecule
+#     coords = optimizedMol.atom_coords(unit="angstrom")
+#     elements = [mol.atom_symbol(i) for i in range(mol.natm)]
 
-    # Step 5: Infer bonds 
-    bonds = infer_bonds(coords, elements)
-    print(bonds)
+#     # Step 5: Infer bonds 
+#     bonds = infer_bonds(coords, elements)
+#     print(bonds)
 
-    # Step 6: Write to PDB
-    write_pdb("optimized_structure.pdb", coords, elements, bonds)
+#     # Step 6: Write to PDB
+#     write_pdb("optimized_structure.pdb", coords, elements, bonds)
 
 # convert and optimize molecule in *.cdx (ChemDraw) format into *.pdb file (unconstrained pre-optimization)
 def optimizeStructureFF(path, moleculeName, stepsNo = 50000, econv = 1e-12, FF = 'UFF'):
@@ -235,10 +235,10 @@ def geometryOptimization_gpu(path_to_pdb, out_pdb, constraint = None, basis = '6
         f.close()
         
     # (1) transform .pdb to readable format for pyscf
-    molecule_conv = trajectory.Trajectory.convertChromophore(dye, conversion='pyscf')
+    molecule_converted = trajectory.Trajectory.convertChromophore(dye, conversion='pyscf')
 
     # (2) perform geometry optimization 
-    mol, _, _, _ = doDFT_geomopt(molecule_conv, basis, xc, density_fit, charge, spin, scf_cycles, verbosity)
+    mol, _, _, _ = doDFT_geomopt(molecule_converted, basis, xc, density_fit, charge, spin, scf_cycles, verbosity)
 
     # (3) update coordinates in Angstrom
     optimized_coords = mol.atom_coords() * const.BOHR2AA
@@ -249,40 +249,6 @@ def geometryOptimization_gpu(path_to_pdb, out_pdb, constraint = None, basis = '6
     if os.path.isfile("constraints.txt"):
         subprocess.run(f"rm -f constraints.txt", shell = True)
 
-
-def geometryOptimization_normal(path_to_pdb, out_pdb, constraint = None, basis = '6-31g', xc = 'b3lyp', 
-              density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4):
-
-    # (0) define instance of Chromophore class
-    dye = structure.Chromophore(mda.Universe(path_to_pdb, format = "PDB"))
-    # (0) write constraint if specified
-    # find atoms to constrain with specific name
-    if constraint is not None:
-        if not constraint[2] == 'distance':
-            raise NotImplementedError("Only distance constraints implemented for DFT geometry optimization!")
-        # find (1-indexed) indices of atoms to constrain
-        atom1 = np.where(dye.names == constraint[0])[0][0] + 1
-        atom2 = np.where(dye.names == constraint[1])[0][0] + 1
-        # write (temporary) constraint file
-        f = open(f"constraints.txt", "w")
-        f.write("$set\n")
-        f.write(f"distance {atom1} {atom2} {constraint[3]}")
-        f.close()
-        
-    # (1) transform .pdb to readable format for pyscf
-    molecule_conv = trajectory.Trajectory.convertChromophore(dye, conversion='pyscf')
-
-    # (2) perform geometry optimization 
-    mol, _, _, _ = doDFT_opt_normal(molecule_conv, basis, xc, density_fit, charge, spin, scf_cycles, verbosity)
-
-    # (3) update coordinates in Angstrom
-    optimized_coords = mol.atom_coords() * const.BOHR2AA
-    dye.chromophore_u.atoms.positions = optimized_coords
-
-    # (4) write output .pdb and delete "constraints.txt" file
-    dye.chromophore_u.atoms.write(out_pdb)
-    if os.path.isfile("constraints.txt"):
-        subprocess.run(f"rm -f constraints.txt", shell = True)
 
 
 #--------------------------------------------------------------------------------------------------------------------------------------------
@@ -477,46 +443,6 @@ def doDFT_geomopt(molecule, basis = '6-31g', xc = 'b3lyp',
     mf.xc = xc
     mf.max_cycle = scf_cycles               
     mf.conv_tol = 1e-10   
-    mf = mf.PCM()
-    mf.with_solvent.method = 'COSMO'
-    mf.kernel() 
-
-    # (4) output
-    mo = mf.mo_coeff                            # MO Coefficients
-    occ = mo[:, mf.mo_occ != 0]                 # occupied orbitals
-    virt = mo[:, mf.mo_occ == 0]                # virtual orbitals
-
-    return mol_eq, mf, occ, virt
-
-
-def doDFT_opt_normal(molecule, basis = '6-31g', xc = 'b3lyp', 
-              density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4):
-    
-    from pyscf import dft
-    from pyscf.geomopt.geometric_solver import optimize
-
-
-    # (1) make PySCF molecular structure object 
-    mol = gto.M(atom = molecule,
-                basis = basis,
-                charge = charge,
-                spin = spin,
-                unit = 'Angstrom')
-    mol.verbose = verbosity
-
-    # (2) geometry optimization
-    mf_GPU = dft.RKS(mol, xc = xc)
-    mf_GPU.grids.level = 8
-    params = {}
-    if os.path.isfile("constraints.txt"):
-        params["constraints"] = "constraints.txt"
-    mol_eq = optimize(mf_GPU, maxsteps=20, **params)
-
-    # (3) get DFT at optimized geometry
-    mf = dft.RKS(mol_eq)
-    mf.xc = xc
-    mf.max_cycle = scf_cycles               
-    mf.conv_tol = 1e-9   
     mf = mf.PCM()
     mf.with_solvent.method = 'COSMO'
     mf.kernel() 
