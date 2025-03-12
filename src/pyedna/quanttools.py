@@ -464,6 +464,9 @@ def doDFT_geomopt(molecule, basis = '6-31g', xc = 'b3lyp',
     # (2) geometry optimization
     mf_GPU = dft.RKS(mol, xc = xc)
     mf_GPU.grids.level = 8
+    mf_GPU = mf_GPU.PCM()
+    mf_GPU.with_solvent.method = 'COSMO'
+    # optional : constraint parameters
     params = {}
     if os.path.isfile("constraints.txt"):
         params["constraints"] = "constraints.txt"
