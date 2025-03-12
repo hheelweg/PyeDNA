@@ -400,6 +400,7 @@ class Chromophore():
         return xyz, names, types, com, resnames
 
     # parse attachment info for chromophore
+    # TODO : generalize to different linkers
     def parseAttachment(self, change_atom_names = True):
         # (0) load attachment information from file
         try:
@@ -430,12 +431,12 @@ class Chromophore():
             self.del_string += f" and not name {atom}" 
 
 
-        # # (3) indices of atoms where Chromophore will be attached to DNA
+        # (3) indices of atoms where Chromophore will be attached to DNA
         self.attach_idx = [np.where(self.names == P)[0][0] for P in self.P]
         self.attach_pos = self.xyz[self.attach_idx]
 
-        # # (4) rename atoms in phosphate group that are not getting deleted
-        # # in order to simulate them with the DNA forcefield
+        # (4) rename atoms in phosphate group that are not getting deleted
+        # in order to simulate them with the DNA forcefield
         DNA_O_conn = ["O3'", "O5'"]
         DNA_O_term = ['OP1', 'OP2']
         DNA_P = "P"
@@ -534,6 +535,20 @@ class Chromophore():
         return neighbors
 
 
+
+    # create force field with antechamber/parmchk2
+    def createFF_old(self, charge = 0, ff = 'gaff'):
+        # (1) write updated pdb file after deletion of groups for attachment
+        fp.deleteAtomsPDB(self.path + f'{self.dye_name}' + '.pdb', self.path + f'{self.dye_name}' + '_del.pdb', self.delete_atoms)
+        # (2) use antechamber 
+        makedir_ff = subprocess.run(f"mkdir -p {self.path}/ff_new", shell = True)       # make forefield directory
+        command = f"antechamber -i '../{self.dye_name}_del.pdb' -fi pdb -o {self.dye_name}_del.mol2 -fo mol2 -c bcc -s 2 -nc {charge} -m 1 -at {ff}"
+        run_antechamber = subprocess.Popen(command, cwd = f'{self.path}/ff_new', shell = True)
+        run_antechamber.wait()
+        # (3) run parmchk2
+        command = f"parmchk2 -i {self.dye_name}_del.mol2 -f mol2 -o {self.dye_name}_del.frcmod -s gaff"
+        run_parmchk2 = subprocess.Popen(command, cwd = f'{self.path}/ff_new', shell = True)
+        run_parmchk2.wait()
 
     # create force field with antechamber/parmchk2
     def createFF(self, charge = 0, ff = 'gaff'):
