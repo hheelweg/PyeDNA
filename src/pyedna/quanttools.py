@@ -15,72 +15,6 @@ from . import structure
 from . import trajectory
 
 
-# # optimize molecular structure from *.xyz file into optimized structure in *.pdb file
-# def optimizeStructureQM(molecule, basis = 'sto-3g'):
-
-#     from pyscf.geomopt.berny_solver import optimize
-
-#     # load molecule
-#     mol = gto.M(
-#         atom = molecule,            # Path to the XYZ file
-#         basis = '3-21G',            # Choose a basis set (e.g., sto-3g, 6-31G, cc-pVDZ)
-#         charge = 1,
-#         symmetry = True
-#     )
-#     # Perform SCF calculation
-#     # mf = scf.RHF(mol)  # Restricted Hartree-Fock
-
-#     mf = scf.KS(mol)  # Use DFT instead of HF
-#     mf.xc = 'b3lyp'   # Specify the B3LYP functional
-
-#     # Optimize the geometry
-#     optimizedMol = optimize(mf, maxsteps = 2)
-#     optimizedMol.kernel()
-
-#     # Step 2: Define a function to infer bonds based on distances
-#     def infer_bonds(coords, elements, bond_threshold = 1.6):
-#         bonds = []
-#         num_atoms = len(coords)
-#         for i in range(num_atoms):
-#             for j in range(i + 1, num_atoms):
-#                 dist = np.linalg.norm(coords[i] - coords[j])
-#                 # Use covalent radii to determine bonding
-#                 if dist < bond_threshold:
-#                     bonds.append((i + 1, j + 1))  # PDB uses 1-based indexing
-#         return bonds
-
-#     # Step 3: Write the PDB file
-#     def write_pdb(filename, coords, elements, bonds=None):
-#         with open(filename, 'w') as pdb_file:
-#             pdb_file.write("HEADER    Optimized structure from PySCF\n")
-#             pdb_file.write("TITLE     PySCF Optimization Output\n")
-            
-#             # Write atom coordinates
-#             for idx, (element, coord) in enumerate(zip(elements, coords), start=1):
-#                 pdb_file.write(
-#                     f"ATOM  {idx:5d}  {element:<2}  MOL     1    "
-#                     f"{coord[0]:8.3f}{coord[1]:8.3f}{coord[2]:8.3f}  1.00  0.00\n"
-#                 )
-            
-#             # Write bonds if available
-#             if len(bonds) > 0:
-#                 pdb_file.write("CONECT\n")
-#                 for bond in bonds:
-#                     pdb_file.write(f"CONECT{bond[0]:5d}{bond[1]:5d}\n")
-            
-#             pdb_file.write("END\n")
-
-#     # Step 4: Get coordinates and elements from the optimized molecule
-#     coords = optimizedMol.atom_coords(unit="angstrom")
-#     elements = [mol.atom_symbol(i) for i in range(mol.natm)]
-
-#     # Step 5: Infer bonds 
-#     bonds = infer_bonds(coords, elements)
-#     print(bonds)
-
-#     # Step 6: Write to PDB
-#     write_pdb("optimized_structure.pdb", coords, elements, bonds)
-
 # convert and optimize molecule in *.cdx (ChemDraw) format into *.pdb file (unconstrained pre-optimization)
 def optimizeStructureFF(path, moleculeName, stepsNo = 50000, econv = 1e-12, FF = 'UFF'):
     from openbabel import openbabel
@@ -244,10 +178,13 @@ def geometryOptimization_gpu(path_to_pdb, out_pdb, constraint = None, basis = '6
     optimized_coords = mol.atom_coords() * const.BOHR2AA
     dye.chromophore_u.atoms.positions = optimized_coords
 
-    # (4) write output .pdb and delete "constraints.txt" file
-    dye.chromophore_u.atoms.write(out_pdb)
+    # (4) write tmo.pdb (unclean) and delete "constraints.txt" file
+    dye.chromophore_u.atoms.write('tmp.pdb')
     if os.path.isfile("constraints.txt"):
         subprocess.run(f"rm -f constraints.txt", shell = True)
+    
+    # (5) clean tmp.pdb file and write out.pdb 
+    structure.cleanPDB('tmp.pdb', out_pdb)
 
 
 

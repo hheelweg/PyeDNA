@@ -460,7 +460,82 @@ class Chromophore():
             self.chromophore_u.atoms.names = self.names
             self.names = self.chromophore_u.atoms.names
 
-    # create force field
+
+    # write attachment information
+    # TODO : generalize this to different linkers
+    @staticmethod
+    def writeAttachmentInfo(chromophore_u, dye_name, linker_atoms = ['P1', 'P2'], linker_group = 'phosphate'):
+        
+        attachment_info = []
+
+        if linker_group != 'phosphate':
+            raise NotImplementedError("Only phosphate group as linker currently implemeted!")
+        
+        if linker_group == 'phosphate':
+
+            # we store the atom names for the phosphate attachment group as follows for each linker_atom in linker_atoms
+            # attachment = [O_bridge, P, O_term, OH_term, H, OH_term, H]
+            # where ...-C-O_bridge-P(=O_term)(-OH_term-H)(-OH_term-H) is the -OPO3H2 linker group
+
+            # loop through linkers
+            for linker_atom in linker_atoms:
+
+                # get (oxygen) neighbors of linkers (phosphates)
+                nearest_neighbors = Chromophore.getNeighborAtoms(chromophore_u, linker_atom)
+
+                # among (oxygen) neighbors, identify which ones are terminal (=0), terminal (-OH) or bridging (-O-)
+                OH_terminal, O_terminal, O_bridge = [], [], []
+                for neighbor in nearest_neighbors.atoms.names:
+
+                    # get next nearest neighbors
+                    next_nearest_neighbors = Chromophore.getNeighborAtoms(chromophore_u, neighbor).select_atoms(f"not name {linker_atom}")
+
+                    # identify type of neighbor and store information
+                    if len(next_nearest_neighbors) == 0:
+                        O_terminal.append(neighbor)
+                    elif len(next_nearest_neighbors) == 1:
+                        # determine whether the oxygen is terminal or bridging
+                        if 'C' in next_nearest_neighbors.types:
+                            O_bridge.append(neighbor)
+                        else:
+                            OH_terminal.append(neighbor)
+                            OH_terminal.append(next_nearest_neighbors.atoms.names[0])
+
+                    else:
+                        raise Warning("Incorrect number of bond-neighbors identified in linker! Check PDB. \
+                                    Might want to reduce cutoff to identify only nect neighbors")
+                    
+                # store attachment info as follows
+                attachment = O_bridge + [linker_atom] + O_terminal + OH_terminal
+                attachment_info.append(attachment)
+
+            # write attachment info to file
+            with open(f"attach_{dye_name}.info", "w") as file:
+                for attachment in attachment_info:
+                    file.write(" ".join(attachment) + "\n")
+
+
+
+    @staticmethod
+    def getNeighborAtoms(chromophore_u, target_atom_name, search_radius = 2.0):
+
+        from MDAnalysis.lib import NeighborSearch
+
+        # Select all atoms for searching
+        all_atoms = chromophore_u.select_atoms("all")
+
+        # Initialize NeighborSearch with all atoms
+        ns = NeighborSearch.AtomNeighborSearch(all_atoms)
+
+        # Search around target atom
+        target_atom = chromophore_u.select_atoms(f"name {target_atom_name}")[0]
+        neighbors = ns.search(target_atom, search_radius).select_atoms(f"not name {target_atom_name}")
+
+        return neighbors
+
+
+
+    # create force field with antechamber/parmchk2
     def createFF(self, charge = 0, ff = 'gaff'):
         # (1) write updated pdb file after deletion of groups for attachment
         fp.deleteAtomsPDB(self.path + f'{self.dye_name}' + '.pdb', self.path + f'{self.dye_name}' + '_del.pdb', self.delete_atoms)
@@ -473,6 +548,7 @@ class Chromophore():
         command = f"parmchk2 -i {self.dye_name}_del.mol2 -f mol2 -o {self.dye_name}_del.frcmod -s gaff"
         run_parmchk2 = subprocess.Popen(command, cwd = f'{self.path}/ff_new', shell = True)
         run_parmchk2.wait()
+
 
 
     # align the Chromophore at its attachments sites with the attachment sites of the DNA
