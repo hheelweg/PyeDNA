@@ -190,7 +190,7 @@ def geometryOptimization_gpu(path_to_pdb, constraint = None, basis = '6-31g', xc
         x, y, z = mol.atom_coords()[i]      # Coordinates
 
         atom = obmol.NewAtom()
-        atom.SetAtomicNum(pybel.periodictable.index(elem))
+        #atom.SetAtomicNum(pybel.periodictable.index(elem))
         atom.SetVector(x, y, z)
 
     # Convert OBMol to Pybel Molecule
@@ -199,6 +199,7 @@ def geometryOptimization_gpu(path_to_pdb, constraint = None, basis = '6-31g', xc
     # Write directly to PDB file
     pdb_filename = "tmp1.pdb"
     pyb_mol.write("pdb", pdb_filename, overwrite=True)
+    #obConversion.WriteFile(mol, output_file)
 
     # (4) write tmo.pdb (unclean) and delete "constraints.txt" file
     #dye.chromophore_u.atoms.write('tmp.pdb')
