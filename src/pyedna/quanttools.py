@@ -190,7 +190,7 @@ def geometryOptimization_gpu(path_to_pdb, constraint = None, basis = '6-31g', xc
         x, y, z = mol.atom_coords()[i]      # Coordinates
 
         atom = obmol.NewAtom()
-        atom.SetAtomicNum(openbabel.OBElementTable().GetAtomicNum(elem))
+        atom.SetAtomicNum(pybel.periodictable.index(elem))
         atom.SetVector(x, y, z)
 
     # Convert OBMol to Pybel Molecule
