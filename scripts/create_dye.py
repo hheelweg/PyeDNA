@@ -15,10 +15,12 @@ def main():
     # (0) TODO : do preoptimization with Open Babel
     # input : .cdx, output : unoptimized.pdb
 
-    # (1) perform geometry optimization with DFT
+    # (1) perform geometry optimization with DFT and return tmp.pdb 
     constraint = ['P1', 'P2', 'distance', 6.49]
+    # pyedna.quanttools.geometryOptimization_gpu(pdb_file, test_out, constraint=constraint, **settings_dft)
 
-    pyedna.quanttools.geometryOptimization_gpu(pdb_file, test_out, constraint=constraint, **settings_dft)
+    # clean outputted tmp.pdb file
+    pyedna.structure.cleanPDB('tmp.pdb', test_out, res_code = dye.dye_name)
 
     # (2) write information attachment of dye
     dye = pyedna.Chromophore(mda.Universe(test_out, format = "PDB"))
