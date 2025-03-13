@@ -203,9 +203,9 @@ def writePySCF2PDB(pyscf_mol):
     obresidue = obmol.NewResidue()
     obresidue.SetName("UNL")  # Set residue name as "UNL"
     obresidue.SetNum(residue_id)  # Assign residue ID
-    for i in range(mol.natm):
-        atom_num = mol.atom_charge(i)       # Atomic number
-        x, y, z = mol.atom_coords()[i]      # Coordinates
+    for i in range(pyscf_mol.natm):
+        atom_num = pyscf_mol.atom_charge(i)       # Atomic number
+        x, y, z = pyscf_mol.atom_coords()[i]      # Coordinates
 
         atom = obmol.NewAtom()
         atom.SetAtomicNum(atom_num)
