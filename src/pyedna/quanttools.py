@@ -149,7 +149,7 @@ def optimizeStructureSymmetryFF(path, moleculeNamePDB, stepsNo = 50000, econv = 
 # might also want to make this a constrained optimization s.t. the P-P bond-length is "roughly" equal to the one in DNA
 # usage for constraint: constraint = [atom_name1, atom_name2, distance, x]
 # this means that we enforce a distance of x (Angstrom) between atom_name1 and atom_name2
-def geometryOptimization_gpu(path_to_pdb, constraint = None, basis = '6-31g', xc = 'b3lyp', 
+def geometryOptimization_gpu(path_to_pdb, dye_name, constraint = None, basis = '6-31g', xc = 'b3lyp', 
               density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4):
     
 
@@ -182,7 +182,7 @@ def geometryOptimization_gpu(path_to_pdb, constraint = None, basis = '6-31g', xc
 
     
     # (4) write .pdb file and delete "constraints.txt" file
-    writePySCF2PDB(mol)
+    writePySCF2PDB(mol, dye_name)
     if os.path.isfile("constraints.txt"):
         subprocess.run("rm -f constraints.txt", shell = True)
 

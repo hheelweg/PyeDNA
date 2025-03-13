@@ -25,6 +25,7 @@ def main():
     constraint = ['P', 'distance', 6.49]
 
     pyedna.quanttools.geometryOptimization_gpu(f"{dye_name}_ff.pdb",
+                                               dye_name = dye_name
                                                constraint = constraint,
                                                **settings_dft
                                                )
