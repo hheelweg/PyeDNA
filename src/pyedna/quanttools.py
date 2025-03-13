@@ -181,28 +181,20 @@ def geometryOptimization_gpu(path_to_pdb, constraint = None, basis = '6-31g', xc
     dye.chromophore_u.atoms.positions = optimized_coords
 
     
-
-    # (4) write tmo.pdb (unclean) and delete "constraints.txt" file
+    # (4) write .pdb file and delete "constraints.txt" file
     writePySCF2PDB(mol)
-    #dye.chromophore_u.atoms.write('tmp.pdb')
     if os.path.isfile("constraints.txt"):
-        subprocess.run(f"rm -f constraints.txt", shell = True)
+        subprocess.run("rm -f constraints.txt", shell = True)
 
 
 # auxiliary function to write pyscf mol object to .pdb file
 # TODO : might shift this somewhere else?
-def writePySCF2PDB(pyscf_mol):
+def writePySCF2PDB(pyscf_mol, dye_name):
 
     from openbabel import openbabel
 
-    residue_id = 1
-
     # Create OpenBabel Molecule Object
     obmol = openbabel.OBMol()
-    # # Manually set residue name to "UNL" and force HETATM
-    # obresidue = obmol.NewResidue()
-    # obresidue.SetName("UNL")  # Set residue name as "UNL"
-    # obresidue.SetNum(residue_id)  # Assign residue ID
     for i in range(pyscf_mol.natm):
         atom_num = pyscf_mol.atom_charge(i)       # Atomic number
         x, y, z = pyscf_mol.atom_coords()[i]      # Coordinates
@@ -211,41 +203,25 @@ def writePySCF2PDB(pyscf_mol):
         atom.SetAtomicNum(atom_num)
         atom.SetVector(x, y, z)
 
-        # obresidue.AddAtom(atom)
-        
-        # **Force OpenBabel to treat this atom as part of a hetero-residue**
-        #atom.SetResidue(obresidue)  
-        #atom.SetIsHetero(True)  # Force HETATM label
-    
-
-
-    # # Automatically detect bonds
-    # obmol.ConnectTheDots()
-    # obmol.PerceiveBondOrders()
-
-    # builder = openbabel.OBBuilder()
-    # builder.Build(obmol)  # Generate 3D geometry without changing connectivity
-
-
-    # Convert to PDB format automatically
+    # Convert to OpenBabel moeclule to .pdb file
     conv = openbabel.OBConversion()
     conv.SetOutFormat("pdb")
-    pdb_filename = "tmp_ob.pdb"
-    conv.WriteFile(obmol, pdb_filename)
+    pdb_filename_0 = "tmp0.pdb"
+    conv.WriteFile(obmol, pdb_filename_0)
 
 
-    # Read and reformat the PDB file manually
-    final_pdb_filename = "tmp.pdb"
-    with open(pdb_filename, "r") as infile, open(final_pdb_filename, "w") as outfile:
+    # Read and reformat the .pdb file manually in order to enable proper "cleaning" of the file
+    pdb_filename_1 = "tmp1.pdb"
+    with open(pdb_filename_0, "r") as infile, open(pdb_filename_1, "w") as outfile:
         atom_index = 1  # Start from 1 for proper numbering
         for line in infile:
             if line.startswith("HETATM") or line.startswith("ATOM"):
                 # Extract relevant fields from OpenBabel's output
                 parts = line.split()
-                element = parts[-1]  # Last column should be the element name
-                x, y, z = float(parts[6]), float(parts[7]), float(parts[8])  # Extract coordinates
+                element = parts[-1]                                             # Last column should be the element name
+                x, y, z = float(parts[6]), float(parts[7]), float(parts[8])     # Extract coordinates
 
-                # **Manually format the PDB line to match required format**
+                # Manually format lines
                 formatted_line = (
                     f"HETATM{atom_index:5d}  {element:<2}  UNL     1    "
                     f"{x:8.3f}{y:8.3f}{z:8.3f}  1.00  0.00           {element}\n"
@@ -253,7 +229,15 @@ def writePySCF2PDB(pyscf_mol):
                 outfile.write(formatted_line)
                 atom_index += 1
             else:
-                outfile.write(line)  # Preserve any other lines like CONECT
+                # Preserve any other lines like CONECT
+                outfile.write(line)  
+
+    # "Clean" .pdb file
+    structure.cleanPDB(f"tmp1.pdb", f"{dye_name}.pdb", res_code = dye_name)
+
+    # Remove temporary .pdb files
+    subprocess.run("rm -f tmp0.pdb", shell = True)
+    subprocess.run("rm -f tmp1.pdb", shell = True)
 
     
    
