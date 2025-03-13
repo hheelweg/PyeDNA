@@ -20,7 +20,7 @@ def main():
     # pyedna.quanttools.geometryOptimization_gpu(pdb_file, test_out, constraint=constraint, **settings_dft)
 
     # clean outputted tmp.pdb file
-    pyedna.structure.cleanPDB('tmp.pdb', test_out, res_code = dye.dye_name)
+    pyedna.structure.cleanPDB('tmp.pdb', test_out, res_code = 'CY3')
 
     # (2) write information attachment of dye
     dye = pyedna.Chromophore(mda.Universe(test_out, format = "PDB"))
