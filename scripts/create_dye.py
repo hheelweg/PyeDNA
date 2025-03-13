@@ -30,7 +30,7 @@ def main():
                                                )
 
     # clean outputted tmp.pdb file
-    pyedna.structure.cleanPDB('tmp.pdb', f"{dye_name}.pdb", res_code = dye_name)
+    pyedna.structure.cleanPDB(f"{dye_name}_ff.pdb", f"{dye_name}.pdb", res_code = dye_name)
 
     # (2) write information attachment of dye
     dye = pyedna.Chromophore(mda.Universe(test_out, format = "PDB"))
