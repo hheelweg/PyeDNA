@@ -188,7 +188,7 @@ def geometryOptimization_gpu(path_to_pdb, constraint = None, basis = '6-31g', xc
     obmol = openbabel.OBMol()
     for i in range(mol.natm):
         elem = mol.atom_symbol(i)           # Atomic symbol
-        atom_num = gto.element.element_to_number(elem)
+        atom_num = mol.atom_charge(i)
         print(atom_num)
         x, y, z = mol.atom_coords()[i]      # Coordinates
 
