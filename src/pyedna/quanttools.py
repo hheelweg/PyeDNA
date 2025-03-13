@@ -210,7 +210,7 @@ def geometryOptimization_gpu(path_to_pdb, constraint = None, basis = '6-31g', xc
     conv = openbabel.OBConversion()
     conv.SetOutFormat("pdb")
 
-    pdb_filename = "temp1.pdb"
+    pdb_filename = "tmp1.pdb"
     conv.WriteFile(obmol, pdb_filename)
 
     # (4) write tmo.pdb (unclean) and delete "constraints.txt" file
