@@ -22,7 +22,7 @@ def main():
 
     # (1) perform geometry optimization with DFT and return tmp.pdb 
     # this constraint is for phosphate groups linking to double_helix DNA where P-P distance is 6.49 Angstrom
-    constraint = ['P1', 'P2', 'distance', 6.49]
+    constraint = ['P', 'distance', 6.49]
 
     pyedna.quanttools.geometryOptimization_gpu(f"{dye_name}_ff.pdb",
                                                constraint = constraint,

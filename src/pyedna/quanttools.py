@@ -161,8 +161,9 @@ def geometryOptimization_gpu(path_to_pdb, constraint = None, basis = '6-31g', xc
         if not constraint[2] == 'distance':
             raise NotImplementedError("Only distance constraints implemented for DFT geometry optimization!")
         # find (1-indexed) indices of atoms to constrain
-        atom1 = np.where(dye.names == constraint[0])[0][0] + 1
-        atom2 = np.where(dye.names == constraint[1])[0][0] + 1
+        atom_indices = np.where(dye.names == constraint[0])[0]
+        atom1 = atom_indices[0] + 1
+        atom2 = atom_indices[1] + 1
         # write (temporary) constraint file
         f = open(f"constraints.txt", "w")
         f.write("$set\n")
