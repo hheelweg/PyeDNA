@@ -423,28 +423,27 @@ def doDFT_geomopt(molecule, basis = '6-31g', xc = 'b3lyp',
                 )
     mol.verbose = verbosity
 
-    # # (2) geometry optimization
-    # mf_GPU = dft.RKS(mol, xc = xc)
-    # mf_GPU.grids.level = 8
-    # mf_GPU = mf_GPU.PCM()
-    # mf_GPU.with_solvent.method = 'COSMO'
-    # # optional : constraint parameters
-    # params = {}
-    # if os.path.isfile("constraints.txt"):
-    #     params["constraints"] = "constraints.txt"
-    # mol_eq = optimize(mf_GPU, maxsteps=20, **params)
+    # (2) geometry optimization
+    mf_GPU = dft.RKS(mol, xc = xc)
+    mf_GPU.grids.level = 8
+    mf_GPU = mf_GPU.PCM()
+    mf_GPU.with_solvent.method = 'COSMO'
+    # optional : constraint parameters
+    params = {}
+    if os.path.isfile("constraints.txt"):
+        params["constraints"] = "constraints.txt"
+    mol_eq = optimize(mf_GPU, maxsteps=20, **params)
 
-    # # (3) get DFT at optimized geometry
-    # mf = dft.RKS(mol_eq)
-    # mf.xc = xc
-    # mf.max_cycle = scf_cycles               
-    # mf.conv_tol = 1e-10   
-    # mf = mf.PCM()
-    # mf.with_solvent.method = 'COSMO'
-    # mf.kernel() 
+    # (3) get DFT at optimized geometry
+    mf = dft.RKS(mol_eq)
+    mf.xc = xc
+    mf.max_cycle = scf_cycles               
+    mf.conv_tol = 1e-10   
+    mf = mf.PCM()
+    mf.with_solvent.method = 'COSMO'
+    mf.kernel() 
 
-    # return mol_eq
-    return mol
+    return mol_eq
 
 
 
