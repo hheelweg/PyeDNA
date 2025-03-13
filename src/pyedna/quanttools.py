@@ -178,13 +178,12 @@ def geometryOptimization_gpu(path_to_pdb, dye_name, constraint = None, basis = '
     molecule_converted = trajectory.Trajectory.convertChromophore(dye, conversion='pyscf')
 
     # (2) perform geometry optimization 
-    mol, _, _, _ = doDFT_geomopt(molecule_converted, basis, xc, density_fit, charge, spin, scf_cycles, verbosity)
+    mol = doDFT_geomopt(molecule_converted, basis, xc, density_fit, charge, spin, scf_cycles, verbosity)
 
     # (3) update coordinates in Angstrom
     optimized_coords = mol.atom_coords() * const.BOHR2AA
     dye.chromophore_u.atoms.positions = optimized_coords
 
-    
     # (4) write .pdb file and delete "constraints.txt" file
     writePySCF2PDB(mol, dye_name)
 
@@ -444,12 +443,7 @@ def doDFT_geomopt(molecule, basis = '6-31g', xc = 'b3lyp',
     mf.with_solvent.method = 'COSMO'
     mf.kernel() 
 
-    # (4) output
-    mo = mf.mo_coeff                            # MO Coefficients
-    occ = mo[:, mf.mo_occ != 0]                 # occupied orbitals
-    virt = mo[:, mf.mo_occ == 0]                # virtual orbitals
-
-    return mol_eq, mf, occ, virt 
+    return mol_eq
 
 
 
