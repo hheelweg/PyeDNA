@@ -11,11 +11,12 @@ def main():
     # TODO : read in from command line
     pdb_file = 'cy3_unopt.pdb'
     test_out = 'cy3.pdb'
+    dye_name = 'CY3'
 
     # (0) TODO : do preoptimization with Open Babel
     # input : .cdx, output : unoptimized.pdb
     pyedna.quanttools.optimizeStructureFF(path = './',
-                                          moleculeName = 'CY3')
+                                          moleculeName = dye_name)
     
 
     # (1) perform geometry optimization with DFT and return tmp.pdb 
@@ -24,12 +25,12 @@ def main():
     # pyedna.quanttools.geometryOptimization_gpu(pdb_file, test_out, constraint=constraint, **settings_dft)
 
     # clean outputted tmp.pdb file
-    pyedna.structure.cleanPDB('tmp.pdb', test_out, res_code = 'CY3')
+    pyedna.structure.cleanPDB('tmp.pdb', test_out, res_code = dye_name)
 
     # (2) write information attachment of dye
     dye = pyedna.Chromophore(mda.Universe(test_out, format = "PDB"))
     pyedna.Chromophore.writeAttachmentInfo(dye.chromophore_u,
-                                           dye_name = dye.dye_name,
+                                           dye_name = dye_name,
                                            linker_atoms = ['P1', 'P2'],
                                            linker_group = 'phosphate'
                                            )

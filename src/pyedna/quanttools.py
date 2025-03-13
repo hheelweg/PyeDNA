@@ -16,14 +16,14 @@ from . import trajectory
 
 
 # convert and optimize molecule in *.cdx (ChemDraw) format into *.pdb file (unconstrained pre-optimization)
-def optimizeStructureFF(path, moleculeName, stepsNo = 50000, econv = 1e-12, FF = 'UFF'):
+def optimizeStructureFF(dye_name, stepsNo = 50000, econv = 1e-12, FF = 'UFF'):
     from openbabel import openbabel
     # (1) convert *.cdx into *.smi (SMILES string)
-    command = f'obabel -icdx {path + moleculeName}.cdx -osmi -O {path + moleculeName}.smi'
+    command = f'obabel -icdx {dye_name}.cdx -osmi -O {dye_name}.smi'
     subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
     
     # (2) read smiles string:
-    with open(path + moleculeName + '.smi', "r") as file:
+    with open(dye_name + '.smi', "r") as file:
         smiles = file.readline().strip()
     smiles = fr"{smiles}" # convert into raw string
     
@@ -50,7 +50,7 @@ def optimizeStructureFF(path, moleculeName, stepsNo = 50000, econv = 1e-12, FF =
     forcefield.GetCoordinates(mol)
     
     # Save the molecule as an PDB file
-    output_file = path + moleculeName + "_preopt.pdb"
+    output_file = dye_name + "_preopt.pdb"
     obConversion.WriteFile(mol, output_file)
 
 # finer geometry optimization incorporating C2 symmetry of chromophore molecules and disance constraint between adjacent phosphor atoms
