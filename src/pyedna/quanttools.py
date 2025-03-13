@@ -16,7 +16,7 @@ from . import trajectory
 
 
 # convert and optimize molecule in *.cdx (ChemDraw) format into *.pdb file (unconstrained pre-optimization)
-def optimizeStructureFF(dye_name, stepsNo = 50000, econv = 1e-12, FF = 'UFF'):
+def optimizeStructureFF(dye_name, suffix = 'preopt', stepsNo = 50000, econv = 1e-12, FF = 'UFF'):
     from openbabel import openbabel
     # (1) convert *.cdx into *.smi (SMILES string)
     command = f'obabel -icdx {dye_name}.cdx -osmi -O {dye_name}.smi'
@@ -50,7 +50,7 @@ def optimizeStructureFF(dye_name, stepsNo = 50000, econv = 1e-12, FF = 'UFF'):
     forcefield.GetCoordinates(mol)
     
     # Save the molecule as an PDB file
-    output_file = dye_name + "_preopt.pdb"
+    output_file = dye_name + f"_{suffix}.pdb"
     obConversion.WriteFile(mol, output_file)
 
 # finer geometry optimization incorporating C2 symmetry of chromophore molecules and disance constraint between adjacent phosphor atoms
@@ -363,32 +363,33 @@ def doDFT_geomopt(molecule, basis = '6-31g', xc = 'b3lyp',
                 )
     mol.verbose = verbosity
 
-    # (2) geometry optimization
-    mf_GPU = dft.RKS(mol, xc = xc)
-    mf_GPU.grids.level = 8
-    mf_GPU = mf_GPU.PCM()
-    mf_GPU.with_solvent.method = 'COSMO'
-    # optional : constraint parameters
-    params = {}
-    if os.path.isfile("constraints.txt"):
-        params["constraints"] = "constraints.txt"
-    mol_eq = optimize(mf_GPU, maxsteps=20, **params)
+    # # (2) geometry optimization
+    # mf_GPU = dft.RKS(mol, xc = xc)
+    # mf_GPU.grids.level = 8
+    # mf_GPU = mf_GPU.PCM()
+    # mf_GPU.with_solvent.method = 'COSMO'
+    # # optional : constraint parameters
+    # params = {}
+    # if os.path.isfile("constraints.txt"):
+    #     params["constraints"] = "constraints.txt"
+    # mol_eq = optimize(mf_GPU, maxsteps=20, **params)
 
-    # (3) get DFT at optimized geometry
-    mf = dft.RKS(mol_eq)
-    mf.xc = xc
-    mf.max_cycle = scf_cycles               
-    mf.conv_tol = 1e-10   
-    mf = mf.PCM()
-    mf.with_solvent.method = 'COSMO'
-    mf.kernel() 
+    # # (3) get DFT at optimized geometry
+    # mf = dft.RKS(mol_eq)
+    # mf.xc = xc
+    # mf.max_cycle = scf_cycles               
+    # mf.conv_tol = 1e-10   
+    # mf = mf.PCM()
+    # mf.with_solvent.method = 'COSMO'
+    # mf.kernel() 
 
-    # (4) output
-    mo = mf.mo_coeff                            # MO Coefficients
-    occ = mo[:, mf.mo_occ != 0]                 # occupied orbitals
-    virt = mo[:, mf.mo_occ == 0]                # virtual orbitals
+    # # (4) output
+    # mo = mf.mo_coeff                            # MO Coefficients
+    # occ = mo[:, mf.mo_occ != 0]                 # occupied orbitals
+    # virt = mo[:, mf.mo_occ == 0]                # virtual orbitals
 
-    return mol_eq, mf, occ, virt
+    # return mol_eq, mf, occ, virt
+    return mol, mol, mol, mol 
 
 
 

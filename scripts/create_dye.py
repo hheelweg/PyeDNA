@@ -10,21 +10,27 @@ def main():
     # need to have dye.pdb in file to perform geometry optimization on it
     # TODO : read in from command line
     pdb_file = 'cy3_unopt.pdb'
-    test_out = 'cy3.pdb'
+    test_out = 'CY3.pdb'
     dye_name = 'CY3'
 
     # (0) TODO : do preoptimization with Open Babel
     # input : .cdx, output : unoptimized.pdb
-    pyedna.quanttools.optimizeStructureFF(dye_name = dye_name)
+    pyedna.quanttools.optimizeStructureFF(dye_name = dye_name
+                                          suffix = 'ff'
+                                          )
     
 
     # (1) perform geometry optimization with DFT and return tmp.pdb 
     # this constraint is for phosphate groups linking to double_helix DNA where P-P distance is 6.49 Angstrom
     constraint = ['P1', 'P2', 'distance', 6.49]
-    # pyedna.quanttools.geometryOptimization_gpu(pdb_file, test_out, constraint=constraint, **settings_dft)
+
+    pyedna.quanttools.geometryOptimization_gpu(f"{dye_name}_ff.pdb",
+                                               constraint = constraint,
+                                               **settings_dft
+                                               )
 
     # clean outputted tmp.pdb file
-    pyedna.structure.cleanPDB('tmp.pdb', test_out, res_code = dye_name)
+    pyedna.structure.cleanPDB('tmp.pdb', f"{dye_name}.pdb", res_code = dye_name)
 
     # (2) write information attachment of dye
     dye = pyedna.Chromophore(mda.Universe(test_out, format = "PDB"))
