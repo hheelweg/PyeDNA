@@ -153,6 +153,7 @@ def geometryOptimization_gpu(path_to_pdb, constraint = None, basis = '6-31g', xc
               density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4):
     
     from openbabel import openbabel
+    from openbabel import pybel
 
     # (0) define instance of Chromophore class
     dye = structure.Chromophore(mda.Universe(path_to_pdb, format = "PDB"))
@@ -182,18 +183,22 @@ def geometryOptimization_gpu(path_to_pdb, constraint = None, basis = '6-31g', xc
     dye.chromophore_u.atoms.positions = optimized_coords
 
 
-    # Extract atomic symbols and coordinates
-    elements = [mol.atom_symbol(i) for i in range(mol.natm)]
-    coords = mol.atom_coords()
+    # Create OpenBabel Molecule Object
+    obmol = openbabel.OBMol()
+    for i in range(mol.natm):
+        elem = mol.atom_symbol(i)           # Atomic symbol
+        x, y, z = mol.atom_coords()[i]      # Coordinates
 
-    xyz_filename = "molecule.xyz"
-    with open(xyz_filename, "w") as f:
-        f.write(f"{len(elements)}\n\n")  # Number of atoms and blank comment line
-        for elem, coord in zip(elements, coords):
-            f.write(f"{elem} {coord[0]:.6f} {coord[1]:.6f} {coord[2]:.6f}\n")
-    
-    pdb_filename = "tmp.pdb"
-    subprocess.run(["obabel", xyz_filename, "-O", pdb_filename])
+        atom = obmol.NewAtom()
+        atom.SetAtomicNum(openbabel.OBElementTable().GetAtomicNum(elem))
+        atom.SetVector(x, y, z)
+
+    # Convert OBMol to Pybel Molecule
+    pyb_mol = pybel.Molecule(obmol)
+
+    # Write directly to PDB file
+    pdb_filename = "tmp1.pdb"
+    pyb_mol.write("pdb", pdb_filename, overwrite=True)
 
     # (4) write tmo.pdb (unclean) and delete "constraints.txt" file
     #dye.chromophore_u.atoms.write('tmp.pdb')
