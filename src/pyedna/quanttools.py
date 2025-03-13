@@ -154,6 +154,7 @@ def geometryOptimization_gpu(path_to_pdb, constraint = None, basis = '6-31g', xc
     
     from openbabel import openbabel
     from openbabel import pybel
+    from pyscf import gto
 
     # (0) define instance of Chromophore class
     dye = structure.Chromophore(mda.Universe(path_to_pdb, format = "PDB"))
@@ -187,7 +188,7 @@ def geometryOptimization_gpu(path_to_pdb, constraint = None, basis = '6-31g', xc
     obmol = openbabel.OBMol()
     for i in range(mol.natm):
         elem = mol.atom_symbol(i)           # Atomic symbol
-        atom_num = mol._atom[i][0]
+        atom_num = gto.element.element_to_number(elem)
         print(atom_num)
         x, y, z = mol.atom_coords()[i]      # Coordinates
 
