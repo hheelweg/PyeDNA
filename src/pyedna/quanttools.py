@@ -154,6 +154,7 @@ def geometryOptimization_gpu(path_to_pdb, constraint = None, basis = '6-31g', xc
 
     # (0) define instance of Chromophore class
     dye = structure.Chromophore(mda.Universe(path_to_pdb, format = "PDB"))
+    print(dye)
     # (0) write constraint if specified
     # find atoms to constrain with specific name
     if constraint is not None:
