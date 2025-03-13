@@ -204,10 +204,15 @@ def geometryOptimization_gpu(path_to_pdb, constraint = None, basis = '6-31g', xc
         # **Force OpenBabel to treat this atom as part of a hetero-residue**
         atom.SetResidue(obresidue)  
         #atom.SetIsHetero(True)  # Force HETATM label
+    
+
 
     # Automatically detect bonds
     obmol.ConnectTheDots()
     obmol.PerceiveBondOrders()
+
+    builder = openbabel.OBBuilder()
+    builder.Build(obmol)  # Generate 3D geometry without changing connectivity
 
 
     # # Convert OBMol to Pybel Molecule
