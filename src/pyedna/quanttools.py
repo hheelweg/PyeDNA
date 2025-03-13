@@ -223,7 +223,7 @@ def writePySCF2PDB(pyscf_mol, dye_name):
                 # Extract relevant fields from OpenBabel's output
                 parts = line.split()
                 element = parts[-1]                                             # Last column should be the element name
-                x, y, z = float(parts[6]), float(parts[7]), float(parts[8])     # Extract coordinates
+                x, y, z = float(parts[5]), float(parts[6]), float(parts[7])     # Extract coordinates
 
                 # Manually format lines
                 formatted_line = (
@@ -240,8 +240,8 @@ def writePySCF2PDB(pyscf_mol, dye_name):
     structure.cleanPDB(f"tmp1.pdb", f"{dye_name}.pdb", res_code = dye_name)
 
     # Remove temporary .pdb files
-    #subprocess.run("rm -f tmp0.pdb", shell = True)
-    #subprocess.run("rm -f tmp1.pdb", shell = True)
+    subprocess.run("rm -f tmp0.pdb", shell = True)
+    subprocess.run("rm -f tmp1.pdb", shell = True)
 
     
    
