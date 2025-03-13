@@ -151,10 +151,11 @@ def optimizeStructureSymmetryFF(path, moleculeNamePDB, stepsNo = 50000, econv = 
 # this means that we enforce a distance of x (Angstrom) between atom_name1 and atom_name2
 def geometryOptimization_gpu(path_to_pdb, constraint = None, basis = '6-31g', xc = 'b3lyp', 
               density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4):
+    
+    from openbabel import openbabel
 
     # (0) define instance of Chromophore class
     dye = structure.Chromophore(mda.Universe(path_to_pdb, format = "PDB"))
-    print(dye.names)
     # (0) write constraint if specified
     # find atoms to constrain with specific name
     if constraint is not None:
@@ -180,8 +181,22 @@ def geometryOptimization_gpu(path_to_pdb, constraint = None, basis = '6-31g', xc
     optimized_coords = mol.atom_coords() * const.BOHR2AA
     dye.chromophore_u.atoms.positions = optimized_coords
 
+
+    # Extract atomic symbols and coordinates
+    elements = [mol.atom_symbol(i) for i in range(mol.natm)]
+    coords = mol.atom_coords()
+
+    xyz_filename = "molecule.xyz"
+    with open(xyz_filename, "w") as f:
+        f.write(f"{len(elements)}\n\n")  # Number of atoms and blank comment line
+        for elem, coord in zip(elements, coords):
+            f.write(f"{elem} {coord[0]:.6f} {coord[1]:.6f} {coord[2]:.6f}\n")
+    
+    pdb_filename = "tmp.pdb"
+    subprocess.run(["obabel", xyz_filename, "-O", pdb_filename])
+
     # (4) write tmo.pdb (unclean) and delete "constraints.txt" file
-    dye.chromophore_u.atoms.write('tmp.pdb')
+    #dye.chromophore_u.atoms.write('tmp.pdb')
     if os.path.isfile("constraints.txt"):
         subprocess.run(f"rm -f constraints.txt", shell = True)
     
