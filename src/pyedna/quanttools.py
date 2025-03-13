@@ -183,6 +183,7 @@ def geometryOptimization_gpu(path_to_pdb, constraint = None, basis = '6-31g', xc
     optimized_coords = mol.atom_coords() * const.BOHR2AA
     dye.chromophore_u.atoms.positions = optimized_coords
 
+    residue_id = 1
 
     # Create OpenBabel Molecule Object
     obmol = openbabel.OBMol()
@@ -194,6 +195,21 @@ def geometryOptimization_gpu(path_to_pdb, constraint = None, basis = '6-31g', xc
         atom.SetAtomicNum(atom_num)
         atom.SetVector(x, y, z)
 
+        # Manually set residue name to "UNL" and force HETATM
+        obresidue = obmol.NewResidue()
+        obresidue.SetName("UNL")  # Set residue name as "UNL"
+        obresidue.SetNum(residue_id)  # Assign residue ID
+        obresidue.AddAtom(atom)
+        
+        # **Force OpenBabel to treat this atom as part of a hetero-residue**
+        atom.SetResidue(obresidue)  
+        atom.SetIsHetero(True)  # Force HETATM label
+
+    # Automatically detect bonds
+    obmol.ConnectTheDots()
+    obmol.PerceiveBondOrders()
+
+
     # # Convert OBMol to Pybel Molecule
     # pyb_mol = pybel.Molecule(obmol)
 
@@ -202,9 +218,6 @@ def geometryOptimization_gpu(path_to_pdb, constraint = None, basis = '6-31g', xc
     # pyb_mol.write("pdb", pdb_filename, overwrite=True)
     # #obConversion.WriteFile(mol, output_file)
 
-    # Automatically detect bonds
-    obmol.ConnectTheDots()
-    obmol.PerceiveBondOrders()
 
     # Convert to PDB format automatically
     conv = openbabel.OBConversion()
