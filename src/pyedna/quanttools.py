@@ -187,6 +187,10 @@ def geometryOptimization_gpu(path_to_pdb, constraint = None, basis = '6-31g', xc
 
     # Create OpenBabel Molecule Object
     obmol = openbabel.OBMol()
+    # Manually set residue name to "UNL" and force HETATM
+    obresidue = obmol.NewResidue()
+    obresidue.SetName("UNL")  # Set residue name as "UNL"
+    obresidue.SetNum(residue_id)  # Assign residue ID
     for i in range(mol.natm):
         atom_num = mol.atom_charge(i)       # Atomic number
         x, y, z = mol.atom_coords()[i]      # Coordinates
@@ -195,14 +199,10 @@ def geometryOptimization_gpu(path_to_pdb, constraint = None, basis = '6-31g', xc
         atom.SetAtomicNum(atom_num)
         atom.SetVector(x, y, z)
 
-        # Manually set residue name to "UNL" and force HETATM
-        obresidue = obmol.NewResidue()
-        obresidue.SetName("UNL")  # Set residue name as "UNL"
-        obresidue.SetNum(residue_id)  # Assign residue ID
         obresidue.AddAtom(atom)
         
         # **Force OpenBabel to treat this atom as part of a hetero-residue**
-        atom.SetResidue(obresidue)  
+        #atom.SetResidue(obresidue)  
         #atom.SetIsHetero(True)  # Force HETATM label
     
 
