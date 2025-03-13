@@ -205,7 +205,7 @@ def writePySCF2PDB(pyscf_mol, dye_name):
 
         atom = obmol.NewAtom()
         atom.SetAtomicNum(atom_num)
-        atom.SetVector(x, y, z)
+        atom.SetVector(x * const.BOHR2AA, y * const.BOHR2AA, z * const.BOHR2AA)
 
     # Convert to OpenBabel moeclule to .pdb file
     conv = openbabel.OBConversion()
@@ -240,8 +240,8 @@ def writePySCF2PDB(pyscf_mol, dye_name):
     structure.cleanPDB(f"tmp1.pdb", f"{dye_name}.pdb", res_code = dye_name)
 
     # Remove temporary .pdb files
-    subprocess.run("rm -f tmp0.pdb", shell = True)
-    subprocess.run("rm -f tmp1.pdb", shell = True)
+    #subprocess.run("rm -f tmp0.pdb", shell = True)
+    #subprocess.run("rm -f tmp1.pdb", shell = True)
 
     
    
