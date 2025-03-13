@@ -14,8 +14,12 @@ def main():
 
     # (0) TODO : do preoptimization with Open Babel
     # input : .cdx, output : unoptimized.pdb
+    pyedna.quanttools.optimizeStructureFF(path = './',
+                                          moleculeName = 'CY3')
+    
 
     # (1) perform geometry optimization with DFT and return tmp.pdb 
+    # this constraint is for phosphate groups linking to double_helix DNA where P-P distance is 6.49 Angstrom
     constraint = ['P1', 'P2', 'distance', 6.49]
     # pyedna.quanttools.geometryOptimization_gpu(pdb_file, test_out, constraint=constraint, **settings_dft)
 
