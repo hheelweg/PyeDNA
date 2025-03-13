@@ -231,6 +231,29 @@ def geometryOptimization_gpu(path_to_pdb, constraint = None, basis = '6-31g', xc
     pdb_filename = "tmp1.pdb"
     conv.WriteFile(obmol, pdb_filename)
 
+
+    # Read and reformat the PDB file manually
+    final_pdb_filename = "tmp2.pdb"
+    with open(pdb_filename, "r") as infile, open(final_pdb_filename, "w") as outfile:
+        atom_index = 1  # Start from 1 for proper numbering
+        for line in infile:
+            if line.startswith("HETATM") or line.startswith("ATOM"):
+                # Extract relevant fields from OpenBabel's output
+                parts = line.split()
+                element = parts[-1]  # Last column should be the element name
+                x, y, z = float(parts[6]), float(parts[7]), float(parts[8])  # Extract coordinates
+
+                # **Manually format the PDB line to match required format**
+                formatted_line = (
+                    f"HETATM{atom_index:5d}  {element:<2}  UNL     1    "
+                    f"{x:8.3f}{y:8.3f}{z:8.3f}  1.00  0.00           {element}\n"
+                )
+                outfile.write(formatted_line)
+                atom_index += 1
+            else:
+                outfile.write(line)  # Preserve any other lines like CONECT
+
+
     # (4) write tmo.pdb (unclean) and delete "constraints.txt" file
     #dye.chromophore_u.atoms.write('tmp.pdb')
     if os.path.isfile("constraints.txt"):
