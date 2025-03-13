@@ -199,10 +199,10 @@ def writePySCF2PDB(pyscf_mol):
 
     # Create OpenBabel Molecule Object
     obmol = openbabel.OBMol()
-    # Manually set residue name to "UNL" and force HETATM
-    obresidue = obmol.NewResidue()
-    obresidue.SetName("UNL")  # Set residue name as "UNL"
-    obresidue.SetNum(residue_id)  # Assign residue ID
+    # # Manually set residue name to "UNL" and force HETATM
+    # obresidue = obmol.NewResidue()
+    # obresidue.SetName("UNL")  # Set residue name as "UNL"
+    # obresidue.SetNum(residue_id)  # Assign residue ID
     for i in range(pyscf_mol.natm):
         atom_num = pyscf_mol.atom_charge(i)       # Atomic number
         x, y, z = pyscf_mol.atom_coords()[i]      # Coordinates
@@ -211,7 +211,7 @@ def writePySCF2PDB(pyscf_mol):
         atom.SetAtomicNum(atom_num)
         atom.SetVector(x, y, z)
 
-        obresidue.AddAtom(atom)
+        # obresidue.AddAtom(atom)
         
         # **Force OpenBabel to treat this atom as part of a hetero-residue**
         #atom.SetResidue(obresidue)  
@@ -219,12 +219,12 @@ def writePySCF2PDB(pyscf_mol):
     
 
 
-    # Automatically detect bonds
-    obmol.ConnectTheDots()
-    obmol.PerceiveBondOrders()
+    # # Automatically detect bonds
+    # obmol.ConnectTheDots()
+    # obmol.PerceiveBondOrders()
 
-    builder = openbabel.OBBuilder()
-    builder.Build(obmol)  # Generate 3D geometry without changing connectivity
+    # builder = openbabel.OBBuilder()
+    # builder.Build(obmol)  # Generate 3D geometry without changing connectivity
 
 
     # Convert to PDB format automatically
