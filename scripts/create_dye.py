@@ -7,34 +7,29 @@ def main():
     # (0) set settings for QM (DFT/TDDFT) calculation
     settings_dft, _ = pyedna.Trajectory.setQMSettings('qm.params')
 
-    # need to have dye.pdb in file to perform geometry optimization on it
+    # need to have dye_name.cdx in file to perform geometry optimization on it
     # TODO : read in from command line
-    pdb_file = 'cy3_unopt.pdb'
-    test_out = 'CY3.pdb'
     dye_name = 'CY3'
 
-    # # (0) TODO : do preoptimization with Open Babel
-    # # input : .cdx, output : unoptimized.pdb
-    # pyedna.quanttools.optimizeStructureFF(dye_name = dye_name,
-    #                                       suffix = 'ff'
-    #                                       )
+    # (0) do forcefield preoptimization with Open Babel from ChemDraw input structure
+    # returns .pdb of dye moecule with forcefield-optimized coordinates (without constraint)
+    pyedna.quanttools.optimizeStructureFF(dye_name = dye_name,
+                                          suffix = 'ff'
+                                          )
     
 
     # (1) perform geometry optimization with DFT and return tmp.pdb 
     # this constraint is for phosphate groups linking to double_helix DNA where P-P distance is 6.49 Angstrom
     constraint = ['P', 'distance', 6.49]
-
     pyedna.quanttools.geometryOptimization_gpu(f"{dye_name}_ff.pdb",
                                                dye_name = dye_name,
                                                constraint = constraint,
                                                **settings_dft
                                                )
 
-    # clean outputted tmp.pdb file
-    # pyedna.structure.cleanPDB(f"tmp2.pdb", f"{dye_name}.pdb", res_code = dye_name)
 
-    # (2) write information attachment of dye
-    dye = pyedna.Chromophore(mda.Universe(test_out, format = "PDB"))
+    # (2) write attachment information of dye
+    dye = pyedna.Chromophore(mda.Universe(f"{dye_name}.pdb", format = "PDB"))
     pyedna.Chromophore.writeAttachmentInfo(dye.chromophore_u,
                                            dye_name = dye_name,
                                            linker_atoms = ['P1', 'P2'],
