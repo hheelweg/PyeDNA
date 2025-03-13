@@ -152,9 +152,6 @@ def optimizeStructureSymmetryFF(path, moleculeNamePDB, stepsNo = 50000, econv = 
 def geometryOptimization_gpu(path_to_pdb, constraint = None, basis = '6-31g', xc = 'b3lyp', 
               density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4):
     
-    from openbabel import openbabel
-    from openbabel import pybel
-    from pyscf import gto
 
     # (0) define instance of Chromophore class
     dye = structure.Chromophore(mda.Universe(path_to_pdb, format = "PDB"))
@@ -182,6 +179,21 @@ def geometryOptimization_gpu(path_to_pdb, constraint = None, basis = '6-31g', xc
     # (3) update coordinates in Angstrom
     optimized_coords = mol.atom_coords() * const.BOHR2AA
     dye.chromophore_u.atoms.positions = optimized_coords
+
+    
+
+    # (4) write tmo.pdb (unclean) and delete "constraints.txt" file
+    writePySCF2PDB(mol)
+    #dye.chromophore_u.atoms.write('tmp.pdb')
+    if os.path.isfile("constraints.txt"):
+        subprocess.run(f"rm -f constraints.txt", shell = True)
+
+
+# auxiliary function to write pyscf mol object to .pdb file
+# TODO : might shift this somewhere else?
+def writePySCF2PDB(pyscf_mol):
+
+    from openbabel import openbabel
 
     residue_id = 1
 
@@ -215,25 +227,15 @@ def geometryOptimization_gpu(path_to_pdb, constraint = None, basis = '6-31g', xc
     builder.Build(obmol)  # Generate 3D geometry without changing connectivity
 
 
-    # # Convert OBMol to Pybel Molecule
-    # pyb_mol = pybel.Molecule(obmol)
-
-    # # Write directly to PDB file
-    # pdb_filename = "tmp1.pdb"
-    # pyb_mol.write("pdb", pdb_filename, overwrite=True)
-    # #obConversion.WriteFile(mol, output_file)
-
-
     # Convert to PDB format automatically
     conv = openbabel.OBConversion()
     conv.SetOutFormat("pdb")
-
-    pdb_filename = "tmp1.pdb"
+    pdb_filename = "tmp_ob.pdb"
     conv.WriteFile(obmol, pdb_filename)
 
 
     # Read and reformat the PDB file manually
-    final_pdb_filename = "tmp2.pdb"
+    final_pdb_filename = "tmp.pdb"
     with open(pdb_filename, "r") as infile, open(final_pdb_filename, "w") as outfile:
         atom_index = 1  # Start from 1 for proper numbering
         for line in infile:
@@ -253,11 +255,6 @@ def geometryOptimization_gpu(path_to_pdb, constraint = None, basis = '6-31g', xc
             else:
                 outfile.write(line)  # Preserve any other lines like CONECT
 
-
-    # (4) write tmo.pdb (unclean) and delete "constraints.txt" file
-    #dye.chromophore_u.atoms.write('tmp.pdb')
-    if os.path.isfile("constraints.txt"):
-        subprocess.run(f"rm -f constraints.txt", shell = True)
     
    
 
