@@ -53,6 +53,10 @@ def optimizeStructureFF(dye_name, suffix = 'preopt', stepsNo = 50000, econv = 1e
     output_file = dye_name + f"_{suffix}.pdb"
     obConversion.WriteFile(mol, output_file)
 
+    # delete SMILES .smi file
+    subprocess.run(f"rm -f {dye_name}.smi", shell = True)
+
+
 # finer geometry optimization incorporating C2 symmetry of chromophore molecules and disance constraint between adjacent phosphor atoms
 def optimizeStructureSymmetryFF(path, moleculeNamePDB, stepsNo = 50000, econv = 1e-12, FF = 'MMFF94'):
 

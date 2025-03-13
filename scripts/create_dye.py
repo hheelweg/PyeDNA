@@ -4,7 +4,7 @@ import MDAnalysis as mda
 # function to create geometry optimized dye structures
 def main():
 
-    # (0) set settings for QM (DFT/TDDFT) calculation
+    # (0) set settings for QM (DFT/TDDFT) calculation (TODO : maybe load this from somewhere else)
     settings_dft, _ = pyedna.Trajectory.setQMSettings('qm.params')
 
     # need to have dye_name.cdx in file to perform geometry optimization on it
@@ -27,6 +27,7 @@ def main():
                                                **settings_dft
                                                )
 
+    # TODO : delete dye_name_ff.pdb file
 
     # (2) write attachment information of dye
     dye = pyedna.Chromophore(mda.Universe(f"{dye_name}.pdb", format = "PDB"))
