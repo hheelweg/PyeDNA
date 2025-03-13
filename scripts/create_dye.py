@@ -15,7 +15,7 @@ def main():
 
     # (0) TODO : do preoptimization with Open Babel
     # input : .cdx, output : unoptimized.pdb
-    pyedna.quanttools.optimizeStructureFF(moleculeName = dye_name)
+    pyedna.quanttools.optimizeStructureFF(molecule_name = dye_name)
     
 
     # (1) perform geometry optimization with DFT and return tmp.pdb 
