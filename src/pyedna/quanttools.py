@@ -187,22 +187,31 @@ def geometryOptimization_gpu(path_to_pdb, constraint = None, basis = '6-31g', xc
     # Create OpenBabel Molecule Object
     obmol = openbabel.OBMol()
     for i in range(mol.natm):
-        elem = mol.atom_symbol(i)           # Atomic symbol
-        atom_num = mol.atom_charge(i)
-        print(atom_num)
+        atom_num = mol.atom_charge(i)       # Atomic number
         x, y, z = mol.atom_coords()[i]      # Coordinates
 
         atom = obmol.NewAtom()
         atom.SetAtomicNum(atom_num)
         atom.SetVector(x, y, z)
 
-    # Convert OBMol to Pybel Molecule
-    pyb_mol = pybel.Molecule(obmol)
+    # # Convert OBMol to Pybel Molecule
+    # pyb_mol = pybel.Molecule(obmol)
 
-    # Write directly to PDB file
-    pdb_filename = "tmp1.pdb"
-    pyb_mol.write("pdb", pdb_filename, overwrite=True)
-    #obConversion.WriteFile(mol, output_file)
+    # # Write directly to PDB file
+    # pdb_filename = "tmp1.pdb"
+    # pyb_mol.write("pdb", pdb_filename, overwrite=True)
+    # #obConversion.WriteFile(mol, output_file)
+
+    # Automatically detect bonds
+    obmol.ConnectTheDots()
+    obmol.PerceiveBondOrders()
+
+    # Convert to PDB format automatically
+    conv = openbabel.OBConversion()
+    conv.SetOutFormat("pdb")
+
+    pdb_filename = "temp1.pdb"
+    conv.WriteFile(obmol, pdb_filename)
 
     # (4) write tmo.pdb (unclean) and delete "constraints.txt" file
     #dye.chromophore_u.atoms.write('tmp.pdb')

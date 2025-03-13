@@ -13,11 +13,11 @@ def main():
     test_out = 'CY3.pdb'
     dye_name = 'CY3'
 
-    # (0) TODO : do preoptimization with Open Babel
-    # input : .cdx, output : unoptimized.pdb
-    pyedna.quanttools.optimizeStructureFF(dye_name = dye_name,
-                                          suffix = 'ff'
-                                          )
+    # # (0) TODO : do preoptimization with Open Babel
+    # # input : .cdx, output : unoptimized.pdb
+    # pyedna.quanttools.optimizeStructureFF(dye_name = dye_name,
+    #                                       suffix = 'ff'
+    #                                       )
     
 
     # (1) perform geometry optimization with DFT and return tmp.pdb 
