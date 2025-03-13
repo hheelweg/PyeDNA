@@ -15,7 +15,7 @@ def main():
 
     # (0) TODO : do preoptimization with Open Babel
     # input : .cdx, output : unoptimized.pdb
-    pyedna.quanttools.optimizeStructureFF(dye_name = dye_name
+    pyedna.quanttools.optimizeStructureFF(dye_name = dye_name,
                                           suffix = 'ff'
                                           )
     
