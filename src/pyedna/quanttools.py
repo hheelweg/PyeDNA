@@ -182,26 +182,8 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
             pos_atom = mol.GetAtom(pos_idx)
             neg_atom = mol.GetAtom(neg_idx)
 
-            # Fetch coordinates of the positive-side atom
-            pos_coord = np.array([pos_atom.GetX(), pos_atom.GetY(), pos_atom.GetZ()])
-
-            # Rotate positive-side atom by 180° around C₂ axis
-            projection = axis_point + np.dot(pos_coord - axis_point, axis_vec) * axis_vec
-            displacement = pos_coord - projection
-            rotated_coord = projection - displacement  # 180° rotated
-
             # **Delete negative-side atom but remember its index**
             mol.DeleteAtom(neg_atom)
-
-            # **Create a new atom and set it at the same index**
-            new_atom = mol.NewAtom()
-            new_atom.SetAtomicNum(pos_atom.GetAtomicNum())  # Copy element type
-            new_atom.SetVector(*rotated_coord)  # Set mirrored position
-
-            # **Force the new atom to have the same index as the removed atom**
-            mol.InsertAtom(new_atom)  # Ensures the molecule has the correct number of atoms
-
-            print(f"Replaced atom at index {neg_idx} with rotated version of {pos_idx}")
 
 
 
