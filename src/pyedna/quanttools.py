@@ -293,11 +293,11 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
     enforceC2(mol)
     mol.PerceiveBondOrders()
 
-    # for _ in range(100):
-    #     forcefield.Setup(mol)                           # need to feed back C2-coorected coordinates into forcefield
-    #     forcefield.FastRotorSearch(True)
-    #     forcefield.ConjugateGradients(1000, econv)      # conjugate gradient optimization
-    #     enforceC2(mol, axis_vec, axis_point, ref_vec, axis_pair)                                  # enforce C2 symmetry of molecule 
+    for _ in range(2):
+        forcefield.Setup(mol)                           # need to feed back C2-coorected coordinates into forcefield
+        forcefield.FastRotorSearch(True)
+        forcefield.ConjugateGradients(1000, econv)      # conjugate gradient optimization
+        enforceC2(mol, axis_vec, axis_point, ref_vec, axis_pair)                                  # enforce C2 symmetry of molecule 
     # forcefield.GetCoordinates(mol)
     # enforceC2(mol, axis_vec, axis_point, ref_vec, axis_pair)                                      # ensure output molecule has C2 symmetry
 
