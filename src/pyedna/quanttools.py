@@ -129,16 +129,22 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
 
     # (2.2) find atoms on ine side of the axis:
     def findHalf(axis_vec, axis_point, ref_vec, axis_pair):
-        # (2) Identify Atoms on One Side of the C₂ Axis
-        positive_atoms = []
-        negative_atoms = []
+        """
+        Identifies atoms on one side of the C2 axis.
+        
+        Returns:
+            positive_atom_indices (list): Indices of atoms on the positive side.
+            negative_atom_indices (list): Indices of atoms on the negative side.
+        """
+        positive_atom_indices = []
+        negative_atom_indices = []
         threshold = 1e-3  # Small threshold to avoid floating-point issues
 
         for i in range(1, mol.NumAtoms() + 1):
-            atom = mol.GetAtom(i)
             if i in axis_pair:
                 continue  # Skip central C-H axis atoms
 
+            atom = mol.GetAtom(i)
             atom_pos = np.array([atom.GetX(), atom.GetY(), atom.GetZ()])
 
             # Compute the projection onto the C₂ axis
@@ -149,20 +155,20 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
             signed_distance = np.dot(displacement, ref_vec)
 
             if signed_distance > threshold:
-                positive_atoms.append((i, atom, atom_pos))  # Store index, atom, and position
+                positive_atom_indices.append(i)  # Store only the atom index
             elif signed_distance < -threshold:
-                negative_atoms.append((i, atom, atom_pos))
+                negative_atom_indices.append(i)
 
         # Ensure equal number of atoms on each side
-        if len(positive_atoms) != len(negative_atoms):
-            print(f"Warning: C2-symmetry issue: Unequal number of atoms on both sides ({len(positive_atoms)} vs {len(negative_atoms)}).")
-            min_atoms = min(len(positive_atoms), len(negative_atoms))
-            positive_atoms = positive_atoms[:min_atoms]
-            negative_atoms = negative_atoms[:min_atoms]
+        if len(positive_atom_indices) != len(negative_atom_indices):
+            print(f"Warning: C2-symmetry issue: Unequal number of atoms on both sides ({len(positive_atom_indices)} vs {len(negative_atom_indices)}).")
+            min_atoms = min(len(positive_atom_indices), len(negative_atom_indices))
+            positive_atom_indices = positive_atom_indices[:min_atoms]
+            negative_atom_indices = negative_atom_indices[:min_atoms]
 
-        return positive_atoms, negative_atoms
+        return positive_atom_indices, negative_atom_indices
 
-    def enforceC2(mol, axis_vec, axis_point, positive_atoms, negative_atoms):
+    def enforceC2(mol, axis_vec, axis_point, positive_atom_indices, negative_atom_indices):
         """
         Enforces C2 symmetry by:
         1. Identifying the C2 rotation axis.
@@ -172,7 +178,13 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
 
         # (1) Identify Rotation Axis (Most Central C and H)
 
-        for (pos_idx, pos_atom, pos_coord), (neg_idx, neg_atom, _) in zip(positive_atoms, negative_atoms):
+        for pos_idx, neg_idx in zip(positive_atom_indices, negative_atom_indices):
+            pos_atom = mol.GetAtom(pos_idx)
+            neg_atom = mol.GetAtom(neg_idx)
+
+            # Fetch coordinates of the positive-side atom
+            pos_coord = np.array([pos_atom.GetX(), pos_atom.GetY(), pos_atom.GetZ()])
+
             # Rotate positive-side atom by 180° around C₂ axis
             projection = axis_point + np.dot(pos_coord - axis_point, axis_vec) * axis_vec
             displacement = pos_coord - projection
@@ -188,6 +200,8 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
 
             # **Insert the newly created atom**
             mol.InsertAtom(new_atom)
+
+
 
 
     # (3) optimize with C2 symmetry constraint and distance constraint on distance between P-atoms
