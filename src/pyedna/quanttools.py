@@ -162,7 +162,7 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
 
         return positive_atoms, negative_atoms
 
-    def enforceC2(mol, axis_vec, axis_point, ref_vec, axis_pair):
+    def enforceC2(mol, axis_vec, axis_point, positive_atoms, negative_atoms):
         """
         Enforces C2 symmetry by:
         1. Identifying the C2 rotation axis.
@@ -172,21 +172,22 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
 
         # (1) Identify Rotation Axis (Most Central C and H)
 
-        # (3) Duplicate and Rotate Positive Side, Then Overwrite Negative Side
         for (pos_idx, pos_atom, pos_coord), (neg_idx, neg_atom, _) in zip(positive_atoms, negative_atoms):
             # Rotate positive-side atom by 180° around C₂ axis
             projection = axis_point + np.dot(pos_coord - axis_point, axis_vec) * axis_vec
             displacement = pos_coord - projection
             rotated_coord = projection - displacement  # 180° rotated
 
-            # **Create a new atom with the same atomic number**
+            # **Create a new atom with the same atomic number as pos_atom**
             new_atom = mol.NewAtom()
             new_atom.SetAtomicNum(pos_atom.GetAtomicNum())  # Copy element type
             new_atom.SetVector(*rotated_coord)  # Set mirrored position
 
-            # **Replace the original negative-side atom**
-            mol.DeleteAtom(neg_atom)  # Remove old atom
-            mol.InsertAtom(new_atom)  # Insert mirrored atom
+            # **Delete negative-side atom from mol**
+            mol.DeleteAtom(neg_atom)
+
+            # **Insert the newly created atom**
+            mol.InsertAtom(new_atom)
 
 
     # (3) optimize with C2 symmetry constraint and distance constraint on distance between P-atoms
@@ -199,6 +200,7 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
     a, b = findHalf(axis_vec, axis_point, ref_vec, axis_pair)
     print('positive', a, len(a))
     print('negative', b, len(b))
+    enforceC2(axis_vec, axis_point, a, b)
 
     # for _ in range(100):
     #     forcefield.Setup(mol)                           # need to feed back C2-coorected coordinates into forcefield
