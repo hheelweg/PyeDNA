@@ -180,6 +180,7 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
 
         # Sort indices in descending order before deletion
         negative_atom_indices.sort(reverse=True)
+        print('negative', negative_atom_indices)
 
         for neg_idx in negative_atom_indices:
             neg_atom = mol.GetAtom(neg_idx)
