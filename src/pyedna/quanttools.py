@@ -70,16 +70,25 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
     # (2) function that enables C2 symmetry optimization:
     def enforceC2(mol):
         """
-    Enforces C2 symmetry by:
-    1. Identifying the C2 rotation axis.
-    2. Rotating all atoms in one half of the molecule.
-    3. Overwriting the other half with rotated positions.
-    """
+        Enforces C2 symmetry by:
+        1. Identifying the C2 rotation axis.
+        2. Rotating all atoms in one half of the molecule.
+        3. Overwriting the other half with rotated positions.
+        """
 
-        # (1) Identify Rotation Axis (Central C and H Atoms)
+        # (1) Identify Rotation Axis (Most Central C and H)
         def getAxisInfo(mol):
-            carbons, hydrogens = [], []
-    
+            """
+            Identifies the most central Carbon and Hydrogen atoms to define the C2 rotation axis.
+            Selects the second closest Carbon to define the perpendicular reference plane.
+            Returns:
+                axis_vec (numpy.array): Normalized axis direction vector.
+                axis_point (numpy.array): A point on the axis.
+                second_C_vec (numpy.array): The reference vector used for classification.
+                axis_pair (tuple): Indices of the two atoms defining the axis.
+            """
+            carbons, hydrogens = []
+            
             # Extract atomic coordinates and classify atoms
             for i in range(1, mol.NumAtoms() + 1):
                 atom = mol.GetAtom(i)
@@ -95,23 +104,34 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
             geometric_center = np.mean([coord for _, coord in carbons + hydrogens], axis=0)
 
             # Find the most central Carbon and Hydrogen
-            central_C = min(carbons, key=lambda c: np.linalg.norm(c[1] - geometric_center))
+            sorted_carbons = sorted(carbons, key=lambda c: np.linalg.norm(c[1] - geometric_center))
+            central_C = sorted_carbons[0]  # Closest C (used for axis)
+            second_C = sorted_carbons[1]  # Second closest C (used for classification)
+
             central_H = min(hydrogens, key=lambda h: np.linalg.norm(h[1] - geometric_center))
 
             central_C_idx, central_C_coord = central_C
             central_H_idx, central_H_coord = central_H
+            second_C_idx, second_C_coord = second_C
 
             # Define the C2 axis as the vector connecting the central C and H
             axis_vec = central_H_coord - central_C_coord
             axis_vec /= np.linalg.norm(axis_vec)  # Normalize the vector
 
+            # Define the perpendicular reference plane using the second closest Carbon
+            second_C_vec = second_C_coord - central_C_coord
+            second_C_vec -= np.dot(second_C_vec, axis_vec) * axis_vec  # Make perpendicular to the axis
+            second_C_vec /= np.linalg.norm(second_C_vec)  # Normalize
+
             print(f"Selected C2 axis between Carbon {central_C_idx} and Hydrogen {central_H_idx}")
             print(f"Central C: {central_C_coord}, Central H: {central_H_coord}")
+            print(f"Second closest C (for classification): {second_C_idx}, {second_C_coord}")
             print(f"Computed C2 axis vector: {axis_vec}")
+            print(f"Computed reference vector (from second closest C): {second_C_vec}")
 
-            return axis_vec, central_C_coord, (central_C_idx, central_H_idx)  # Return indices
+            return axis_vec, central_C_coord, second_C_vec, (central_C_idx, central_H_idx)
 
-        axis_vec, axis_point, axis_pair = getAxisInfo(mol)
+        axis_vec, axis_point, ref_vec, axis_pair = getAxisInfo(mol)
 
         # (2) Identify Atoms on One Side of the C₂ Axis
         positive_atoms = []
@@ -129,16 +149,17 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
             projection = axis_point + np.dot(atom_pos - axis_point, axis_vec) * axis_vec
             displacement = atom_pos - projection  # Vector perpendicular to axis
 
-            # **Correctly Determine Which Side the Atom is On**
-            signed_distance = np.dot(displacement, axis_vec)
+            # **Compute signed distance relative to the reference vector**
+            signed_distance = np.dot(displacement, ref_vec)
 
             if signed_distance > threshold:
                 positive_atoms.append((i, atom, atom_pos))  # Store index, atom, and position
             elif signed_distance < -threshold:
                 negative_atoms.append((i, atom, atom_pos))
 
-        # Ensure equal number of atoms on each side
         print(positive_atoms)
+        print(negative_atoms)
+        # Ensure equal number of atoms on each side
         if len(positive_atoms) != len(negative_atoms):
             print(f"Warning: Unequal number of atoms on both sides ({len(positive_atoms)} vs {len(negative_atoms)}).")
             min_atoms = min(len(positive_atoms), len(negative_atoms))
