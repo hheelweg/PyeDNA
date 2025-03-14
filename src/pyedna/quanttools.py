@@ -69,66 +69,7 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
 
     # (2) function that enables C2 symmetry optimization:
     # (2.1) find axis information for C2 symmetry
-    def getAxisInfo(mol):
-        """
-        Identifies the most central Carbon and Hydrogen atoms to define the C2 rotation axis.
-        Selects the second closest Carbon to define the perpendicular reference plane.
-        Returns:
-            axis_vec (numpy.array): Normalized axis direction vector.
-            axis_point (numpy.array): A point on the axis.
-            second_C_vec (numpy.array): The reference vector used for classification.
-            axis_pair (tuple): Indices of the two atoms defining the axis.
-        """
-        carbons, hydrogens = [], []
-        
-        # Extract atomic coordinates and classify atoms
-        for i in range(1, mol.NumAtoms() + 1):
-            atom = mol.GetAtom(i)
-            symbol = atom.GetType()[0]  # Extract atomic symbol
-            coord = np.array([atom.GetX(), atom.GetY(), atom.GetZ()])
-            
-            if symbol == "C":
-                carbons.append((i, coord))
-            elif symbol == "H":
-                hydrogens.append((i, coord))
 
-        # Compute geometric center
-        geometric_center = np.mean([coord for _, coord in carbons + hydrogens], axis=0)
-        print('geometric center', geometric_center)
-
-        # Find the most central Carbon and Hydrogen
-        sorted_carbons = sorted(carbons, key=lambda c: np.linalg.norm(c[1] - geometric_center))
-        #print(sorted_carbons)
-        central_C = sorted_carbons[0]  # Closest C (used for axis)
-        second_C = sorted_carbons[1]  # Second closest C (used for classification)
-
-        central_H = min(hydrogens, key=lambda h: np.linalg.norm(h[1] - geometric_center))
-
-        central_C_idx, central_C_coord = central_C
-        central_H_idx, central_H_coord = central_H
-        second_C_idx, second_C_coord = second_C
-
-        # Define the C2 axis as the vector connecting the central C and H
-        axis_vec = central_H_coord - central_C_coord
-        axis_vec /= np.linalg.norm(axis_vec)  # Normalize the vector
-
-        # Define the perpendicular reference plane using the second closest Carbon
-        second_C_vec = second_C_coord - central_C_coord
-        second_C_vec -= np.dot(second_C_vec, axis_vec) * axis_vec  # Make perpendicular to the axis
-        second_C_vec /= np.linalg.norm(second_C_vec)  # Normalize
-
-        print(f"Selected C2 axis between Carbon {central_C_idx} and Hydrogen {central_H_idx}")
-        print(f"Central C: {central_C_coord}, Central H: {central_H_coord}")
-        print(f"Second closest C (for classification): {second_C_idx}, {second_C_coord}")
-        print(f"Computed C2 axis vector: {axis_vec}")
-        print(f"Computed reference vector (from second closest C): {second_C_vec}")
-
-        return axis_vec, central_C_coord, second_C_vec, (central_C_idx, central_H_idx)
-
-    axis_vec, axis_point, ref_vec, axis_pair = getAxisInfo(mol)
-
-    # (2.2) find atoms on ine side of the axis:
-    def findHalf(axis_vec, axis_point, ref_vec, axis_pair):
         """
         Identifies atoms on one side of the C2 axis.
         
