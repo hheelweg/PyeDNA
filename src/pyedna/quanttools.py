@@ -168,60 +168,117 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
 
         return positive_atom_indices, negative_atom_indices
 
-    def enforceC2(mol, axis_point, axis_vec, negative_atom_indices, positive_atom_indices):
+    def enforceC2(mol):
         """
         Enforces C2 symmetry by:
-        1. Identifying the C2 rotation axis.
-        2. Rotating all atoms in one half of the molecule.
-        3. Overwriting the other half with rotated positions.
+        1. Identifying atoms on each side of the C2 axis.
+        2. Removing negative-side atoms.
+        3. Duplicating and rotating positive-side atoms to replace the removed atoms.
         """
 
-        print('Negative Atom Indices:', negative_atom_indices)
+        # (1) Identify Rotation Axis (Most Central C and H)
+        def getAxisInfo(mol):
+            """
+            Identifies the most central Carbon and Hydrogen atoms to define the C2 rotation axis.
+            Returns:
+                axis_vec (numpy.array): Normalized axis direction vector.
+                axis_point (numpy.array): A point on the axis.
+                axis_pair (tuple): Indices of the two atoms defining the axis.
+            """
+            carbons, hydrogens = [], []
+            
+            # Extract atomic coordinates and classify atoms
+            for i in range(1, mol.NumAtoms() + 1):
+                atom = mol.GetAtom(i)
+                symbol = atom.GetType()[0]  # Extract atomic symbol
+                coord = np.array([atom.GetX(), atom.GetY(), atom.GetZ()])
+                
+                if symbol == "C":
+                    carbons.append((i, coord))
+                elif symbol == "H":
+                    hydrogens.append((i, coord))
 
-        # Sort indices in descending order before deletion
-        negative_atom_indices.sort(reverse=True)
-        print('negative', negative_atom_indices)
+            # Compute geometric center
+            geometric_center = np.mean([coord for _, coord in carbons + hydrogens], axis=0)
 
-        for pos_idx, neg_idx in zip(positive_atom_indices, negative_atom_indices):
-            pos_atom = mol.GetAtom(pos_idx)
-            neg_atom = mol.GetAtom(neg_idx)  # This atom will be overwritten
+            # Find the most central Carbon and Hydrogen
+            sorted_carbons = sorted(carbons, key=lambda c: np.linalg.norm(c[1] - geometric_center))
+            central_C = sorted_carbons[0]  # Closest C (used for axis)
+            second_C = sorted_carbons[1]  # Second closest C (used for classification)
 
-            # Fetch original coordinates
-            pos_coord = np.array([pos_atom.GetX(), pos_atom.GetY(), pos_atom.GetZ()])
+            central_H = min(hydrogens, key=lambda h: np.linalg.norm(h[1] - geometric_center))
 
-            # Compute projection onto the C₂ axis
+            central_C_idx, central_C_coord = central_C
+            central_H_idx, central_H_coord = central_H
+            second_C_idx, second_C_coord = second_C
+
+            # Define the C2 axis as the vector connecting the central C and H
+            axis_vec = central_H_coord - central_C_coord
+            axis_vec /= np.linalg.norm(axis_vec)  # Normalize the vector
+
+            # Define the perpendicular reference plane using the second closest Carbon
+            ref_vec = second_C_coord - central_C_coord
+            ref_vec -= np.dot(ref_vec, axis_vec) * axis_vec  # Make perpendicular to the axis
+            ref_vec /= np.linalg.norm(ref_vec)  # Normalize
+
+            print(f"Selected C2 axis between Carbon {central_C_idx} and Hydrogen {central_H_idx}")
+            print(f"Central C: {central_C_coord}, Central H: {central_H_coord}")
+            print(f"Second closest C (for classification): {second_C_idx}, {second_C_coord}")
+            print(f"Computed C2 axis vector: {axis_vec}")
+            print(f"Computed reference vector (from second closest C): {ref_vec}")
+
+            return axis_vec, central_C_coord, ref_vec, (central_C_idx, central_H_idx)
+
+        axis_vec, axis_point, ref_vec, axis_pair = getAxisInfo(mol)
+
+        # (2) Identify Atoms on One Side of the C₂ Axis
+        positive_atoms = []
+        negative_atoms = []
+        threshold = 1e-3  # Small threshold to avoid floating-point issues
+
+        for i in range(1, mol.NumAtoms() + 1):
+            atom = mol.GetAtom(i)
+            if i in axis_pair:
+                continue  # Skip central C-H axis atoms
+
+            atom_pos = np.array([atom.GetX(), atom.GetY(), atom.GetZ()])
+
+            # Compute the projection onto the C₂ axis
+            projection = axis_point + np.dot(atom_pos - axis_point, axis_vec) * axis_vec
+            displacement = atom_pos - projection  # Vector perpendicular to axis
+
+            # **Compute signed distance relative to the reference vector**
+            signed_distance = np.dot(displacement, ref_vec)
+
+            if signed_distance > threshold:
+                positive_atoms.append((i, atom, atom_pos))  # Store index, atom, and position
+            elif signed_distance < -threshold:
+                negative_atoms.append((i, atom, atom_pos))
+
+        # Ensure equal number of atoms on each side
+        if len(positive_atoms) != len(negative_atoms):
+            print(f"Warning: Unequal number of atoms on both sides ({len(positive_atoms)} vs {len(negative_atoms)}).")
+            min_atoms = min(len(positive_atoms), len(negative_atoms))
+            positive_atoms = positive_atoms[:min_atoms]
+            negative_atoms = negative_atoms[:min_atoms]
+
+        # (3) Remove Negative Side Atoms and Replace with Rotated Copies of Positive Side
+        for (pos_idx, pos_atom, pos_coord), (neg_idx, neg_atom, _) in zip(positive_atoms, negative_atoms):
+            # Rotate positive-side atom by 180° around C₂ axis
             projection = axis_point + np.dot(pos_coord - axis_point, axis_vec) * axis_vec
-            displacement = pos_coord - projection  # Vector perpendicular to axis
+            displacement = pos_coord - projection
+            rotated_coord = projection - displacement  # 180° rotated
 
-            # Compute rotated coordinates (180° flip)
-            rotated_coord = projection - displacement  # Mirrors across axis
+            # **Create a new atom with the same atomic number as pos_atom**
+            new_atom = mol.NewAtom()
+            new_atom.SetAtomicNum(pos_atom.GetAtomicNum())  # Copy element type
+            new_atom.SetVector(*rotated_coord)  # Set mirrored position
 
-            atom_pos_trans = pos_coord - axis_point
-            # Decompose into parallel and perpendicular components
-            parallel_component = np.dot(atom_pos_trans, axis_vec) * axis_vec
-            perpendicular_component = atom_pos_trans - parallel_component
-            # Calculate the 180° rotated position
-            atom_pos_rot= axis_point + parallel_component - perpendicular_component
+            # **Delete negative-side atom from mol**
+            mol.DeleteAtom(neg_atom)
 
-            # **Preserve bonding information before replacing**
-            neg_bonds = []
-            for bond in openbabel.OBMolBondIter(mol):
-                if bond.GetBeginAtomIdx() == neg_idx or bond.GetEndAtomIdx() == neg_idx:
-                    neg_bonds.append((bond.GetBeginAtomIdx(), bond.GetEndAtomIdx(), bond.GetBondOrder()))
-
-            # **Overwrite the negative atom's position**
-            neg_atom.SetVector(*atom_pos_rot)
-
-            # **Overwrite the negative atom's element type**
-            neg_atom.SetAtomicNum(pos_atom.GetAtomicNum())  # Ensures correct element type
-
-            # **Restore bonding using the preserved information**
-            for b_idx1, b_idx2, bond_order in neg_bonds:
-                mol.GetBond(b_idx1, b_idx2).SetBondOrder(bond_order)
-
-            print(f"Replaced atom {neg_idx} with rotated position & element of atom {pos_idx}")
-
-        return mol
+            # **Insert the newly created atom**
+            mol.InsertAtom(new_atom)
 
 
 
@@ -233,12 +290,8 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
     # NOTE : might want to play around with FastRotorSearch versus WeightedRotorSearch etc.
     # the current implementation seems to make the distance between the P-atoms smmaller, so one could choose a more hand-wavy
     # approach and aritficially make the distance in  constraint.AddDistanceConstraint() a little bit bigger than desired
-    a, b = findHalf(axis_vec, axis_point, ref_vec, axis_pair)
-    print('positive', a, len(a))
-    print('negative', b, len(b))
-    mol = enforceC2(mol, axis_point, axis_vec, a, b)
+    enforceC2(mol)
     mol.PerceiveBondOrders()
-    print('deleting successful')
 
     # for _ in range(100):
     #     forcefield.Setup(mol)                           # need to feed back C2-coorected coordinates into forcefield
