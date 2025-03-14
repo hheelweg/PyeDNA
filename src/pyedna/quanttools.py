@@ -75,11 +75,10 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
         """
         Enforces C2 symmetry by:
         1. Identifying atoms on each side of the C2 axis.
-        2. Removing negative-side atoms.
-        3. Duplicating and rotating positive-side atoms to replace the removed atoms.
+        2. Replacing negative-side atoms with rotated positive-side atoms.
         """
 
-        # (1) Identify Rotation Axis (Most Central C and H)
+        # (1) Identify Rotation Axis
         def getAxisInfo(mol):
             """
             Identifies the most central Carbon and Hydrogen atoms to define the C2 rotation axis.
@@ -122,11 +121,9 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
             # Define the perpendicular reference plane using the second closest Carbon
             ref_vec = second_C_coord - central_C_coord
             ref_vec -= np.dot(ref_vec, axis_vec) * axis_vec  # Make perpendicular to the axis
-            #ref_vec /= np.linalg.norm(ref_vec)  # Normalize
+            ref_vec /= np.linalg.norm(ref_vec)  # Normalize
 
             print(f"Selected C2 axis between Carbon {central_C_idx} and Hydrogen {central_H_idx}")
-            print(f"Central C: {central_C_coord}, Central H: {central_H_coord}")
-            print(f"Second closest C (for classification): {second_C_idx}, {second_C_coord}")
             print(f"Computed C2 axis vector: {axis_vec}")
             print(f"Computed reference vector (from second closest C): {ref_vec}")
 
@@ -165,23 +162,18 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
             positive_atoms = positive_atoms[:min_atoms]
             negative_atoms = negative_atoms[:min_atoms]
 
-        # (3) Remove Negative Side Atoms and Replace with Rotated Copies of Positive Side
+        # (3) **Replace Negative-Side Atoms Without Deleting/Inserting**
         for (pos_idx, pos_atom, pos_coord), (neg_idx, neg_atom, _) in zip(positive_atoms, negative_atoms):
             # Rotate positive-side atom by 180° around C₂ axis
             projection = axis_point + np.dot(pos_coord - axis_point, axis_vec) * axis_vec
             displacement = pos_coord - projection
             rotated_coord = projection - displacement  # 180° rotated
 
-            # **Create a new atom with the same atomic number as pos_atom**
-            new_atom = mol.NewAtom()
-            new_atom.SetAtomicNum(pos_atom.GetAtomicNum())  # Copy element type
-            new_atom.SetVector(*rotated_coord)  # Set mirrored position
+            # **Directly overwrite the negative atom's position & element type**
+            neg_atom.SetVector(*rotated_coord)
+            neg_atom.SetAtomicNum(pos_atom.GetAtomicNum())  # Copy element type
 
-            # **Delete negative-side atom from mol**
-            mol.DeleteAtom(neg_atom)
-
-            # **Insert the newly created atom**
-            mol.InsertAtom(new_atom)
+            print(f"Replaced atom {neg_idx} with rotated position & element of atom {pos_idx}")
 
 
 
