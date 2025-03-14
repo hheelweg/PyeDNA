@@ -78,32 +78,38 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
 
         # (1) Identify Rotation Axis (Central C and H Atoms)
         def getAxisInfo(mol):
-            atoms = []
-            
-            # Extract atomic coordinates
+            carbons, hydrogens = []
+    
+            # Extract atomic coordinates and classify atoms
             for i in range(1, mol.NumAtoms() + 1):
                 atom = mol.GetAtom(i)
+                symbol = atom.GetType()[0]  # Extract atomic symbol
                 coord = np.array([atom.GetX(), atom.GetY(), atom.GetZ()])
-                atoms.append((i, atom, coord))
+                
+                if symbol == "C":
+                    carbons.append((i, coord))
+                elif symbol == "H":
+                    hydrogens.append((i, coord))
 
-            # Compute the geometric center
-            geometric_center = np.mean([coord for _, _, coord in atoms], axis=0)
+            # Compute geometric center
+            geometric_center = np.mean([coord for _, coord in carbons + hydrogens], axis=0)
 
-            # Find the two atoms closest to the geometric center (best C-H pair for axis)
-            sorted_atoms = sorted(atoms, key=lambda x: np.linalg.norm(x[2] - geometric_center))
-            axis_pair = sorted_atoms[:2]  # These define the rotation axis
+            # Find the most central Carbon and Hydrogen
+            central_C = min(carbons, key=lambda c: np.linalg.norm(c[1] - geometric_center))
+            central_H = min(hydrogens, key=lambda h: np.linalg.norm(h[1] - geometric_center))
 
-            axis_atom1 = mol.GetAtom(axis_pair[0][0])
-            axis_atom2 = mol.GetAtom(axis_pair[1][0])
-            
-            axis_pos1 = np.array([axis_atom1.GetX(), axis_atom1.GetY(), axis_atom1.GetZ()])
-            axis_pos2 = np.array([axis_atom2.GetX(), axis_atom2.GetY(), axis_atom2.GetZ()])
-            print("axis positions", axis_pos1, axis_pos2)
+            central_C_idx, central_C_coord = central_C
+            central_H_idx, central_H_coord = central_H
 
-            # Compute the rotation axis vector
-            axis_vec = (axis_pos2 - axis_pos1) / np.linalg.norm(axis_pos2 - axis_pos1)
+            # Define the C2 axis as the vector connecting the central C and H
+            axis_vec = central_H_coord - central_C_coord
+            axis_vec /= np.linalg.norm(axis_vec)  # Normalize the vector
 
-            return axis_vec, axis_pos1, (axis_pair[0][0], axis_pair[1][0])  # Return indices as well
+            print(f"Selected C2 axis between Carbon {central_C_idx} and Hydrogen {central_H_idx}")
+            print(f"Central C: {central_C_coord}, Central H: {central_H_coord}")
+            print(f"Computed C2 axis vector: {axis_vec}")
+
+            return axis_vec, central_C_coord, (central_C_idx, central_H_idx)  # Return indices
 
         axis_vec, axis_point, axis_pair = getAxisInfo(mol)
         print(f"Identified C2 axis between atoms: {axis_pair} (0-indexed)")
