@@ -113,8 +113,9 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
 
         axis_vec, axis_point, axis_pair = getAxisInfo(mol)
 
-        # (2) Identify and Rotate Atoms in One Half of the Molecule
-        rotated_atoms = []
+        # (2) Identify Atoms on One Side of the C₂ Axis
+        positive_atoms = []
+        negative_atoms = []
 
         for i in range(1, mol.NumAtoms() + 1):
             atom = mol.GetAtom(i)
@@ -127,17 +128,29 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
             projection = axis_point + np.dot(atom_pos - axis_point, axis_vec) * axis_vec
             displacement = atom_pos - projection  # Vector perpendicular to axis
 
-            # Classify atoms into two groups: "positive" and "negative" sides
-            side = np.dot(displacement, displacement)
+            # **Correctly Determine Which Side the Atom is On**
+            side = np.dot(displacement, np.cross(axis_vec, np.array([1, 0, 0])))  # Signed measure
 
-            if side >= 0:
-                # Rotate only atoms on one side by 180°
-                rotated_coord = projection - displacement
-                rotated_atoms.append((i, rotated_coord))  # Store the rotated coordinates
+            if side > 0:
+                positive_atoms.append((i, atom_pos))  # Store index and position
+            else:
+                negative_atoms.append((i, atom_pos))
 
-        # (3) Overwrite the Other Half with the Rotated Positions
-        for (original_idx, rotated_coord) in rotated_atoms:
-            atom_to_modify = mol.GetAtom(original_idx)
+        # (3) Rotate Positive Side and Overwrite Negative Side
+        if len(positive_atoms) != len(negative_atoms):
+            print(f"Warning: Unequal number of atoms on both sides ({len(positive_atoms)} vs {len(negative_atoms)}).")
+            min_atoms = min(len(positive_atoms), len(negative_atoms))
+            positive_atoms = positive_atoms[:min_atoms]
+            negative_atoms = negative_atoms[:min_atoms]
+
+        for (pos_idx, pos_coord), (neg_idx, _) in zip(positive_atoms, negative_atoms):
+            # Rotate positive-side atom by 180° around C₂ axis
+            projection = axis_point + np.dot(pos_coord - axis_point, axis_vec) * axis_vec
+            displacement = pos_coord - projection
+            rotated_coord = projection - displacement  # 180° rotated
+
+            # Overwrite the negative-side atom with the rotated coordinates
+            atom_to_modify = mol.GetAtom(neg_idx)
             atom_to_modify.SetVector(*rotated_coord)
 
 
