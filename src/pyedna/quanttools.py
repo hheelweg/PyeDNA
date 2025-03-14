@@ -183,8 +183,8 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
         print('negative', negative_atom_indices)
 
         for pos_idx, neg_idx in zip(positive_atom_indices, negative_atom_indices):
-            pos_atom = mol.GetAtom(pos_idx)
-            neg_atom = mol.GetAtom(neg_idx)  # This atom will be overwritten
+            pos_atom = mol.GetAtom(pos_idx + 1)
+            neg_atom = mol.GetAtom(neg_idx + 1)  # This atom will be overwritten
 
             # Fetch original coordinates
             pos_coord = np.array([pos_atom.GetX(), pos_atom.GetY(), pos_atom.GetZ()])
@@ -196,8 +196,15 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
             # Compute rotated coordinates (180° flip)
             rotated_coord = projection - displacement  # Mirrors across axis
 
+            atom_pos_trans = pos_coord - axis_point
+            # Decompose into parallel and perpendicular components
+            parallel_component = np.dot(atom_pos_trans, axis_vec) * axis_vec
+            perpendicular_component = atom_pos_trans - parallel_component
+            # Calculate the 180° rotated position
+            atom_pos_rot= axis_point + parallel_component - perpendicular_component
+
             # **Overwrite the negative atom's position**
-            neg_atom.SetVector(*rotated_coord)
+            neg_atom.SetVector(*atom_pos_rot)
 
             # **Overwrite the negative atom's element type**
             neg_atom.SetAtomicNum(pos_atom.GetAtomicNum())  # Ensures correct element type
