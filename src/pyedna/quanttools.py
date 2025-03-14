@@ -78,7 +78,7 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
 
         # (1) Identify Rotation Axis (Central C and H Atoms)
         def getAxisInfo(mol):
-            carbons, hydrogens = []
+            carbons, hydrogens = [], []
     
             # Extract atomic coordinates and classify atoms
             for i in range(1, mol.NumAtoms() + 1):
