@@ -197,7 +197,7 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
     a, b = findHalf(axis_vec, axis_point, ref_vec, axis_pair)
     print('positive', a, len(a))
     print('negative', b, len(b))
-    enforceC2(mol, axis_vec, axis_point, a, b)
+    enforceC2(mol, b)
 
     # for _ in range(100):
     #     forcefield.Setup(mol)                           # need to feed back C2-coorected coordinates into forcefield
