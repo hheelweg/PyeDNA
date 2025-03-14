@@ -105,6 +105,7 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
 
             # Find the most central Carbon and Hydrogen
             sorted_carbons = sorted(carbons, key=lambda c: np.linalg.norm(c[1] - geometric_center))
+            print(sorted_carbons)
             central_C = sorted_carbons[0]  # Closest C (used for axis)
             second_C = sorted_carbons[1]  # Second closest C (used for classification)
 
