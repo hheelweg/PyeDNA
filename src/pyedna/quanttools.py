@@ -133,9 +133,9 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
             signed_distance = np.dot(displacement, axis_vec)
 
             if signed_distance > threshold:
-                positive_atoms.append((i, atom_pos))  # Store index and position
+                positive_atoms.append((i, atom, atom_pos))  # Store index, atom, and position
             elif signed_distance < -threshold:
-                negative_atoms.append((i, atom_pos))
+                negative_atoms.append((i, atom, atom_pos))
 
         # Ensure equal number of atoms on each side
         if len(positive_atoms) != len(negative_atoms):
@@ -144,16 +144,21 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
             positive_atoms = positive_atoms[:min_atoms]
             negative_atoms = negative_atoms[:min_atoms]
 
-        # (3) Rotate Positive Side and Overwrite Negative Side
-        for (pos_idx, pos_coord), (neg_idx, _) in zip(positive_atoms, negative_atoms):
+        # (3) Duplicate and Rotate Positive Side, Then Overwrite Negative Side
+        for (pos_idx, pos_atom, pos_coord), (neg_idx, neg_atom, _) in zip(positive_atoms, negative_atoms):
             # Rotate positive-side atom by 180° around C₂ axis
             projection = axis_point + np.dot(pos_coord - axis_point, axis_vec) * axis_vec
             displacement = pos_coord - projection
             rotated_coord = projection - displacement  # 180° rotated
 
-            # **Ensure We Modify `mol` Directly**
-            atom_to_modify = mol.GetAtom(neg_idx)
-            atom_to_modify.SetVector(*rotated_coord)
+            # **Create a new atom with the same atomic number**
+            new_atom = mol.NewAtom()
+            new_atom.SetAtomicNum(pos_atom.GetAtomicNum())  # Copy element type
+            new_atom.SetVector(*rotated_coord)  # Set mirrored position
+
+            # **Replace the original negative-side atom**
+            mol.DeleteAtom(neg_atom)  # Remove old atom
+            mol.InsertAtom(new_atom)  # Insert mirrored atom
 
 
     # (3) optimize with C2 symmetry constraint and distance constraint on distance between P-atoms
