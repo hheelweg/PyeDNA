@@ -143,6 +143,7 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
             min_atoms = min(len(positive_atoms), len(negative_atoms))
             positive_atoms = positive_atoms[:min_atoms]
             negative_atoms = negative_atoms[:min_atoms]
+            print(positive_atoms)
 
         # (3) Duplicate and Rotate Positive Side, Then Overwrite Negative Side
         for (pos_idx, pos_atom, pos_coord), (neg_idx, neg_atom, _) in zip(positive_atoms, negative_atoms):
