@@ -68,7 +68,12 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
     obConversion.ReadFile(mol, moleculeNamePDB)
 
     # (2) function that enables C2 symmetry optimization:
-    def enforceC2(mol):
+    def enforce_C2_symmetry_by_rotation(mol):
+        """
+        Enforces C2 symmetry by rotating one half of the molecule 180° around the axis 
+        defined by the central-most Carbon (C) and Hydrogen (H) atoms and overwriting 
+        the other half.
+        """
         atoms = []
         carbons, hydrogens = [], []
         
@@ -99,30 +104,41 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
         print(f"Central C: {central_C}, Central H: {central_H}")
         print(f"Computed C2 axis: {C2_axis}")
 
-        # Compute the symmetry plane perpendicular to the C2 axis
-        midpoint = (central_C + central_H) / 2  # Midpoint of C-H bond
-        normal_vector = C2_axis  # Plane normal is along the C2 axis
+        # Compute the midpoint of the C2 axis
+        midpoint = (central_C + central_H) / 2
 
-        def reflect_across_plane(atom_coord):
-            """ Reflects a point across the plane defined by the midpoint and normal vector. """
-            vec = atom_coord - midpoint
-            mirrored = atom_coord - 2 * np.dot(vec, normal_vector) * normal_vector
-            return mirrored
+        def rotate_around_axis(atom_coord, theta=180):
+            """ Rotates a point 180 degrees around a given axis. """
+            theta = np.radians(theta)
+            axis = C2_axis
+            cos_theta = np.cos(theta)
+            sin_theta = np.sin(theta)
+            cross_prod_matrix = np.array([
+                [0, -axis[2], axis[1]],
+                [axis[2], 0, -axis[0]],
+                [-axis[1], axis[0], 0]
+            ])
+            rotation_matrix = (
+                cos_theta * np.eye(3) +
+                sin_theta * cross_prod_matrix +
+                (1 - cos_theta) * np.outer(axis, axis)
+            )
+            return midpoint + np.dot(rotation_matrix, (atom_coord - midpoint))
 
-        # Split atoms into two groups based on their position relative to the symmetry plane
+        # Split atoms into two groups relative to the C2 axis
         positive_side = []
         negative_side = []
         for atom, symbol, coord in atoms:
-            side = np.dot(coord - midpoint, normal_vector)
+            side = np.dot(coord - midpoint, C2_axis)
             if side >= 0:
                 positive_side.append((atom, coord))
             else:
                 negative_side.append((atom, coord))
 
-        # Mirror only the atoms on the negative side
-        for atom, coord in negative_side:
-            mirrored_coord = reflect_across_plane(coord)
-            atom.SetVector(*mirrored_coord)
+        # Rotate one side by 180 degrees and overwrite the negative side
+        for (atom, coord), (mirror_atom, _) in zip(negative_side, positive_side):
+            rotated_coord = rotate_around_axis(coord)
+            mirror_atom.SetVector(*rotated_coord)
 
 
     # (3) optimize with C2 symmetry constraint and distance constraint on distance between P-atoms
