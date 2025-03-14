@@ -75,12 +75,14 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
         the other half.
         """
         carbons, hydrogens = [], []
+        all_atoms = []
         
         # Extract atomic coordinates
         for i in range(1, mol.NumAtoms() + 1):
             atom = mol.GetAtom(i)
             symbol = atom.GetType()[0]  # Extract atomic symbol
             coord = np.array([atom.GetX(), atom.GetY(), atom.GetZ()])
+            all_atoms.append((atom, coord))
             
             if symbol == "C":
                 carbons.append((atom, coord))
@@ -118,12 +120,10 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
         # Identify atoms on the negative side
         positive_atoms = []
         negative_atoms = []
-        for i in range(1, mol.NumAtoms() + 1):
-            atom = mol.GetAtom(i)
+        for atom, coord in all_atoms:
             if atom == central_C or atom == central_H:
                 continue  # Skip atoms that are part of the C2 axis
             
-            coord = np.array([atom.GetX(), atom.GetY(), atom.GetZ()])
             projection = central_C_coord + np.dot(coord - central_C_coord, C2_axis) * C2_axis
             displacement = coord - projection
             side = np.dot(displacement, displacement)
@@ -131,20 +131,20 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
             if side >= 0:
                 positive_atoms.append((atom, coord))
             else:
-                negative_atoms.append(atom)  # Only storing atoms to be deleted
+                negative_atoms.append(atom)  # Store atoms to be deleted
+
+        # Ensure we are mirroring exactly the same number of atoms
+        if len(positive_atoms) != len(negative_atoms):
+            raise ValueError("Mismatch in number of positive and negative side atoms!")
 
         # Delete atoms on the negative side
         for atom in negative_atoms:
             mol.DeleteAtom(atom)
 
-        # Mirror and add new atoms from positive side
-        for atom, coord in positive_atoms:
-            mirrored_coord = mirror_across_axis(coord)
-
-            # Create a new atom and set its properties
-            new_atom = mol.NewAtom()
-            new_atom.SetAtomicNum(atom.GetAtomicNum())  # Copy element type
-            new_atom.SetVector(*mirrored_coord)  # Set mirrored position      
+        # Mirror and overwrite new atoms from positive side
+        for (original_atom, original_coord), target_atom in zip(positive_atoms, negative_atoms):
+            mirrored_coord = mirror_across_axis(original_coord)
+            target_atom.SetVector(*mirrored_coord)  # Overwrite atom in place   
         print("C2 symmetry enforced by rotation.")
 
 
