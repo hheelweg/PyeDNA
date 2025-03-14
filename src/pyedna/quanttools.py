@@ -138,12 +138,12 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
                 negative_atoms.append((i, atom, atom_pos))
 
         # Ensure equal number of atoms on each side
+        print(positive_atoms)
         if len(positive_atoms) != len(negative_atoms):
             print(f"Warning: Unequal number of atoms on both sides ({len(positive_atoms)} vs {len(negative_atoms)}).")
             min_atoms = min(len(positive_atoms), len(negative_atoms))
             positive_atoms = positive_atoms[:min_atoms]
             negative_atoms = negative_atoms[:min_atoms]
-            print(positive_atoms)
 
         # (3) Duplicate and Rotate Positive Side, Then Overwrite Negative Side
         for (pos_idx, pos_atom, pos_coord), (neg_idx, neg_atom, _) in zip(positive_atoms, negative_atoms):
