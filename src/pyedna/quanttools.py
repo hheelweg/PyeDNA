@@ -182,7 +182,7 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
             neg_atom = mol.GetAtom(neg_idx)
 
             # **Delete negative-side atom but remember its index**
-            mol.DeleteAtom(neg_atom)
+            mol.RemoveAtom(neg_atom)
 
 
 
