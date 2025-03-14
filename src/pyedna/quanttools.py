@@ -237,6 +237,7 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
     print('positive', a, len(a))
     print('negative', b, len(b))
     mol = enforceC2(mol, axis_point, axis_vec, a, b)
+    mol.PerceiveBondOrders()
     print('deleting successful')
 
     # for _ in range(100):
