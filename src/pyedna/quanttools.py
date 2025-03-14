@@ -98,6 +98,7 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
             
             axis_pos1 = np.array([axis_atom1.GetX(), axis_atom1.GetY(), axis_atom1.GetZ()])
             axis_pos2 = np.array([axis_atom2.GetX(), axis_atom2.GetY(), axis_atom2.GetZ()])
+            print("axis positions", axis_pos1, axis_pos2)
 
             # Compute the rotation axis vector
             axis_vec = (axis_pos2 - axis_pos1) / np.linalg.norm(axis_pos2 - axis_pos1)
