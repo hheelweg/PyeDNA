@@ -183,8 +183,8 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
         print('negative', negative_atom_indices)
 
         for pos_idx, neg_idx in zip(positive_atom_indices, negative_atom_indices):
-            pos_atom = mol.GetAtom(pos_idx + 1)
-            neg_atom = mol.GetAtom(neg_idx + 1)  # This atom will be overwritten
+            pos_atom = mol.GetAtom(pos_idx)
+            neg_atom = mol.GetAtom(neg_idx)  # This atom will be overwritten
 
             # Fetch original coordinates
             pos_coord = np.array([pos_atom.GetX(), pos_atom.GetY(), pos_atom.GetZ()])
