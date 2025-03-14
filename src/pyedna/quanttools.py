@@ -87,7 +87,7 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
                 second_C_vec (numpy.array): The reference vector used for classification.
                 axis_pair (tuple): Indices of the two atoms defining the axis.
             """
-            carbons, hydrogens = []
+            carbons, hydrogens = [], []
             
             # Extract atomic coordinates and classify atoms
             for i in range(1, mol.NumAtoms() + 1):
