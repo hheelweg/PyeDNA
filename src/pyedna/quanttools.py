@@ -70,77 +70,61 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
     # (2) function that enables C2 symmetry optimization:
     def enforceC2(mol):
         """
-        Enforces C2 symmetry by rotating one half of the molecule 180° around the axis 
-        defined by the central-most Carbon (C) and Hydrogen (H) atoms and overwriting 
-        the other half.
-        """
-        atom_coords = []
-    
-        # Extract atomic coordinates directly from `mol`
+    Enforces C2 symmetry by:
+    1. Identifying the C2 rotation axis.
+    2. Rotating all atoms in one half of the molecule.
+    3. Overwriting the other half with rotated positions.
+    """
+
+        # (1) Identify Rotation Axis (Central C and H Atoms)
+        def getAxisInfo(mol):
+            atoms = []
+            
+            # Extract atomic coordinates
+            for i in range(1, mol.NumAtoms() + 1):
+                atom = mol.GetAtom(i)
+                coord = np.array([atom.GetX(), atom.GetY(), atom.GetZ()])
+                atoms.append((i, atom, coord))
+
+            # Compute the geometric center
+            geometric_center = np.mean([coord for _, _, coord in atoms], axis=0)
+
+            # Find the two atoms closest to the geometric center (best C-H pair for axis)
+            sorted_atoms = sorted(atoms, key=lambda x: np.linalg.norm(x[2] - geometric_center))
+            axis_pair = sorted_atoms[:2]  # These define the rotation axis
+
+            axis_atom1 = mol.GetAtom(axis_pair[0][0])
+            axis_atom2 = mol.GetAtom(axis_pair[1][0])
+            
+            axis_pos1 = np.array([axis_atom1.GetX(), axis_atom1.GetY(), axis_atom1.GetZ()])
+            axis_pos2 = np.array([axis_atom2.GetX(), axis_atom2.GetY(), axis_atom2.GetZ()])
+
+            # Compute the rotation axis vector
+            axis_vec = (axis_pos2 - axis_pos1) / np.linalg.norm(axis_pos2 - axis_pos1)
+
+            return axis_vec, axis_pos1, (axis_pair[0][0], axis_pair[1][0])  # Return indices as well
+
+        axis_vec, axis_point, axis_pair = getAxisInfo(mol)
+        print(f"Identified C2 axis between atoms: {axis_pair} (0-indexed)")
+
+        # (2) Rotate First Half of the Molecule
         for i in range(1, mol.NumAtoms() + 1):
             atom = mol.GetAtom(i)
-            coord = np.array([atom.GetX(), atom.GetY(), atom.GetZ()])
-            atom_coords.append((i, atom, coord))
-
-        # Compute geometric center
-        geometric_center = np.mean([coord for _, _, coord in atom_coords], axis=0)
-
-        # Find the C2 axis: first choose two atoms closest to the center (best C-H pair)
-        sorted_atoms = sorted(atom_coords, key=lambda x: np.linalg.norm(x[2] - geometric_center))
-        central_C_idx, central_H_idx = sorted_atoms[:2]  # Two closest atoms define the C2 axis
-
-        central_C = mol.GetAtom(central_C_idx[0])
-        central_H = mol.GetAtom(central_H_idx[0])
-
-        central_C_coord = np.array([central_C.GetX(), central_C.GetY(), central_C.GetZ()])
-        central_H_coord = np.array([central_H.GetX(), central_H.GetY(), central_H.GetZ()])
-
-        # Define the C2 axis as the vector connecting the central C and H
-        C2_axis = central_H_coord - central_C_coord
-        C2_axis /= np.linalg.norm(C2_axis)  # Normalize the vector
-
-        print(f"Central C: {central_C_coord}, Central H: {central_H_coord}")
-        print(f"Computed C2 axis: {C2_axis}")
-
-        # Compute the midpoint of the C2 axis
-        midpoint = (central_C_coord + central_H_coord) / 2
-
-        def mirror_across_axis(coord):
-            """ Mirrors a point across the plane perpendicular to the C2 axis. """
-            projection = central_C_coord + np.dot(coord - central_C_coord, C2_axis) * C2_axis
-            mirrored_coord = 2 * projection - coord
-            return mirrored_coord
-
-        # Identify atoms on each side of the symmetry plane
-        positive_atoms = []
-        negative_atoms = []
-        
-        for i, atom, coord in atom_coords:
-            if np.linalg.norm(coord - central_C_coord) < 1e-3 or np.linalg.norm(coord - central_H_coord) < 1e-3:
-                continue  # Skip central C-H axis atoms
+            if i in axis_pair:
+                continue  # Skip axis atoms
             
-            projection = central_C_coord + np.dot(coord - central_C_coord, C2_axis) * C2_axis
-            displacement = coord - projection
-            side = np.dot(displacement, displacement)
+            atom_pos = np.array([atom.GetX(), atom.GetY(), atom.GetZ()])
 
-            if side >= 0:
-                positive_atoms.append((i, atom, coord))
-            else:
-                negative_atoms.append((i, atom, coord))
+            # Translate atom to axis frame
+            atom_pos_trans = atom_pos - axis_point
+            parallel_component = np.dot(atom_pos_trans, axis_vec) * axis_vec
+            perpendicular_component = atom_pos_trans - parallel_component
 
-        # Ensure equal number of positive and negative atoms
-        if len(positive_atoms) != len(negative_atoms):
-            print(f"Warning: Unequal numbers of atoms on each side ({len(positive_atoms)} vs {len(negative_atoms)}).")
-            min_atoms = min(len(positive_atoms), len(negative_atoms))
-            positive_atoms = positive_atoms[:min_atoms]
-            negative_atoms = negative_atoms[:min_atoms]
+            # Calculate the 180° rotated position
+            atom_pos_rot = axis_point + parallel_component - perpendicular_component
 
-        # Overwrite negative-side atoms with mirrored positive-side atoms
-        for (pos_idx, pos_atom, pos_coord), (neg_idx, neg_atom, _) in zip(positive_atoms, negative_atoms):
-            mirrored_coord = mirror_across_axis(pos_coord)
-            mol.GetAtom(neg_idx).SetVector(*mirrored_coord)  # Modify `mol` directly!
-        print("C2 symmetry enforced by rotation.")
-
+            # Overwrite atom's position
+            atom.SetVector(*atom_pos_rot)
 
 
     # (3) optimize with C2 symmetry constraint and distance constraint on distance between P-atoms
