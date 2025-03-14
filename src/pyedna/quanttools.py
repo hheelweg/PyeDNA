@@ -109,29 +109,15 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
         # Compute the midpoint of the C2 axis
         midpoint = (central_C_coord + central_H_coord) / 2
 
-        def rotate_around_axis(atom, theta=180):
-            """ Rotates a point 180 degrees around a given axis using Rodrigues' formula. """
-            atom_coord = np.array([atom.GetX(), atom.GetY(), atom.GetZ()])
-            theta = np.radians(theta)
-            axis = C2_axis
-            cos_theta = np.cos(theta)
-            sin_theta = np.sin(theta)
-            cross_prod_matrix = np.array([
-                [0, -axis[2], axis[1]],
-                [axis[2], 0, -axis[0]],
-                [-axis[1], axis[0], 0]
-            ])
-            rotation_matrix = (
-                    cos_theta * np.eye(3) +
-                sin_theta * cross_prod_matrix +
-                (1 - cos_theta) * np.outer(axis, axis)
-            )
-            rotated_coord = midpoint + np.dot(rotation_matrix, (atom_coord - midpoint))
-            atom.SetVector(*rotated_coord)  # Directly modify mol
+        def mirror_across_axis(coord):
+            """ Mirrors a point across the plane perpendicular to the C2 axis. """
+            projection = central_C_coord + np.dot(coord - central_C_coord, C2_axis) * C2_axis
+            mirrored_coord = 2 * projection - coord
+            return mirrored_coord
 
-        # Classify atoms: Determine which side of the C2 axis they are on
-        positive_side = []
-        negative_side = []
+        # Identify atoms on the negative side
+        positive_atoms = []
+        negative_atoms = []
         for i in range(1, mol.NumAtoms() + 1):
             atom = mol.GetAtom(i)
             if atom == central_C or atom == central_H:
@@ -143,13 +129,22 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
             side = np.dot(displacement, displacement)
 
             if side >= 0:
-                positive_side.append(atom)
+                positive_atoms.append((atom, coord))
             else:
-                negative_side.append(atom)
+                negative_atoms.append(atom)  # Only storing atoms to be deleted
 
-        # Rotate atoms on the negative side
-        for atom in negative_side:
-            rotate_around_axis(atom)    
+        # Delete atoms on the negative side
+        for atom in negative_atoms:
+            mol.DeleteAtom(atom)
+
+        # Mirror and add new atoms from positive side
+        for atom, coord in positive_atoms:
+            mirrored_coord = mirror_across_axis(coord)
+
+            # Create a new atom and set its properties
+            new_atom = mol.NewAtom()
+            new_atom.SetAtomicNum(atom.GetAtomicNum())  # Copy element type
+            new_atom.SetVector(*mirrored_coord)  # Set mirrored position      
         print("C2 symmetry enforced by rotation.")
 
 
