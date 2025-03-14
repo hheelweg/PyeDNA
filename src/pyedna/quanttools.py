@@ -68,7 +68,7 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
     obConversion.ReadFile(mol, moleculeNamePDB)
 
     # (2) function that enables C2 symmetry optimization:
-    def enforce_C2_symmetry_by_rotation(mol):
+    def enforceC2(mol):
         """
         Enforces C2 symmetry by rotating one half of the molecule 180° around the axis 
         defined by the central-most Carbon (C) and Hydrogen (H) atoms and overwriting 
