@@ -116,6 +116,7 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
         # (2) Identify Atoms on One Side of the C₂ Axis
         positive_atoms = []
         negative_atoms = []
+        threshold = 1e-3  # Small threshold to avoid floating-point issues
 
         for i in range(1, mol.NumAtoms() + 1):
             atom = mol.GetAtom(i)
@@ -129,11 +130,11 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
             displacement = atom_pos - projection  # Vector perpendicular to axis
 
             # **Correctly Determine Which Side the Atom is On**
-            side = np.dot(displacement, np.cross(axis_vec, np.array([1, 0, 0])))  # Signed measure
+            signed_distance = np.dot(displacement, axis_vec)
 
-            if side > 0:
+            if signed_distance > threshold:
                 positive_atoms.append((i, atom_pos))  # Store index and position
-            else:
+            elif signed_distance < -threshold:
                 negative_atoms.append((i, atom_pos))
 
         # (3) Rotate Positive Side and Overwrite Negative Side
