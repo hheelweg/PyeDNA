@@ -141,9 +141,9 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
                 negative_side.append((atom, coord))
 
         # Rotate one side by 180 degrees and overwrite the negative side
-        for (atom, coord), (mirror_atom, _) in zip(negative_side, positive_side):
+        for atom, coord in negative_side:
             rotated_coord = rotate_around_axis(coord)
-            mirror_atom.SetVector(*rotated_coord)
+            atom.SetVector(*rotated_coord)  # Now modifying the actual atom in mol!
 
         print("C2 symmetry enforced by rotation.")
 
