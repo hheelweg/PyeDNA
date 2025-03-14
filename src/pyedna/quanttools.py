@@ -77,9 +77,8 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
         1. Identifying atoms on each side of the C2 axis.
         2. Replacing negative-side atoms with rotated positive-side atoms.
         """
-        mol.SetAromaticPerceived(False)  # Prevent aromaticity perception
-        mol.SetBondPerceived(False)      # Prevent bond detection
-        mol.SetRingPerceived(False)      # Prevent ring detection
+        for bond in openbabel.OBMolBondIter(mol):
+            mol.DeleteBond(bond)
 
         # (1) Identify Rotation Axis
         def getAxisInfo(mol):
