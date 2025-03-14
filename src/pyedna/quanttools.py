@@ -75,17 +75,17 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
         the other half.
         """
         carbons, hydrogens = [], []
-    
+        
         # Extract atomic coordinates
         for i in range(1, mol.NumAtoms() + 1):
             atom = mol.GetAtom(i)
             symbol = atom.GetType()[0]  # Extract atomic symbol
-            x, y, z = atom.GetX(), atom.GetY(), atom.GetZ()
+            coord = np.array([atom.GetX(), atom.GetY(), atom.GetZ()])
             
             if symbol == "C":
-                carbons.append((atom, np.array([x, y, z])))
+                carbons.append((atom, coord))
             elif symbol == "H":
-                hydrogens.append((atom, np.array([x, y, z])))
+                hydrogens.append((atom, coord))
 
         # Compute center-most Carbon and Hydrogen
         carbon_center = np.mean([c[1] for c in carbons], axis=0)
@@ -95,15 +95,19 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
         central_C, _ = min(carbons, key=lambda c: np.linalg.norm(c[1] - carbon_center))
         central_H, _ = min(hydrogens, key=lambda h: np.linalg.norm(h[1] - hydrogen_center))
 
+        # Convert OpenBabel vector3 to NumPy array
+        central_C_coord = np.array([central_C.GetX(), central_C.GetY(), central_C.GetZ()])
+        central_H_coord = np.array([central_H.GetX(), central_H.GetY(), central_H.GetZ()])
+
         # Define the C2 axis as the vector connecting the central C and H
-        C2_axis = (central_H.GetVector() - central_C.GetVector())
+        C2_axis = central_H_coord - central_C_coord
         C2_axis /= np.linalg.norm(C2_axis)  # Normalize the vector
 
-        print(f"Central C: {central_C.GetVector()}, Central H: {central_H.GetVector()}")
+        print(f"Central C: {central_C_coord}, Central H: {central_H_coord}")
         print(f"Computed C2 axis: {C2_axis}")
 
         # Compute the midpoint of the C2 axis
-        midpoint = (central_C.GetVector() + central_H.GetVector()) / 2
+        midpoint = (central_C_coord + central_H_coord) / 2
 
         def rotate_around_axis(atom, theta=180):
             """ Rotates a point 180 degrees around a given axis using Rodrigues' formula. """
@@ -118,7 +122,7 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
                 [-axis[1], axis[0], 0]
             ])
             rotation_matrix = (
-                cos_theta * np.eye(3) +
+                    cos_theta * np.eye(3) +
                 sin_theta * cross_prod_matrix +
                 (1 - cos_theta) * np.outer(axis, axis)
             )
@@ -134,7 +138,7 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
                 continue  # Skip atoms that are part of the C2 axis
             
             coord = np.array([atom.GetX(), atom.GetY(), atom.GetZ()])
-            projection = central_C.GetVector() + np.dot(coord - central_C.GetVector(), C2_axis) * C2_axis
+            projection = central_C_coord + np.dot(coord - central_C_coord, C2_axis) * C2_axis
             displacement = coord - projection
             side = np.dot(displacement, displacement)
 
@@ -145,7 +149,7 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
 
         # Rotate atoms on the negative side
         for atom in negative_side:
-            rotate_around_axis(atom)
+            rotate_around_axis(atom)    
         print("C2 symmetry enforced by rotation.")
 
 
