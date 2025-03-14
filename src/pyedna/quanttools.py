@@ -169,9 +169,19 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
             displacement = pos_coord - projection
             rotated_coord = projection - displacement  # 180° rotated
 
+            # **Preserve bonding before modifying atom**
+            neg_bonds = []
+            for bond in openbabel.OBMolBondIter(mol):
+                if bond.GetBeginAtomIdx() == neg_idx or bond.GetEndAtomIdx() == neg_idx:
+                    neg_bonds.append((bond.GetBeginAtomIdx(), bond.GetEndAtomIdx(), bond.GetBondOrder()))
+
             # **Directly overwrite the negative atom's position & element type**
             neg_atom.SetVector(*rotated_coord)
             neg_atom.SetAtomicNum(pos_atom.GetAtomicNum())  # Copy element type
+
+            # **Restore bonding using the preserved information**
+            for b_idx1, b_idx2, bond_order in neg_bonds:
+                mol.GetBond(b_idx1, b_idx2).SetBondOrder(bond_order)
 
             print(f"Replaced atom {neg_idx} with rotated position & element of atom {pos_idx}")
 
