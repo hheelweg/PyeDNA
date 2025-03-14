@@ -29,22 +29,22 @@ def main():
     #                                            **settings_dft
     #                                            )
 
-    # TODO : delete dye_name_ff.pdb file
+    # # TODO : delete dye_name_ff.pdb file
 
-    # (2) write attachment information of dye
-    dye = pyedna.Chromophore(mda.Universe(f"{dye_name}.pdb", format = "PDB"))
-    pyedna.Chromophore.writeAttachmentInfo(dye.chromophore_u,
-                                           dye_name = dye_name,
-                                           linker_atoms = ['P1', 'P2'],
-                                           linker_group = 'phosphate'
-                                           )
+    # # (2) write attachment information of dye
+    # dye = pyedna.Chromophore(mda.Universe(f"{dye_name}.pdb", format = "PDB"))
+    # pyedna.Chromophore.writeAttachmentInfo(dye.chromophore_u,
+    #                                        dye_name = dye_name,
+    #                                        linker_atoms = ['P1', 'P2'],
+    #                                        linker_group = 'phosphate'
+    #                                        )
     
-    # (3) parse attachment information for Chromophore object
-    dye.storeSourcePath('./')
-    dye.parseAttachment(change_atom_names = False)
+    # # (3) parse attachment information for Chromophore object
+    # dye.storeSourcePath('./')
+    # dye.parseAttachment(change_atom_names = False)
 
-    # (4) create forcefield parameters .frcmod and .mol2 for dye
-    #dye.createFF()
+    # # (4) create forcefield parameters .frcmod and .mol2 for dye
+    # #dye.createFF()
 
 
 
