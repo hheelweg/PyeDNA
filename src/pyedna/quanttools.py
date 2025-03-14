@@ -137,20 +137,21 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
             elif signed_distance < -threshold:
                 negative_atoms.append((i, atom_pos))
 
-        # (3) Rotate Positive Side and Overwrite Negative Side
+        # Ensure equal number of atoms on each side
         if len(positive_atoms) != len(negative_atoms):
             print(f"Warning: Unequal number of atoms on both sides ({len(positive_atoms)} vs {len(negative_atoms)}).")
             min_atoms = min(len(positive_atoms), len(negative_atoms))
             positive_atoms = positive_atoms[:min_atoms]
             negative_atoms = negative_atoms[:min_atoms]
 
+        # (3) Rotate Positive Side and Overwrite Negative Side
         for (pos_idx, pos_coord), (neg_idx, _) in zip(positive_atoms, negative_atoms):
             # Rotate positive-side atom by 180° around C₂ axis
             projection = axis_point + np.dot(pos_coord - axis_point, axis_vec) * axis_vec
             displacement = pos_coord - projection
             rotated_coord = projection - displacement  # 180° rotated
 
-            # Overwrite the negative-side atom with the rotated coordinates
+            # **Ensure We Modify `mol` Directly**
             atom_to_modify = mol.GetAtom(neg_idx)
             atom_to_modify.SetVector(*rotated_coord)
 
