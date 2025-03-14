@@ -182,17 +182,11 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
         negative_atom_indices.sort(reverse=True)
         print('negative', negative_atom_indices)
 
-        for neg_idx, pos_idx in zip(negative_atom_indices, positive_atom_indices):
-            neg_atom = mol.GetAtom(neg_idx)
-            if neg_atom is None:
-                print(f"Warning: Atom at index {neg_idx} is already deleted or invalid.")
-                continue  # Skip invalid indices
-
-            # **Delete negative-side atom but remember its index**
-            mol.DeleteAtom(neg_atom)
-
-            # Fetch the original atom
+        for pos_idx, neg_idx in zip(positive_atom_indices, negative_atom_indices):
             pos_atom = mol.GetAtom(pos_idx)
+            neg_atom = mol.GetAtom(neg_idx)  # This atom will be overwritten
+
+            # Fetch original coordinates
             pos_coord = np.array([pos_atom.GetX(), pos_atom.GetY(), pos_atom.GetZ()])
 
             # Compute projection onto the C₂ axis
@@ -202,13 +196,13 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
             # Compute rotated coordinates (180° flip)
             rotated_coord = projection - displacement  # Mirrors across axis
 
-            # **Create a new atom**
-            new_atom = mol.NewAtom()
-            new_atom.SetAtomicNum(pos_atom.GetAtomicNum())  # Copy element type
-            new_atom.SetVector(*rotated_coord)  # Set rotated coordinates
+            # **Overwrite the negative atom's position**
+            neg_atom.SetVector(*rotated_coord)
 
-            # **Add the new atom to the molecule**
-            mol.InsertAtom(new_atom)
+            # **Overwrite the negative atom's element type**
+            neg_atom.SetAtomicNum(pos_atom.GetAtomicNum())  # Ensures correct element type
+
+            print(f"Replaced atom {neg_idx} with rotated position & element of atom {pos_idx}")
 
         return mol
 
