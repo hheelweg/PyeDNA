@@ -122,7 +122,7 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
             # Define the perpendicular reference plane using the second closest Carbon
             ref_vec = second_C_coord - central_C_coord
             ref_vec -= np.dot(ref_vec, axis_vec) * axis_vec  # Make perpendicular to the axis
-            ref_vec /= np.linalg.norm(ref_vec)  # Normalize
+            #ref_vec /= np.linalg.norm(ref_vec)  # Normalize
 
             print(f"Selected C2 axis between Carbon {central_C_idx} and Hydrogen {central_H_idx}")
             print(f"Central C: {central_C_coord}, Central H: {central_H_coord}")
@@ -194,7 +194,6 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
     # the current implementation seems to make the distance between the P-atoms smmaller, so one could choose a more hand-wavy
     # approach and aritficially make the distance in  constraint.AddDistanceConstraint() a little bit bigger than desired
     enforceC2(mol)
-    mol.PerceiveBondOrders()
 
     for _ in range(3):
         forcefield.Setup(mol)                           # need to feed back C2-coorected coordinates into forcefield
