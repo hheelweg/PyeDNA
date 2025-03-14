@@ -127,17 +127,8 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
 
     axis_vec, axis_point, ref_vec, axis_pair = getAxisInfo(mol)
 
-    def enforceC2(mol, axis_vec, axis_point, ref_vec, axis_pair):
-        """
-        Enforces C2 symmetry by:
-        1. Identifying the C2 rotation axis.
-        2. Rotating all atoms in one half of the molecule.
-        3. Overwriting the other half with rotated positions.
-        """
-
-        # (1) Identify Rotation Axis (Most Central C and H)
-        
-
+    # (2.2) find atoms on ine side of the axis:
+    def findHalf(axis_vec, axis_point, ref_vec, axis_pair):
         # (2) Identify Atoms on One Side of the C₂ Axis
         positive_atoms = []
         negative_atoms = []
@@ -169,6 +160,18 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
             positive_atoms = positive_atoms[:min_atoms]
             negative_atoms = negative_atoms[:min_atoms]
 
+        return positive_atoms, negative_atoms
+
+    def enforceC2(mol, axis_vec, axis_point, ref_vec, axis_pair):
+        """
+        Enforces C2 symmetry by:
+        1. Identifying the C2 rotation axis.
+        2. Rotating all atoms in one half of the molecule.
+        3. Overwriting the other half with rotated positions.
+        """
+
+        # (1) Identify Rotation Axis (Most Central C and H)
+
         # (3) Duplicate and Rotate Positive Side, Then Overwrite Negative Side
         for (pos_idx, pos_atom, pos_coord), (neg_idx, neg_atom, _) in zip(positive_atoms, negative_atoms):
             # Rotate positive-side atom by 180° around C₂ axis
@@ -193,14 +196,17 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
     # NOTE : might want to play around with FastRotorSearch versus WeightedRotorSearch etc.
     # the current implementation seems to make the distance between the P-atoms smmaller, so one could choose a more hand-wavy
     # approach and aritficially make the distance in  constraint.AddDistanceConstraint() a little bit bigger than desired
-    enforceC2(mol, axis_vec, axis_point, ref_vec, axis_pair)
-    for _ in range(100):
-        forcefield.Setup(mol)                           # need to feed back C2-coorected coordinates into forcefield
-        forcefield.FastRotorSearch(True)
-        forcefield.ConjugateGradients(1000, econv)      # conjugate gradient optimization
-        enforceC2(mol, axis_vec, axis_point, ref_vec, axis_pair)                                  # enforce C2 symmetry of molecule 
-    forcefield.GetCoordinates(mol)
-    enforceC2(mol, axis_vec, axis_point, ref_vec, axis_pair)                                      # ensure output molecule has C2 symmetry
+    a, b = findHalf(axis_vec, axis_point, ref_vec, axis_pair)
+    print('positive', a, len(a))
+    print('negative', b, len(b))
+
+    # for _ in range(100):
+    #     forcefield.Setup(mol)                           # need to feed back C2-coorected coordinates into forcefield
+    #     forcefield.FastRotorSearch(True)
+    #     forcefield.ConjugateGradients(1000, econv)      # conjugate gradient optimization
+    #     enforceC2(mol, axis_vec, axis_point, ref_vec, axis_pair)                                  # enforce C2 symmetry of molecule 
+    # forcefield.GetCoordinates(mol)
+    # enforceC2(mol, axis_vec, axis_point, ref_vec, axis_pair)                                      # ensure output molecule has C2 symmetry
 
     # Save the molecule as an PDB file
     obConversion.WriteFile(mol, out_file)
