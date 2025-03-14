@@ -168,7 +168,7 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
 
         return positive_atom_indices, negative_atom_indices
 
-    def enforceC2(mol, axis_vec, axis_point, positive_atom_indices, negative_atom_indices):
+    def enforceC2(mol, negative_atom_indices):
         """
         Enforces C2 symmetry by:
         1. Identifying the C2 rotation axis.
@@ -178,8 +178,7 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
 
         # (1) Identify Rotation Axis (Most Central C and H)
 
-        for pos_idx, neg_idx in zip(positive_atom_indices, negative_atom_indices):
-            pos_atom = mol.GetAtom(pos_idx)
+        for neg_idx in negative_atom_indices:
             neg_atom = mol.GetAtom(neg_idx)
 
             # **Delete negative-side atom but remember its index**
