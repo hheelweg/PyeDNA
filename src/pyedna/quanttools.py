@@ -112,26 +112,33 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
             return axis_vec, central_C_coord, (central_C_idx, central_H_idx)  # Return indices
 
         axis_vec, axis_point, axis_pair = getAxisInfo(mol)
-        print(f"Identified C2 axis between atoms: {axis_pair} (0-indexed)")
 
-        # (2) Rotate First Half of the Molecule
+        # (2) Identify and Rotate Atoms in One Half of the Molecule
+        rotated_atoms = []
+
         for i in range(1, mol.NumAtoms() + 1):
             atom = mol.GetAtom(i)
             if i in axis_pair:
-                continue  # Skip axis atoms
-            
+                continue  # Skip central C-H axis atoms
+
             atom_pos = np.array([atom.GetX(), atom.GetY(), atom.GetZ()])
 
-            # Translate atom to axis frame
-            atom_pos_trans = atom_pos - axis_point
-            parallel_component = np.dot(atom_pos_trans, axis_vec) * axis_vec
-            perpendicular_component = atom_pos_trans - parallel_component
+            # Compute the projection onto the C₂ axis
+            projection = axis_point + np.dot(atom_pos - axis_point, axis_vec) * axis_vec
+            displacement = atom_pos - projection  # Vector perpendicular to axis
 
-            # Calculate the 180° rotated position
-            atom_pos_rot = axis_point + parallel_component - perpendicular_component
+            # Classify atoms into two groups: "positive" and "negative" sides
+            side = np.dot(displacement, displacement)
 
-            # Overwrite atom's position
-            atom.SetVector(*atom_pos_rot)
+            if side >= 0:
+                # Rotate only atoms on one side by 180°
+                rotated_coord = projection - displacement
+                rotated_atoms.append((i, rotated_coord))  # Store the rotated coordinates
+
+        # (3) Overwrite the Other Half with the Rotated Positions
+        for (original_idx, rotated_coord) in rotated_atoms:
+            atom_to_modify = mol.GetAtom(original_idx)
+            atom_to_modify.SetVector(*rotated_coord)
 
 
     # (3) optimize with C2 symmetry constraint and distance constraint on distance between P-atoms
