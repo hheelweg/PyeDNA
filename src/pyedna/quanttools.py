@@ -74,23 +74,26 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
         defined by the central-most Carbon (C) and Hydrogen (H) atoms and overwriting 
         the other half.
         """
-        all_atoms = []
+        atom_coords = []
     
-        # Extract atomic coordinates
+        # Extract atomic coordinates directly from `mol`
         for i in range(1, mol.NumAtoms() + 1):
             atom = mol.GetAtom(i)
             coord = np.array([atom.GetX(), atom.GetY(), atom.GetZ()])
-            all_atoms.append((atom, coord))
+            atom_coords.append((i, atom, coord))
 
         # Compute geometric center
-        geometric_center = np.mean([coord for _, coord in all_atoms], axis=0)
+        geometric_center = np.mean([coord for _, _, coord in atom_coords], axis=0)
 
         # Find the C2 axis: first choose two atoms closest to the center (best C-H pair)
-        sorted_atoms = sorted(all_atoms, key=lambda x: np.linalg.norm(x[1] - geometric_center))
-        central_C, central_H = sorted_atoms[:2]  # Two closest atoms define the C2 axis
+        sorted_atoms = sorted(atom_coords, key=lambda x: np.linalg.norm(x[2] - geometric_center))
+        central_C_idx, central_H_idx = sorted_atoms[:2]  # Two closest atoms define the C2 axis
 
-        central_C_coord = central_C[1]
-        central_H_coord = central_H[1]
+        central_C = mol.GetAtom(central_C_idx[0])
+        central_H = mol.GetAtom(central_H_idx[0])
+
+        central_C_coord = np.array([central_C.GetX(), central_C.GetY(), central_C.GetZ()])
+        central_H_coord = np.array([central_H.GetX(), central_H.GetY(), central_H.GetZ()])
 
         # Define the C2 axis as the vector connecting the central C and H
         C2_axis = central_H_coord - central_C_coord
@@ -108,11 +111,11 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
             mirrored_coord = 2 * projection - coord
             return mirrored_coord
 
-        # Identify and pair atoms on opposite sides
+        # Identify atoms on each side of the symmetry plane
         positive_atoms = []
         negative_atoms = []
         
-        for atom, coord in all_atoms:
+        for i, atom, coord in atom_coords:
             if np.linalg.norm(coord - central_C_coord) < 1e-3 or np.linalg.norm(coord - central_H_coord) < 1e-3:
                 continue  # Skip central C-H axis atoms
             
@@ -121,9 +124,9 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
             side = np.dot(displacement, displacement)
 
             if side >= 0:
-                positive_atoms.append((atom, coord))
+                positive_atoms.append((i, atom, coord))
             else:
-                negative_atoms.append((atom, coord))
+                negative_atoms.append((i, atom, coord))
 
         # Ensure equal number of positive and negative atoms
         if len(positive_atoms) != len(negative_atoms):
@@ -133,9 +136,9 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
             negative_atoms = negative_atoms[:min_atoms]
 
         # Overwrite negative-side atoms with mirrored positive-side atoms
-        for (pos_atom, pos_coord), (neg_atom, _) in zip(positive_atoms, negative_atoms):
+        for (pos_idx, pos_atom, pos_coord), (neg_idx, neg_atom, _) in zip(positive_atoms, negative_atoms):
             mirrored_coord = mirror_across_axis(pos_coord)
-            neg_atom.SetVector(*mirrored_coord)  # Overwrite atom in place
+            mol.GetAtom(neg_idx).SetVector(*mirrored_coord)  # Modify `mol` directly!
         print("C2 symmetry enforced by rotation.")
 
 
