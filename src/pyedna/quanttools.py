@@ -77,6 +77,7 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
         1. Identifying atoms on each side of the C2 axis.
         2. Replacing negative-side atoms with rotated positive-side atoms.
         """
+        # (0) Remove bonds to avoid weir connectivity issues
         for bond in openbabel.OBMolBondIter(mol):
             mol.DeleteBond(bond)
 
@@ -125,9 +126,9 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
             ref_vec -= np.dot(ref_vec, axis_vec) * axis_vec  # Make perpendicular to the axis
             ref_vec /= np.linalg.norm(ref_vec)  # Normalize
 
-            print(f"Selected C2 axis between Carbon {central_C_idx} and Hydrogen {central_H_idx}")
-            print(f"Computed C2 axis vector: {axis_vec}")
-            print(f"Computed reference vector (from second closest C): {ref_vec}")
+            # print(f"Selected C2 axis between Carbon {central_C_idx} and Hydrogen {central_H_idx}")
+            # print(f"Computed C2 axis vector: {axis_vec}")
+            # print(f"Computed reference vector (from second closest C): {ref_vec}")
 
             return axis_vec, central_C_coord, ref_vec, (central_C_idx, central_H_idx)
 
@@ -174,10 +175,8 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
             # **Directly overwrite the negative atom's position & element type**
             neg_atom.SetVector(*rotated_coord)
             neg_atom.SetAtomicNum(pos_atom.GetAtomicNum())  # Copy element type
-
-
-            print(f"Replaced atom {neg_idx} with rotated position & element of atom {pos_idx}")
         
+        # (4) add bonds again
         mol.ConnectTheDots()  # Generates connectivity based on distances
         mol.PerceiveBondOrders()  # Assigns proper bond orders
 
@@ -193,7 +192,7 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
     # approach and aritficially make the distance in  constraint.AddDistanceConstraint() a little bit bigger than desired
     enforceC2(mol)
 
-    for _ in range(5):
+    for _ in range(10):
         forcefield.Setup(mol)                           # need to feed back C2-coorected coordinates into forcefield
         forcefield.FastRotorSearch(True)
         forcefield.ConjugateGradients(1000, econv)      # conjugate gradient optimization
