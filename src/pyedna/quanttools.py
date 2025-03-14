@@ -57,6 +57,95 @@ def optimizeStructureFF(dye_name, suffix = 'preopt', stepsNo = 50000, econv = 1e
     subprocess.run(f"rm -f {dye_name}.smi", shell = True)
 
 
+def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1e-12, FF = 'MMFF94'):
+    
+    from openbabel import openbabel
+
+    # (1) import .pdb file and load molecule
+    obConversion = openbabel.OBConversion()
+    obConversion.SetInAndOutFormats("pdb", "pdb")
+    mol = openbabel.OBMol()
+    obConversion.ReadFile(mol, moleculeNamePDB)
+
+    # (2) function that enables C2 symmetry optimization:
+    def enforceC2(mol):
+        atoms = []
+        carbons, hydrogens = [], []
+        
+        # Extract atomic coordinates
+        for i in range(1, mol.NumAtoms() + 1):
+            atom = mol.GetAtom(i)
+            symbol = atom.GetType()[0]  # Extract atomic symbol
+            x, y, z = atom.GetX(), atom.GetY(), atom.GetZ()
+            atoms.append([atom, symbol, np.array([x, y, z])])
+            
+            if symbol == "C":
+                carbons.append(np.array([x, y, z]))
+            elif symbol == "H":
+                hydrogens.append(np.array([x, y, z]))
+
+        # Compute center-most Carbon and Hydrogen
+        carbon_center = np.mean(carbons, axis=0)
+        hydrogen_center = np.mean(hydrogens, axis=0)
+
+        # Select the Carbon and Hydrogen closest to these mean positions
+        central_C = min(carbons, key=lambda c: np.linalg.norm(c - carbon_center))
+        central_H = min(hydrogens, key=lambda h: np.linalg.norm(h - hydrogen_center))
+
+        # Define the C2 axis as the vector connecting the central C and H
+        C2_axis = (central_H - central_C)
+        C2_axis /= np.linalg.norm(C2_axis)  # Normalize the vector
+
+        print(f"Central C: {central_C}, Central H: {central_H}")
+        print(f"Computed C2 axis: {C2_axis}")
+
+        # Compute the symmetry plane perpendicular to the C2 axis
+        midpoint = (central_C + central_H) / 2  # Midpoint of C-H bond
+        normal_vector = C2_axis  # Plane normal is along the C2 axis
+
+        def reflect_across_plane(atom_coord):
+            """ Reflects a point across the plane defined by the midpoint and normal vector. """
+            vec = atom_coord - midpoint
+            mirrored = atom_coord - 2 * np.dot(vec, normal_vector) * normal_vector
+            return mirrored
+
+        # Split atoms into two groups based on their position relative to the symmetry plane
+        positive_side = []
+        negative_side = []
+        for atom, symbol, coord in atoms:
+            side = np.dot(coord - midpoint, normal_vector)
+            if side >= 0:
+                positive_side.append((atom, coord))
+            else:
+                negative_side.append((atom, coord))
+
+        # Mirror only the atoms on the negative side
+        for atom, coord in negative_side:
+            mirrored_coord = reflect_across_plane(coord)
+            atom.SetVector(*mirrored_coord)
+
+
+    # (3) optimize with C2 symmetry constraint and distance constraint on distance between P-atoms
+    forcefield = openbabel.OBForceField.FindForceField(FF)
+    # add distance constraint directly 
+    constraint = openbabel.OBFFConstraints() 
+    # NOTE : might want to play around with FastRotorSearch versus WeightedRotorSearch etc.
+    # the current implementation seems to make the distance between the P-atoms smmaller, so one could choose a more hand-wavy
+    # approach and aritficially make the distance in  constraint.AddDistanceConstraint() a little bit bigger than desired
+    enforceC2(mol)
+    for _ in range(100):
+        forcefield.Setup(mol)                           # need to feed back C2-coorected coordinates into forcefield
+        forcefield.FastRotorSearch(True)
+        forcefield.ConjugateGradients(1000, econv)      # conjugate gradient optimization
+        enforceC2(mol)                                  # enforce C2 symmetry of molecule 
+    forcefield.GetCoordinates(mol)
+    enforceC2(mol)                                      # ensure output molecule has C2 symmetry
+
+    # Save the molecule as an PDB file
+    obConversion.WriteFile(mol, out_file)
+
+
+
 # finer geometry optimization incorporating C2 symmetry of chromophore molecules and disance constraint between adjacent phosphor atoms
 def optimizeStructureSymmetryFF(path, moleculeNamePDB, stepsNo = 50000, econv = 1e-12, FF = 'MMFF94'):
 

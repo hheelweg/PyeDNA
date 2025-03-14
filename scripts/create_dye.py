@@ -17,15 +17,17 @@ def main():
                                           suffix = 'ff'
                                           )
     
+    # TEST : perform symmetry-based 
+    pyedna.quanttools.optimizeStructureFF_C2(f"{dye_name}_ff.pdb", out_file = 'testtt.pdb')
 
-    # (1) perform geometry optimization with DFT and return tmp.pdb 
-    # this constraint is for phosphate groups linking to double_helix DNA where P-P distance is 6.49 Angstrom
-    constraint = ['P', 'distance', 6.49]
-    pyedna.quanttools.geometryOptimization_gpu(f"{dye_name}_ff.pdb",
-                                               dye_name = dye_name,
-                                               constraint = constraint,
-                                               **settings_dft
-                                               )
+    # # (1) perform geometry optimization with DFT and return tmp.pdb 
+    # # this constraint is for phosphate groups linking to double_helix DNA where P-P distance is 6.49 Angstrom
+    # constraint = ['P', 'distance', 6.49]
+    # pyedna.quanttools.geometryOptimization_gpu(f"{dye_name}_ff.pdb",
+    #                                            dye_name = dye_name,
+    #                                            constraint = constraint,
+    #                                            **settings_dft
+    #                                            )
 
     # TODO : delete dye_name_ff.pdb file
 
