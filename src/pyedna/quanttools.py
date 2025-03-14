@@ -176,15 +176,22 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
         3. Overwriting the other half with rotated positions.
         """
 
-        # (1) Identify Rotation Axis (Most Central C and H)
-        print('n', negative_atom_indices)
+        print('Negative Atom Indices:', negative_atom_indices)
+
+        # Sort indices in descending order before deletion
+        negative_atom_indices.sort(reverse=True)
+
         for neg_idx in negative_atom_indices:
             neg_atom = mol.GetAtom(neg_idx)
 
+            if neg_atom is None:
+                print(f"Warning: Atom at index {neg_idx} is already deleted or invalid.")
+                continue  # Skip invalid indices
+
             # **Delete negative-side atom but remember its index**
             mol.DeleteAtom(neg_atom)
-        
-        return mol 
+
+        return mol
 
 
 
@@ -200,6 +207,7 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
     print('positive', a, len(a))
     print('negative', b, len(b))
     mol = enforceC2(mol, b)
+    print('deleting successful')
 
     # for _ in range(100):
     #     forcefield.Setup(mol)                           # need to feed back C2-coorected coordinates into forcefield
