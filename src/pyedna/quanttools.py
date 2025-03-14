@@ -125,11 +125,16 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
             )
             return midpoint + np.dot(rotation_matrix, (atom_coord - midpoint))
 
-        # Split atoms into two groups relative to the C2 axis
+        # Classify atoms: Determine which side of the C2 axis they are on
         positive_side = []
         negative_side = []
         for atom, symbol, coord in atoms:
-            side = np.dot(coord - midpoint, C2_axis)
+            if np.linalg.norm(coord - central_C) < 1e-3 or np.linalg.norm(coord - central_H) < 1e-3:
+                continue  # Skip atoms that are part of the C2 axis
+            # Compute perpendicular distance from C2 axis
+            projection = central_C + np.dot(coord - central_C, C2_axis) * C2_axis
+            displacement = coord - projection
+            side = np.dot(displacement, displacement)
             if side >= 0:
                 positive_side.append((atom, coord))
             else:
@@ -139,6 +144,9 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
         for (atom, coord), (mirror_atom, _) in zip(negative_side, positive_side):
             rotated_coord = rotate_around_axis(coord)
             mirror_atom.SetVector(*rotated_coord)
+
+        print("C2 symmetry enforced by rotation.")
+
 
 
     # (3) optimize with C2 symmetry constraint and distance constraint on distance between P-atoms
