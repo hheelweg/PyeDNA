@@ -74,41 +74,40 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
         defined by the central-most Carbon (C) and Hydrogen (H) atoms and overwriting 
         the other half.
         """
-        atoms = []
         carbons, hydrogens = [], []
-        
+    
         # Extract atomic coordinates
         for i in range(1, mol.NumAtoms() + 1):
             atom = mol.GetAtom(i)
             symbol = atom.GetType()[0]  # Extract atomic symbol
             x, y, z = atom.GetX(), atom.GetY(), atom.GetZ()
-            atoms.append([atom, symbol, np.array([x, y, z])])
             
             if symbol == "C":
-                carbons.append(np.array([x, y, z]))
+                carbons.append((atom, np.array([x, y, z])))
             elif symbol == "H":
-                hydrogens.append(np.array([x, y, z]))
+                hydrogens.append((atom, np.array([x, y, z])))
 
         # Compute center-most Carbon and Hydrogen
-        carbon_center = np.mean(carbons, axis=0)
-        hydrogen_center = np.mean(hydrogens, axis=0)
+        carbon_center = np.mean([c[1] for c in carbons], axis=0)
+        hydrogen_center = np.mean([h[1] for h in hydrogens], axis=0)
 
         # Select the Carbon and Hydrogen closest to these mean positions
-        central_C = min(carbons, key=lambda c: np.linalg.norm(c - carbon_center))
-        central_H = min(hydrogens, key=lambda h: np.linalg.norm(h - hydrogen_center))
+        central_C, _ = min(carbons, key=lambda c: np.linalg.norm(c[1] - carbon_center))
+        central_H, _ = min(hydrogens, key=lambda h: np.linalg.norm(h[1] - hydrogen_center))
 
         # Define the C2 axis as the vector connecting the central C and H
-        C2_axis = (central_H - central_C)
+        C2_axis = (central_H.GetVector() - central_C.GetVector())
         C2_axis /= np.linalg.norm(C2_axis)  # Normalize the vector
 
-        print(f"Central C: {central_C}, Central H: {central_H}")
+        print(f"Central C: {central_C.GetVector()}, Central H: {central_H.GetVector()}")
         print(f"Computed C2 axis: {C2_axis}")
 
         # Compute the midpoint of the C2 axis
-        midpoint = (central_C + central_H) / 2
+        midpoint = (central_C.GetVector() + central_H.GetVector()) / 2
 
-        def rotate_around_axis(atom_coord, theta=180):
-            """ Rotates a point 180 degrees around a given axis. """
+        def rotate_around_axis(atom, theta=180):
+            """ Rotates a point 180 degrees around a given axis using Rodrigues' formula. """
+            atom_coord = np.array([atom.GetX(), atom.GetY(), atom.GetZ()])
             theta = np.radians(theta)
             axis = C2_axis
             cos_theta = np.cos(theta)
@@ -123,28 +122,30 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
                 sin_theta * cross_prod_matrix +
                 (1 - cos_theta) * np.outer(axis, axis)
             )
-            return midpoint + np.dot(rotation_matrix, (atom_coord - midpoint))
+            rotated_coord = midpoint + np.dot(rotation_matrix, (atom_coord - midpoint))
+            atom.SetVector(*rotated_coord)  # Directly modify mol
 
         # Classify atoms: Determine which side of the C2 axis they are on
         positive_side = []
         negative_side = []
-        for atom, symbol, coord in atoms:
-            if np.linalg.norm(coord - central_C) < 1e-3 or np.linalg.norm(coord - central_H) < 1e-3:
+        for i in range(1, mol.NumAtoms() + 1):
+            atom = mol.GetAtom(i)
+            if atom == central_C or atom == central_H:
                 continue  # Skip atoms that are part of the C2 axis
-            # Compute perpendicular distance from C2 axis
-            projection = central_C + np.dot(coord - central_C, C2_axis) * C2_axis
+            
+            coord = np.array([atom.GetX(), atom.GetY(), atom.GetZ()])
+            projection = central_C.GetVector() + np.dot(coord - central_C.GetVector(), C2_axis) * C2_axis
             displacement = coord - projection
             side = np.dot(displacement, displacement)
+
             if side >= 0:
-                positive_side.append((atom, coord))
+                positive_side.append(atom)
             else:
-                negative_side.append((atom, coord))
+                negative_side.append(atom)
 
-        # Rotate one side by 180 degrees and overwrite the negative side
-        for atom, coord in negative_side:
-            rotated_coord = rotate_around_axis(coord)
-            atom.SetVector(*rotated_coord)  # Now modifying the actual atom in mol!
-
+        # Rotate atoms on the negative side
+        for atom in negative_side:
+            rotate_around_axis(atom)
         print("C2 symmetry enforced by rotation.")
 
 
