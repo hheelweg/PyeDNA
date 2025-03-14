@@ -70,44 +70,6 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
     # (2) function that enables C2 symmetry optimization:
     # (2.1) find axis information for C2 symmetry
 
-        """
-        Identifies atoms on one side of the C2 axis.
-        
-        Returns:
-            positive_atom_indices (list): Indices of atoms on the positive side.
-            negative_atom_indices (list): Indices of atoms on the negative side.
-        """
-        positive_atom_indices = []
-        negative_atom_indices = []
-        threshold = 1e-3  # Small threshold to avoid floating-point issues
-
-        for i in range(1, mol.NumAtoms() + 1):
-            if i in axis_pair:
-                continue  # Skip central C-H axis atoms
-
-            atom = mol.GetAtom(i)
-            atom_pos = np.array([atom.GetX(), atom.GetY(), atom.GetZ()])
-
-            # Compute the projection onto the C₂ axis
-            projection = axis_point + np.dot(atom_pos - axis_point, axis_vec) * axis_vec
-            displacement = atom_pos - projection  # Vector perpendicular to axis
-
-            # **Compute signed distance relative to the reference vector**
-            signed_distance = np.dot(displacement, ref_vec)
-
-            if signed_distance > threshold:
-                positive_atom_indices.append(i)  # Store only the atom index
-            elif signed_distance < -threshold:
-                negative_atom_indices.append(i)
-
-        # Ensure equal number of atoms on each side
-        if len(positive_atom_indices) != len(negative_atom_indices):
-            print(f"Warning: C2-symmetry issue: Unequal number of atoms on both sides ({len(positive_atom_indices)} vs {len(negative_atom_indices)}).")
-            min_atoms = min(len(positive_atom_indices), len(negative_atom_indices))
-            positive_atom_indices = positive_atom_indices[:min_atoms]
-            negative_atom_indices = negative_atom_indices[:min_atoms]
-
-        return positive_atom_indices, negative_atom_indices
 
     def enforceC2(mol):
         """
