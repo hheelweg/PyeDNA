@@ -123,12 +123,6 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
             second_C_vec -= np.dot(second_C_vec, axis_vec) * axis_vec  # Make perpendicular to the axis
             second_C_vec /= np.linalg.norm(second_C_vec)  # Normalize
 
-            print(f"Selected C2 axis between Carbon {central_C_idx} and Hydrogen {central_H_idx}")
-            print(f"Central C: {central_C_coord}, Central H: {central_H_coord}")
-            print(f"Second closest C (for classification): {second_C_idx}, {second_C_coord}")
-            print(f"Computed C2 axis vector: {axis_vec}")
-            print(f"Computed reference vector (from second closest C): {second_C_vec}")
-
             return axis_vec, central_C_coord, second_C_vec, (central_C_idx, central_H_idx)
 
         axis_vec, axis_point, ref_vec, axis_pair = getAxisInfo(mol)
@@ -157,11 +151,9 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
             elif signed_distance < -threshold:
                 negative_atoms.append((i, atom, atom_pos))
 
-        print(positive_atoms)
-        print(negative_atoms)
         # Ensure equal number of atoms on each side
         if len(positive_atoms) != len(negative_atoms):
-            print(f"Warning: Unequal number of atoms on both sides ({len(positive_atoms)} vs {len(negative_atoms)}).")
+            print(f"Warning: C2-symmetry issue: Unequal number of atoms on both sides ({len(positive_atoms)} vs {len(negative_atoms)}).")
             min_atoms = min(len(positive_atoms), len(negative_atoms))
             positive_atoms = positive_atoms[:min_atoms]
             negative_atoms = negative_atoms[:min_atoms]
@@ -191,13 +183,13 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
     # the current implementation seems to make the distance between the P-atoms smmaller, so one could choose a more hand-wavy
     # approach and aritficially make the distance in  constraint.AddDistanceConstraint() a little bit bigger than desired
     enforceC2(mol)
-    # for _ in range(100):
-    #     forcefield.Setup(mol)                           # need to feed back C2-coorected coordinates into forcefield
-    #     forcefield.FastRotorSearch(True)
-    #     forcefield.ConjugateGradients(1000, econv)      # conjugate gradient optimization
-    #     enforceC2(mol)                                  # enforce C2 symmetry of molecule 
-    # forcefield.GetCoordinates(mol)
-    # enforceC2(mol)                                      # ensure output molecule has C2 symmetry
+    for _ in range(100):
+        forcefield.Setup(mol)                           # need to feed back C2-coorected coordinates into forcefield
+        forcefield.FastRotorSearch(True)
+        forcefield.ConjugateGradients(1000, econv)      # conjugate gradient optimization
+        enforceC2(mol)                                  # enforce C2 symmetry of molecule 
+    forcefield.GetCoordinates(mol)
+    enforceC2(mol)                                      # ensure output molecule has C2 symmetry
 
     # Save the molecule as an PDB file
     obConversion.WriteFile(mol, out_file)
