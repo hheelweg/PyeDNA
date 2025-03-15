@@ -556,18 +556,17 @@ class Chromophore():
         # (1) write updated pdb file after deletion of groups for attachment
         fp.deleteAtomsPDB(f'{self.dye_name}' + '.pdb', f'{self.dye_name}' + '_del.pdb', self.delete_atoms)
         # (2) use antechamber 
-        makedir_ff = subprocess.run(f"mkdir -p ff", shell = True)       # make forcefield directory
         command = f"antechamber -i '../{self.dye_name}_del.pdb' -fi pdb -o {self.dye_name}.mol2 -fo mol2 -c bcc -s 2 -nc {charge} -m 1 -at {ff}"
-        run_antechamber = subprocess.Popen(command, cwd = f'{self.path}ff', shell = True)
+        run_antechamber = subprocess.Popen(command, cwd = self.path, shell = True)
         run_antechamber.wait()
         # (3) run parmchk2
         command = f"parmchk2 -i {self.dye_name}.mol2 -f mol2 -o {self.dye_name}.frcmod -s gaff"
-        run_parmchk2 = subprocess.Popen(command, cwd = f'{self.path}ff', shell = True)
+        run_parmchk2 = subprocess.Popen(command, cwd = self.path, shell = True)
         run_parmchk2.wait()
         # (4) delete axuiliary files in ff directory
         if file_verbosity == 0:
-            for prefix in ["ANTECHAMBER", "sqm"]:
-                pattern = os.path.join(f'{self.path}ff', f"{prefix}*")  # Match files with the prefix
+            for prefix in ["ANTECHAMBER", "sqm", "ATOMTYPE"]:
+                pattern = os.path.join(f'{self.path}', f"{prefix}*")  # Match files with the prefix
                 files_to_delete = glob.glob(pattern)                    # Get list of matching files
                 
                 for file in files_to_delete:
