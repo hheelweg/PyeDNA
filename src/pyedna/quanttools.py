@@ -94,47 +94,30 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
                 ref_vec (numpy.array): A perpendicular reference vector.
                 axis_pair (tuple): Indices of the two atoms defining the axis (central C and closest H).
             """
-            # **Step 1: Detect Aromatic Rings**
-            mol.FindRingAtomsAndBonds()
-            rings = mol.GetSSSR()  # Get Smallest Set of Smallest Rings
-
-            if len(rings) < 2:
-                raise ValueError("Less than two aromatic rings detected. Cannot determine symmetric axis.")
-
-            # Find the two **largest** aromatic rings
-            sorted_rings = sorted(rings, key=lambda r: r.Size(), reverse=True)[:2]
-            ring_centers = []
-
-            for ring in sorted_rings:
-                ring_atom_indices = list(ring._path)  # Atom indices in the ring
-                ring_coords = []
-                for idx in ring_atom_indices:
-                    atom = mol.GetAtom(idx + 1)  # OpenBabel indices are 1-based
-                    ring_coords.append(np.array([atom.GetX(), atom.GetY(), atom.GetZ()]))
-                ring_centers.append(np.mean(ring_coords, axis=0))  # Compute geometric center
-
-            # **Step 2: Compute the Axis Point (Midpoint Between the Two Ring Centers)**
-            axis_point = np.mean(ring_centers, axis=0)  # Midpoint between ring centers
-
-            # **Step 3: Find the Closest Carbon to the Axis Point**
             carbons, hydrogens = [], []
-
+            
+            # Extract atomic coordinates and classify atoms
             for i in range(1, mol.NumAtoms() + 1):
                 atom = mol.GetAtom(i)
                 symbol = atom.GetType()[0]  # Extract atomic symbol
                 coord = np.array([atom.GetX(), atom.GetY(), atom.GetZ()])
-
+                
                 if symbol == "C":
                     carbons.append((i, coord))
                 elif symbol == "H":
                     hydrogens.append((i, coord))
 
-            # Find the Carbon closest to the axis midpoint
-            central_C_idx, central_C_coord = min(
-                carbons, key=lambda c: np.linalg.norm(c[1] - axis_point)
-            )
+            # Compute geometric center
+            geometric_center = np.mean([coord for _, coord in carbons + hydrogens], axis=0)
 
-            # **Step 4: Find the Closest Hydrogen to This Carbon (within H_cutoff)**
+            # Find the most central Carbon
+            sorted_carbons = sorted(carbons, key=lambda c: np.linalg.norm(c[1] - geometric_center))
+            central_C = sorted_carbons[0]  # Closest C (used for axis)
+            second_C = sorted_carbons[1]  # Second closest C (used for classification)
+
+            central_C_idx, central_C_coord = central_C
+
+            # Find the closest Hydrogen to central Carbon within H_cutoff distance
             central_H_idx, central_H_coord = None, None
             min_distance = H_cutoff  # Initialize minimum distance as the cutoff value
 
@@ -142,27 +125,26 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
                 distance = np.linalg.norm(H_coord - central_C_coord)
                 if distance < min_distance:  # Check if within cutoff
                     min_distance = distance
-                    central_H_idx, central_H_coord = H_idx, H_coord  # Update to closest H
+                    central_H_idx, central_H_coord = H_idx, H_coord  # Update to the closest H
 
             if central_H_idx is None:
                 raise ValueError(f"No Hydrogen found within {H_cutoff} Å of central Carbon {central_C_idx}.")
 
-            # **Step 5: Define the C2 Axis**
+            # Define the C2 axis as the vector connecting the central C and its closest H
             axis_vec = central_H_coord - central_C_coord
             axis_vec /= np.linalg.norm(axis_vec)  # Normalize the vector
 
-            # **Step 6: Define the Reference Vector (Perpendicular to Axis)**
-            ref_vec = ring_centers[0] - ring_centers[1]  # Use vector between ring centers
+            # Define the perpendicular reference plane using the second closest Carbon
+            second_C_idx, second_C_coord = second_C
+            ref_vec = second_C_coord - central_C_coord
             ref_vec -= np.dot(ref_vec, axis_vec) * axis_vec  # Make perpendicular to the axis
             ref_vec /= np.linalg.norm(ref_vec)  # Normalize
 
             print(f"Selected C2 axis between Carbon {central_C_idx} {central_C_coord} and closest Hydrogen {central_H_idx} {central_H_coord}")
-            print(f"Computed ring centers: {ring_centers[0]}, {ring_centers[1]}")
-            print(f"Computed axis midpoint: {axis_point}")
             print(f"Computed C2 axis vector: {axis_vec}")
-            print(f"Computed reference vector (from ring center difference): {ref_vec}")
+            print(f"Computed reference vector (from second closest C): {ref_vec}")
 
-            return axis_vec, axis_point, ref_vec, (central_C_idx, central_H_idx)
+            return axis_vec, central_C_coord, ref_vec, (central_C_idx, central_H_idx)
 
         axis_vec, axis_point, ref_vec, axis_pair = getAxisInfo(mol)
 
