@@ -195,7 +195,6 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
         constraint.AddDistanceConstraint(P1_idx, P2_idx, 6.49)
         forcefield.SetConstraints(constraint)
 
-        return mol, forcefield
 
 
 
@@ -204,16 +203,16 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
     # the current implementation seems to make the distance between the P-atoms smmaller, so one could choose a more hand-wavy
     # approach and aritficially make the distance in  constraint.AddDistanceConstraint() a little bit bigger than desired
     forcefield = openbabel.OBForceField.FindForceField(FF)
-    mol, forcefield = enforceC2(mol, forcefield)
+    enforceC2(mol, forcefield)
     for _ in range(50):
         print(f'Step {_ + 1}')
         # forcefield.Setup(mol)                                 # need to feed back C2-coorected coordinates into forcefield
         # forcefield.SetConstraints(constraint)
         forcefield.FastRotorSearch(True)
         forcefield.ConjugateGradients(1000, econv)              # conjugate gradient optimization
-        mol, forcefield = enforceC2(mol, forcefield)            # enforce C2 symmetry of molecule 
+        enforceC2(mol, forcefield)                              # enforce C2 symmetry of molecule 
     forcefield.GetCoordinates(mol)
-    mol, _ = enforceC2(mol, forcefield)                         # ensure output molecule has C2 symmetry
+    enforceC2(mol, forcefield)                                  # ensure output molecule has C2 symmetry
 
     # Save the molecule as an PDB file
     obConversion.WriteFile(mol, out_file)
