@@ -204,8 +204,8 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
     forcefield = openbabel.OBForceField.FindForceField(FF)
     # add distance constraint directly 
     constraint = openbabel.OBFFConstraints() 
-    constraint.AddDistanceConstraint(P1_idx, P2_idx, 6.49)
-    forcefield.SetConstraints(constraint)
+    #constraint.AddDistanceConstraint(P1_idx, P2_idx, 6.49)
+    #forcefield.SetConstraints(constraint)
     enforceC2(mol)
     for _ in range(50):
         print(f'Step {_ + 1}')
