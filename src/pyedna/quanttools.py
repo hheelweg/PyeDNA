@@ -187,8 +187,6 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
         P1_idx = P_atoms[0].GetIndex() + 1
         P2_idx = P_atoms[1].GetIndex() + 1
 
-        print(P1_idx, P2_idx)
-
 
 
     # (2.2) find phosphorus atoms to constrain them
@@ -207,7 +205,7 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
     constraint.AddDistanceConstraint(P1_idx, P2_idx, 6.49)
     forcefield.SetConstraints(constraint)
     enforceC2(mol)
-    for _ in range(50):
+    for _ in range(100):
         print(f'Step {_ + 1}')
         forcefield.Setup(mol)                                   # need to feed back C2-coorected coordinates into forcefield
         #forcefield.FastRotorSearch(True)
