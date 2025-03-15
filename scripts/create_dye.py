@@ -18,30 +18,33 @@ def main():
                                           )
     
     # TEST : perform symmetry-based 
+    # TODO : manually implement constraint here too 
     pyedna.quanttools.optimizeStructureFF_C2(f"{dye_name}_ff.pdb", out_file = f"{dye_name}_ff1.pdb")
+
+    # TODO : delete some .pdb files too
 
     # # (1) perform geometry optimization with DFT and return tmp.pdb 
     # # this constraint is for phosphate groups linking to double_helix DNA where P-P distance is 6.49 Angstrom
-    # constraint = ['P', 'distance', 6.49]
-    # pyedna.quanttools.geometryOptimization_gpu(f"{dye_name}_ff.pdb",
-    #                                            dye_name = dye_name,
-    #                                            constraint = constraint,
-    #                                            **settings_dft
-    #                                            )
+    constraint = ['P', 'distance', 6.49]
+    pyedna.quanttools.geometryOptimization_gpu(f"{dye_name}_ff1.pdb",
+                                               dye_name = dye_name,
+                                               constraint = constraint,
+                                               **settings_dft
+                                               )
 
     # # TODO : delete dye_name_ff.pdb file
 
-    # # (2) write attachment information of dye
-    # dye = pyedna.Chromophore(mda.Universe(f"{dye_name}.pdb", format = "PDB"))
-    # pyedna.Chromophore.writeAttachmentInfo(dye.chromophore_u,
-    #                                        dye_name = dye_name,
-    #                                        linker_atoms = ['P1', 'P2'],
-    #                                        linker_group = 'phosphate'
-    #                                        )
+    # (2) write attachment information of dye
+    dye = pyedna.Chromophore(mda.Universe(f"{dye_name}.pdb", format = "PDB"))
+    pyedna.Chromophore.writeAttachmentInfo(dye.chromophore_u,
+                                           dye_name = dye_name,
+                                           linker_atoms = ['P1', 'P2'],
+                                           linker_group = 'phosphate'
+                                           )
     
-    # # (3) parse attachment information for Chromophore object
-    # dye.storeSourcePath('./')
-    # dye.parseAttachment(change_atom_names = False)
+    # (3) parse attachment information for Chromophore object
+    dye.storeSourcePath('./')
+    dye.parseAttachment(change_atom_names = False)
 
     # # (4) create forcefield parameters .frcmod and .mol2 for dye
     # #dye.createFF()
