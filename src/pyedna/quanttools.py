@@ -202,6 +202,7 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
     # NOTE : might want to play around with FastRotorSearch versus WeightedRotorSearch etc.
     # the current implementation seems to make the distance between the P-atoms smmaller, so one could choose a more hand-wavy
     # approach and aritficially make the distance in  constraint.AddDistanceConstraint() a little bit bigger than desired
+    forcefield = openbabel.OBForceField.FindForceField(FF)
     mol, forcefield = enforceC2(mol, forcefield)
     for _ in range(50):
         print(f'Step {_ + 1}')
