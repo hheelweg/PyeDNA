@@ -78,18 +78,17 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
         2. Replacing negative-side atoms with rotated positive-side atoms.
         """
 
-        # (0) Remove bonds to avoid weir connectivity issues
-        for bond in openbabel.OBMolBondIter(mol):
-            mol.DeleteBond(bond)
 
         # (1) Identify Rotation Axis
         def getAxisInfo(mol):
             """
-            Identifies the most central Carbon and Hydrogen atoms to define the C2 rotation axis.
+            Identifies the most central Carbon atom and its directly bonded Hydrogen atom to define the C2 rotation axis.
+            
             Returns:
                 axis_vec (numpy.array): Normalized axis direction vector.
                 axis_point (numpy.array): A point on the axis.
-                axis_pair (tuple): Indices of the two atoms defining the axis.
+                ref_vec (numpy.array): A perpendicular reference vector.
+                axis_pair (tuple): Indices of the two atoms defining the axis (central C and bonded H).
             """
             carbons, hydrogens = [], []
             
@@ -107,33 +106,47 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
             # Compute geometric center
             geometric_center = np.mean([coord for _, coord in carbons + hydrogens], axis=0)
 
-            # Find the most central Carbon and Hydrogen
+            # Find the most central Carbon
             sorted_carbons = sorted(carbons, key=lambda c: np.linalg.norm(c[1] - geometric_center))
             central_C = sorted_carbons[0]  # Closest C (used for axis)
             second_C = sorted_carbons[1]  # Second closest C (used for classification)
 
-            central_H = min(hydrogens, key=lambda h: np.linalg.norm(h[1] - geometric_center))
-
             central_C_idx, central_C_coord = central_C
-            central_H_idx, central_H_coord = central_H
-            second_C_idx, second_C_coord = second_C
 
-            # Define the C2 axis as the vector connecting the central C and H
+            # Find the directly bonded Hydrogen of the central Carbon
+            central_H_idx, central_H_coord = None, None
+            central_C_atom = mol.GetAtom(central_C_idx)
+
+            for neighbor in openbabel.OBAtomAtomIter(central_C_atom):
+                if neighbor.GetType()[0] == "H":  # Ensure it's a Hydrogen
+                    central_H_idx = neighbor.GetIdx()
+                    central_H_coord = np.array([neighbor.GetX(), neighbor.GetY(), neighbor.GetZ()])
+                    break  # Take the first H found
+
+            if central_H_idx is None:
+                raise ValueError(f"No bonded Hydrogen found for central Carbon {central_C_idx}.")
+
+            # Define the C2 axis as the vector connecting the central C and its bonded H
             axis_vec = central_H_coord - central_C_coord
             axis_vec /= np.linalg.norm(axis_vec)  # Normalize the vector
 
             # Define the perpendicular reference plane using the second closest Carbon
+            second_C_idx, second_C_coord = second_C
             ref_vec = second_C_coord - central_C_coord
             ref_vec -= np.dot(ref_vec, axis_vec) * axis_vec  # Make perpendicular to the axis
             ref_vec /= np.linalg.norm(ref_vec)  # Normalize
 
-            print(f"Selected C2 axis between Carbon {central_C_idx} {central_C_coord} and Hydrogen {central_H_idx} {central_H_coord}")
+            print(f"Selected C2 axis between Carbon {central_C_idx} {central_C_coord} and directly bonded Hydrogen {central_H_idx} {central_H_coord}")
             print(f"Computed C2 axis vector: {axis_vec}")
             print(f"Computed reference vector (from second closest C): {ref_vec}")
 
             return axis_vec, central_C_coord, ref_vec, (central_C_idx, central_H_idx)
 
         axis_vec, axis_point, ref_vec, axis_pair = getAxisInfo(mol)
+
+        # (0) Remove bonds to avoid weir connectivity issues
+        for bond in openbabel.OBMolBondIter(mol):
+            mol.DeleteBond(bond)
 
         # (2) Identify Atoms on One Side of the C₂ Axis
         positive_atoms = []
