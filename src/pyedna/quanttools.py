@@ -83,15 +83,19 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
 
 
         # (1) Identify Rotation Axis
-        def getAxisInfo(mol):
+        def getAxisInfo(mol, H_cutoff=1.7):
             """
-            Identifies the most central Carbon atom and its directly bonded Hydrogen atom to define the C2 rotation axis.
+            Identifies the most central Carbon atom and selects the closest Hydrogen within a cutoff distance to define the C2 axis.
+            
+            Arguments:
+                mol (OBMol): OpenBabel molecule object.
+                H_cutoff (float): Distance threshold (in Å) for selecting the bonded Hydrogen.
             
             Returns:
                 axis_vec (numpy.array): Normalized axis direction vector.
                 axis_point (numpy.array): A point on the axis.
                 ref_vec (numpy.array): A perpendicular reference vector.
-                axis_pair (tuple): Indices of the two atoms defining the axis (central C and bonded H).
+                axis_pair (tuple): Indices of the two atoms defining the axis (central C and closest H).
             """
             carbons, hydrogens = [], []
             
@@ -116,20 +120,20 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
 
             central_C_idx, central_C_coord = central_C
 
-            # Find the directly bonded Hydrogen of the central Carbon
+            # Find the closest Hydrogen to central Carbon within H_cutoff distance
             central_H_idx, central_H_coord = None, None
-            central_C_atom = mol.GetAtom(central_C_idx)
+            min_distance = H_cutoff  # Initialize minimum distance as the cutoff value
 
-            for neighbor in openbabel.OBAtomAtomIter(central_C_atom):
-                if neighbor.GetType()[0] == "H":  # Ensure it's a Hydrogen
-                    central_H_idx = neighbor.GetIdx()
-                    central_H_coord = np.array([neighbor.GetX(), neighbor.GetY(), neighbor.GetZ()])
-                    break  # Take the first H found
+            for H_idx, H_coord in hydrogens:
+                distance = np.linalg.norm(H_coord - central_C_coord)
+                if distance < min_distance:  # Check if within cutoff
+                    min_distance = distance
+                    central_H_idx, central_H_coord = H_idx, H_coord  # Update to the closest H
 
             if central_H_idx is None:
-                raise ValueError(f"No bonded Hydrogen found for central Carbon {central_C_idx}.")
+                raise ValueError(f"No Hydrogen found within {H_cutoff} Å of central Carbon {central_C_idx}.")
 
-            # Define the C2 axis as the vector connecting the central C and its bonded H
+            # Define the C2 axis as the vector connecting the central C and its closest H
             axis_vec = central_H_coord - central_C_coord
             axis_vec /= np.linalg.norm(axis_vec)  # Normalize the vector
 
@@ -139,7 +143,7 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
             ref_vec -= np.dot(ref_vec, axis_vec) * axis_vec  # Make perpendicular to the axis
             ref_vec /= np.linalg.norm(ref_vec)  # Normalize
 
-            print(f"Selected C2 axis between Carbon {central_C_idx} {central_C_coord} and directly bonded Hydrogen {central_H_idx} {central_H_coord}")
+            print(f"Selected C2 axis between Carbon {central_C_idx} {central_C_coord} and closest Hydrogen {central_H_idx} {central_H_coord}")
             print(f"Computed C2 axis vector: {axis_vec}")
             print(f"Computed reference vector (from second closest C): {ref_vec}")
 
