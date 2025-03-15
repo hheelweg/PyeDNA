@@ -203,14 +203,14 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
     # approach and aritficially make the distance in  constraint.AddDistanceConstraint() a little bit bigger than desired
     forcefield = openbabel.OBForceField.FindForceField(FF)
     # add distance constraint directly 
-    constraint = openbabel.OBFFConstraints() 
+    #constraint = openbabel.OBFFConstraints() 
     #constraint.AddDistanceConstraint(P1_idx, P2_idx, 6.49)
     #forcefield.SetConstraints(constraint)
     enforceC2(mol)
     for _ in range(50):
         print(f'Step {_ + 1}')
         forcefield.Setup(mol)                                   # need to feed back C2-coorected coordinates into forcefield
-        forcefield.FastRotorSearch(True)
+        #forcefield.FastRotorSearch(True)
         forcefield.ConjugateGradients(1000, econv)              # conjugate gradient optimization
         enforceC2(mol)                                          # enforce C2 symmetry of molecule 
     forcefield.GetCoordinates(mol)
