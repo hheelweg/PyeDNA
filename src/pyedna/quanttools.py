@@ -77,6 +77,9 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
         1. Identifying atoms on each side of the C2 axis.
         2. Replacing negative-side atoms with rotated positive-side atoms.
         """
+        # (0) Remove bonds to avoid weird connectivity issues
+        for bond in openbabel.OBMolBondIter(mol):
+            mol.DeleteBond(bond)
 
 
         # (1) Identify Rotation Axis
@@ -144,9 +147,6 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
 
         axis_vec, axis_point, ref_vec, axis_pair = getAxisInfo(mol)
 
-        # (0) Remove bonds to avoid weir connectivity issues
-        for bond in openbabel.OBMolBondIter(mol):
-            mol.DeleteBond(bond)
 
         # (2) Identify Atoms on One Side of the C₂ Axis
         positive_atoms = []
@@ -218,7 +218,7 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
     constraint.AddDistanceConstraint(P1_idx, P2_idx, 6.49)
     forcefield.SetConstraints(constraint)
     enforceC2(mol)
-    for _ in range(100):
+    for _ in range(10):
         print(f'Step {_ + 1}')
         forcefield.Setup(mol)                                   # need to feed back C2-coorected coordinates into forcefield
         #forcefield.FastRotorSearch(True)
