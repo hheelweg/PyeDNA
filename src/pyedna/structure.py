@@ -556,7 +556,7 @@ class Chromophore():
         # (1) write updated pdb file after deletion of groups for attachment
         fp.deleteAtomsPDB(f'{self.dye_name}' + '.pdb', f'{self.dye_name}' + '_del.pdb', self.delete_atoms)
         # (2) use antechamber 
-        command = f"antechamber -i '../{self.dye_name}_del.pdb' -fi pdb -o {self.dye_name}.mol2 -fo mol2 -c bcc -s 2 -nc {charge} -m 1 -at {ff}"
+        command = f"antechamber -i '{self.dye_name}_del.pdb' -fi pdb -o {self.dye_name}.mol2 -fo mol2 -c bcc -s 2 -nc {charge} -m 1 -at {ff}"
         run_antechamber = subprocess.Popen(command, cwd = self.path, shell = True)
         run_antechamber.wait()
         # (3) run parmchk2
