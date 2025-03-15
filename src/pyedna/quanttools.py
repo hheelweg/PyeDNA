@@ -71,14 +71,12 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
     # (2.1) find axis information for C2 symmetry
 
 
-    def enforceC2(mol, forcefield):
+    def enforceC2(mol):
         """
         Enforces C2 symmetry by:
         1. Identifying atoms on each side of the C2 axis.
         2. Replacing negative-side atoms with rotated positive-side atoms.
         """
-        forcefield = openbabel.OBForceField.FindForceField(FF)
-        forcefield.Setup(mol)
 
         # (0) Remove bonds to avoid weir connectivity issues
         for bond in openbabel.OBMolBondIter(mol):
@@ -188,12 +186,8 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
         # need to get 1-indexed indices
         P1_idx = P_atoms[0].GetIndex() + 1
         P2_idx = P_atoms[1].GetIndex() + 1
-        print(P1_idx, P2_idx)
 
-        # (6) optimize with C2 symmetry constraint and distance constraint on distance between P-atoms
-        constraint = openbabel.OBFFConstraints() 
-        constraint.AddDistanceConstraint(P1_idx, P2_idx, 6.49)
-        forcefield.SetConstraints(constraint)
+        print(P1_idx, P2_idx)
 
 
 
@@ -203,16 +197,16 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
     # the current implementation seems to make the distance between the P-atoms smmaller, so one could choose a more hand-wavy
     # approach and aritficially make the distance in  constraint.AddDistanceConstraint() a little bit bigger than desired
     forcefield = openbabel.OBForceField.FindForceField(FF)
-    enforceC2(mol, forcefield)
+    enforceC2(mol)
     for _ in range(50):
         print(f'Step {_ + 1}')
         # forcefield.Setup(mol)                                 # need to feed back C2-coorected coordinates into forcefield
         # forcefield.SetConstraints(constraint)
         forcefield.FastRotorSearch(True)
         forcefield.ConjugateGradients(1000, econv)              # conjugate gradient optimization
-        enforceC2(mol, forcefield)                              # enforce C2 symmetry of molecule 
+        enforceC2(mol)                              # enforce C2 symmetry of molecule 
     forcefield.GetCoordinates(mol)
-    enforceC2(mol, forcefield)                                  # ensure output molecule has C2 symmetry
+    enforceC2(mol)                                  # ensure output molecule has C2 symmetry
 
     # Save the molecule as an PDB file
     obConversion.WriteFile(mol, out_file)
