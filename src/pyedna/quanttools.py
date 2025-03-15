@@ -188,6 +188,7 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
         # need to get 1-indexed indices
         P1_idx = P_atoms[0].GetIndex() + 1
         P2_idx = P_atoms[1].GetIndex() + 1
+        print(P1_idx, P2_idx)
 
         # (6) optimize with C2 symmetry constraint and distance constraint on distance between P-atoms
         constraint = openbabel.OBFFConstraints() 
