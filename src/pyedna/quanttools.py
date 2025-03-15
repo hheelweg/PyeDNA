@@ -71,12 +71,15 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
     # (2.1) find axis information for C2 symmetry
 
 
-    def enforceC2(mol):
+    def enforceC2(mol, forcefield):
         """
         Enforces C2 symmetry by:
         1. Identifying atoms on each side of the C2 axis.
         2. Replacing negative-side atoms with rotated positive-side atoms.
         """
+        forcefield = openbabel.OBForceField.FindForceField(FF)
+        forcefield.Setup(mol)
+
         # (0) Remove bonds to avoid weir connectivity issues
         for bond in openbabel.OBMolBondIter(mol):
             mol.DeleteBond(bond)
@@ -180,33 +183,35 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
         mol.ConnectTheDots()  # Generates connectivity based on distances
         mol.PerceiveBondOrders()  # Assigns proper bond orders
 
+        # (5) find phosphorus atoms to constrain them
+        P_atoms = [atom for atom in openbabel.OBMolAtomIter(mol) if atom.GetAtomicNum() == 15]   # indices of phosphorus atoms
+        # need to get 1-indexed indices
+        P1_idx = P_atoms[0].GetIndex() + 1
+        P2_idx = P_atoms[1].GetIndex() + 1
+
+        # (6) optimize with C2 symmetry constraint and distance constraint on distance between P-atoms
+        constraint = openbabel.OBFFConstraints() 
+        constraint.AddDistanceConstraint(P1_idx, P2_idx, 6.49)
+        forcefield.SetConstraints(constraint)
+
+        return mol, forcefield
+
 
 
     # (3) optimize with C2 symmetry constraint and distance constraint on distance between P-atom
-    # (2.2) find phosphorus atoms to constrain them
-    P_atoms = [atom for atom in openbabel.OBMolAtomIter(mol) if atom.GetAtomicNum() == 15]   # indices of phosphorus atoms
-    # need to get 1-indexed indices
-    P1_idx = P_atoms[0].GetIndex() + 1
-    P2_idx = P_atoms[1].GetIndex() + 1
-
-    # (3) optimize with C2 symmetry constraint and distance constraint on distance between P-atoms
-    forcefield = openbabel.OBForceField.FindForceField(FF)
-    # add distance constraint directly 
-    constraint = openbabel.OBFFConstraints() 
-    constraint.AddDistanceConstraint(P1_idx, P2_idx, 6.49)
-    forcefield.SetConstraints(constraint)
     # NOTE : might want to play around with FastRotorSearch versus WeightedRotorSearch etc.
     # the current implementation seems to make the distance between the P-atoms smmaller, so one could choose a more hand-wavy
     # approach and aritficially make the distance in  constraint.AddDistanceConstraint() a little bit bigger than desired
-    enforceC2(mol)
+    mol, forcefield = enforceC2(mol, forcefield)
     for _ in range(50):
         print(f'Step {_ + 1}')
-        forcefield.Setup(mol)                           # need to feed back C2-coorected coordinates into forcefield
+        # forcefield.Setup(mol)                                 # need to feed back C2-coorected coordinates into forcefield
+        # forcefield.SetConstraints(constraint)
         forcefield.FastRotorSearch(True)
-        forcefield.ConjugateGradients(1000, econv)      # conjugate gradient optimization
-        enforceC2(mol)                                  # enforce C2 symmetry of molecule 
+        forcefield.ConjugateGradients(1000, econv)              # conjugate gradient optimization
+        mol, forcefield = enforceC2(mol, forcefield)            # enforce C2 symmetry of molecule 
     forcefield.GetCoordinates(mol)
-    enforceC2(mol)                                      # ensure output molecule has C2 symmetry
+    mol, _ = enforceC2(mol, forcefield)                         # ensure output molecule has C2 symmetry
 
     # Save the molecule as an PDB file
     obConversion.WriteFile(mol, out_file)
