@@ -3,6 +3,7 @@ import MDAnalysis as mda
 import subprocess
 import os
 from collections import defaultdict
+import glob
 
 # from current package
 from . import fileproc as fp
@@ -551,7 +552,7 @@ class Chromophore():
         run_parmchk2.wait()
 
     # create force field with antechamber/parmchk2
-    def createFF(self, charge = 0, ff = 'gaff'):
+    def createFF(self, charge = 0, ff = 'gaff', file_verbosity = 0):
         # (1) write updated pdb file after deletion of groups for attachment
         fp.deleteAtomsPDB(f'{self.dye_name}' + '.pdb', f'{self.dye_name}' + '_del.pdb', self.delete_atoms)
         # (2) use antechamber 
@@ -563,8 +564,19 @@ class Chromophore():
         command = f"parmchk2 -i {self.dye_name}.mol2 -f mol2 -o {self.dye_name}.frcmod -s gaff"
         run_parmchk2 = subprocess.Popen(command, cwd = f'{self.path}ff', shell = True)
         run_parmchk2.wait()
-        # (4) delete axuiliary files
-        # TODO : implement this
+        # (4) delete axuiliary files in ff directory
+        if file_verbosity == 0:
+            for prefix in ["ANTECHAMBER", "sqm"]:
+                pattern = os.path.join(f'{self.path}ff', f"{prefix}*")  # Match files with the prefix
+                files_to_delete = glob.glob(pattern)                    # Get list of matching files
+                
+                for file in files_to_delete:
+                    try:
+                        os.remove(file)
+                        print(f"Deleted: {file}")
+                    except Exception as e:
+                        print(f"Error deleting {file}: {e}")
+        
 
 
 
