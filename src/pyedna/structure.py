@@ -553,16 +553,18 @@ class Chromophore():
     # create force field with antechamber/parmchk2
     def createFF(self, charge = 0, ff = 'gaff'):
         # (1) write updated pdb file after deletion of groups for attachment
-        fp.deleteAtomsPDB(self.path + f'{self.dye_name}' + '.pdb', self.path + f'{self.dye_name}' + '_del.pdb', self.delete_atoms)
+        fp.deleteAtomsPDB(f'{self.dye_name}' + '.pdb', f'{self.dye_name}' + '_del.pdb', self.delete_atoms)
         # (2) use antechamber 
-        makedir_ff = subprocess.run(f"mkdir -p {self.path}/ff_new", shell = True)       # make forefield directory
-        command = f"antechamber -i '../{self.dye_name}_del.pdb' -fi pdb -o {self.dye_name}_del.mol2 -fo mol2 -c bcc -s 2 -nc {charge} -m 1 -at {ff}"
-        run_antechamber = subprocess.Popen(command, cwd = f'{self.path}/ff_new', shell = True)
+        makedir_ff = subprocess.run(f"mkdir -p ff", shell = True)       # make forcefield directory
+        command = f"antechamber -i '../{self.dye_name}_del.pdb' -fi pdb -o {self.dye_name}.mol2 -fo mol2 -c bcc -s 2 -nc {charge} -m 1 -at {ff}"
+        run_antechamber = subprocess.Popen(command, cwd = f'{self.path}/ff', shell = True)
         run_antechamber.wait()
         # (3) run parmchk2
-        command = f"parmchk2 -i {self.dye_name}_del.mol2 -f mol2 -o {self.dye_name}_del.frcmod -s gaff"
+        command = f"parmchk2 -i {self.dye_name}.mol2 -f mol2 -o {self.dye_name}.frcmod -s gaff"
         run_parmchk2 = subprocess.Popen(command, cwd = f'{self.path}/ff_new', shell = True)
         run_parmchk2.wait()
+        # (4) delete axuiliary files
+        # TODO : implement this
 
 
 

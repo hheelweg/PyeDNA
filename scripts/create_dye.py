@@ -11,28 +11,30 @@ def main():
     # TODO : read in from command line
     dye_name = 'CY3'
 
-    # (0) do forcefield preoptimization with Open Babel from ChemDraw input structure
-    # returns .pdb of dye moecule with forcefield-optimized coordinates (without constraint)
-    pyedna.quanttools.optimizeStructureFF(dye_name = dye_name,
-                                          suffix = 'ff'
-                                          )
+    # # TODO : make check for dye_name.cdx file
+
+    # # (0) do forcefield preoptimization with Open Babel from ChemDraw input structure
+    # # returns .pdb of dye moecule with forcefield-optimized coordinates (without constraint)
+    # pyedna.quanttools.optimizeStructureFF(dye_name = dye_name,
+    #                                       suffix = 'ff'
+    #                                       )
     
-    # TEST : perform symmetry-based 
-    # TODO : manually implement constraint here too 
-    pyedna.quanttools.optimizeStructureFF_C2(f"{dye_name}_ff.pdb", out_file = f"{dye_name}_ff1.pdb")
+    # # TEST : perform symmetry-based 
+    # # TODO : manually implement constraint here too 
+    # pyedna.quanttools.optimizeStructureFF_C2(f"{dye_name}_ff.pdb", out_file = f"{dye_name}_ff1.pdb")
 
-    # TODO : delete some .pdb files too
+    # # TODO : delete some .pdb files too
 
-    # # (1) perform geometry optimization with DFT and return tmp.pdb 
-    # # this constraint is for phosphate groups linking to double_helix DNA where P-P distance is 6.49 Angstrom
-    constraint = ['P', 'distance', 6.49]
-    pyedna.quanttools.geometryOptimization_gpu(f"{dye_name}_ff1.pdb",
-                                               dye_name = dye_name,
-                                               constraint = constraint,
-                                               **settings_dft
-                                               )
+    # # # (1) perform geometry optimization with DFT and return tmp.pdb 
+    # # # this constraint is for phosphate groups linking to double_helix DNA where P-P distance is 6.49 Angstrom
+    # constraint = ['P', 'distance', 6.49]
+    # pyedna.quanttools.geometryOptimization_gpu(f"{dye_name}_ff1.pdb",
+    #                                            dye_name = dye_name,
+    #                                            constraint = constraint,
+    #                                            **settings_dft
+    #                                            )
 
-    # # TODO : delete dye_name_ff.pdb file
+    # # # TODO : delete dye_name_ff.pdb file
 
     # (2) write attachment information of dye
     dye = pyedna.Chromophore(mda.Universe(f"{dye_name}.pdb", format = "PDB"))
@@ -46,8 +48,8 @@ def main():
     dye.storeSourcePath('./')
     dye.parseAttachment(change_atom_names = False)
 
-    # # (4) create forcefield parameters .frcmod and .mol2 for dye
-    # #dye.createFF()
+    # (4) create forcefield parameters .frcmod and .mol2 for dye
+    dye.createFF(charge = 0)
 
 
 
