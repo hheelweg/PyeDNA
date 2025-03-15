@@ -557,11 +557,11 @@ class Chromophore():
         # (2) use antechamber 
         makedir_ff = subprocess.run(f"mkdir -p ff", shell = True)       # make forcefield directory
         command = f"antechamber -i '../{self.dye_name}_del.pdb' -fi pdb -o {self.dye_name}.mol2 -fo mol2 -c bcc -s 2 -nc {charge} -m 1 -at {ff}"
-        run_antechamber = subprocess.Popen(command, cwd = f'{self.path}/ff', shell = True)
+        run_antechamber = subprocess.Popen(command, cwd = f'{self.path}ff', shell = True)
         run_antechamber.wait()
         # (3) run parmchk2
         command = f"parmchk2 -i {self.dye_name}.mol2 -f mol2 -o {self.dye_name}.frcmod -s gaff"
-        run_parmchk2 = subprocess.Popen(command, cwd = f'{self.path}/ff_new', shell = True)
+        run_parmchk2 = subprocess.Popen(command, cwd = f'{self.path}ff', shell = True)
         run_parmchk2.wait()
         # (4) delete axuiliary files
         # TODO : implement this
