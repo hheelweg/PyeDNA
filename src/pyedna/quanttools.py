@@ -191,22 +191,30 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
 
 
 
+    # (2.2) find phosphorus atoms to constrain them
+    P_atoms = [atom for atom in openbabel.OBMolAtomIter(mol) if atom.GetAtomicNum() == 15]   # indices of phosphorus atoms
+    # need to get 1-indexed indices
+    P1_idx = P_atoms[0].GetIndex() + 1
+    P2_idx = P_atoms[1].GetIndex() + 1
 
     # (3) optimize with C2 symmetry constraint and distance constraint on distance between P-atom
     # NOTE : might want to play around with FastRotorSearch versus WeightedRotorSearch etc.
     # the current implementation seems to make the distance between the P-atoms smmaller, so one could choose a more hand-wavy
     # approach and aritficially make the distance in  constraint.AddDistanceConstraint() a little bit bigger than desired
     forcefield = openbabel.OBForceField.FindForceField(FF)
+    # add distance constraint directly 
+    constraint = openbabel.OBFFConstraints() 
+    constraint.AddDistanceConstraint(P1_idx, P2_idx, 6.49)
+    forcefield.SetConstraints(constraint)
     enforceC2(mol)
     for _ in range(50):
         print(f'Step {_ + 1}')
-        # forcefield.Setup(mol)                                 # need to feed back C2-coorected coordinates into forcefield
-        # forcefield.SetConstraints(constraint)
+        forcefield.Setup(mol)                                   # need to feed back C2-coorected coordinates into forcefield
         forcefield.FastRotorSearch(True)
         forcefield.ConjugateGradients(1000, econv)              # conjugate gradient optimization
-        enforceC2(mol)                              # enforce C2 symmetry of molecule 
+        enforceC2(mol)                                          # enforce C2 symmetry of molecule 
     forcefield.GetCoordinates(mol)
-    enforceC2(mol)                                  # ensure output molecule has C2 symmetry
+    enforceC2(mol)                                              # ensure output molecule has C2 symmetry
 
     # Save the molecule as an PDB file
     obConversion.WriteFile(mol, out_file)
