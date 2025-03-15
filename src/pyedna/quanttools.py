@@ -127,7 +127,7 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
             ref_vec -= np.dot(ref_vec, axis_vec) * axis_vec  # Make perpendicular to the axis
             ref_vec /= np.linalg.norm(ref_vec)  # Normalize
 
-            print(f"Selected C2 axis between Carbon {central_C_idx} and Hydrogen {central_H_idx}")
+            print(f"Selected C2 axis between Carbon {central_C_idx} {central_C_coord} and Hydrogen {central_H_idx} {central_H_coord}")
             print(f"Computed C2 axis vector: {axis_vec}")
             print(f"Computed reference vector (from second closest C): {ref_vec}")
 
