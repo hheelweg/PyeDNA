@@ -11,14 +11,14 @@ def main():
     # TODO : read in from command line
     dye_name = 'CY3'
 
-    # # (0) do forcefield preoptimization with Open Babel from ChemDraw input structure
-    # # returns .pdb of dye moecule with forcefield-optimized coordinates (without constraint)
-    # pyedna.quanttools.optimizeStructureFF(dye_name = dye_name,
-    #                                       suffix = 'ff'
-    #                                       )
+    # (0) do forcefield preoptimization with Open Babel from ChemDraw input structure
+    # returns .pdb of dye moecule with forcefield-optimized coordinates (without constraint)
+    pyedna.quanttools.optimizeStructureFF(dye_name = dye_name,
+                                          suffix = 'ff'
+                                          )
     
     # TEST : perform symmetry-based 
-    pyedna.quanttools.optimizeStructureFF_C2(f"{dye_name}_ff.pdb", out_file = 'testtt.pdb')
+    pyedna.quanttools.optimizeStructureFF_C2(f"{dye_name}_ff.pdb", out_file = f"{dye_name}_ff.pdb")
 
     # # (1) perform geometry optimization with DFT and return tmp.pdb 
     # # this constraint is for phosphate groups linking to double_helix DNA where P-P distance is 6.49 Angstrom
