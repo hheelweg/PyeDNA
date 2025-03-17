@@ -339,12 +339,12 @@ def optimizeStructureSymmetryFF(path, moleculeNamePDB, stepsNo = 50000, econv = 
 # might also want to make this a constrained optimization s.t. the P-P bond-length is "roughly" equal to the one in DNA
 # usage for constraint: constraint = [atom_name1, atom_name2, distance, x]
 # this means that we enforce a distance of x (Angstrom) between atom_name1 and atom_name2
-def geometryOptimization_gpu(path_to_pdb, dye_name, constraint = None, basis = '6-31g', xc = 'b3lyp', 
+def geometryOptimizationDFT_gpu(in_pdb_file, dye_name, constraint = None, basis = '6-31g', xc = 'b3lyp', 
               density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4):
     
 
-    # (0) define instance of Chromophore class
-    dye = structure.Chromophore(mda.Universe(path_to_pdb, format = "PDB"))
+    # (0) define instance of Chromophore class based on .pdb file
+    dye = structure.Chromophore(mda.Universe(in_pdb_file, format = "PDB"))
     # (0) write constraint if specified
     # find atoms to constrain with specific name
     if constraint is not None:
@@ -375,6 +375,9 @@ def geometryOptimization_gpu(path_to_pdb, dye_name, constraint = None, basis = '
 
     if os.path.isfile("constraints.txt"):
         subprocess.run("rm -f constraints.txt", shell = True)
+    
+    # # (5) delete input .pdb file
+    # subprocess.run(f"rm -f {in_pdb_file}", shell = True)
 
 
 # auxiliary function to write pyscf mol object to .pdb file
