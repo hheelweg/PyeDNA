@@ -599,7 +599,7 @@ def doDFT_geomopt(molecule, point_group = None, basis = '6-31g', xc = 'b3lyp',
     from gpu4pyscf import scf, solvent, tdscf
     from gpu4pyscf.dft import rks
     #from gpu4pyscf import dft
-    from pyscf import dft
+    from pyscf import dft, symm
     from pyscf.geomopt.geometric_solver import optimize
 
     # (1) make PySCF molecular structure object 
@@ -607,12 +607,18 @@ def doDFT_geomopt(molecule, point_group = None, basis = '6-31g', xc = 'b3lyp',
                 basis = basis,
                 charge = charge,
                 spin = spin,
-                unit = 'Angstrom'
+                unit = 'Angstrom',
                 )
     mol.verbose = verbosity
 
     # (1.1) (optional) check if point group aligned with structure
-    print(f"*** PySCF detected point group: {mol.topgroup}", flush = True)
+    if point_group is not None:
+        # symmetry detection
+        symm.geom.GEOM_THRESHOLD = .1
+        symm.geom.PLACE = 1
+        symm.geom.TOLERANCE = .1
+        mol.symmetry = True
+    print(f"*** PySCF detected point group: {mol.groupname}", flush = True)
 
     # (2) geometry optimization
     mf_GPU = dft.RKS(mol, xc = xc)
