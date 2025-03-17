@@ -7,14 +7,14 @@ Future high-throughput platform for creating DNA/chromophore structures, perform
 Currenty has the following functions implemented:
 
 - Create double stranded DNA helix (`double_helix`) with [NAB](https://github.com/Amber-MD/AmberClassic.git)
+- Create custom dye-library from ChemDraw (`.cdx`) input to geometry-optimized (classical + quantum) input files and GAFF forcefield parameters for AMBER MD
 - Attach dye molecules (currently only `CY3`, `CY5`) in desired orientation
 - Run all-atom AMBER MD on the DNA/dye composite with GPU support
 - Analyze trajectories classically and quantum-mechanically (DFT/TDDFT) with `pyscf` and `gpu4pyscf`
 
 Future versions will include:
-- Creation of more complex DNA structures
+- Creation of more complex DNA structures 
 - Curated library with topologies and GAFF parameters for dyes (`DYE_DIR`)
-- Module for constructing dye input structures from ChemDraw (`.cdx`) files
 - More functionality to analyze trajectories classically
 - More functionality to analyze trajectories quantum-mechanically
 - Extension to perform high-troughput analysis of optoelectronic properties 
