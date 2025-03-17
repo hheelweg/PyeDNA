@@ -25,7 +25,7 @@ def main():
     symmetry_group = "C2"
     pyedna.quanttools.optimizeStructureFFSymmetry(f"{dye_name}_ff.pdb", 
                                                   out_file = f"{dye_name}_ff.pdb",
-                                                  constraint = constraint 
+                                                  constraint = constraint, 
                                                   point_group = symmetry_group
                                                   )
 
