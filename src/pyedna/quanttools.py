@@ -213,7 +213,7 @@ def optimizeStructureFFSymmetry(in_pdb_file, out_pdb_file, constraint = None, po
     
     # (3) (optional) implement constraint 
     if constraint is not None:
-        constraint = openbabel.OBFFConstraints() 
+        constraint_ = openbabel.OBFFConstraints() 
         # (3.1) find atoms to constrain
         atomic_number_constraint = pybel.ob.GetAtomicNum(constraint[0])
         constraint_atoms = [atom for atom in openbabel.OBMolAtomIter(mol) if atom.GetAtomicNum() == atomic_number_constraint]       # indices of atoms to constrain
@@ -222,8 +222,8 @@ def optimizeStructureFFSymmetry(in_pdb_file, out_pdb_file, constraint = None, po
             assert(len(constraint_atoms) == 2)
             atom1_idx = constraint_atoms[0].GetIndex() + 1
             atom2_idx = constraint_atoms[1].GetIndex() + 1
-            constraint.AddDistanceConstraint(atom1_idx, atom2_idx, constraint[2])
-            forcefield.SetConstraints(constraint)
+            constraint_.AddDistanceConstraint(atom1_idx, atom2_idx, constraint[2])
+            forcefield.SetConstraints(constraint_)
         else:
             raise NotImplementedError('Only distance constraints implemented!')
 
