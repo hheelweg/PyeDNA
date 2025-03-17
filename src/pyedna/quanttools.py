@@ -57,7 +57,7 @@ def optimizeStructureFF(dye_name, suffix = 'preopt', stepsNo = 50000, econv = 1e
     subprocess.run(f"rm -f {dye_name}.smi", shell = True)
 
 
-def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1e-12, FF = 'MMFF94'):
+def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1e-12, FF = 'UFF'):
     
     from openbabel import openbabel
 
