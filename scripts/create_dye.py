@@ -17,11 +17,11 @@ def main():
 
     # TODO : make check for dye_name.cdx file
 
-    # # (1) do forcefield preoptimization with Open Babel from ChemDraw input structure
-    # # returns .pdb of dye molecule with forcefield-optimized coordinates (without constraint)
-    # pyedna.quanttools.optimizeStructureFF(dye_name = dye_name,
-    #                                       suffix = 'ff'
-    #                                       )
+    # (1) do forcefield preoptimization with Open Babel from ChemDraw input structure
+    # returns .pdb of dye molecule with forcefield-optimized coordinates (without constraint)
+    pyedna.quanttools.optimizeStructureFF(dye_name = dye_name,
+                                          suffix = 'ff'
+                                          )
     
     # (2) (optional) classical force-field optimization subject to point group symmetry of molecule
     # return .pdb of dye molecule with forcefield-optimized coordinates (with symmetry and constraint)
