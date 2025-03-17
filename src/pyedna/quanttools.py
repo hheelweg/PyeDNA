@@ -95,31 +95,29 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
                 axis_pair (tuple): Indices of the two atoms defining the axis (central C and closest H).
             """
             carbons, hydrogens = [], []
-
-            # **Step 1: Extract Carbon and Hydrogen atoms**
+            
+            # Extract atomic coordinates and classify atoms
             for i in range(1, mol.NumAtoms() + 1):
                 atom = mol.GetAtom(i)
                 symbol = atom.GetType()[0]  # Extract atomic symbol
                 coord = np.array([atom.GetX(), atom.GetY(), atom.GetZ()])
-
+                
                 if symbol == "C":
                     carbons.append((i, coord))
                 elif symbol == "H":
                     hydrogens.append((i, coord))
 
-            if not carbons:
-                raise ValueError("No Carbon atoms found in the molecule.")
+            # Compute geometric center
+            geometric_center = np.mean([coord for _, coord in carbons + hydrogens], axis=0)
 
-            # **Step 2: Compute the Center of Mass (COM) of all Carbon atoms**
-            carbon_coords = np.array([coord for _, coord in carbons])
-            carbon_COM = np.mean(carbon_coords, axis=0)  # Compute the geometric center of Carbons
+            # Find the most central Carbon
+            sorted_carbons = sorted(carbons, key=lambda c: np.linalg.norm(c[1] - geometric_center))
+            central_C = sorted_carbons[0]  # Closest C (used for axis)
+            second_C = sorted_carbons[1]  # Second closest C (used for classification)
 
-            # **Step 3: Find the Carbon closest to the Carbon COM**
-            central_C_idx, central_C_coord = min(
-                carbons, key=lambda c: np.linalg.norm(c[1] - carbon_COM)
-            )
+            central_C_idx, central_C_coord = central_C
 
-            # **Step 4: Find the Closest Hydrogen to This Carbon (within H_cutoff)**
+            # Find the closest Hydrogen to central Carbon within H_cutoff distance
             central_H_idx, central_H_coord = None, None
             min_distance = H_cutoff  # Initialize minimum distance as the cutoff value
 
@@ -127,26 +125,26 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
                 distance = np.linalg.norm(H_coord - central_C_coord)
                 if distance < min_distance:  # Check if within cutoff
                     min_distance = distance
-                    central_H_idx, central_H_coord = H_idx, H_coord  # Update to closest H
+                    central_H_idx, central_H_coord = H_idx, H_coord  # Update to the closest H
 
             if central_H_idx is None:
                 raise ValueError(f"No Hydrogen found within {H_cutoff} Å of central Carbon {central_C_idx}.")
 
-            # **Step 5: Define the C2 Axis**
+            # Define the C2 axis as the vector connecting the central C and its closest H
             axis_vec = central_H_coord - central_C_coord
             axis_vec /= np.linalg.norm(axis_vec)  # Normalize the vector
 
-            # **Step 6: Define the Reference Vector (Perpendicular to Axis)**
-            ref_vec = carbon_COM - central_C_coord
+            # Define the perpendicular reference plane using the second closest Carbon
+            second_C_idx, second_C_coord = second_C
+            ref_vec = second_C_coord - central_C_coord
             ref_vec -= np.dot(ref_vec, axis_vec) * axis_vec  # Make perpendicular to the axis
             ref_vec /= np.linalg.norm(ref_vec)  # Normalize
 
             print(f"Selected C2 axis between Carbon {central_C_idx} {central_C_coord} and closest Hydrogen {central_H_idx} {central_H_coord}")
-            print(f"Computed Carbon center of mass: {carbon_COM}")
             print(f"Computed C2 axis vector: {axis_vec}")
-            print(f"Computed reference vector (from COM): {ref_vec}")
+            print(f"Computed reference vector (from second closest C): {ref_vec}")
 
-            return axis_vec, carbon_COM, ref_vec, (central_C_idx, central_H_idx)
+            return axis_vec, central_C_coord, ref_vec, (central_C_idx, central_H_idx)
 
         axis_vec, axis_point, ref_vec, axis_pair = getAxisInfo(mol)
 
@@ -548,15 +546,15 @@ def doDFT_gpu(molecule, molecule_id, basis = '6-31g', xc = 'b3lyp',
     mol.verbose = verbosity
 
 
-    # # (2) (optional) only optimize the capped atoms first
-    # # NOTE : the capped atoms are the last ones to have been added to molecule, so their indices are the last two ones
-    # if optimize_cap:
-    #      # optimize with densiy fitting
-    #      mf_opt = rks.RKS(mol, xc = xc).density_fit()
-    #      mf_opt.verbose = 0
-    #      # NOTE : atoms are 1-index for pyscf geometric solvers
-    #      freeze_atom_string = f'1-{len(molecule) - 2}'
-    #      mol = constrainedOptimization(mf_opt, molecule_id, freeze_atom_string)
+    # (2) (optional) only optimize the capped atoms first
+    # NOTE : the capped atoms are the last ones to have been added to molecule, so their indices are the last two ones
+    if optimize_cap:
+         # optimize with densiy fitting
+         mf_opt = rks.RKS(mol, xc = xc).density_fit()
+         mf_opt.verbose = 0
+         # NOTE : atoms are 1-index for pyscf geometric solvers
+         freeze_atom_string = f'1-{len(molecule) - 2}'
+         mol = constrainedOptimization(mf_opt, molecule_id, freeze_atom_string)
 
 
     # (3) initialize SCF object
