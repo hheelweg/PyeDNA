@@ -10,26 +10,26 @@ def main():
     # need to have dye_name.cdx in file to perform geometry optimization on it
     # TODO : read in from command line
     dye_name = 'CY5'
+    constraint = ['P', 'distance', 6.49]
+    symmetry_group = "C2"
 
     # TODO : make check for dye_name.cdx file
 
-    # # (0) do forcefield preoptimization with Open Babel from ChemDraw input structure
-    # # returns .pdb of dye moecule with forcefield-optimized coordinates (without constraint)
-    # pyedna.quanttools.optimizeStructureFF(dye_name = dye_name,
-    #                                       suffix = 'ff'
-    #                                       )
+    # (1) do forcefield preoptimization with Open Babel from ChemDraw input structure
+    # returns .pdb of dye molecule with forcefield-optimized coordinates (without constraint)
+    pyedna.quanttools.optimizeStructureFF(dye_name = dye_name,
+                                          suffix = 'ff'
+                                          )
     
-    # TEST : perform symmetry-based 
-    # TODO : manually implement constraint here too 
-    constraint = ['P', 'distance', 6.49]
-    symmetry_group = "C2"
-    pyedna.quanttools.optimizeStructureFFSymmetry(f"{dye_name}_ff.pdb", 
-                                                  out_file = f"{dye_name}_ff.pdb",
-                                                  constraint = constraint, 
-                                                  point_group = symmetry_group
-                                                  )
-
-    # TODO : delete some .pdb files too
+    # (2) (optional) classical force-field optimization subject to point group symmetry of molecule
+    # return .pdb of dye molecule with forcefield-optimized coordinates (with symmetry and constraint)
+    if symmetry_group is not None:
+        if symmetry_group == "C2":
+            pyedna.quanttools.optimizeStructureFFSymmetry(in_pdb_file = f"{dye_name}_ff.pdb", 
+                                                        out_pdb_file = f"{dye_name}_ff.pdb",
+                                                        constraint = constraint, 
+                                                        point_group = symmetry_group
+                                                        )
 
     # # (1) perform geometry optimization with DFT and return tmp.pdb 
     # # this constraint is for phosphate groups linking to double_helix DNA where P-P distance is 6.49 Angstrom

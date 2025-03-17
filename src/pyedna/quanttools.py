@@ -57,7 +57,7 @@ def optimizeStructureFF(dye_name, suffix = 'preopt', stepsNo = 50000, econv = 1e
     subprocess.run(f"rm -f {dye_name}.smi", shell = True)
 
 
-def optimizeStructureFFSymmetry(moleculeNamePDB, out_file, constraint = None, point_group = None, econv = 1e-12, FF = 'UFF'):
+def optimizeStructureFFSymmetry(in_pdb_file, out_pdb_file, constraint = None, point_group = None, econv = 1e-12, FF = 'UFF'):
     
     from openbabel import openbabel
     from openbabel import pybel
@@ -66,7 +66,7 @@ def optimizeStructureFFSymmetry(moleculeNamePDB, out_file, constraint = None, po
     obConversion = openbabel.OBConversion()
     obConversion.SetInAndOutFormats("pdb", "pdb")
     mol = openbabel.OBMol()
-    obConversion.ReadFile(mol, moleculeNamePDB)
+    obConversion.ReadFile(mol, in_pdb_file)
 
     # (2) function that enforces symmetry onto molecule mol 
     def enforceSymmetry(mol, point_group = "C2"):
@@ -207,38 +207,38 @@ def optimizeStructureFFSymmetry(moleculeNamePDB, out_file, constraint = None, po
         P1_idx = P_atoms[0].GetIndex() + 1
         P2_idx = P_atoms[1].GetIndex() + 1
 
-    # (3) implement distance constraint constraint 
-    # (3.1) find phosphorus atoms to constrain them
-    if constraint is not None:
-
-        constrained_atoms = openbabel.OBAtom()
-        atomic_number = pybel.ob.GetAtomicNum(constraint[0])
-        print('test', constraint[0], atomic_number)
-        P_atoms = [atom for atom in openbabel.OBMolAtomIter(mol) if atom.GetAtomicNum() == 15]   # indices of phosphorus atoms
-        P1_idx = P_atoms[0].GetIndex() + 1
-        P2_idx = P_atoms[1].GetIndex() + 1
-
-    # (3) optimize with C2 symmetry constraint and distance constraint on distance between P-atom
-    # NOTE : might want to play around with FastRotorSearch versus WeightedRotorSearch etc.
-    # the current implementation seems to make the distance between the P-atoms smmaller, so one could choose a more hand-wavy
-    # approach and aritficially make the distance in  constraint.AddDistanceConstraint() a little bit bigger than desired
+    
+    # (3) initialize forcefield
     forcefield = openbabel.OBForceField.FindForceField(FF)
-    # add distance constraint directly 
-    constraint = openbabel.OBFFConstraints() 
-    constraint.AddDistanceConstraint(P1_idx, P2_idx, 6.49)
-    forcefield.SetConstraints(constraint)
+    
+    # (3) (optional) implement constraint 
+    if constraint is not None:
+        constraint = openbabel.OBFFConstraints() 
+        # (3.1) find atoms to constrain
+        atomic_number_constraint = pybel.ob.GetAtomicNum(constraint[0])
+        constraint_atoms = [atom for atom in openbabel.OBMolAtomIter(mol) if atom.GetAtomicNum() == atomic_number_constraint]       # indices of atoms to constrain
+        # (3.2) set constraint
+        if constraint[1] == 'distance':
+            assert(len(constraint_atoms) == 2)
+            atom1_idx = constraint_atoms[0].GetIndex() + 1
+            atom2_idx = constraint_atoms[1].GetIndex() + 1
+            constraint.AddDistanceConstraint(atom1_idx, atom2_idx, constraint[2])
+            forcefield.SetConstraints(constraint)
+        else:
+            raise NotImplementedError('Only distance constraints implemented!')
+
+    # (4) optimize with C2 symmetry constraint and distance constraint on distance between P-atom
     enforceSymmetry(mol, point_group)
     for _ in range(100):
         print(f'Constrained Optimization Step {_ + 1}')
-        forcefield.Setup(mol)                                   # need to feed back C2-coorected coordinates into forcefield
-        #forcefield.FastRotorSearch(True)
+        forcefield.Setup(mol)                                   # need to feed back symmetry-corrected coordinates into forcefield
         forcefield.ConjugateGradients(1000, econv)              # conjugate gradient optimization
-        enforceSymmetry(mol, point_group)                       # enforce C2 symmetry of molecule 
+        enforceSymmetry(mol, point_group)                       # enforce symmetry of molecule 
     forcefield.GetCoordinates(mol)
-    enforceSymmetry(mol, point_group)                           # ensure output molecule has C2 symmetry
+    enforceSymmetry(mol, point_group)                           # ensure output molecule has desired symmetry
 
-    # Save the molecule as an PDB file
-    obConversion.WriteFile(mol, out_file)
+    # (5) save the molecule as an PDB file
+    obConversion.WriteFile(mol, out_pdb_file)
 
 
 
