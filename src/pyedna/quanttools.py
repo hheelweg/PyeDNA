@@ -236,6 +236,40 @@ def optimizeStructureFFSymmetry(in_pdb_file, out_pdb_file, constraint = None, po
     enforceSymmetry(mol, point_group)                           # ensure output molecule has desired symmetry
 
 
+    # (5) center geometry of molecule at (0,0,0)
+    def center_molecule(mol):
+        """
+        Centers the molecule's center of geometry at (0,0,0) using OpenBabel.
+        
+        Arguments:
+            mol (OBMol): OpenBabel molecule object.
+        
+        Returns:
+            OBMol: Centered molecule.
+        """
+
+        num_atoms = mol.NumAtoms()
+        if num_atoms == 0:
+            raise ValueError("Molecule contains no atoms.")
+
+        # Step 1: Compute the center of geometry
+        coords = np.array([[mol.GetAtom(i).GetX(), mol.GetAtom(i).GetY(), mol.GetAtom(i).GetZ()]
+                        for i in range(1, num_atoms + 1)])
+        center_of_geometry = np.mean(coords, axis=0)
+
+        # Step 2: Shift all atoms to center at (0,0,0)
+        for i in range(1, num_atoms + 1):
+            atom = mol.GetAtom(i)
+            atom.SetVector(atom.GetX() - center_of_geometry[0],
+                        atom.GetY() - center_of_geometry[1],
+                        atom.GetZ() - center_of_geometry[2])
+
+        print(f"Molecule centered at (0,0,0). Original Center of Geometry: {center_of_geometry}")
+        return mol
+    
+    mol = center_molecule(mol)
+
+
     # (5) save the molecule as an PDB file
     obConversion.WriteFile(mol, out_pdb_file)
 
