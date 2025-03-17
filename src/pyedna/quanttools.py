@@ -764,13 +764,10 @@ def doDFT_geomopt(molecule, point_group = None, basis = '6-31g', xc = 'b3lyp',
 
     # (1.1) (optional) check if point group aligned with structure
     if point_group is not None:
-        # symmetry detection
+        # symmetry detection and initialization
         mol.symmetry = True
         mol.symmetry_subgroup = point_group
         mol.build()
-        # symm.geom.GEOM_THRESHOLD = .1
-        # symm.geom.PLACE = 1
-        # symm.geom.TOLERANCE = .1
     print(f"*** PySCF detected point group: {mol.groupname}", flush = True)
 
     # (2) geometry optimization

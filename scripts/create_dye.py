@@ -28,13 +28,13 @@ def main():
     if symmetry_group is not None:
         if symmetry_group == "C2":
             pyedna.quanttools.optimizeStructureFFSymmetry(in_pdb_file = f"{dye_name}_ff.pdb", 
-                                                        out_pdb_file = f"{dye_name}_ff1.pdb",
+                                                        out_pdb_file = f"{dye_name}_ff.pdb",
                                                         constraint = constraint, 
                                                         point_group = symmetry_group
                                                         )
 
     # (3) perform geometry optimization with DFT and return dye_name.pdb as geometry-optimized dye+linker file
-    pyedna.quanttools.geometryOptimizationDFT_gpu(f"{dye_name}_ff1.pdb",
+    pyedna.quanttools.geometryOptimizationDFT_gpu(f"{dye_name}_ff.pdb",
                                                dye_name = dye_name,
                                                constraint = constraint,
                                                point_group = symmetry_group, 
@@ -43,19 +43,19 @@ def main():
 
     # # TODO : (optional) delete dye_name_ff.pdb file
 
-    # # (4) write attachment information for dye
-    # dye = pyedna.Chromophore(mda.Universe(f"{dye_name}.pdb", format = "PDB"))
-    # pyedna.Chromophore.writeAttachmentInfo(dye.chromophore_u,
-    #                                        dye_name = dye_name,
-    #                                        linker_atoms = linking_atoms,
-    #                                        linker_group = 'phosphate'
-    #                                        )
+    # (4) write attachment information for dye
+    dye = pyedna.Chromophore(mda.Universe(f"{dye_name}.pdb", format = "PDB"))
+    pyedna.Chromophore.writeAttachmentInfo(dye.chromophore_u,
+                                           dye_name = dye_name,
+                                           linker_atoms = linking_atoms,
+                                           linker_group = 'phosphate'
+                                           )
     
-    # # (5) parse attachment information for Chromophore object and attachment to DNA, create forcefield parameters .frcmod and .mol2 for dye 
-    # # NOTE : if the attached dye at the DNA is charge-neutral, set charge = 0. 
-    # dye.storeSourcePath('./')
-    # dye.parseAttachment(change_atom_names = False) 
-    # dye.createFF(charge = 0)
+    # (5) parse attachment information for Chromophore object and attachment to DNA, create forcefield parameters .frcmod and .mol2 for dye 
+    # NOTE : if the attached dye at the DNA is charge-neutral, set charge = 0. 
+    dye.storeSourcePath('./')
+    dye.parseAttachment(change_atom_names = False) 
+    dye.createFF(charge = 0)
 
 
 
