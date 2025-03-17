@@ -250,7 +250,6 @@ def optimizeStructureFFSymmetry(in_pdb_file, out_pdb_file, constraint = None, po
         print(f'Constrained Optimization Step {_ + 1}')
         forcefield.Setup(mol)                                   # need to feed back symmetry-corrected coordinates into forcefield
         forcefield.ConjugateGradients(1000, econv)              # conjugate gradient optimization
-        forcefield.GetCoordinates(mol)
         enforceSymmetry(mol, point_group)                       # enforce symmetry of molecule 
     forcefield.GetCoordinates(mol)
     enforceSymmetry(mol, point_group)                           # ensure output molecule has desired symmetry
