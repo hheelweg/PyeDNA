@@ -44,8 +44,8 @@ def optimizeStructureFF(dye_name, suffix = 'preopt', stepsNo = 50000, econv = 1e
     # (4) perform forcefield optimization
     # econv defines the convergence tolerance for the energy, stepsNo the step number of the optimization
     forcefield = openbabel.OBForceField.FindForceField(FF)
-    # NOTE : it seems like constrained optimization is not activated in the Pythin API of OpenBabbel
     forcefield.Setup(mol)
+    forcefield.FastRotorSearch(True)
     forcefield.ConjugateGradients(stepsNo, econv)  
     forcefield.GetCoordinates(mol)
     
@@ -227,9 +227,8 @@ def optimizeStructureFFSymmetry(in_pdb_file, out_pdb_file, constraint = None, po
             raise NotImplementedError('Only distance constraints implemented!')
 
     # (4) optimize with C2 symmetry constraint and distance constraint on distance between P-atom
-    enforceSymmetry(mol, point_group)
+    # enforceSymmetry(mol, point_group)
     for _ in range(100):
-        print(f'Constrained Optimization Step {_ + 1}')
         forcefield.Setup(mol)                                   # need to feed back symmetry-corrected coordinates into forcefield
         forcefield.ConjugateGradients(1000, econv)              # conjugate gradient optimization
         enforceSymmetry(mol, point_group)                       # enforce symmetry of molecule 
@@ -613,7 +612,7 @@ def doDFT_geomopt(molecule, point_group = None, basis = '6-31g', xc = 'b3lyp',
     mol.verbose = verbosity
 
     # (1.1) (optional) check if point group aligned with structure
-
+    print(f"*** PySCF detected point group: {mol.topgroup}", flush = True)
 
     # (2) geometry optimization
     mf_GPU = dft.RKS(mol, xc = xc)
