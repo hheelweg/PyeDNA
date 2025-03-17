@@ -23,8 +23,8 @@ def main():
     #                                       suffix = 'ff'
     #                                       )
     
-    # (2) (optional) classical force-field optimization subject to point group symmetry of molecule
-    # return .pdb of dye molecule with forcefield-optimized coordinates (with symmetry and constraint)
+    # # (2) (optional) classical force-field optimization subject to point group symmetry of molecule
+    # # return .pdb of dye molecule with forcefield-optimized coordinates (with symmetry and constraint)
     # if symmetry_group is not None:
     #     if symmetry_group == "C2":
     #         pyedna.quanttools.optimizeStructureFFSymmetry(in_pdb_file = f"{dye_name}_ff.pdb", 
@@ -34,7 +34,7 @@ def main():
     #                                                     )
 
     # (3) perform geometry optimization with DFT and return dye_name.pdb as geometry-optimized dye+linker file
-    pyedna.quanttools.geometryOptimizationDFT_gpu(f"{dye_name}_ff1.pdb",
+    pyedna.quanttools.geometryOptimizationDFT_gpu(f"{dye_name}_ff.pdb",
                                                dye_name = dye_name,
                                                constraint = constraint,
                                                point_group = symmetry_group, 
