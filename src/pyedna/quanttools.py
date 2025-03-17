@@ -57,7 +57,7 @@ def optimizeStructureFF(dye_name, suffix = 'preopt', stepsNo = 50000, econv = 1e
     subprocess.run(f"rm -f {dye_name}.smi", shell = True)
 
 
-def optimizeStructureFFSymmetry(moleculeNamePDB, out_file, point_group = None, econv = 1e-12, FF = 'UFF'):
+def optimizeStructureFFSymmetry(moleculeNamePDB, out_file, constraint = None, point_group = None, econv = 1e-12, FF = 'UFF'):
     
     from openbabel import openbabel
 
@@ -67,10 +67,7 @@ def optimizeStructureFFSymmetry(moleculeNamePDB, out_file, point_group = None, e
     mol = openbabel.OBMol()
     obConversion.ReadFile(mol, moleculeNamePDB)
 
-    # (2) function that enables C2 symmetry optimization:
-    # (2.1) find axis information for C2 symmetry
-
-
+    # (2) function that enforces symmetry onto molecule mol 
     def enforceSymmetry(mol, point_group = "C2"):
         """
         Enforces point group symmetry by:
@@ -209,12 +206,14 @@ def optimizeStructureFFSymmetry(moleculeNamePDB, out_file, point_group = None, e
         P1_idx = P_atoms[0].GetIndex() + 1
         P2_idx = P_atoms[1].GetIndex() + 1
 
-
-    # (2.2) find phosphorus atoms to constrain them
-    P_atoms = [atom for atom in openbabel.OBMolAtomIter(mol) if atom.GetAtomicNum() == 15]   # indices of phosphorus atoms
-    # need to get 1-indexed indices
-    P1_idx = P_atoms[0].GetIndex() + 1
-    P2_idx = P_atoms[1].GetIndex() + 1
+    # (3) implement distance constraint constraint 
+    # (3.1) find phosphorus atoms to constrain them
+    if constraint is not None:
+        elem_table = openbabel.OBElementTable()
+        print('test', elem_table.GetAtomicNum(constraint[0]))
+        P_atoms = [atom for atom in openbabel.OBMolAtomIter(mol) if atom.GetAtomicNum() == 15]   # indices of phosphorus atoms
+        P1_idx = P_atoms[0].GetIndex() + 1
+        P2_idx = P_atoms[1].GetIndex() + 1
 
     # (3) optimize with C2 symmetry constraint and distance constraint on distance between P-atom
     # NOTE : might want to play around with FastRotorSearch versus WeightedRotorSearch etc.
