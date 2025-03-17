@@ -211,8 +211,8 @@ def optimizeStructureFFSymmetry(moleculeNamePDB, out_file, constraint = None, po
     if constraint is not None:
 
         constrained_atoms = openbabel.OBAtom()
-        constrained_atoms.SetType(constraint[0])
-        print('test', constraint[0], constrained_atoms.GetAtomicNum())
+        atomic_number = openbabel.OBElements.GetAtomicNum(constraint[0])
+        print('test', constraint[0], atomic_number)
         P_atoms = [atom for atom in openbabel.OBMolAtomIter(mol) if atom.GetAtomicNum() == 15]   # indices of phosphorus atoms
         P1_idx = P_atoms[0].GetIndex() + 1
         P2_idx = P_atoms[1].GetIndex() + 1
