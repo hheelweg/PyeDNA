@@ -208,6 +208,23 @@ def optimizeStructureFFSymmetry(in_pdb_file, out_pdb_file, constraint = None, po
         P2_idx = P_atoms[1].GetIndex() + 1
 
     
+    def get_point_group(mol):
+        """
+        Determines the point group symmetry of a molecule using OpenBabel.
+        
+        Arguments:
+            mol (OBMol): OpenBabel molecule object.
+        
+        Returns:
+            str: The point group symmetry label (e.g., "C2v", "D3h").
+        """
+        point_group_finder = openbabel.OBPointGroupFinder()
+        if point_group_finder.Setup(mol):
+            return f"OpenBabel found point group {point_group_finder.GetPointGroup()}."
+        else:
+            return "Point group determination failed."
+
+
     # (3) initialize forcefield
     forcefield = openbabel.OBForceField.FindForceField(FF)
     
@@ -236,6 +253,10 @@ def optimizeStructureFFSymmetry(in_pdb_file, out_pdb_file, constraint = None, po
         enforceSymmetry(mol, point_group)                       # enforce symmetry of molecule 
     forcefield.GetCoordinates(mol)
     enforceSymmetry(mol, point_group)                           # ensure output molecule has desired symmetry
+
+    # check that we actually get the enforce point_group with OpenBabel
+    point_group_detection = get_point_group(mol)
+    print(point_group_detection)
 
     # (5) save the molecule as an PDB file
     obConversion.WriteFile(mol, out_pdb_file)

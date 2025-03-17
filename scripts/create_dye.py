@@ -17,11 +17,11 @@ def main():
 
     # TODO : make check for dye_name.cdx file
 
-    # (1) do forcefield preoptimization with Open Babel from ChemDraw input structure
-    # returns .pdb of dye molecule with forcefield-optimized coordinates (without constraint)
-    pyedna.quanttools.optimizeStructureFF(dye_name = dye_name,
-                                          suffix = 'ff'
-                                          )
+    # # (1) do forcefield preoptimization with Open Babel from ChemDraw input structure
+    # # returns .pdb of dye molecule with forcefield-optimized coordinates (without constraint)
+    # pyedna.quanttools.optimizeStructureFF(dye_name = dye_name,
+    #                                       suffix = 'ff'
+    #                                       )
     
     # (2) (optional) classical force-field optimization subject to point group symmetry of molecule
     # return .pdb of dye molecule with forcefield-optimized coordinates (with symmetry and constraint)
@@ -33,30 +33,28 @@ def main():
                                                         point_group = symmetry_group
                                                         )
 
-    # (3) perform geometry optimization with DFT and return dye_name.pdb as geometry-optimized dye+linker file
-    pyedna.quanttools.geometryOptimizationDFT_gpu(f"{dye_name}_ff.pdb",
-                                               dye_name = dye_name,
-                                               constraint = constraint,
-                                               **settings_dft
-                                               )
+    # # (3) perform geometry optimization with DFT and return dye_name.pdb as geometry-optimized dye+linker file
+    # pyedna.quanttools.geometryOptimizationDFT_gpu(f"{dye_name}_ff.pdb",
+    #                                            dye_name = dye_name,
+    #                                            constraint = constraint,
+    #                                            **settings_dft
+    #                                            )
 
-    # TODO : (optional) delete dye_name_ff.pdb file
+    # # TODO : (optional) delete dye_name_ff.pdb file
 
-    # (4) write attachment information of dye
-    dye = pyedna.Chromophore(mda.Universe(f"{dye_name}.pdb", format = "PDB"))
-    pyedna.Chromophore.writeAttachmentInfo(dye.chromophore_u,
-                                           dye_name = dye_name,
-                                           linker_atoms = linking_atoms,
-                                           linker_group = 'phosphate'
-                                           )
+    # # (4) write attachment information for dye
+    # dye = pyedna.Chromophore(mda.Universe(f"{dye_name}.pdb", format = "PDB"))
+    # pyedna.Chromophore.writeAttachmentInfo(dye.chromophore_u,
+    #                                        dye_name = dye_name,
+    #                                        linker_atoms = linking_atoms,
+    #                                        linker_group = 'phosphate'
+    #                                        )
     
-    # (5) parse attachment information for Chromophore object and attachmen to DNA
-    dye.storeSourcePath('./')
-    dye.parseAttachment(change_atom_names = False)
-
-    # (6) create forcefield parameters .frcmod and .mol2 for dye
-    # NOTE : this creates coordinate files for the 
-    dye.createFF(charge = 0)
+    # # (5) parse attachment information for Chromophore object and attachment to DNA, create forcefield parameters .frcmod and .mol2 for dye 
+    # # NOTE : if the attached dye at the DNA is charge-neutral, set charge = 0. 
+    # dye.storeSourcePath('./')
+    # dye.parseAttachment(change_atom_names = False) 
+    # dye.createFF(charge = 0)
 
 
 
