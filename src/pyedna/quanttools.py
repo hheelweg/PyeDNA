@@ -768,6 +768,7 @@ def doDFT_geomopt(molecule, point_group = None, basis = '6-31g', xc = 'b3lyp',
         # symmetry detection
         mol.symmetry = True
         mol.symmetry_subgroup = point_group
+        mol.build()
         # symm.geom.GEOM_THRESHOLD = .1
         # symm.geom.PLACE = 1
         # symm.geom.TOLERANCE = .1
