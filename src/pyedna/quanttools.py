@@ -201,11 +201,6 @@ def optimizeStructureFFSymmetry(in_pdb_file, out_pdb_file, constraint = None, po
         mol.ConnectTheDots()  # Generates connectivity based on distances
         mol.PerceiveBondOrders()  # Assigns proper bond orders
 
-        # (5) find phosphorus atoms to constrain them
-        P_atoms = [atom for atom in openbabel.OBMolAtomIter(mol) if atom.GetAtomicNum() == 15]   # indices of phosphorus atoms
-        # need to get 1-indexed indices
-        P1_idx = P_atoms[0].GetIndex() + 1
-        P2_idx = P_atoms[1].GetIndex() + 1
 
     # (3) initialize forcefield
     forcefield = openbabel.OBForceField.FindForceField(FF)
@@ -269,6 +264,129 @@ def optimizeStructureFFSymmetry(in_pdb_file, out_pdb_file, constraint = None, po
     
     mol = center_molecule(mol)
 
+    # (6) align symmetry axis with z-axis
+    # (6.1) get symmetr axis
+    def getAxisInfo(mol, H_cutoff=1.7):
+        """
+        Identifies the most central Carbon atom and selects the closest Hydrogen within a cutoff distance to define the C2 axis.
+        
+        Arguments:
+            mol (OBMol): OpenBabel molecule object.
+            H_cutoff (float): Distance threshold (in Å) for selecting the bonded Hydrogen.
+        
+        Returns:
+            axis_vec (numpy.array): Normalized axis direction vector.
+            axis_point (numpy.array): A point on the axis.
+            ref_vec (numpy.array): A perpendicular reference vector.
+            axis_pair (tuple): Indices of the two atoms defining the axis (central C and closest H).
+        """
+        carbons, hydrogens, nitrogens = [], [], []
+        
+        # Extract atomic coordinates and classify atoms
+        for i in range(1, mol.NumAtoms() + 1):
+            atom = mol.GetAtom(i)
+            symbol = atom.GetType()[0]  # Extract atomic symbol
+            coord = np.array([atom.GetX(), atom.GetY(), atom.GetZ()])
+            
+            if symbol == "C":
+                carbons.append((i, coord))
+            elif symbol == "N":
+                nitrogens.append((i, coord))
+            elif symbol == "H":
+                hydrogens.append((i, coord))
+
+        # Compute geometric center
+        geometric_center = np.mean([coord for _, coord in nitrogens], axis=0)
+
+        # Find the most central Carbon
+        sorted_carbons = sorted(carbons, key=lambda c: np.linalg.norm(c[1] - geometric_center))
+        central_C = sorted_carbons[0]  # Closest C (used for axis)
+        second_C = sorted_carbons[1]  # Second closest C (used for classification)
+
+        central_C_idx, central_C_coord = central_C
+
+        # Find the closest Hydrogen to central Carbon within H_cutoff distance
+        central_H_idx, central_H_coord = None, None
+        min_distance = H_cutoff  # Initialize minimum distance as the cutoff value
+
+        for H_idx, H_coord in hydrogens:
+            distance = np.linalg.norm(H_coord - central_C_coord)
+            if distance < min_distance:  # Check if within cutoff
+                min_distance = distance
+                central_H_idx, central_H_coord = H_idx, H_coord  # Update to the closest H
+
+        if central_H_idx is None:
+            raise ValueError(f"No Hydrogen found within {H_cutoff} Å of central Carbon {central_C_idx}.")
+
+        # Define the C2 axis as the vector connecting the central C and its closest H
+        axis_vec = central_H_coord - central_C_coord
+        axis_vec /= np.linalg.norm(axis_vec)  # Normalize the vector
+
+        # Define the perpendicular reference plane using the second closest Carbon
+        second_C_idx, second_C_coord = second_C
+        ref_vec = second_C_coord - central_C_coord
+        ref_vec -= np.dot(ref_vec, axis_vec) * axis_vec  # Make perpendicular to the axis
+        ref_vec /= np.linalg.norm(ref_vec)  # Normalize
+
+        # print(f"Selected C2 axis between Carbon {central_C_idx} {central_C_coord} and closest Hydrogen {central_H_idx} {central_H_coord}")
+        # print(f"Computed C2 axis vector: {axis_vec}")
+        # print(f"Computed reference vector (from second closest C): {ref_vec}")
+
+        return axis_vec, central_C_coord, ref_vec, (central_C_idx, central_H_idx)
+
+    axis_vec, _, _, _ = getAxisInfo(mol)
+
+    # (6.2) rotate molecule s.t. axis_vec aligns with (0,0,1) vector
+    def rotate_molecule_to_z(mol, axis_vec):
+        """
+        Rotates the molecule so that the given C₂ axis (axis_vec) aligns with the Z-axis.
+        
+        Arguments:
+            mol (OBMol): Centered OpenBabel molecule.
+            axis_vec (numpy.array): The C₂ axis vector to be aligned with the Z-axis.
+
+        Returns:
+            OBMol: Rotated molecule.
+        """
+
+        # Normalize the input C₂ axis vector
+        axis_vec = axis_vec / np.linalg.norm(axis_vec)
+
+        # Define the target Z-axis vector
+        z_axis = np.array([0, 0, 1])
+
+        # Compute rotation axis (cross product) and angle (dot product)
+        rotation_axis = np.cross(axis_vec, z_axis)
+        rotation_axis_norm = np.linalg.norm(rotation_axis)
+
+        if rotation_axis_norm == 0:
+            print("C2 axis is already aligned with the Z-axis. No rotation needed.")
+            return mol  # Already aligned
+
+        rotation_axis /= rotation_axis_norm  # Normalize rotation axis
+        rotation_angle = np.arccos(np.dot(axis_vec, z_axis))  # Angle in radians
+
+        # Compute rotation matrix using Rodrigues' rotation formula
+        K = np.array([
+            [0, -rotation_axis[2], rotation_axis[1]],
+            [rotation_axis[2], 0, -rotation_axis[0]],
+            [-rotation_axis[1], rotation_axis[0], 0]
+        ])
+        
+        I = np.identity(3)
+        R = I + np.sin(rotation_angle) * K + (1 - np.cos(rotation_angle)) * np.dot(K, K)
+
+        # Apply rotation to all atoms
+        for i in range(1, mol.NumAtoms() + 1):
+            atom = mol.GetAtom(i)
+            pos = np.array([atom.GetX(), atom.GetY(), atom.GetZ()])
+            rotated_pos = np.dot(R, pos)  # Apply rotation matrix
+            atom.SetVector(*rotated_pos)
+
+        print(f"Molecule rotated to align C₂ axis with the Z-axis.")
+        return mol
+
+    mol = rotate_molecule_to_z(mol, axis_vec)
 
     # (5) save the molecule as an PDB file
     obConversion.WriteFile(mol, out_pdb_file)
