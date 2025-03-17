@@ -28,10 +28,16 @@ def main():
     if symmetry_group is not None:
         if symmetry_group == "C2":
             pyedna.quanttools.optimizeStructureFFSymmetry(in_pdb_file = f"{dye_name}_ff.pdb", 
-                                                        out_pdb_file = f"{dye_name}_ff.pdb",
+                                                        out_pdb_file = f"{dye_name}_ff_symm.pdb",
                                                         constraint = constraint, 
                                                         point_group = symmetry_group
                                                         )
+    
+    if symmetry_group is not None:
+        pyscf_input_pdb = f"{dye_name}_ff_symm.pdb"
+    else:
+        pyscf_input_pdb = f"{dye_name}_ff.pdb"
+    
 
     # (3) perform geometry optimization with DFT and return dye_name.pdb as geometry-optimized dye+linker file
     pyedna.quanttools.geometryOptimizationDFT_gpu(f"{dye_name}_ff.pdb",
