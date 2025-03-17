@@ -262,7 +262,7 @@ def optimizeStructureFFSymmetry(in_pdb_file, out_pdb_file, constraint = None, po
         print(f"Molecule centered at (0,0,0). Original Center of Geometry: {center_of_geometry}")
         return mol
     
-    mol = center_molecule(mol)
+    #mol = center_molecule(mol)
 
     # (6) align symmetry axis with z-axis
     # (6.1) get symmetr axis
@@ -386,7 +386,7 @@ def optimizeStructureFFSymmetry(in_pdb_file, out_pdb_file, constraint = None, po
         print(f"Molecule rotated to align C₂ axis with the Z-axis.")
         return mol
 
-    mol = rotate_molecule_to_z(mol, axis_vec)
+    #mol = rotate_molecule_to_z(mol, axis_vec)
 
     # (5) save the molecule as an PDB file
     obConversion.WriteFile(mol, out_pdb_file)
