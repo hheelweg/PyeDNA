@@ -34,7 +34,7 @@ def main():
     #                                                     )
 
     # (3) perform geometry optimization with DFT and return dye_name.pdb as geometry-optimized dye+linker file
-    pyedna.quanttools.geometryOptimizationDFT_gpu(f"{dye_name}_ff.pdb",
+    pyedna.quanttools.geometryOptimizationDFT_gpu(f"{dye_name}_ff1.pdb",
                                                dye_name = dye_name,
                                                constraint = constraint,
                                                point_group = symmetry_group, 
