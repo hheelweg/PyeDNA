@@ -57,7 +57,7 @@ def optimizeStructureFF(dye_name, suffix = 'preopt', stepsNo = 50000, econv = 1e
     subprocess.run(f"rm -f {dye_name}.smi", shell = True)
 
 
-def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1e-12, FF = 'UFF'):
+def optimizeStructureFFSymmetry(moleculeNamePDB, out_file, point_group = None, econv = 1e-12, FF = 'UFF'):
     
     from openbabel import openbabel
 
@@ -71,13 +71,15 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
     # (2.1) find axis information for C2 symmetry
 
 
-    def enforceC2(mol):
+    def enforceSymmetry(mol, point_group = "C2"):
         """
-        Enforces C2 symmetry by:
-        1. Identifying atoms on each side of the C2 axis.
+        Enforces point group symmetry by:
+        1. Identifying atoms on each side of the symmetry axis.
         2. Replacing negative-side atoms with rotated positive-side atoms.
         """
 
+        if point_group != "C2":
+            raise NotImplementedError("Only C2 point group implemented")
 
         # (1) Identify Rotation Axis
         def getAxisInfo(mol, H_cutoff=1.7):
@@ -208,7 +210,6 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
         P2_idx = P_atoms[1].GetIndex() + 1
 
 
-
     # (2.2) find phosphorus atoms to constrain them
     P_atoms = [atom for atom in openbabel.OBMolAtomIter(mol) if atom.GetAtomicNum() == 15]   # indices of phosphorus atoms
     # need to get 1-indexed indices
@@ -224,15 +225,15 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
     constraint = openbabel.OBFFConstraints() 
     constraint.AddDistanceConstraint(P1_idx, P2_idx, 6.49)
     forcefield.SetConstraints(constraint)
-    enforceC2(mol)
+    enforceSymmetry(mol, point_group)
     for _ in range(100):
         print(f'Constrained Optimization Step {_ + 1}')
         forcefield.Setup(mol)                                   # need to feed back C2-coorected coordinates into forcefield
         #forcefield.FastRotorSearch(True)
         forcefield.ConjugateGradients(1000, econv)              # conjugate gradient optimization
-        enforceC2(mol)                                          # enforce C2 symmetry of molecule 
+        enforceSymmetry(mol, point_group)                       # enforce C2 symmetry of molecule 
     forcefield.GetCoordinates(mol)
-    enforceC2(mol)                                              # ensure output molecule has C2 symmetry
+    enforceSymmetry(mol, point_group)                           # ensure output molecule has C2 symmetry
 
     # Save the molecule as an PDB file
     obConversion.WriteFile(mol, out_file)
@@ -240,6 +241,7 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
 
 
 # finer geometry optimization incorporating C2 symmetry of chromophore molecules and disance constraint between adjacent phosphor atoms
+# TODO : (old) manual function to optimize molecule with C2 symmetry
 def optimizeStructureSymmetryFF(path, moleculeNamePDB, stepsNo = 50000, econv = 1e-12, FF = 'MMFF94'):
 
     from openbabel import openbabel

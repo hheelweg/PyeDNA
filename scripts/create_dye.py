@@ -21,7 +21,7 @@ def main():
     
     # TEST : perform symmetry-based 
     # TODO : manually implement constraint here too 
-    pyedna.quanttools.optimizeStructureFF_C2(f"{dye_name}_ff.pdb", out_file = f"{dye_name}_ff1.pdb")
+    pyedna.quanttools.optimizeStructureFFSymmetry(f"{dye_name}_ff.pdb", out_file = f"{dye_name}_ff1.pdb", point_group = "C2")
 
     # TODO : delete some .pdb files too
 
