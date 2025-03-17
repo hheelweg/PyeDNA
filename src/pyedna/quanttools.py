@@ -225,8 +225,8 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
     constraint.AddDistanceConstraint(P1_idx, P2_idx, 6.49)
     forcefield.SetConstraints(constraint)
     enforceC2(mol)
-    for _ in range(10):
-        print(f'Step {_ + 1}')
+    for _ in range(100):
+        print(f'Constrained Optimization Step {_ + 1}')
         forcefield.Setup(mol)                                   # need to feed back C2-coorected coordinates into forcefield
         #forcefield.FastRotorSearch(True)
         forcefield.ConjugateGradients(1000, econv)              # conjugate gradient optimization
