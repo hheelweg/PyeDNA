@@ -94,7 +94,7 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
                 ref_vec (numpy.array): A perpendicular reference vector.
                 axis_pair (tuple): Indices of the two atoms defining the axis (central C and closest H).
             """
-            carbons, hydrogens = [], []
+            carbons, hydrogens, nitrogens = [], [], []
             
             # Extract atomic coordinates and classify atoms
             for i in range(1, mol.NumAtoms() + 1):
@@ -104,11 +104,13 @@ def optimizeStructureFF_C2(moleculeNamePDB, out_file, stepsNo = 50000, econv = 1
                 
                 if symbol == "C":
                     carbons.append((i, coord))
+                elif symbol == "N":
+                    nitrogens.append((i, coord))
                 elif symbol == "H":
                     hydrogens.append((i, coord))
 
             # Compute geometric center
-            geometric_center = np.mean([coord for _, coord in carbons + hydrogens], axis=0)
+            geometric_center = np.mean([coord for _, coord in nitrogens], axis=0)
 
             # Find the most central Carbon
             sorted_carbons = sorted(carbons, key=lambda c: np.linalg.norm(c[1] - geometric_center))
@@ -549,7 +551,7 @@ def doDFT_gpu(molecule, molecule_id, basis = '6-31g', xc = 'b3lyp',
     # (2) (optional) only optimize the capped atoms first
     # NOTE : the capped atoms are the last ones to have been added to molecule, so their indices are the last two ones
     if optimize_cap:
-         # optimize with densiy fitting
+         # optimize with density fitting
          mf_opt = rks.RKS(mol, xc = xc).density_fit()
          mf_opt.verbose = 0
          # NOTE : atoms are 1-index for pyscf geometric solvers
