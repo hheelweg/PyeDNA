@@ -60,6 +60,7 @@ def optimizeStructureFF(dye_name, suffix = 'preopt', stepsNo = 50000, econv = 1e
 def optimizeStructureFFSymmetry(moleculeNamePDB, out_file, constraint = None, point_group = None, econv = 1e-12, FF = 'UFF'):
     
     from openbabel import openbabel
+    from openbabel import pybel
 
     # (1) import .pdb file and load molecule
     obConversion = openbabel.OBConversion()
@@ -211,7 +212,7 @@ def optimizeStructureFFSymmetry(moleculeNamePDB, out_file, constraint = None, po
     if constraint is not None:
 
         constrained_atoms = openbabel.OBAtom()
-        atomic_number = openbabel.OBElements.GetAtomicNum(constraint[0])
+        atomic_number = pybel.ob.GetAtomicNum(constraint[0])
         print('test', constraint[0], atomic_number)
         P_atoms = [atom for atom in openbabel.OBMolAtomIter(mol) if atom.GetAtomicNum() == 15]   # indices of phosphorus atoms
         P1_idx = P_atoms[0].GetIndex() + 1
