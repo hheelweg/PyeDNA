@@ -22,6 +22,59 @@ def makeAtomSelection(atom_list):
         selection_str = " ".join([selection_str, atom])
     return selection_str
 
+# shift center of geometry of MDAnalysis Universe object to (0,0,0) and align specified molecular axis of molecule with (0,0,1) axis
+def shiftAndAlign(mda_u, axis_atom_names):
+
+    from scipy.spatial.transform import Rotation as R
+
+    # Select all atoms
+    atoms = mda_u.atoms
+
+    # Compute center of geometry (COG)
+    cog = atoms.center_of_geometry()
+    
+    # Shift the molecule to set COG at (0,0,0)
+    atoms.positions -= cog
+
+    # Get the positions of the two defining atoms
+    atom1 = mda_u.select_atoms(f"name {axis_atom_names[0]}").positions[0]
+    atom2 = mda_u.select_atoms(f"name {axis_atom_names[1]}").positions[0]
+
+    # Compute the axis vector
+    axis_vector = atom2 - atom1
+    axis_vector /= np.linalg.norm(axis_vector)  # Normalize
+
+    # Define the target vector (z-axis)
+    target_vector = np.array([0, 0, 1])
+
+    # Compute the rotation required to align axis_vector with target_vector
+    rotation, _ = R.align_vectors([target_vector], [axis_vector])
+
+    # Apply rotation to all atom positions
+    atoms.positions = rotation.apply(atoms.positions)
+
+    return mda_u
+
+
+def enforce_c2_symmetry(mda_u, axis="z"):
+    """Modify MDAnalysis molecular coordinates to enforce C2 symmetry along a given axis."""
+    coords = mda_u.atoms.positions.copy()  # Copy original coordinates
+
+    if axis == "z":
+        coords[:, :2] = (coords[:, :2] - coords[:, :2][::-1]) / 2  # Mirror (x, y), keep z
+    elif axis == "y":
+        coords[:, [0, 2]] = (coords[:, [0, 2]] - coords[:, [0, 2]][::-1]) / 2  # Mirror (x, z), keep y
+    elif axis == "x":
+        coords[:, [1, 2]] = (coords[:, [1, 2]] - coords[:, [1, 2]][::-1]) / 2  # Mirror (y, z), keep x
+    else:
+        raise ValueError("Invalid axis, choose from 'x', 'y', or 'z'")
+
+    # Assign the symmetrized coordinates back to the universe
+    mda_u.atoms.positions = coords
+    return mda_u
+
+
+
 # align molecule (mobile) with target (stationary)
 # NOTE : currently implemented for len(target) = len(current) = 2 (2 points of attachment)
 def alignToTarget(mol_coords, current, target, com, com_target, orientation = -1):

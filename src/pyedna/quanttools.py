@@ -225,7 +225,7 @@ def optimizeStructureFFSymmetry(in_pdb_file, out_pdb_file, constraint = None, po
     # enforceSymmetry(mol, point_group)
     for _ in range(100):
         forcefield.Setup(mol)                                   # need to feed back symmetry-corrected coordinates into forcefield
-        forcefield.ConjugateGradients(1000, econv)              # conjugate gradient optimization
+        forcefield.ConjugateGradients(5000, econv)              # conjugate gradient optimization
         enforceSymmetry(mol, point_group)                       # enforce symmetry of molecule 
     forcefield.GetCoordinates(mol)
     enforceSymmetry(mol, point_group)                           # ensure output molecule has desired symmetry
@@ -737,6 +737,31 @@ def doDFT_gpu(molecule, molecule_id, basis = '6-31g', xc = 'b3lyp',
     virt = mo[:, mf.mo_occ == 0]                # virtual orbitals
 
     return mol, mf, occ, virt
+
+
+# TODO : this is just a test function (i.e. delte this!)
+def checkSymmetryPYSCF(molecule, point_group = None, basis = '6-31g', xc = 'b3lyp', 
+              density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4):
+    #from gpu4pyscf import dft
+    from pyscf import dft, symm, gto
+
+    # (1) make PySCF molecular structure object 
+    mol = gto.M(atom = molecule,
+                basis = basis,
+                charge = charge,
+                spin = spin,
+                unit = 'Angstrom',
+                )
+    mol.verbose = verbosity
+
+    symm.geom.TOLERANCE = 1.399
+    # (1.1) (optional) check if point group aligned with structure
+    if point_group is not None:
+        # symmetry detection and initialization
+        mol.symmetry = True
+        mol.symmetry_subgroup = point_group
+        mol.build()
+    print(f"*** PySCF detected point group: {mol.groupname}", flush = True)
 
 
 # do DFT with geometry optimization in each step

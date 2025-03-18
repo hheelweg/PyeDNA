@@ -11,6 +11,7 @@ import warnings
 # from current package
 from . import structure
 from . import quanttools as qm
+from . import geomtools as geom
 from . import fileproc as fp
 from . import config 
 from . import utils
@@ -654,6 +655,29 @@ class Trajectory():
         chromophore_conv = self.convertChromophore(chromophore, conversion) if conversion else None
 
         return chromophore, chromophore_conv
+    
+        # get MDAnalysis object of specified residues at specified time slice
+    def getChromophoreSnapshotNew(self, idx, molecule, atom_list, capped_list, symmetry_axis = None, conversion = None, cap = True):
+        # (1) set time step
+        self.trajectory_u.trajectory[idx]
+        # (2) get positions of all residues specified in residue_ids
+        for id in molecule:
+            molecule_u = self.trajectory_u.select_atoms(f'resid {id}')
+             # get positions we want to cap with hydrogens
+            capped_positions = molecule_u.atoms.select_atoms(f'name {capped_list}').positions
+            molecule_u = molecule_u.atoms.select_atoms(f'name {atom_list}')
+        # (3) add hydorgen caps
+        molecule_u = self.capDye(molecule_u, capped_positions=capped_positions)
+        # (4) shift center of geometry to (0,0,0) and align atoms in symmetry_axis with (0,0,1) vector
+        # enforce symmetry
+        if symmetry_axis is not None:
+            molecule_u = geom.shiftAndAlign(molecule_u, symmetry_axis)
+        # (5) define instance of Chromophore class 
+        chromophore = structure.Chromophore(molecule_u)
+        # (6) convert to other input format for processing of trajectory
+        chromophore_conv = self.convertChromophore(chromophore, conversion) if conversion else None
+
+        return chromophore, chromophore_conv
 
 
 
@@ -817,6 +841,32 @@ class Trajectory():
         com_1, com_2 = chromophore_1.com, chromophore_2.com
         distance = np.linalg.norm(com_1 - com_2)
         return distance
+
+    # cap dye molecule with hydrogens at cappped positions
+    def capDye(self, molecule, capped_positions):
+         # (1) atom names, atom types, etc.
+        max_H_idx = max([int(re.search(r'H(\d+)', name).group(1)) for name in molecule.atoms.names if re.match(r'H\d+', name)])
+        new_atom_names = [f'H{max_H_idx + 1}', f'H{max_H_idx + 2}']
+        new_atom_types = ['H', 'H']
+        new_residue_name = np.unique(molecule.resnames)[0]
+        new_residue_id = np.unique(molecule.resids)[0]
+        new_elements = ['H', 'H']
+        # (2) H positions
+        new_atom_positions = np.array(capped_positions)
+        # (3) initialize new hydrogen Universe
+        Hs = mda.Universe.empty(n_atoms = len(capped_positions), trajectory=True)
+        # (4) fill in hydrogen Universe
+        Hs.add_TopologyAttr("name", new_atom_names)
+        Hs.add_TopologyAttr("type", new_atom_types)
+        Hs.add_TopologyAttr("element", new_elements)
+        Hs.add_TopologyAttr("resname", [new_residue_name])
+        Hs.add_TopologyAttr("resid", [new_residue_id])
+        Hs.atoms.positions = new_atom_positions
+        # (5) merge hydrogen Universe with molecule Universe
+        u = mda.Merge(molecule.atoms, Hs.atoms)
+        return u
+
+        pass
 
 
     # TODO : might want to make this more general for atom types to cap etc.
