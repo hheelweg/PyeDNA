@@ -487,7 +487,7 @@ class Trajectory():
         # store molecule names
         molecule_names = [value for key, value in mols.items() if key.startswith("name_") and value is not None]
         # store constituents of each molecules
-        molecule_consituents = [value for key, value in mols.items() if key.startswith("constituent_") and value is not None]
+        molecule_consituents = [value for key, value in mols.items() if key.startswith("constituents_") and value is not None]
 
         # checkpoint
         assert(len(molecule_names) == len(molecules))
