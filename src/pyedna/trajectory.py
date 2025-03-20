@@ -638,7 +638,7 @@ class Trajectory():
     def initMolecules(self, file):
         self.molecules, self.molecule_names, self.molecule_constituents = self.parseMolecules(file)
         self.defined_molecules = True 
-        print(self.molecule_names)
+        print(self.molecule_constituents)
 
         # TODO : load detailled dye information from database
         dye_base_dir = os.getenv("DYE_DIR") 
