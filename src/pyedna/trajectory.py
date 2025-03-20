@@ -716,16 +716,16 @@ class Trajectory():
             assert(selected_name == molecule_names[i])
 
         # (3) check how many residues the molecule is composed of and allow for  
-        if len(molecules_u) == 1:
+        if len(molecule) == 1:
             molecule_u = molecules_u[0]
-        elif len(molecules_u) == 2:
+        elif len(molecule) == 2:
             molecule_u = mda.Merge(molecules_u[0].atoms, molecules_u[1].atoms)
         else:
             raise NotImplementedError('Only two neighboring residues currently implemented!')
         
-        
-        # (optional) enforce symmetry
-        if enforce_symmetry:
+
+        # (optional) enforce symmetry if they are composed of a single dye
+        if enforce_symmetry and len(molecule) == 1:
             # shift center of geometry to (0,0,0) and align atoms in symmetry_axis with (0,0,1) vector
             if symmetry_info["point_group"] == 'Cs':
                 molecule_u = geom.shiftAndAlign(molecule_u, symmetry_info["symmetry_axis"])
