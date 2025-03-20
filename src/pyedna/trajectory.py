@@ -470,8 +470,10 @@ class Trajectory():
         mols = {
                 "molecule_1" :      None,
                 "molecule_2" :      None,
-                "name_1" :          "D",
-                "name_2" :          "A",
+                "name_1" :          ["D"],
+                "name_2" :          ["A"],
+                "constituents_1":   None,
+                "constituents_2":   None
         }
 
         # read user parameters for molecules
@@ -483,7 +485,9 @@ class Trajectory():
         # store molecule IDs
         molecules = [value for key, value in mols.items() if key.startswith("molecule_") and value is not None]
         # store molecule names
-        molecule_names = [value for key, value in mols.items() if key.startswith("name_") and value is not None]#.sort(key=lambda x: int(x.split('_')[1]))
+        molecule_names = [value for key, value in mols.items() if key.startswith("name_") and value is not None]
+        # store constituents of each molecules
+        molecule_consituents = [value for key, value in mols.items() if key.startswith("constituent_") and value is not None]
 
         # checkpoint
         assert(len(molecule_names) == len(molecules))
@@ -492,7 +496,7 @@ class Trajectory():
         elif len(molecules) > 2:
             raise NotImplementedError("More than 2 molecules (currently) not implemented!")
 
-        return molecules, molecule_names
+        return molecules, molecule_names, molecule_consituents
 
     # read and parse DataFrame trajectory analysis output
     @staticmethod
@@ -632,8 +636,9 @@ class Trajectory():
     
     # initialize molecules from params file
     def initMolecules(self, file):
-        self.molecules, self.molecule_names = self.parseMolecules(file)
+        self.molecules, self.molecule_names, self.molecule_constituents = self.parseMolecules(file)
         self.defined_molecules = True 
+        print(self.molecule_names)
 
         # TODO : load detailled dye information from database
         dye_base_dir = os.getenv("DYE_DIR") 
