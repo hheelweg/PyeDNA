@@ -362,7 +362,8 @@ class Trajectory():
             "state_ids": [0],
             "TDA": True,
             "gpu": True,
-            "do_tddft": True
+            "do_tddft": True,
+            "optimize_cap": False
         }
 
         # read in user parameters from file
@@ -634,11 +635,9 @@ class Trajectory():
         self.molecules, self.molecule_names = self.parseMolecules(file)
         self.defined_molecules = True 
 
-        print(self.molecule_names, flush=True) 
-
         # TODO : load detailled dye information from database
         dye_base_dir = os.getenv("DYE_DIR") 
-        print(dye_base_dir, flush=True)                           
+        self.molecule_information = dict()                         
             
 
     # get MDAnalysis object of specified residues at specified time slice
