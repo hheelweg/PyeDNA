@@ -632,7 +632,13 @@ class Trajectory():
     # initialize molecules from params file
     def initMolecules(self, file):
         self.molecules, self.molecule_names = self.parseMolecules(file)
-        self.defined_molecules = True                               
+        self.defined_molecules = True 
+
+        print(self.molecule_names, flush=True) 
+
+        # TODO : load detailled dye information from database
+        dye_base_dir = os.getenv("DYE_DIR") 
+        print(dye_base_dir, flush=True)                           
             
 
     # get MDAnalysis object of specified residues at specified time slice
