@@ -643,11 +643,33 @@ class Trajectory():
 
         # find information of unique elements in list
         unique_names = np.unique(np.array(self.molecule_constituents).flatten()) 
+        dye_base_dir = os.getenv("DYE_DIR")
         self.molecule_information = dict()
+
         for unique_dye in unique_names:
-            dye_base_dir = os.getenv("DYE_DIR")
+
             dye_dir = os.path.join(dye_base_dir, unique_dye)
-            print(dye_dir)
+            self.molecule_information[unique_dye] = dict()
+            # file names that we need to parse
+            dye_atoms_file = os.path.join(dye_dir, "dye.info")
+            capped_positions_file = os.path.join(dye_dir, "dye_cap.info")
+            symmetry_info_file = os.path.join(dye_dir, "symm.info")
+
+            # (1) read information about dye atoms
+            with open(dye_atoms_file, 'r') as file:
+                atom_list = [line.strip() for line in file if line.strip()]  
+            self.molecule_information[unique_dye]["dye_atoms"] = " ".join(atom_list)
+
+            # (2) read information about which positions act as the cap
+            with open(capped_positions_file, 'r') as file:
+                capped_list = [line.strip() for line in file if line.strip()]  
+            self.molecule_information[unique_dye]["capped_atoms"] = " ".join(capped_list)
+
+            # (3) read symmetry info
+            self.molecule_information[unique_dye]["symm_info"] = fp.readParams(symmetry_info_file)
+        
+        print(self.molecule_information)
+
 
             
 
