@@ -56,22 +56,56 @@ def shiftAndAlign(mda_u, axis_atom_names):
     return mda_u
 
 
-def enforce_c2_symmetry(mda_u, axis="z"):
-    """Modify MDAnalysis molecular coordinates to enforce C2 symmetry along a given axis."""
-    coords = mda_u.atoms.positions.copy()  # Copy original coordinates
+def enforceSymmetry(mda_u, axis_atom_names, support_name = 'N1', tol = 0.1):
+    
+    
+    # Extract atom positions
+    atoms = mda_u.atoms
+    coords = atoms.positions.copy()
 
-    if axis == "z":
-        coords[:, :2] = (coords[:, :2] - coords[:, :2][::-1]) / 2  # Mirror (x, y), keep z
-    elif axis == "y":
-        coords[:, [0, 2]] = (coords[:, [0, 2]] - coords[:, [0, 2]][::-1]) / 2  # Mirror (x, z), keep y
-    elif axis == "x":
-        coords[:, [1, 2]] = (coords[:, [1, 2]] - coords[:, [1, 2]][::-1]) / 2  # Mirror (y, z), keep x
-    else:
-        raise ValueError("Invalid axis, choose from 'x', 'y', or 'z'")
+    # Get positions of reference atoms
+    pos1 = mda_u.select_atoms(f"name {axis_atom_names[0]}").positions[0]  # Defines mirror plane
+    pos2 = mda_u.select_atoms(f"name {axis_atom_names[1]}").positions[0]  # Defines mirror plane
+    pos3 = mda_u.select_atoms(f"name {support_name}").positions[0]  # Used to find normal
 
-    # Assign the symmetrized coordinates back to the universe
-    mda_u.atoms.positions = coords
-    return mda_u
+    # Compute the axis vector along atom1 → atom2
+    axis_vec = pos2 - pos1
+    axis_vec /= np.linalg.norm(axis_vec)  # Normalize
+
+    # Compute the normal to the mirror plane (orthogonal part of (atom3 - atom2) onto axis_vec)
+    vec3_2 = pos3 - pos2  # Vector from atom2 to atom3
+    normal = vec3_2 - np.dot(vec3_2, axis_vec) * axis_vec  # Remove parallel component to axis_vec
+    normal /= np.linalg.norm(normal)  # Normalize
+
+    # Compute signed distances of all atoms from the mirror plane
+    distances = np.dot(coords - pos1, normal)  # Signed distances to mirror plane
+    mask_positive = distances > tol  # Atoms on one side (considering tolerance)
+    mask_negative = distances < -tol  # Atoms on the other side (considering tolerance)
+
+    # Ensure Atom1 and Atom2 are always included in the final structure
+    atom1_idx = mda_u.select_atoms(f"name {axis_atom_names[0]}").indices[0]
+    atom2_idx = mda_u.select_atoms(f"name {axis_atom_names[1]}").indices[0]
+    
+    # Define atoms exactly inside the mirror plane (within tolerance)
+    mask_mirror_plane = np.abs(distances) <= tol  
+    mask_mirror_plane[atom1_idx] = True  # Force inclusion of Atom1
+    mask_mirror_plane[atom2_idx] = True  # Force inclusion of Atom2
+
+    # Select atoms to keep (those in the mirror plane + those on one side)
+    atoms_to_keep = atoms[mask_negative | mask_mirror_plane]  # Keep one side + mirror-plane atoms
+    atoms_to_mirror = atoms[mask_negative]  # Mirror only these atoms
+
+    # Compute mirrored positions
+    mirrored_coords = atoms_to_mirror.positions - 2 * np.outer(np.dot(atoms_to_mirror.positions - pos1, normal), normal)
+
+    # Create a new universe for mirrored atoms
+    mirrored_universe = mda.Merge(atoms_to_mirror)
+    mirrored_universe.atoms.positions = mirrored_coords  # Assign new positions
+
+    # Merge the kept atoms + mirrored atoms into one final universe
+    new_universe = mda.Merge(atoms_to_keep, mirrored_universe.atoms)
+
+    return new_universe
 
 
 

@@ -656,22 +656,44 @@ class Trajectory():
 
         return chromophore, chromophore_conv
     
-        # get MDAnalysis object of specified residues at specified time slice
-    def getChromophoreSnapshotNew(self, idx, molecule, atom_list, capped_list, symmetry_axis = None, conversion = None, cap = True):
+    # get MDAnalysis object of specified residues at specified time slice
+    def getChromophoreSnapshotNew(self, idx, molecule, molecule_names, dye_atoms_dict, capped_atoms_dict, enforce_symmetry = True, symmetry_info = None, conversion = None, cap = True):
+
         # (1) set time step
         self.trajectory_u.trajectory[idx]
+
         # (2) get positions of all residues specified in residue_ids
-        for id in molecule:
+        molecules_u = []
+        for i, id in enumerate(molecule):
             molecule_u = self.trajectory_u.select_atoms(f'resid {id}')
              # get positions we want to cap with hydrogens
-            capped_positions = molecule_u.atoms.select_atoms(f'name {capped_list}').positions
-            molecule_u = molecule_u.atoms.select_atoms(f'name {atom_list}')
-        # (3) add hydorgen caps
-        molecule_u = self.capDye(molecule_u, capped_positions=capped_positions)
-        # (4) shift center of geometry to (0,0,0) and align atoms in symmetry_axis with (0,0,1) vector
-        # enforce symmetry
-        if symmetry_axis is not None:
-            molecule_u = geom.shiftAndAlign(molecule_u, symmetry_axis)
+            capped_positions = molecule_u.atoms.select_atoms(f'name {capped_atoms_dict[molecule_names[i]]}').positions
+            molecule_u = molecule_u.atoms.select_atoms(f'name {dye_atoms_dict[molecule_names[i]]}')
+            # add hydrogen caps
+            if cap:
+                molecule_u = self.capWithHydrogens(molecule_u, capped_positions=capped_positions)
+            molecules_u.append(molecule_u)
+            # make sure selected residue name equals desired molecule_name
+            selected_name = np.unique(self.trajectory_u.select_atoms(f'resid {id}').resnames)[0]
+            assert(selected_name == molecule_names[i])
+
+        # (3) check how many residues the molecule is composed of and allow for  
+        if len(molecules_u) == 1:
+            molecule_u = molecules_u[0]
+        elif len(molecules_u) == 2:
+            molecule_u = mda.Merge(molecules_u[0].atoms, molecules_u[1].atoms)
+        else:
+            raise NotImplementedError('Only two neighboring residues currently implemented!')
+        
+        
+        # (optional) enforce symmetry
+        if enforce_symmetry:
+            # shift center of geometry to (0,0,0) and align atoms in symmetry_axis with (0,0,1) vector
+            if symmetry_info["point_group"] == 'Cs':
+                molecule_u = geom.shiftAndAlign(molecule_u, symmetry_info["symmetry_axis"])
+                molecule_u = geom.enforceSymmetry(molecule_u, symmetry_info["symmetry_axis"], symmetry_info["support_atom"])
+            else:
+                raise NotImplementedError('Only Cs point group symmetry implemented for DFT/TDDFT analysis')
         # (5) define instance of Chromophore class 
         chromophore = structure.Chromophore(molecule_u)
         # (6) convert to other input format for processing of trajectory
@@ -842,8 +864,8 @@ class Trajectory():
         distance = np.linalg.norm(com_1 - com_2)
         return distance
 
-    # cap dye molecule with hydrogens at cappped positions
-    def capDye(self, molecule, capped_positions):
+    # cap dye molecule with hydrogens at locations specified by capped_positions
+    def capWithHydrogens(self, molecule, capped_positions):
          # (1) atom names, atom types, etc.
         max_H_idx = max([int(re.search(r'H(\d+)', name).group(1)) for name in molecule.atoms.names if re.match(r'H\d+', name)])
         new_atom_names = [f'H{max_H_idx + 1}', f'H{max_H_idx + 2}']

@@ -754,10 +754,12 @@ def checkSymmetryPYSCF(molecule, point_group = None, basis = '6-31g', xc = 'b3ly
                 )
     mol.verbose = verbosity
 
-    symm.geom.TOLERANCE = 1.399
     # (1.1) (optional) check if point group aligned with structure
     if point_group is not None:
         # symmetry detection and initialization
+        # NOTE : one might have to make this a little bit bigger so as to make the symmetry identification a bit more robust aginst slighlty
+        # distorted molecular geometries
+        symm.geom.TOLERANCE = 0.1
         mol.symmetry = True
         mol.symmetry_subgroup = point_group
         mol.build()
