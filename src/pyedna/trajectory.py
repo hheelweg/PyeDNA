@@ -636,13 +636,19 @@ class Trajectory():
     
     # initialize molecules from params file
     def initMolecules(self, file):
+
+        # parse information of molecules attached and their consitutent builidng blocks
         self.molecules, self.molecule_names, self.molecule_constituents = self.parseMolecules(file)
         self.defined_molecules = True 
-        print(self.molecule_constituents)
+
+        # find information of unique elements in list
+        unique_names = np.array(self.molecule_constituents).flatten()
+        print(unique_names)
 
         # TODO : load detailled dye information from database
         dye_base_dir = os.getenv("DYE_DIR") 
-        self.molecule_information = dict()                         
+        self.molecule_information = dict()
+
             
 
     # get MDAnalysis object of specified residues at specified time slice
