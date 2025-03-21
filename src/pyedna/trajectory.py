@@ -694,11 +694,11 @@ class Trajectory():
         return chromophore, chromophore_conv
     
     # get MDAnalysis object of specified residues at specified time slice
-    def getChromophoreSnapshot(self, idx, molecule, molecule_constituents, 
+    def getChromophoreSnapshot(self, time_idx, molecule, molecule_constituents, 
                                enforce_symmetry = False, conversion = None, cap = True):
 
         # (1) set time step
-        self.trajectory_u.trajectory[idx]
+        self.trajectory_u.trajectory[time_idx]
 
         # (2) get positions of all residues (constituents) specified in residue_ids
         molecules_u = []
@@ -706,11 +706,8 @@ class Trajectory():
             # select correct residue
             molecule_u = self.trajectory_u.select_atoms(f'resid {id}')
             # get information of dye/residue
-            print(id, molecule_constituents[i])
             dye_atoms = self.molecule_information[molecule_constituents[i]]["dye_atoms"]
             capped_atoms = self.molecule_information[molecule_constituents[i]]["capped_atoms"]
-            print(dye_atoms)
-            print(capped_atoms)
              # get positions we want to cap with hydrogens
             capped_positions = molecule_u.atoms.select_atoms(f'name {capped_atoms}').positions
             molecule_u = molecule_u.atoms.select_atoms(f'name {dye_atoms}')
@@ -877,7 +874,12 @@ class Trajectory():
                 print('molecule', molecule, self.molecule_constituents[i])
                 #chromophore, chromophore_conv = self.getChromophoreSnapshotOld(idx, molecule, self.molecule_names[i], conversion = 'pyscf')
 
-                chromophore, chromophore_conv = self.getChromophoreSnapshot(idx, molecule, self.molecule_constituents[i], conversion = 'pyscf')
+                chromophore, chromophore_conv = self.getChromophoreSnapshot(time_idx = idx,
+                                                                            molecule = molecule,
+                                                                            molecule_constituents = self.molecule_constituents[i],
+                                                                            enforce_symmetry = True,
+                                                                            conversion = 'pyscf'
+                                                                            )
 
 
                 self.chromophores.append(chromophore)
