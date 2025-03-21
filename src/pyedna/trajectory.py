@@ -642,11 +642,11 @@ class Trajectory():
         self.defined_molecules = True 
 
         # find information of unique elements in list
-        unique_names = np.unique(np.array(self.molecule_constituents).flatten()) 
+        unique_dyes = np.unique(np.array(self.molecule_constituents).flatten()) 
         dye_base_dir = os.getenv("DYE_DIR")
         self.molecule_information = dict()
 
-        for unique_dye in unique_names:
+        for unique_dye in unique_dyes:
 
             dye_dir = os.path.join(dye_base_dir, unique_dye)
             self.molecule_information[unique_dye] = dict()
