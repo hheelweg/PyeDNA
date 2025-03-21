@@ -708,6 +708,8 @@ class Trajectory():
             # get information of dye/residue
             dye_atoms = self.molecule_information[molecule_constituents[i]]["dye_atoms"]
             capped_atoms = self.molecule_information[molecule_constituents[i]]["capped_atoms"]
+            print(dye_atoms)
+            print(capped_atoms)
              # get positions we want to cap with hydrogens
             capped_positions = molecule_u.atoms.select_atoms(f'name {capped_atoms}').positions
             molecule_u = molecule_u.atoms.select_atoms(f'name {dye_atoms}')
