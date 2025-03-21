@@ -706,8 +706,8 @@ class Trajectory():
             # select correct residue
             molecule_u = self.trajectory_u.select_atoms(f'resid {id}')
             # get information of dye/residue
-            dye_atoms = self.molecule_constituents[molecule_constituents[i]]["dye_atoms"]
-            capped_atoms = self.molecule_constituents[molecule_constituents[i]]["capped_atoms"]
+            dye_atoms = self.molecule_information[molecule_constituents[i]]["dye_atoms"]
+            capped_atoms = self.molecule_information[molecule_constituents[i]]["capped_atoms"]
              # get positions we want to cap with hydrogens
             capped_positions = molecule_u.atoms.select_atoms(f'name {capped_atoms}').positions
             molecule_u = molecule_u.atoms.select_atoms(f'name {dye_atoms}')
@@ -722,7 +722,7 @@ class Trajectory():
         # (3) check how many residues the molecule is composed of and allow for  
         if len(molecule) == 1:
             molecule_u = molecules_u[0]
-            symmetry_info = self.molecule_constituents[molecule_constituents[0]]["dye_atoms"]
+            symmetry_info = self.molecule_information[molecule_constituents[0]]["dye_atoms"]
         elif len(molecule) == 2:
             molecule_u = mda.Merge(molecules_u[0].atoms, molecules_u[1].atoms)
         else:
