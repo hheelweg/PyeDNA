@@ -722,7 +722,7 @@ class Trajectory():
         # (3) check how many residues the molecule is composed of and allow for  
         if len(molecule) == 1:
             molecule_u = molecules_u[0]
-            symmetry_info = self.molecule_information[molecule_constituents[0]]["dye_atoms"]
+            symmetry_info = self.molecule_information[molecule_constituents[0]]["symm_info"]
         elif len(molecule) == 2:
             molecule_u = mda.Merge(molecules_u[0].atoms, molecules_u[1].atoms)
         else:
