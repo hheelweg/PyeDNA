@@ -694,29 +694,35 @@ class Trajectory():
         return chromophore, chromophore_conv
     
     # get MDAnalysis object of specified residues at specified time slice
-    def getChromophoreSnapshot(self, idx, molecule, molecule_names, dye_atoms_dict, capped_atoms_dict, enforce_symmetry = True, symmetry_info = None, conversion = None, cap = True):
+    def getChromophoreSnapshot(self, idx, molecule, molecule_constituents, 
+                               enforce_symmetry = False, conversion = None, cap = True):
 
         # (1) set time step
         self.trajectory_u.trajectory[idx]
 
-        # (2) get positions of all residues specified in residue_ids
+        # (2) get positions of all residues (constituents) specified in residue_ids
         molecules_u = []
         for i, id in enumerate(molecule):
+            # select correct residue
             molecule_u = self.trajectory_u.select_atoms(f'resid {id}')
+            # get information of dye/residue
+            dye_atoms = self.molecule_constituents[molecule_constituents[i]]["dye_atoms"]
+            capped_atoms = self.molecule_constituents[molecule_constituents[i]]["capped_atoms"]
              # get positions we want to cap with hydrogens
-            capped_positions = molecule_u.atoms.select_atoms(f'name {capped_atoms_dict[molecule_names[i]]}').positions
-            molecule_u = molecule_u.atoms.select_atoms(f'name {dye_atoms_dict[molecule_names[i]]}')
+            capped_positions = molecule_u.atoms.select_atoms(f'name {capped_atoms}').positions
+            molecule_u = molecule_u.atoms.select_atoms(f'name {dye_atoms}')
             # add hydrogen caps
             if cap:
                 molecule_u = self.capWithHydrogens(molecule_u, capped_positions=capped_positions)
             molecules_u.append(molecule_u)
             # make sure selected residue name equals desired molecule_name
             selected_name = np.unique(self.trajectory_u.select_atoms(f'resid {id}').resnames)[0]
-            assert(selected_name == molecule_names[i])
+            assert(selected_name == molecule_constituents[i])
 
         # (3) check how many residues the molecule is composed of and allow for  
         if len(molecule) == 1:
             molecule_u = molecules_u[0]
+            symmetry_info = self.molecule_constituents[molecule_constituents[0]]["dye_atoms"]
         elif len(molecule) == 2:
             molecule_u = mda.Merge(molecules_u[0].atoms, molecules_u[1].atoms)
         else:
@@ -866,8 +872,9 @@ class Trajectory():
 
                 # get molecule snapshot
                 print('molecule', molecule, self.molecule_constituents[i])
-                chromophore, chromophore_conv = self.getChromophoreSnapshotOld(idx, molecule, self.molecule_names[i], conversion = 'pyscf')
+                #chromophore, chromophore_conv = self.getChromophoreSnapshotOld(idx, molecule, self.molecule_names[i], conversion = 'pyscf')
 
+                chromophore, chromophore_conv = self.getChromophoreSnapshot(idx, molecule, self.molecule_names[i], conversion = 'pyscf')
 
 
                 self.chromophores.append(chromophore)
