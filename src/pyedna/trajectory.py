@@ -668,13 +668,12 @@ class Trajectory():
             # (3) read symmetry info
             self.molecule_information[unique_dye]["symm_info"] = fp.readParams(symmetry_info_file)
         
-        print(self.molecule_information)
 
 
             
 
     # get MDAnalysis object of specified residues at specified time slice
-    def getChromophoreSnapshot(self, idx, molecule, molecule_name, conversion = None, cap = True):
+    def getChromophoreSnapshotOld(self, idx, molecule, molecule_name, conversion = None, cap = True):
         # (1) set time step
         self.trajectory_u.trajectory[idx]
         # (2) get positions of all residues specified in residue_ids
@@ -695,7 +694,7 @@ class Trajectory():
         return chromophore, chromophore_conv
     
     # get MDAnalysis object of specified residues at specified time slice
-    def getChromophoreSnapshotNew(self, idx, molecule, molecule_names, dye_atoms_dict, capped_atoms_dict, enforce_symmetry = True, symmetry_info = None, conversion = None, cap = True):
+    def getChromophoreSnapshot(self, idx, molecule, molecule_names, dye_atoms_dict, capped_atoms_dict, enforce_symmetry = True, symmetry_info = None, conversion = None, cap = True):
 
         # (1) set time step
         self.trajectory_u.trajectory[idx]
@@ -864,7 +863,13 @@ class Trajectory():
             self.chromophores = []
             self.chromophores_conv = []
             for i, molecule in enumerate(self.molecules):
-                chromophore, chromophore_conv = self.getChromophoreSnapshot(idx, molecule, self.molecule_names[i], conversion = 'pyscf')
+
+                # get molecule snapshot
+                print('molecule', molecule, self.molecule_constituents[i])
+                chromophore, chromophore_conv = self.getChromophoreSnapshotOld(idx, molecule, self.molecule_names[i], conversion = 'pyscf')
+
+
+
                 self.chromophores.append(chromophore)
                 self.chromophores_conv.append(chromophore_conv)
 
