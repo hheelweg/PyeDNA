@@ -706,6 +706,7 @@ class Trajectory():
             # select correct residue
             molecule_u = self.trajectory_u.select_atoms(f'resid {id}')
             # get information of dye/residue
+            print(id, molecule_constituents[i])
             dye_atoms = self.molecule_information[molecule_constituents[i]]["dye_atoms"]
             capped_atoms = self.molecule_information[molecule_constituents[i]]["capped_atoms"]
             print(dye_atoms)
@@ -876,7 +877,7 @@ class Trajectory():
                 print('molecule', molecule, self.molecule_constituents[i])
                 #chromophore, chromophore_conv = self.getChromophoreSnapshotOld(idx, molecule, self.molecule_names[i], conversion = 'pyscf')
 
-                chromophore, chromophore_conv = self.getChromophoreSnapshot(idx, molecule, self.molecule_names[i], conversion = 'pyscf')
+                chromophore, chromophore_conv = self.getChromophoreSnapshot(idx, molecule, self.molecule_constituents[i], conversion = 'pyscf')
 
 
                 self.chromophores.append(chromophore)
