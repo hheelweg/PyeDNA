@@ -870,8 +870,7 @@ class Trajectory():
             self.chromophores_conv = []
             for i, molecule in enumerate(self.molecules):
 
-                # get molecule snapshot
-                print('molecule', molecule, self.molecule_constituents[i])
+                
                 #chromophore, chromophore_conv = self.getChromophoreSnapshotOld(idx, molecule, self.molecule_names[i], conversion = 'pyscf')
 
                 chromophore, chromophore_conv = self.getChromophoreSnapshot(time_idx = idx,
