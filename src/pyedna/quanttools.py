@@ -916,9 +916,9 @@ def doQM_gpu(molecules, output_keys, verbosity = 0):
     return output
 
 
-# coupling terms for the computation cJ and cK 
+# (intermolecular) coupling terms for the computation cJ and cK of molecule A and molecule B
 # NOTE : this returns (by default) the couplings in Hartree units 
-def getCJCK(molA, molB, tdmA, tdmB, get_cK = False):
+def getInterCJCK(molA, molB, tdmA, tdmB, get_cK = False):
 
     from pyscf.scf import jk, _vhf
 
@@ -954,20 +954,48 @@ def getCJCK(molA, molB, tdmA, tdmB, get_cK = False):
         return cJ, 0
 
 
+# (intramolecular) coupling terms for the computation cJ and cK of molecule 
+# NOTE : this returns (by default) the couplings in Hartree units 
+def getIntraCJCK(mol, tdm, get_cK = False):
+    from pyscf.scf import jk, _vhf
+    from pyscf import lib
+
+    assert tdm.shape == (mol.nao, mol.nao)
+
+    # (1) Setup HF infrastructure for prescreened 2-electron integrals
+    vhfopt = _vhf.VHFOpt(mol, 'int2e', 'CVHFnrs8_prescreen', 'CVHFsetnr_direct_scf', 'CVHFsetnr_direct_scf_dm')                    
+    vhfopt.set_dm(tdm, mol._atm, mol._bas, mol._env)             
+    vhfopt._dmcondname = None
+
+    # (2) compute Coulomb integral (J)
+    with lib.temporary_env(vhfopt._this.contents, fprescreen=_vhf._fpointer('CVHFnrs8_vj_prescreen')):
+        vJ = jk.get_jk(mol, tdm, 'ijkl,lk->s2ij', vhfopt=vhfopt, aosym='s4', hermi=1)
+        cJ = np.einsum('ij,ij->', vJ, tdm)
+
+    # (3) compute Exchange integral (K)
+    if get_cK:
+        with lib.temporary_env(vhfopt._this.contents, fprescreen=_vhf._fpointer('CVHFnrs8_vk_prescreen')):
+            vK = jk.get_jk(mol, tdm, 'ijkl,jk->il', vhfopt=vhfopt, aosym='s1', hermi=0)
+            cK = np.einsum('ij,ij->', vK, tdm)
+        return cJ, cK
+    else:
+        return cJ, 0
+
+
 # compute coupling terms ('cJ', 'cK', 'electronic', 'both') for the states (S_0^A , S_{stateB + 1}^B) <--> (S_{stateA + 1}^A, S_0^B)
 # 'cJ' only returns the electrostatic interaction, 'cK' only the exchange interaction, 'electronic' returns 2 * cJ - cK
 # NOTE : stateA and stateB are zero-indexed here so stateA = 0 corresponds to the first excited state of molecule A etc.
 # stateA and stateB default to 0 to for the transition (S_0^A , S_1^B) <--> (S_1^A, S_0^B)
-def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
+def getVCoulombicInter(mols, tdms, states, coupling_type = 'electronic'):
 
     stateA, stateB = states[0], states[1]
     molA, molB = mols[0], mols[1]
     tdmA, tdmB = tdms[0][stateA], tdms[1][stateB]
 
     if coupling_type in ['electronic', 'cK']:
-        cJ, cK = getCJCK(molA, molB, tdmA, tdmB, get_cK=True)
+        cJ, cK = getInterCJCK(molA, molB, tdmA, tdmB, get_cK=True)
     elif coupling_type in ['cJ']:
-        cJ, _ = getCJCK(molA, molB, tdmA, tdmB, get_cK=False)
+        cJ, _ = getInterCJCK(molA, molB, tdmA, tdmB, get_cK=False)
     else:
         raise NotImplementedError("Invalid coupling type specified!")
     

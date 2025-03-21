@@ -542,12 +542,30 @@ class Trajectory():
     # write a function that produces string for storing transition
     @staticmethod
     def generateTransitionString(states, molecule_names = ["D", "A"]):
-        if states == ['strongest', 'strongest']:
-            stateA, stateB = 's', 's'
-        else:
-            stateA, stateB = states[0] + 1, states[1] + 1
-        nameA, nameB = molecule_names[0], molecule_names[1]
-        return f"[{nameA}({stateA}), {nameB}(0)] <--> [{nameA}(0), {nameB}({stateB})]"
+        # check that states and molecule_names have same length
+        assert(len(states) == len(molecule_names))
+
+        # Case 1 (base case) : consider intermolecular transitions
+        if len(states) == 2:
+            # (a) consider transitions involving the largest oscillator strengths
+            if states == ['strongest', 'strongest']:
+                stateA, stateB = 's', 's'
+            # (b) custom states
+            else:
+                stateA, stateB = states[0] + 1, states[1] + 1
+            nameA, nameB = molecule_names[0], molecule_names[1]
+            return f"[{nameA}({stateA}), {nameB}(0)] <--> [{nameA}(0), {nameB}({stateB})]"
+        # Case 2 : consider intermolecular transitions
+        if len(states) == 1:
+            # (a) consider transitions involving the largest oscillator strengths
+            if states == ['strongest']:
+                state = 's'
+            # (b) custom states
+            else:
+                state = states[0] + 1
+            name = molecule_names[0]
+            return f"[{name}(0)] <--> [{name}({state})]"
+
 
 
     # initialize output based on desired output parameters 
@@ -641,7 +659,7 @@ class Trajectory():
         self.molecules, self.molecule_names, self.molecule_constituents = self.parseMolecules(file)
         self.defined_molecules = True 
 
-        # find information of unique elements in list
+        # find information of unique residues in list
         unique_dyes = np.unique(np.array(self.molecule_constituents).flatten()) 
         dye_base_dir = os.getenv("DYE_DIR")
         self.molecule_information = dict()
@@ -673,6 +691,7 @@ class Trajectory():
             
 
     # get MDAnalysis object of specified residues at specified time slice
+    # TODO : delete this?
     def getChromophoreSnapshotOld(self, idx, molecule, molecule_name, conversion = None, cap = True):
         # (1) set time step
         self.trajectory_u.trajectory[idx]
@@ -788,7 +807,7 @@ class Trajectory():
                 # (a) get Coulombic coupling information if desired
                 if self.quant_info[0]["coupling"]:
                     # compute coupling based on QM (DFT/TDDFT) output
-                    coupling_out = qm.getVCoulombic(output_qm['mol'], output_qm['tdm'], states, coupling_type=self.quant_info[1]['coupling'])
+                    coupling_out = qm.getVCoulombicInter(output_qm['mol'], output_qm['tdm'], states, coupling_type=self.quant_info[1]['coupling'])
                     # add to output dict
                     self.output_quant.loc[time_idx, [(self.transition_names[i], key) for key in coupling_out.keys()]] = list(coupling_out.values())
 
