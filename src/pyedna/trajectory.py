@@ -913,7 +913,7 @@ class Trajectory():
                 chromophore, chromophore_conv = self.getChromophoreSnapshot(time_idx = idx,
                                                                             molecule = molecule,
                                                                             molecule_constituents = self.molecule_constituents[i],
-                                                                            enforce_symmetry = True,
+                                                                            enforce_symmetry = False,
                                                                             conversion = 'pyscf'
                                                                             )
 
