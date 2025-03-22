@@ -470,8 +470,8 @@ class Trajectory():
         mols = {
                 "molecule_1" :      None,
                 "molecule_2" :      None,
-                "name_1" :          ["D"],
-                "name_2" :          ["A"],
+                "name_1" :          None,
+                "name_2" :          None,
                 "constituents_1":   None,
                 "constituents_2":   None
         }
