@@ -700,7 +700,6 @@ class Trajectory():
 
 
             
-
     # get MDAnalysis object of specified residues at specified time slice
     # TODO : delete this?
     def getChromophoreSnapshotOld(self, idx, molecule, molecule_name, conversion = None, cap = True):
