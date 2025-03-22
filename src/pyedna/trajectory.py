@@ -574,7 +574,6 @@ class Trajectory():
 
         # (1) define QM states we are interested in (0-indexed), i.e. (S_0^A , S_{stateB + 1}^B) <--> (S_{stateA + 1}^A, S_0^B)
         self.transitions = self.quant_info[0]["transitions"]
-        print(self.transitions, self.num_molecules, flush = True)
         # check that length of each transition in self.transitions agrees with number of molecules
         for transition in self.transitions:
             assert(len(transition) == self.num_molecules)
@@ -668,9 +667,6 @@ class Trajectory():
 
         # parse information of molecules attached and their consitutent builidng blocks
         self.molecules, self.molecule_names, self.molecule_constituents = self.parseMolecules(file)
-        print(self.molecules)
-        print(self.molecule_names)
-        print(self.molecule_constituents)
         self.defined_molecules = True 
         self.num_molecules = len(self.molecules)
 
