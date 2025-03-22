@@ -542,6 +542,7 @@ class Trajectory():
     # write a function that produces string for storing transition
     @staticmethod
     def generateTransitionString(states, molecule_names = ["D", "A"]):
+
         # check that states and molecule_names have same length
         assert(len(states) == len(molecule_names))
 
@@ -573,6 +574,9 @@ class Trajectory():
 
         # (1) define QM states we are interested in (0-indexed), i.e. (S_0^A , S_{stateB + 1}^B) <--> (S_{stateA + 1}^A, S_0^B)
         self.transitions = self.quant_info[0]["transitions"]
+        # check that length of each transition in self.transitions agrees with number of molecules
+        for transition in self.transitions:
+            assert(len(transition) == self.num_molecules)
 
         # TODO : might also want to add DataFrame for the direct QM (DFT/TDDFT) outputs 
 
@@ -600,10 +604,16 @@ class Trajectory():
                 columns_per_transitions += ['coupling cJ', 'coupling cK', 'coupling V_C']
             # initialize columns for excitaion energies
             if self.quant_info[0]["excited_energies"]:
-                columns_per_transitions += [f'energy {self.molecule_names[0]}', f'energy {self.molecule_names[1]}']
+                if len(self.molecule_names) == 2:
+                    columns_per_transitions += [f'energy {self.molecule_names[0]}', f'energy {self.molecule_names[1]}']
+                elif len(self.molecule_names) == 1:
+                    columns_per_transitions += [f'energy {self.molecule_names[0]}']
             # intialize columns for oscillator strengths
             if self.quant_info[0]["osc_strengths"]:
-                columns_per_transitions += [f'osc_strength {self.molecule_names[0]}', f'osc_strength {self.molecule_names[1]}']
+                if len(self.molecule_names) == 2:
+                    columns_per_transitions += [f'osc_strength {self.molecule_names[0]}', f'osc_strength {self.molecule_names[1]}']
+                elif len(self.molecule_names) == 1:
+                    columns_per_transitions += [f'osc_strength {self.molecule_names[0]}']
 
             # TODO : add more as desired later
             
@@ -658,6 +668,7 @@ class Trajectory():
         # parse information of molecules attached and their consitutent builidng blocks
         self.molecules, self.molecule_names, self.molecule_constituents = self.parseMolecules(file)
         self.defined_molecules = True 
+        self.num_molecules = len(self.molecules)
 
         # find information of unique residues in list
         unique_dyes = np.unique(np.array(self.molecule_constituents).flatten()) 
@@ -800,14 +811,17 @@ class Trajectory():
         if self.transitions is not None:
             for i, states in enumerate(self.transitions):
 
-                # if we specify ['strongest', 'strongest], then we consider the states with the largest oscillator strengths
+
+                # if we specify ['strongest', 'strongest'], then we consider the states with the largest oscillator strengths
                 if states == ['strongest', 'strongest']:
                     states = [output_qm["idx"][0], output_qm["idx"][1]]
+                elif states == ['strongest']:
+                    states = [output_qm["idx"][0]]
 
                 # (a) get Coulombic coupling information if desired
                 if self.quant_info[0]["coupling"]:
                     # compute coupling based on QM (DFT/TDDFT) output
-                    coupling_out = qm.getVCoulombicInter(output_qm['mol'], output_qm['tdm'], states, coupling_type=self.quant_info[1]['coupling'])
+                    coupling_out = qm.getVCoulombic(output_qm['mol'], output_qm['tdm'], states, coupling_type=self.quant_info[1]['coupling'])
                     # add to output dict
                     self.output_quant.loc[time_idx, [(self.transition_names[i], key) for key in coupling_out.keys()]] = list(coupling_out.values())
 

@@ -986,16 +986,33 @@ def getIntraCJCK(mol, tdm, get_cK = False):
 # 'cJ' only returns the electrostatic interaction, 'cK' only the exchange interaction, 'electronic' returns 2 * cJ - cK
 # NOTE : stateA and stateB are zero-indexed here so stateA = 0 corresponds to the first excited state of molecule A etc.
 # stateA and stateB default to 0 to for the transition (S_0^A , S_1^B) <--> (S_1^A, S_0^B)
-def getVCoulombicInter(mols, tdms, states, coupling_type = 'electronic'):
+def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
 
-    stateA, stateB = states[0], states[1]
-    molA, molB = mols[0], mols[1]
-    tdmA, tdmB = tdms[0][stateA], tdms[1][stateB]
+    assert(len(mols) == len(tdms) == len(states))
+    if len(mols) == 2:
+        intermolecular, intramolecular = True, False
+    elif len(mols) == 1:
+        intermolecular, intramolecular = False, True
+
+    if intermolecular:
+        stateA, stateB = states[0], states[1]
+        molA, molB = mols[0], mols[1]
+        tdmA, tdmB = tdms[0][stateA], tdms[1][stateB]
+    if intramolecular:
+        state = states[0]
+        mol = mols[0]
+        tdm = tdms[0][state]
 
     if coupling_type in ['electronic', 'cK']:
-        cJ, cK = getInterCJCK(molA, molB, tdmA, tdmB, get_cK=True)
+        if intermolecular:
+            cJ, cK = getInterCJCK(molA, molB, tdmA, tdmB, get_cK=True)
+        if intramolecular:
+            cJ, cK = getIntraCJCK(mol, tdm, get_cK=True)
     elif coupling_type in ['cJ']:
-        cJ, _ = getInterCJCK(molA, molB, tdmA, tdmB, get_cK=False)
+        if intermolecular:
+            cJ, _ = getInterCJCK(molA, molB, tdmA, tdmB, get_cK=False)
+        if intramolecular:
+            cJ, _ = getIntraCJCK(mol, tdm, get_cK=False)
     else:
         raise NotImplementedError("Invalid coupling type specified!")
     
@@ -1003,32 +1020,55 @@ def getVCoulombicInter(mols, tdms, states, coupling_type = 'electronic'):
     if coupling_type == 'electronic':                                     
         results['coupling V_C'] = 2 * cJ - cK                               # total electronic coupling
     elif coupling_type == 'cK':
-        results['couplingV_C'] = - cK                                       # exchange-interaction part of the electronic coupling
+        results['coupling V_C'] = - cK                                      # exchange-interaction part of the electronic coupling
     elif coupling_type == 'cJ':
         results['coupling V_C'] = 2 * cJ                                    # electrostatic-interaction part of the electronic coupling
     return results
 
+
 # get excitation energies for specified states
 def getExcEnergies(excs, states, molecule_names = ["D", "A"], excitation_energy_type = 'default'):
 
-    stateA, stateB = states[0], states[1]
-    excA, excB = excs[0], excs[1]
+    assert(len(excs) == len(states) == len(molecule_names))
+    if len(excs) == 2:
+        intermolecular, intramolecular = True, False
+    elif len(excs) == 1:
+        intermolecular, intramolecular = False, True
 
     results = {}
-    results[f'energy {molecule_names[0]}'] = excA[stateA]
-    results[f'energy {molecule_names[1]}'] = excB[stateB]
+    if intermolecular:
+        stateA, stateB = states[0], states[1]
+        excA, excB = excs[0], excs[1]
+        results[f'energy {molecule_names[0]}'] = excA[stateA]
+        results[f'energy {molecule_names[1]}'] = excB[stateB]
+    if intramolecular:
+        state = states[0]
+        exc = excs[0]
+        results[f'energy {molecule_names[0]}'] = exc[state]
     return results
+
 
 # get oscillator strengths for specified states
 def getOscillatorStrengths(oscs, states, molecule_names = ["D", "A"], osc_strength_energy_type = 'default'):
 
-    stateA, stateB = states[0], states[1]
-    oscA, oscB = oscs[0], oscs[1]
+    assert(len(oscs) == len(states) == len(molecule_names))
+    if len(oscs) == 2:
+        intermolecular, intramolecular = True, False
+    elif len(oscs) == 1:
+        intermolecular, intramolecular = False, True
 
     results = {}
-    results[f'osc_strength {molecule_names[0]}'] = oscA[stateA]
-    results[f'osc_strength {molecule_names[1]}'] = oscB[stateB]
+    if intermolecular:
+        stateA, stateB = states[0], states[1]
+        oscA, oscB = oscs[0], oscs[1]
+        results[f'osc_strength {molecule_names[0]}'] = oscA[stateA]
+        results[f'osc_strength {molecule_names[1]}'] = oscB[stateB]
+    if intramolecular:
+        state = states[0]
+        osc = oscs[0]
+        results[f'osc_strength {molecule_names[0]}'] = osc[state]
     return results
+
 
 # get TDDFT outputs as specified in list which_outs for molecules
 def getTDDFToutput(output_qm, which_outs, state_ids, molecule_names = ["D", "A"]):
