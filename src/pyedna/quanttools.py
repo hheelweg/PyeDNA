@@ -739,7 +739,7 @@ def doDFT_gpu(molecule, molecule_id, basis = '6-31g', xc = 'b3lyp',
     return mol, mf, occ, virt
 
 
-# TODO : this is just a test function (i.e. delte this!)
+# TODO : this is just a test function (i.e. delete this!)
 def checkSymmetryPYSCF(molecule, point_group = None, basis = '6-31g', xc = 'b3lyp', 
               density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4):
     #from gpu4pyscf import dft
@@ -858,11 +858,11 @@ def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = Fal
 
 # NOTE : function that calls python ssubprocess to perform DFT/TDDFT on individual GPUs with PySCF
 # TODO : make this more flexible with regards to the path where the launcher (DFT_gpu.py) is
-def launchQMdriver(molecule_no, gpu_id):
+def launchQMdriver(molecule_no, gpu_ids):
     """Launch a DFT/TDDFT calculation on a specific GPU."""
 
     env = os.environ.copy()
-    env["CUDA_VISIBLE_DEVICES"] = str(gpu_id)  # Assign GPU
+    env["CUDA_VISIBLE_DEVICES"] =  ",".join(str(g) for g in gpu_ids)
 
     # driver for QM (DFT/TDDFT) calculations
     qm_driver_module = 'pyedna.qm_driver'
@@ -877,6 +877,7 @@ def launchQMdriver(molecule_no, gpu_id):
 # do PySCF on molecules = [mol1, mol2] where mol are the nuclear coordinates for PySCF calculations
 # TODO : make this also without GPU-support depending on the available resources
 def doQM_gpu(molecules, output_keys, verbosity = 0):
+
     # verbosity = 0 : suppress all the output from the QM calculations (default)
     # verbosity = 1 : only print STDOUT of QM calculations
     # verbosity = 2 : only print STDERR of QM calculations (for debugging)
@@ -891,7 +892,7 @@ def doQM_gpu(molecules, output_keys, verbosity = 0):
         # create pyscf input for subprocess and store in cache
         dump(molecule, f"input_{i}.joblib")
         # run subprocess
-        procs.append(launchQMdriver(i, gpu_id = i))
+        procs.append(launchQMdriver(i, gpu_ids = [i]))
     
     # wait for both subprocesses to finish and print STDOUT or STDERR if desired
     for i, molecule in enumerate(molecules):
