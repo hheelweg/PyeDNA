@@ -887,12 +887,16 @@ def doQM_gpu(molecules, output_keys, verbosity = 0):
     output = {key: [] for key, value in output_keys.items() if value}
 
     # (1)run molecules on different GPUs in parallel
+    num_molecules = len(molecules)
     procs = []
     for i, molecule in enumerate(molecules):
         # create pyscf input for subprocess and store in cache
         dump(molecule, f"input_{i}.joblib")
         # run subprocess
-        procs.append(launchQMdriver(i, gpu_ids = [i]))
+        if num_molecules == 2:
+            procs.append(launchQMdriver(i, gpu_ids = [i]))
+        elif num_molecules == 1:
+            procs.append(launchQMdriver(i, gpu_ids = [i, i + 1]))
     
     # wait for both subprocesses to finish and print STDOUT or STDERR if desired
     for i, molecule in enumerate(molecules):
