@@ -668,6 +668,9 @@ class Trajectory():
 
         # parse information of molecules attached and their consitutent builidng blocks
         self.molecules, self.molecule_names, self.molecule_constituents = self.parseMolecules(file)
+        print(self.molecules)
+        print(self.molecule_names)
+        print(self.molecule_constituents)
         self.defined_molecules = True 
         self.num_molecules = len(self.molecules)
 
