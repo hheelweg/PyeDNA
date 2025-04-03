@@ -599,21 +599,31 @@ class Trajectory():
             columns_per_transitions = [key for key, value in self.quant_info[0].items() if isinstance(value, bool) and value]
             # get columns for each transition
             columns_per_transitions = []
+
             # initialize columns for Coulomb coupling
             if self.quant_info[0]["coupling"]:
                 columns_per_transitions += ['coupling cJ', 'coupling cK', 'coupling V_C']
-            # initialize columns for excitaion energies
+
+            # initialize columns for excitation energies
             if self.quant_info[0]["excited_energies"]:
                 if len(self.molecule_names) == 2:
                     columns_per_transitions += [f'energy {self.molecule_names[0]}', f'energy {self.molecule_names[1]}']
                 elif len(self.molecule_names) == 1:
                     columns_per_transitions += [f'energy {self.molecule_names[0]}']
+
             # intialize columns for oscillator strengths
             if self.quant_info[0]["osc_strengths"]:
                 if len(self.molecule_names) == 2:
                     columns_per_transitions += [f'osc_strength {self.molecule_names[0]}', f'osc_strength {self.molecule_names[1]}']
                 elif len(self.molecule_names) == 1:
                     columns_per_transitions += [f'osc_strength {self.molecule_names[0]}']
+                    
+            # initialize columns for transition dipole moments
+            if self.quant_info[0]["dipole_moments"]:
+                if len(self.molecule_names) == 2:
+                    columns_per_transitions += [f'dip_moment {self.molecule_names[0]}', f'dip_moment {self.molecule_names[1]}']
+                elif len(self.molecule_names) == 1:
+                    columns_per_transitions += [f'dip_moment {self.molecule_names[0]}']
 
             # TODO : add more as desired later
             
@@ -834,9 +844,16 @@ class Trajectory():
                 # (c) get oscillator strengths
                 if self.quant_info[0]["osc_strengths"]:
                     # get oscillator strengths based on QM (DFT/TDDFT) output
-                    osc_out = qm.getOscillatorStrengths(output_qm['osc'], states, molecule_names=self.molecule_names,osc_strength_energy_type=self.quant_info[1]['osc_strengths'])
+                    osc_out = qm.getOscillatorStrengths(output_qm['osc'], states, molecule_names=self.molecule_names,osc_strength_type=self.quant_info[1]['osc_strengths'])
                     # add to output dict
                     self.output_quant.loc[time_idx, [(self.transition_names[i], key) for key in osc_out.keys()]] = list(osc_out.values())
+                
+                # (d) get transition dipoles
+                if self.quant_info[0]["dipole_moments"]:
+                    # get transition dipole moments based on QM (DFT/TDDFT) output
+                    dipoles_out = qm.getTransitionDipoles(output_qm['dip'], states, molecule_names=self.molecule_names,dipole_moment_type=self.quant_info[1]['dipole_moments'])
+                    # add to output dict
+
 
 
         # (1) look at direct output quantities of QM (DFT/TDDFT) (if self.transitions = None)

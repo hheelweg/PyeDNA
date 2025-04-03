@@ -1050,7 +1050,7 @@ def getExcEnergies(excs, states, molecule_names = ["D", "A"], excitation_energy_
 
 
 # get oscillator strengths for specified states
-def getOscillatorStrengths(oscs, states, molecule_names = ["D", "A"], osc_strength_energy_type = 'default'):
+def getOscillatorStrengths(oscs, states, molecule_names = ["D", "A"], osc_strength_type = 'default'):
 
     assert(len(oscs) == len(states) == len(molecule_names))
     if len(oscs) == 2:
@@ -1070,6 +1070,26 @@ def getOscillatorStrengths(oscs, states, molecule_names = ["D", "A"], osc_streng
         results[f'osc_strength {molecule_names[0]}'] = osc[state]
     return results
 
+# get transition dipole moments for specified states
+def getTransitionDipoles(dips, states, molecule_names = ["D", "A"], dipole_moment_type = 'default'):
+    
+    assert(len(dips) == len(states) == len(molecule_names))
+    if len(dips) == 2:
+        intermolecular, intramolecular = True, False
+    elif len(dips) == 1:
+        intermolecular, intramolecular = False, True
+
+    results = {}
+    if intermolecular:
+        stateA, stateB = states[0], states[1]
+        dipA, dipB = dips[0], dips[1]
+        results[f'dip_moment {molecule_names[0]}'] = dipA[stateA]
+        results[f'dip_moment {molecule_names[1]}'] = dipB[stateB]
+    if intramolecular:
+        state = states[0]
+        osc = dips[0]
+        results[f'dip_moment {molecule_names[0]}'] = osc[state]
+    return results
 
 # get TDDFT outputs as specified in list which_outs for molecules
 def getTDDFToutput(output_qm, which_outs, state_ids, molecule_names = ["D", "A"]):
