@@ -735,7 +735,7 @@ def doDFT_gpu(molecule, molecule_id, basis = '6-31g', xc = 'b3lyp',
     mo = mf.mo_coeff                            # MO Coefficients
     occ = mo[:, mf.mo_occ != 0]                 # occupied orbitals
     virt = mo[:, mf.mo_occ == 0]                # virtual orbitals
-    orbit_enrgs = mf..mo_energy
+    orbit_enrgs = mf.mo_energy
 
     return mol, mf, occ, virt, orbit_enrgs
 
