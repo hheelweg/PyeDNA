@@ -407,7 +407,6 @@ class Trajectory():
 
         # update default settings
         out.update(user_out)
-        print(out)
 
         # (0) time range of interest
         time_range = out["time_slice"]
@@ -446,7 +445,7 @@ class Trajectory():
         # for each flag we either set specified methods_type or default
         qm_methods = {
             key: post_qm.get(f"{key}_type", "default") for key in qm_flags 
-            if isinstance(qm_flags[key], bool) and f"{key}_type" not in out
+            if isinstance(qm_flags[key], bool)
         }
         print(qm_flags)
         print(qm_methods)
