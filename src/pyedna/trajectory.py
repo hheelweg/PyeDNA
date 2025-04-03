@@ -427,6 +427,7 @@ class Trajectory():
         print(post_qm)      
         qm_flags = {key: value for key, value in post_qm.items() if isinstance(value, bool) and value}                          # NOTE : only bool/True param
         qm_out_file = out["file_qm"]
+        print(qm_flags)
 
         # checkpoints: manually check if flags in out match with qm_flags:
         # TODO : maybe there is a better way to do this?
@@ -445,7 +446,7 @@ class Trajectory():
         qm_methods = {
             key: post_qm.get(f"{key}_type", "default") for key in qm_flags if isinstance(qm_flags[key], bool)
         }
-
+        print(qm_methods)
         # (2.2) classical parameters and methods
         post_class = {key: out.get(key) for key in ["distance", "distance_type"]}                                               # all MD options
         class_flags = {key: value for key, value in post_class.items() if isinstance(value, bool) and value}                    # NOTE : only bool/True param
