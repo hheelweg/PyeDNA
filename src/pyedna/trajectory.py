@@ -409,22 +409,30 @@ class Trajectory():
         # (0) time range of interest
         time_range = out["time_slice"]
 
-        # split the parameters into parameters that are relevant only to
-        # conductiong QM (DFT/TDDFT) simulations or to post-processing of the trajectory 
+
         # (1) QM (DFT/TDDFT) outputs (NOTE : only boolean)
         qm_outs = {key: out.get(key) for key in ["exc", "mol", "tdm", "mf", "occ", "virt", "dip", "osc", "idx"]}    
         # TODO : in order to evaluate some of the post-processing output, we need to have some of these flags set to True            
 
         # (2) trajectory-based outputs per time steps
+
         # (2.1) quantum-mechanical based parameters and methods
-        qm_options = ["transitions", "coupling", "coupling_type", "excited_energies", "dipole_moments", "osc_strengths", "abs_spec"]
+        qm_options =    [
+                        "transitions",                                                                                          # transitions
+                        "coupling", "coupling_type", "excited_energies", "dipole_moments", "osc_strengths",                     # quantities per transition
+                        "abs_spec", "orbit_energies"                                                                            # quantities per molecule (transitions = None)
+                        ]
+        
         post_qm = {key: out.get(key) for key in qm_options}                
         qm_flags = {key: value for key, value in post_qm.items() if isinstance(value, bool) and value}                          # NOTE : only bool/True param
         qm_out_file = out["file_qm"]
+
         # checkpoints: manually check if flags in out match with qm_flags:
         # TODO : maybe there is a better way to do this?
         qm_outs['exc'] = True if post_qm["abs_spec"] else qm_outs['exc']
         qm_outs['osc'] = True if post_qm["abs_spec"] else qm_outs['osc']
+        qm_outs['mol'] = True if post_qm["orbit_energies"] else qm_outs['mol']
+        qm_outs['mf'] = True if post_qm["orbit_energies"] else qm_outs['mf']
         qm_outs['exc'] = True if post_qm["excited_energies"] else qm_outs['exc']
         qm_outs['dip'] = True if post_qm["dipole_moments"] else qm_outs['dip']
         qm_outs['osc'] = True if post_qm["osc_strengths"] else qm_outs['osc']
@@ -589,14 +597,15 @@ class Trajectory():
         else:
             self.output_class = pd.DataFrame(index = range(output_length), columns = ["time"] + columns_class)
         
-        # (2.2) quantum output parameters 
+        # (2.2) quantum output parameters if we want to get resolution per transition in self.transitions
         if self.transitions is not None:
-            # (output the same outputs for every transition in self.transitions)
+            # (output the same quantities for every transition in self.transitions)
             # NOTE : since states are 0-indexed, 0 actually corresponds to the 1st excited state of molecule A/B, 1 to the
             # 2nd excited state of molecule A/B etc.
             self.transition_names = [self.generateTransitionString(states, self.molecule_names) for states in self.transitions]
             self.quant_info[0].pop("transitions")
             columns_per_transitions = [key for key, value in self.quant_info[0].items() if isinstance(value, bool) and value]
+
             # get columns for each transition
             columns_per_transitions = []
 
@@ -617,7 +626,7 @@ class Trajectory():
                     columns_per_transitions += [f'osc_strength {self.molecule_names[0]}', f'osc_strength {self.molecule_names[1]}']
                 elif len(self.molecule_names) == 1:
                     columns_per_transitions += [f'osc_strength {self.molecule_names[0]}']
-                    
+
             # initialize columns for transition dipole moments
             if self.quant_info[0]["dipole_moments"]:
                 if len(self.molecule_names) == 2:
@@ -625,8 +634,9 @@ class Trajectory():
                 elif len(self.molecule_names) == 1:
                     columns_per_transitions += [f'dip_moment {self.molecule_names[0]}']
 
-            # TODO : add more as desired later
+            # TODO : add more as desired
             
+            # construct output DataFrame
             if not columns_per_transitions:
                 self.output_quant = pd.DataFrame()
             else:
@@ -636,23 +646,38 @@ class Trajectory():
                 )
                 self.output_quant = pd.DataFrame(index = range(output_length), columns = columns_quant)
         
-        # if we want to print direct TDDFT output per each time step (e.g. if abs_spec = True), do this here
-        # NOTE : currentlt only implemented for abs_spec = True
-        else: 
+        # if we want to print direct DFT/TDDFT output per each time step (e.g. if abs_spec = True), do this here. We output these quantities
+        # for every molecule specified in self.molecules.
+        # NOTE : need to specify transitions = None for this!
+        elif self.transitions is None:
+
             self.quant_info[0].pop("transitions")
 
-            if self.quant_info[0]["abs_spec"]:
-                # which direct outputs of the TDDFT calculations do we need
-                which_outs = ['exc', 'osc']
-                columns_per_molecule = [f"{which_out} {state_id}" for which_out in which_outs for state_id in self.settings_tddft["state_ids"]]
+            columns_per_molecule = []
 
+            # initialize columns for plotting of absorption spectrum
+            if self.quant_info[0]["abs_spec"]:
+                # which direct outputs of the TDDFT calculations do we need?
+                which_outs = ['exc', 'osc']
+                columns_per_molecule += [f"{which_out} {state_id}" for which_out in which_outs for state_id in self.settings_tddft["state_ids"]]
+
+            # initialize columns for orbital energies
+            if self.quant_info[0]["orbit_energies"]:
+                orbital_types = ['occ', 'virt']
+                columns_per_molecule += [f"{orbital_type}" for orbital_type in orbital_types]
+
+            # TODO : add more as desired
+
+            # construct output DataFrame
+            if not columns_per_molecule:
+                self.output_quant = pd.DataFrame()
+            else:
                 columns_quant = pd.MultiIndex.from_tuples(
                     [("time", "")] +
                     [(molecule_name, value_name) for molecule_name in self.molecule_names for value_name in columns_per_molecule]
                 )
                 self.output_quant = pd.DataFrame(index = range(output_length), columns = columns_quant)
-            else:
-                self.output_quant = pd.DataFrame()
+
 
 
         print("*** Intialization of output done!")
@@ -853,22 +878,27 @@ class Trajectory():
                     # get transition dipole moments based on QM (DFT/TDDFT) output
                     dipoles_out = qm.getTransitionDipoles(output_qm['dip'], states, molecule_names=self.molecule_names,dipole_moment_type=self.quant_info[1]['dipole_moments'])
                     # add to output dict
+                    self.output_quant.loc[time_idx, [(self.transition_names[i], key) for key in dipoles_out.keys()]] = list(dipoles_out.values())
 
 
-
-        # (1) look at direct output quantities of QM (DFT/TDDFT) (if self.transitions = None)
-        else:
+        # (2) look at direct output quantities of QM (DFT/TDDFT) (if self.transitions = None)
+        elif self.transitions is None:
 
             # (a) get quantities necessary to compute absorption spectrums
             if self.quant_info[0]["abs_spec"]:
                 which_outs = ["exc", "osc"]
-                # get desire TDDFT output
+                # get desired TDDFT output
                 tddft_out = qm.getTDDFToutput(output_qm, which_outs, self.settings_tddft["state_ids"], molecule_names = self.molecule_names)
                 # add to output dict
                 for molecule_name in self.molecule_names:
                     for which_out in which_outs:
                         for state_id in self.settings_tddft["state_ids"]:
                             self.output_quant.loc[time_idx, (molecule_name, f"{which_out} {state_id}")] = tddft_out[f"{molecule_name} {which_out} {state_id}"]
+            
+            # (b) get orbital energies of occupied and virtual orbitals
+            if self.quant_info[0]["orbit_energies"]:
+                orbital_types = ["occ", "virt"]
+
 
             else:
                 pass

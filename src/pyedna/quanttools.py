@@ -1102,6 +1102,16 @@ def getTDDFToutput(output_qm, which_outs, state_ids, molecule_names = ["D", "A"]
 
     return results 
 
+# get occupied and virtual orbital energies
+def getOrbitalEnergies(output_qm, orbital_types = ["occ", "virt"], molecule_names = ["D", "A"]):
+
+    results = {}
+    for i, molecule_name in enumerate(molecule_names):
+        for orbital_type in orbital_types:
+            results[f"{molecule_name} {which_out} {state_id}"] = 2
+
+    return results
+
 
 # compute absorption spectrum from oscillator strength and excitation energies along strajectory
 # TODO : need to revisit this function
