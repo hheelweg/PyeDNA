@@ -407,6 +407,7 @@ class Trajectory():
 
         # update default settings
         out.update(user_out)
+        print(out)
 
         # (0) time range of interest
         time_range = out["time_slice"]
