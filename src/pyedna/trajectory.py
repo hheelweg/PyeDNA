@@ -360,6 +360,7 @@ class Trajectory():
             "scf_cycles": 200,
             "verbosity": 4,
             "state_ids": [0],
+            "singlet": True,
             "TDA": True,
             "gpu": True,
             "do_tddft": True,
@@ -374,7 +375,7 @@ class Trajectory():
 
         # split into dictionaries for keys related to DFT and TDDFT
         settings_dft = {key: qm_settings[key] for key in ["basis", "xc", "density_fit", "charge", "spin", "scf_cycles", "verbosity"]}
-        settings_tddft = {key: qm_settings[key] for key in ["state_ids", "TDA", "do_tddft"]}
+        settings_tddft = {key: qm_settings[key] for key in ["state_ids", "TDA", "do_tddft", "singlet"]}
 
         return settings_dft, settings_tddft
 
@@ -666,7 +667,8 @@ class Trajectory():
                 orbital_types = ['occ', 'virt']
                 columns_per_molecule += [f"{orbital_type}" for orbital_type in orbital_types]
 
-            # TODO : add more as desired
+            # initialize columns for excited energies
+
 
             # construct output DataFrame
             if not columns_per_molecule:
@@ -904,6 +906,9 @@ class Trajectory():
                 for molecule_name in self.molecule_names:
                     for orbital_type in orbital_types:
                         self.output_quant.loc[time_idx, (molecule_name, f"{orbital_type}")] = orbit_energies_out[f"{molecule_name} {orbital_type}"]
+
+            # (c) get excited state energies
+
 
             else:
                 pass

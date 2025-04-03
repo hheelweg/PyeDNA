@@ -823,7 +823,7 @@ def doDFT_geomopt(molecule, point_group = None, basis = '6-31g', xc = 'b3lyp',
 
 # do TDDFT with GPU support
 # TODO : merge with doTDDFT()
-def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = False):
+def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = False, singlet = True):
 
     # (0) import gpu4pyscf and GPU support
     from gpu4pyscf import scf, solvent, tdscf
@@ -833,7 +833,7 @@ def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = Fal
     # (1) number of states
     nstates = len(state_ids)
     # (2) run TDDFT with or without TDA (Tamm-Dancoff approximation)
-    td = molecule_mf.TDA().run(nstates = nstates) if TDA else molecule_mf.TDDFT().run(nstates = nstates)
+    td = molecule_mf.TDA(singlet = singlet).run(nstates = nstates) if TDA else molecule_mf.TDDFT(singlet = singlet).run(nstates = nstates)
 
     # (3) extract excitation energies and transition dipole moments
     exc_energies = [td.e[id] for id in state_ids]
