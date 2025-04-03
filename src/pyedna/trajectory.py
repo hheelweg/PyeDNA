@@ -444,9 +444,10 @@ class Trajectory():
         qm_flags.update({"transitions": post_qm["transitions"]})
         # for each flag we either set specified methods_type or default
         qm_methods = {
-            key: post_qm.get(f"{key}_type", "default") for key in qm_flags 
-            if isinstance(qm_flags[key], bool)
-        }
+                        key: out[f"{key}_type"] if f"{key}_type" in out else post_qm.get(f"{key}_type", "default")
+                        for key in qm_flags
+                        if isinstance(qm_flags[key], bool)
+                    }
         print(qm_flags)
         print(qm_methods)
 
