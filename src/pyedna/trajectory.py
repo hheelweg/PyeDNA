@@ -668,6 +668,8 @@ class Trajectory():
                 columns_per_molecule += [f"{orbital_type}" for orbital_type in orbital_types]
 
             # initialize columns for excited energies
+            if self.quant_info[0]["excited_energies"]:
+                columns_per_molecule += [f"exc_enrgs ({"singlets" if self.settings_tddft["singlet"] else "triplets"}): {" ,".join(self.settings_tddft["state_ids"])}"]
 
 
             # construct output DataFrame
@@ -864,7 +866,7 @@ class Trajectory():
                 # (b) get excitation energies
                 if self.quant_info[0]["excited_energies"]:
                     # get excited state energies based on QM (DFT/TDDFT) output
-                    energies_out = qm.getExcEnergies(output_qm['exc'], states, molecule_names=self.molecule_names, excitation_energy_type=self.quant_info[1]['excited_energies'])
+                    energies_out = qm.getExcEnergiesTransition(output_qm['exc'], states, molecule_names=self.molecule_names, excitation_energy_type=self.quant_info[1]['excited_energies'])
                     # add to output dict
                     self.output_quant.loc[time_idx, [(self.transition_names[i], key) for key in energies_out.keys()]] = list(energies_out.values())
                 
@@ -908,6 +910,12 @@ class Trajectory():
                         self.output_quant.loc[time_idx, (molecule_name, f"{orbital_type}")] = orbit_energies_out[f"{molecule_name} {orbital_type}"]
 
             # (c) get excited state energies
+            if self.quant_info[0]["excited_energies"]:
+                # get excited state energies from TDDFT output
+                exc_energies_out = qm.getExcitedEnergies(output_qm, molecule_names = self.molecule_names)
+                # add to output dict
+                for molecule_name in self.molecule_names:
+                    self.output_quant.loc[time_idx, (molecule_name, f"exc_enrgs ({"singlets" if self.settings_tddft["singlet"] else "triplets"}): {" ,".join(self.settings_tddft["state_ids"])}")] = exc_energies_out[molecule_name] 
 
 
             else:

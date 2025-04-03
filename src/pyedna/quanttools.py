@@ -1027,8 +1027,8 @@ def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
     return results
 
 
-# get excitation energies for specified states
-def getExcEnergies(excs, states, molecule_names = ["D", "A"], excitation_energy_type = 'default'):
+# get excitation energies for specified transition between states
+def getExcEnergiesTransition(excs, states, molecule_names = ["D", "A"], excitation_energy_type = 'default'):
 
     assert(len(excs) == len(states) == len(molecule_names))
     if len(excs) == 2:
@@ -1122,6 +1122,13 @@ def getOrbitalEnergies(output_qm, orbital_types = ["occ", "virt"], molecule_name
 
     return results
 
+# get excited energies from TDDFT
+def getExcitedEnergies(output_qm, molecule_names = ["D", "A"]):
+
+    results = {}
+    for i, molecule_name in enumerate(molecule_names):
+        results[molecule_name] = output_qm['exc'][i]
+    return results
 
 # compute absorption spectrum from oscillator strength and excitation energies along strajectory
 # TODO : need to revisit this function
