@@ -391,6 +391,7 @@ class Trajectory():
                 "mf"  :         False,
                 "occ" :         False,
                 "virt":         False,
+                "orbit_enrgs" : False,
                 "mol" :         True,
                 "tdm" :         True,
                 "dip" :         False,
@@ -412,7 +413,7 @@ class Trajectory():
 
 
         # (1) QM (DFT/TDDFT) outputs (NOTE : only boolean)
-        qm_outs = {key: out.get(key) for key in ["exc", "mol", "tdm", "mf", "occ", "virt", "dip", "osc", "idx"]}               
+        qm_outs = {key: out.get(key) for key in ["exc", "mol", "tdm", "mf", "occ", "virt", "orbit_enrgs", "dip", "osc", "idx"]}               
 
         # (2) trajectory-based outputs per time steps
 
@@ -433,7 +434,7 @@ class Trajectory():
         qm_outs['exc'] = True if post_qm["abs_spec"] else qm_outs['exc']
         qm_outs['osc'] = True if post_qm["abs_spec"] else qm_outs['osc']
         qm_outs['mol'] = True if post_qm["orbit_energies"] else qm_outs['mol']
-        qm_outs['mf'] = True if post_qm["orbit_energies"] else qm_outs['mf']
+        qm_outs['orbit_enrgs'] = True if post_qm["orbit_energies"] else qm_outs['orbit_enrgs']
         qm_outs['exc'] = True if post_qm["excited_energies"] else qm_outs['exc']
         qm_outs['dip'] = True if post_qm["dipole_moments"] else qm_outs['dip']
         qm_outs['osc'] = True if post_qm["osc_strengths"] else qm_outs['osc']
@@ -658,20 +659,17 @@ class Trajectory():
             columns_per_molecule = []
 
             # initialize columns for plotting of absorption spectrum
-            # if self.quant_info[0]["abs_spec"]:
             if "abs_spec" in self.quant_info[0]:
                 # which direct outputs of the TDDFT calculations do we need?
                 which_outs = ['exc', 'osc']
                 columns_per_molecule += [f"{which_out} {state_id}" for which_out in which_outs for state_id in self.settings_tddft["state_ids"]]
 
             # initialize columns for orbital energies
-            #if self.quant_info[0]["orbit_energies"]:
             if "orbit_energies" in self.quant_info[0]:
                 orbital_types = ['occ', 'virt']
                 columns_per_molecule += [f"{orbital_type}" for orbital_type in orbital_types]
 
             # initialize columns for excited energies
-            #if self.quant_info[0]["excited_energies"]:
             if "excited_energies" in self.quant_info[0]:
                 columns_per_molecule += [f"exc_enrgs ({'singlets' if self.settings_tddft['singlet'] else 'triplets'}): {' ,'.join(str(state_id) for state_id in self.settings_tddft['state_ids'])}"]
 
@@ -893,7 +891,6 @@ class Trajectory():
         elif self.transitions is None:
 
             # (a) get quantities necessary to compute absorption spectrums
-            #if self.quant_info[0]["abs_spec"]:
             if "abs_spec" in self.quant_info[0]:
                 which_outs = ["exc", "osc"]
                 # get desired TDDFT output
@@ -905,7 +902,6 @@ class Trajectory():
                             self.output_quant.loc[time_idx, (molecule_name, f"{which_out} {state_id}")] = tddft_out[f"{molecule_name} {which_out} {state_id}"]
             
             # (b) get orbital energies of occupied and virtual orbitals
-            #if self.quant_info[0]["orbit_energies"]:
             if "orbit_energies" in self.quant_info[0]:
                 orbital_types = ["occ", "virt"]
                 # get orbital energies from DFT output
@@ -916,7 +912,6 @@ class Trajectory():
                         self.output_quant.loc[time_idx, (molecule_name, f"{orbital_type}")] = orbit_energies_out[f"{molecule_name} {orbital_type}"]
 
             # (c) get excited state energies
-            #if self.quant_info[0]["excited_energies"]:
             if "excited_energies" in self.quant_info[0]: 
                 # get excited state energies from TDDFT output
                 exc_energies_out = qm.getExcitedEnergies(output_qm, molecule_names = self.molecule_names)
