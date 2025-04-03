@@ -448,8 +448,6 @@ class Trajectory():
                         for key in qm_flags
                         if isinstance(qm_flags[key], bool)
                     }
-        print(qm_flags)
-        print(qm_methods)
 
         # (2.2) classical parameters and methods
         post_class = {key: out.get(key) for key in ["distance", "distance_type"]}                                               # all MD options
@@ -468,7 +466,7 @@ class Trajectory():
                 print(f"(1) we use the following methods (in order): {', '.join(class_methods.values())}")
                 if qm_flags['transitions'] is not None:
                     print(f"(2) we study the following state transitions [stateA, stateB]: {', '.join(str(transition) for transition in qm_flags['transitions'])}")
-                print(f"(2) quantum parameters to evaluate at each time step for each transition: {', '.join(key for key, value in qm_flags.items() if isinstance(value, bool))}")
+                print(f"(2) quantum parameters to evaluate at each time step: {', '.join(key for key, value in qm_flags.items() if isinstance(value, bool))}")
                 # print(f"(2) we use the following methods (in order): {', '.join(qm_methods.values())}")
             return qm_outs, [qm_flags, qm_methods, qm_out_file], [class_flags, class_methods, class_out_file], time_range
         else:
@@ -676,6 +674,21 @@ class Trajectory():
             # initialize columns for excited energies
             if "excited_energies" in self.quant_info[0]:
                 columns_per_molecule += [f"exc_enrgs ({'singlets' if self.settings_tddft['singlet'] else 'triplets'}): {' ,'.join(str(state_id) for state_id in self.settings_tddft['state_ids'])}"]
+
+            # initialize columns for Mulliken analysis of excited state populations
+            # TODO : maybe parse information for Mulliken analysis in different functions
+            if "mulliken" in self.quant_info[0]:
+
+                # parse Mulliken information
+                fragment_type = self.quant_info[1]["mulliken"][0]
+                fragments = self.quant_info[1]["mulliken"][1]
+                if fragment_type == "molecule":
+                    fragment_names = fragments
+                elif fragment_type == "atom_group":
+                    fragment_names = [f'group {i}' for i in range(len(fragments))]
+
+                columns_per_molecule += [f"mulliken (state {state_id}) {fragment_name}" for fragment_name in fragment_names for state_id in self.settings_tddft["state_ids"]]
+                
 
 
             # construct output DataFrame
