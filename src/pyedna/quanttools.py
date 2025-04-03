@@ -1070,7 +1070,7 @@ def getOscillatorStrengths(oscs, states, molecule_names = ["D", "A"], osc_streng
         results[f'osc_strength {molecule_names[0]}'] = osc[state]
     return results
 
-# get transition dipole moments for specified states
+# get transition dipole moments (vector magnitude) for specified states
 def getTransitionDipoles(dips, states, molecule_names = ["D", "A"], dipole_moment_type = 'default'):
     
     assert(len(dips) == len(states) == len(molecule_names))
@@ -1083,12 +1083,12 @@ def getTransitionDipoles(dips, states, molecule_names = ["D", "A"], dipole_momen
     if intermolecular:
         stateA, stateB = states[0], states[1]
         dipA, dipB = dips[0], dips[1]
-        results[f'dip_moment {molecule_names[0]}'] = dipA[stateA]
-        results[f'dip_moment {molecule_names[1]}'] = dipB[stateB]
+        results[f'dip_moment {molecule_names[0]}'] = np.dot(dipA[stateA], dipA[stateA])
+        results[f'dip_moment {molecule_names[1]}'] = np.dot(dipB[stateB], dipB[stateB])
     if intramolecular:
         state = states[0]
         dip = dips[0]
-        results[f'dip_moment {molecule_names[0]}'] = dip[state]
+        results[f'dip_moment {molecule_names[0]}'] = np.dot(dip[state], dip[state])
     return results
 
 # get TDDFT outputs as specified in list which_outs for molecules
