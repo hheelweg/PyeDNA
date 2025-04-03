@@ -673,8 +673,7 @@ class Trajectory():
             # initialize columns for excited energies
             #if self.quant_info[0]["excited_energies"]:
             if "excited_energies" in self.quant_info[0]:
-                print(self.settings_tddft['state_ids'])
-                columns_per_molecule += [f"exc_enrgs ({'singlets' if self.settings_tddft['singlet'] else 'triplets'}): {' ,'.join(self.settings_tddft['state_ids'])}"]
+                columns_per_molecule += [f"exc_enrgs ({'singlets' if self.settings_tddft['singlet'] else 'triplets'}): {' ,'.join(str(state_id) for state_id in self.settings_tddft['state_ids'])}"]
 
 
             # construct output DataFrame
@@ -923,7 +922,7 @@ class Trajectory():
                 exc_energies_out = qm.getExcitedEnergies(output_qm, molecule_names = self.molecule_names)
                 # add to output dict
                 for molecule_name in self.molecule_names:
-                    self.output_quant.loc[time_idx, (molecule_name, f"exc_enrgs ({'singlets' if self.settings_tddft['singlet'] else 'triplets'}): {' ,'.join(self.settings_tddft['state_ids'])}")] = exc_energies_out[molecule_name] 
+                    self.output_quant.loc[time_idx, (molecule_name, f"exc_enrgs ({'singlets' if self.settings_tddft['singlet'] else 'triplets'}): {' ,'.join(str(state_id) for state_id in self.settings_tddft['state_ids'])}")] = exc_energies_out[molecule_name] 
 
 
             else:
