@@ -732,10 +732,10 @@ def doDFT_gpu(molecule, molecule_id, basis = '6-31g', xc = 'b3lyp',
     mf.kernel()       
 
     # (5) output
-    mo = mf.mo_coeff                            # MO Coefficients
+    mo = mf.mo_coeff                            # MO coefficients
     occ = mo[:, mf.mo_occ != 0]                 # occupied orbitals
     virt = mo[:, mf.mo_occ == 0]                # virtual orbitals
-    orbit_enrgs = mf.mo_energy
+    orbit_enrgs = mf.mo_energy                  # MO energies
 
     return mol, mf, occ, virt, orbit_enrgs
 
@@ -1104,15 +1104,19 @@ def getTDDFToutput(output_qm, which_outs, state_ids, molecule_names = ["D", "A"]
     return results 
 
 # get occupied and virtual orbital energies from DFT
-def getOrbitalEnergies(output_qm, orbital_types = ["occ", "virt"], molecule_names = ["D", "A"]):
+# TODO : only consider n highest occupied and n lowest virtual orbital energies and load n from .params file
+def getOrbitalEnergies(output_qm, orbital_types = ["occ", "virt"], molecule_names = ["D", "A"], orbital_energies_type = 'default'):
+
+    # NOTE: we here only consider the 10 highest occupied and 10 lowest virtual orbitals
+    num_orbs = 10 
 
     results = {}
     for i, molecule_name in enumerate(molecule_names):
 
         orbital_energies = output_qm["orbit_enrgs"][i]                      # all orbital energies
         nocc = output_qm["mol"][i].nelectron // 2                           # occupied orbitals 
-        occ_energies = orbital_energies[:nocc]                     
-        virt_energies = orbital_energies[nocc:]
+        occ_energies = orbital_energies[(nocc-num_orbs):nocc]                     
+        virt_energies = orbital_energies[nocc:(nocc+num_orbs)]
         
         for orbital_type in orbital_types:
             if orbital_type == "occ":
@@ -1130,6 +1134,13 @@ def getExcitedEnergies(output_qm, molecule_names = ["D", "A"]):
     for i, molecule_name in enumerate(molecule_names):
         results[molecule_name] = output_qm['exc'][i]
     return results
+
+# do Mulliken analysis on excited states specified in state_ids based on specified fragments
+def doMullikenAnalysis(output_qm, state_ids, fragments = None, molecule_names = ["D", "A"]):
+
+
+    pass
+
 
 # compute absorption spectrum from oscillator strength and excitation energies along strajectory
 # TODO : need to revisit this function
