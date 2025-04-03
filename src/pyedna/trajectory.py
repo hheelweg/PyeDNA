@@ -422,12 +422,11 @@ class Trajectory():
                         "coupling", "coupling_type", "excited_energies", "dipole_moments", "osc_strengths",                     # quantities per transition
                         "abs_spec", "orbit_energies"                                                                            # quantities per molecule (transitions = None)
                         ]
-        print(qm_options)
-        post_qm = {key: out.get(key) for key in qm_options}          
-        print(post_qm)      
+
+        post_qm = {key: out.get(key) for key in qm_options}              
         qm_flags = {key: value for key, value in post_qm.items() if isinstance(value, bool) and value}                          # NOTE : only bool/True param
         qm_out_file = out["file_qm"]
-        print(qm_flags)
+
 
         # checkpoints: manually check if flags in out match with qm_flags:
         # TODO : maybe there is a better way to do this?
@@ -674,6 +673,7 @@ class Trajectory():
             # initialize columns for excited energies
             #if self.quant_info[0]["excited_energies"]:
             if "excited_energies" in self.quant_info[0]:
+                print(' '.join(self.settings_tddft['state_ids']))
                 columns_per_molecule += [f"exc_enrgs ({'singlets' if self.settings_tddft['singlet'] else 'triplets'}): {' ,'.join(self.settings_tddft['state_ids'])}"]
 
 
