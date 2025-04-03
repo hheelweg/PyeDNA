@@ -412,8 +412,7 @@ class Trajectory():
 
 
         # (1) QM (DFT/TDDFT) outputs (NOTE : only boolean)
-        qm_outs = {key: out.get(key) for key in ["exc", "mol", "tdm", "mf", "occ", "virt", "dip", "osc", "idx"]}    
-        # TODO : in order to evaluate some of the post-processing output, we need to have some of these flags set to True            
+        qm_outs = {key: out.get(key) for key in ["exc", "mol", "tdm", "mf", "occ", "virt", "dip", "osc", "idx"]}               
 
         # (2) trajectory-based outputs per time steps
 
