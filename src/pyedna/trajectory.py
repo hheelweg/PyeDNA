@@ -422,8 +422,9 @@ class Trajectory():
                         "coupling", "coupling_type", "excited_energies", "dipole_moments", "osc_strengths",                     # quantities per transition
                         "abs_spec", "orbit_energies"                                                                            # quantities per molecule (transitions = None)
                         ]
-        
-        post_qm = {key: out.get(key) for key in qm_options}                
+        print(qm_options)
+        post_qm = {key: out.get(key) for key in qm_options}          
+        print(post_qm)      
         qm_flags = {key: value for key, value in post_qm.items() if isinstance(value, bool) and value}                          # NOTE : only bool/True param
         qm_out_file = out["file_qm"]
 
