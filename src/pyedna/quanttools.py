@@ -833,7 +833,7 @@ def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = Fal
     # (1) number of states
     nstates = len(state_ids)
     # (2) run TDDFT with or without TDA (Tamm-Dancoff approximation)
-    td = molecule_mf.TDA(singlet = singlet).run(nstates = nstates) if TDA else molecule_mf.TDDFT(singlet = singlet).run(nstates = nstates)
+    td = molecule_mf.TDA().run(nstates = nstates) if TDA else molecule_mf.TDDFT().run(nstates = nstates)
 
     # (3) extract excitation energies and transition dipole moments
     exc_energies = [td.e[id] for id in state_ids]
