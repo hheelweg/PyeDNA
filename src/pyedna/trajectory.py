@@ -920,13 +920,13 @@ class Trajectory():
             # (2) analyze with respect to QM quantities of interest
             # TODO : only execute this when we have quantum quantities to analyze
             # (2.1) run QM calculation
-            output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, verbosity = 2)
+            # output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, verbosity = 2)
             # (2.2) post-processing of QM output
-            self.analyzeSnapshotQuantum(idx, output_qm)
+            # self.analyzeSnapshotQuantum(idx, output_qm)
 
             # (3) analyze with respect to classical quantities of interest
             # TODO : only do the following if we have classical aspects to study
-            # self.analyzeSnapshotClassical(idx)
+            self.analyzeSnapshotClassical(idx)
             
             # (4) take time per time step
             end_time = time.time()
