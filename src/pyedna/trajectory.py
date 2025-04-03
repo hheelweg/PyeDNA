@@ -421,7 +421,7 @@ class Trajectory():
         qm_options =    [
                         "transitions",                                                                                          # transitions
                         "coupling", "coupling_type", "excited_energies", "dipole_moments", "osc_strengths",                     # quantities per transition
-                        "abs_spec", "orbit_energies"                                                                            # quantities per molecule (transitions = None)
+                        "abs_spec", "orbit_energies", "mulliken"                                                                # quantities per molecule (transitions = None)
                         ]
 
         post_qm = {key: out.get(key) for key in qm_options}              
