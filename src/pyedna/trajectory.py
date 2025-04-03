@@ -680,14 +680,15 @@ class Trajectory():
             if "mulliken" in self.quant_info[0]:
 
                 # parse Mulliken information
-                fragment_type = self.quant_info[1]["mulliken"][0]
-                fragments = self.quant_info[1]["mulliken"][1]
-                if fragment_type == "molecule":
-                    fragment_names = fragments
-                elif fragment_type == "atom_group":
-                    fragment_names = [f'group {i}' for i in range(len(fragments))]
+                self.do_mulliken = True
+                self.fragment_type = self.quant_info[1]["mulliken"][0]
+                self.fragments = self.quant_info[1]["mulliken"][1]
+                if self.fragment_type == "molecule":
+                    self.fragment_names = self.fragments
+                elif self.fragment_type == "atom_group":
+                    self.fragment_names = [f'group {i}' for i in range(len(self.fragments))]
 
-                columns_per_molecule += [f"mulliken (state {state_id}) {fragment_name}" for fragment_name in fragment_names for state_id in self.settings_tddft["state_ids"]]
+                columns_per_molecule += [f"mulliken (state {state_id}) {fragment_name}" for fragment_name in self.fragment_names for state_id in self.settings_tddft["state_ids"]]
                 
 
 
@@ -721,7 +722,7 @@ class Trajectory():
 
     
     # initialize molecules from params file
-    def initMolecules(self, file):
+    def initMolecules(self, file, dye_path = None):
 
         # parse information of molecules attached and their consitutent builidng blocks
         self.molecules, self.molecule_names, self.molecule_constituents = self.parseMolecules(file)
@@ -729,8 +730,11 @@ class Trajectory():
         self.num_molecules = len(self.molecules)
 
         # find information of unique residues in list
-        unique_dyes = np.unique(np.array(self.molecule_constituents).flatten()) 
-        dye_base_dir = os.getenv("DYE_DIR")
+        unique_dyes = np.unique(np.array(self.molecule_constituents).flatten())
+        if dye_path is None: 
+            dye_base_dir = os.getenv("DYE_DIR")
+        else:
+            dye_base_dir = dye_path
         self.molecule_information = dict()
 
         for unique_dye in unique_dyes:
@@ -782,10 +786,16 @@ class Trajectory():
     
     # get MDAnalysis object of specified residues at specified time slice
     def getChromophoreSnapshot(self, time_idx, molecule, molecule_constituents, 
-                               enforce_symmetry = False, conversion = None, cap = True):
+                               fragments = None, enforce_symmetry = False, conversion = None, cap = True):
 
         # (1) set time step
         self.trajectory_u.trajectory[time_idx]
+
+        # (2) (optional) load fragment information
+        if fragments is not None:
+            fragment_type = fragments[0]
+            fragment_identifiers = fragments[1]
+
 
         # (2) get positions of all residues (constituents) specified in residue_ids
         molecules_u = []
@@ -806,7 +816,7 @@ class Trajectory():
             selected_name = np.unique(self.trajectory_u.select_atoms(f'resid {id}').resnames)[0]
             assert(selected_name == molecule_constituents[i])
 
-        # (3) check how many residues the molecule is composed of and allow for  
+        # (3) check how many residues the molecule is composed of and allow for max of 2 
         if len(molecule) == 1:
             molecule_u = molecules_u[0]
             symmetry_info = self.molecule_information[molecule_constituents[0]]["symm_info"]
@@ -826,8 +836,12 @@ class Trajectory():
                 raise NotImplementedError('Only Cs point group symmetry implemented for DFT/TDDFT analysis')
         # (5) define instance of Chromophore class 
         chromophore = structure.Chromophore(molecule_u)
+
         # (6) convert to other input format for processing of trajectory
         chromophore_conv = self.convertChromophore(chromophore, conversion) if conversion else None
+
+        # (7) (optional) get atom indices of fragments (e.g. for Mulliken analysis)
+        # TODO : maybe add this to convertChromophore function
 
         return chromophore, chromophore_conv
 
@@ -936,6 +950,11 @@ class Trajectory():
                 for molecule_name in self.molecule_names:
                     self.output_quant.loc[time_idx, (molecule_name, f"exc_enrgs ({'singlets' if self.settings_tddft['singlet'] else 'triplets'}): {' ,'.join(str(state_id) for state_id in self.settings_tddft['state_ids'])}")] = exc_energies_out[molecule_name] 
 
+            
+            # (d) get Mulliken analysis on specified fragment
+            if "mulliken" in self.quant_info[0]:
+                pass
+
 
             else:
                 pass
@@ -989,12 +1008,21 @@ class Trajectory():
                 
                 #chromophore, chromophore_conv = self.getChromophoreSnapshotOld(idx, molecule, self.molecule_names[i], conversion = 'pyscf')
 
-                chromophore, chromophore_conv = self.getChromophoreSnapshot(time_idx = idx,
-                                                                            molecule = molecule,
-                                                                            molecule_constituents = self.molecule_constituents[i],
-                                                                            enforce_symmetry = False,
-                                                                            conversion = 'pyscf'
-                                                                            )
+                if self.do_mulliken:
+                    chromophore, chromophore_conv = self.getChromophoreSnapshot(time_idx = idx,
+                                                                                molecule = molecule,
+                                                                                molecule_constituents = self.molecule_constituents[i],
+                                                                                fragments = [self.fragment_type, self.fragments],
+                                                                                enforce_symmetry = False,
+                                                                                conversion = 'pyscf'
+                                                                                )
+                else:
+                    chromophore, chromophore_conv = self.getChromophoreSnapshot(time_idx = idx,
+                                                                                molecule = molecule,
+                                                                                molecule_constituents = self.molecule_constituents[i],
+                                                                                enforce_symmetry = False,
+                                                                                conversion = 'pyscf'
+                                                                                )
 
 
                 self.chromophores.append(chromophore)
