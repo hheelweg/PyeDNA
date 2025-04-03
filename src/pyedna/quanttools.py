@@ -1087,8 +1087,8 @@ def getTransitionDipoles(dips, states, molecule_names = ["D", "A"], dipole_momen
         results[f'dip_moment {molecule_names[1]}'] = dipB[stateB]
     if intramolecular:
         state = states[0]
-        osc = dips[0]
-        results[f'dip_moment {molecule_names[0]}'] = osc[state]
+        dip = dips[0]
+        results[f'dip_moment {molecule_names[0]}'] = dip[state]
     return results
 
 # get TDDFT outputs as specified in list which_outs for molecules
@@ -1102,13 +1102,23 @@ def getTDDFToutput(output_qm, which_outs, state_ids, molecule_names = ["D", "A"]
 
     return results 
 
-# get occupied and virtual orbital energies
+# get occupied and virtual orbital energies from DFT
 def getOrbitalEnergies(output_qm, orbital_types = ["occ", "virt"], molecule_names = ["D", "A"]):
 
     results = {}
     for i, molecule_name in enumerate(molecule_names):
+
+        orbital_energies = output_qm["mf"][i].mo_energy                     # all orbital energies
+        nocc = output_qm["mol"][i].nelectron // 2                           # occupied orbitals 
+        occ_energies = orbital_energies[:nocc]                     
+        virt_energies = orbital_energies[nocc:]
+        
         for orbital_type in orbital_types:
-            results[f"{molecule_name} {which_out} {state_id}"] = 2
+            if orbital_type == "occ":
+                energies = occ_energies
+            elif orbital_type == "virt":
+                energies = virt_energies
+            results[f"{molecule_name} {orbital_type}"] = energies
 
     return results
 

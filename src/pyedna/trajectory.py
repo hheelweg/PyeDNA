@@ -877,6 +877,7 @@ class Trajectory():
                 if self.quant_info[0]["dipole_moments"]:
                     # get transition dipole moments based on QM (DFT/TDDFT) output
                     dipoles_out = qm.getTransitionDipoles(output_qm['dip'], states, molecule_names=self.molecule_names,dipole_moment_type=self.quant_info[1]['dipole_moments'])
+                    print(dipoles_out)
                     # add to output dict
                     self.output_quant.loc[time_idx, [(self.transition_names[i], key) for key in dipoles_out.keys()]] = list(dipoles_out.values())
 
@@ -898,7 +899,12 @@ class Trajectory():
             # (b) get orbital energies of occupied and virtual orbitals
             if self.quant_info[0]["orbit_energies"]:
                 orbital_types = ["occ", "virt"]
-
+                # get orbital energies from DFT output
+                orbit_energies_out = qm.getOrbitalEnergies(output_qm, orbital_types, molecule_names = self.molecule_names)
+                # add to output dict
+                for molecule_name in self.molecule_names:
+                    for orbital_type in orbital_types:
+                        self.output_quant.loc[time_idx, (molecule_name, f"{orbital_type}")] = orbit_energies_out[f"{molecule_name} {orbital_type}"]
 
             else:
                 pass
