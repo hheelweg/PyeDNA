@@ -1138,6 +1138,7 @@ def getExcitedEnergies(output_qm, molecule_names = ["D", "A"]):
 # do Mulliken analysis on excited states specified in state_ids based on specified fragments
 def doMullikenAnalysis(output_qm, state_ids, fragments = None, molecule_names = ["D", "A"]):
 
+    from pyscf.tools import molden
 
     pass
 
