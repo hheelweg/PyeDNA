@@ -895,6 +895,7 @@ def launchQMdriver(molecule_no, gpu_ids):
     for line in process.stdout:
         print(line, end="")  # line already includes newline       
 
+    process.wait()
     return process
 
 
