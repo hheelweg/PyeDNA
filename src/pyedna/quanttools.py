@@ -883,7 +883,17 @@ def launchQMdriver(molecule_no, gpu_ids):
 
     # run driver for QM calcualtions as module
     cmd = f"python -m {qm_driver_module} {molecule_no}"
-    process = subprocess.Popen(cmd, env=env, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)       
+    process = subprocess.Popen(cmd, env=env,
+                                shell=True, 
+                                stdout=subprocess.PIPE, 
+                                stderr=subprocess.STDOUT, 
+                                text=True,
+                                bufsize=1  # line-buffered
+                                )
+
+    # Forward output in real-time
+    for line in process.stdout:
+        print(line, end="")  # line already includes newline       
 
     return process
 
