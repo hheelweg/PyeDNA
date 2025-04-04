@@ -861,11 +861,9 @@ def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = Fal
 def doMullikenAnalysis(molecule_mf, molecule_mol, molecule_tdms, state_ids = [0]):
     import sys
     atom_pops, atom_charges = [], []
-    print(molecule_mf, file=sys.stdout)
-    print(molecule_mol, file=sys.stdout)
     for i, state_id in enumerate(state_ids):
         pop, charges = molecule_mf.mulliken_pop(molecule_mol, molecule_tdms[i])
-        print('pop', pop, charges, file=sys.stdout)
+        print('pop', pop, charges)
         atom_pops.append(pop)
         atom_charges.append(charges)
     
@@ -885,7 +883,7 @@ def launchQMdriver(molecule_no, gpu_ids):
 
     # run driver for QM calcualtions as module
     cmd = f"python -m {qm_driver_module} {molecule_no}"
-    process = subprocess.Popen(cmd, env=env, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)       
+    process = subprocess.Popen(cmd, env=env, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)       
 
     return process
 
