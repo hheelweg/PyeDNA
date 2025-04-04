@@ -924,7 +924,8 @@ def doQM_gpu(molecules, output_keys, verbosity = 0):
         for key in output:
             output[key].append(load(f"{key}_{i}.joblib"))
 
-    print(output["mol"])
+    print(output["tdm"])
+    print(output["tdm"][0].shape)
     print(output["exc"])
     print(output["mull_pops"])
 

@@ -707,7 +707,6 @@ class Trajectory():
                 self.output_quant = pd.DataFrame(index = range(output_length), columns = columns_quant)
 
 
-
         print("*** Intialization of output done!")
         
 
