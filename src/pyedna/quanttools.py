@@ -863,7 +863,6 @@ def doMullikenAnalysis(molecule_mf, molecule_mol, molecule_tdms, state_ids = [0]
     atom_pops, atom_charges = [], []
     for i, state_id in enumerate(state_ids):
         pop, charges = molecule_mf.mulliken_pop(molecule_mol, molecule_tdms[i])
-        print(pop, charges, flush = True)
         atom_pops.append(pop)
         atom_charges.append(charges)
     
@@ -918,13 +917,15 @@ def doQM_gpu(molecules, output_keys, verbosity = 0):
         elif verbosity == 2:
             print("STDERR:", stderr, flush=True) 
     
-    print(output["mull_pops"])
 
     # (2) load and store relevant data from output of subprocesses
     # TODO : flexibilize this for quantities we are interested in
     for i, molecule in enumerate(molecules):
         for key in output:
             output[key].append(load(f"{key}_{i}.joblib"))
+
+    print(output["mol"])
+    print(output["mull_pops"])
 
     # (3) clean subprocess cache 
     utils.cleanCache()
