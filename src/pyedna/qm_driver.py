@@ -26,6 +26,12 @@ def main(molecule_id):
     #values['mol'], values['mf'], values['occ'], values['virt'] = qm.doDFT_geomopt(chromophore_conv, **settings_dft)
     if settings_tddft.pop("do_tddft", False):
         values['exc'], values['tdm'], values['dip'], values['osc'], values['idx'] = qm.doTDDFT_gpu(values['mf'], values['occ'], values['virt'], **settings_tddft)
+    
+    # (3) perform Mulliken analysis if specified in traj.params
+    if "mulliken" in output_params_file:
+        if output_params_file["mulliken"]:
+            values['mull_pops'], values['mull_chrgs'] = qm.doMullikenAnalysis(values['mf'], values['mol'], values['tdm'], state_ids=settings_tddft['state_ids'])
+
 
     # (3) output quantities of interest
     # TODO : might want to add that specific outputs are only possible if do_tddft is set to True

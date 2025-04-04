@@ -857,6 +857,20 @@ def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = Fal
     return np.array(exc_energies), np.array([tdm.get() for tdm in tdms]), np.array(trans_dipoles), np.array(osc_strengths), osc_idx
 
 
+# do Mulliken analysis for all (excited) states
+def doMullikenAnalysis(molecule_mf, molecule_mol, molecule_tdms, state_ids = [0]):
+
+    from pyscf.tools import molden
+
+    atom_pops, atom_charges = [], []
+    for i, state_id in enumerate(state_ids):
+        pop, charges = molecule_mf.mulliken_pop(molecule_mol, molecule_tdms[i])
+        atom_pops.append(pop)
+        atom_charges.append(charges)
+    
+    return atom_pops, atom_charges
+
+
 # NOTE : function that calls python ssubprocess to perform DFT/TDDFT on individual GPUs with PySCF
 # TODO : make this more flexible with regards to the path where the launcher (DFT_gpu.py) is
 def launchQMdriver(molecule_no, gpu_ids):
@@ -1136,9 +1150,10 @@ def getExcitedEnergies(output_qm, molecule_names = ["D", "A"]):
     return results
 
 # do Mulliken analysis on excited states specified in state_ids based on specified fragments
-def doMullikenAnalysis(output_qm, state_ids, fragments = None, molecule_names = ["D", "A"]):
+def getMullikenFragmentAnalysis(output_qm, state_ids, fragments = None, molecule_names = ["D", "A"]):
 
-    from pyscf.tools import molden
+    test = output_qm["mull_pops"]
+    print(test)
 
     pass
 

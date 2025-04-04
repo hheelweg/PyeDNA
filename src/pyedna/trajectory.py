@@ -397,6 +397,8 @@ class Trajectory():
                 "dip" :         False,
                 "osc" :         True,
                 "idx" :         True,
+                "mull_pops" :   False,
+                "mull_chrgs" :  False,
                 "file_qm" :     "out_quant.txt",
                 "file_class":   "out_class.txt"
 
@@ -436,6 +438,8 @@ class Trajectory():
         qm_outs['mol'] = True if post_qm["orbit_energies"] else qm_outs['mol']
         qm_outs['orbit_enrgs'] = True if post_qm["orbit_energies"] else qm_outs['orbit_enrgs']
         qm_outs['exc'] = True if post_qm["excited_energies"] else qm_outs['exc']
+        qm_outs['mull_pops'] = True if post_qm["mulliken"] else qm_outs['mull_pops']
+        qm_outs['mull_chrgs'] = True if post_qm["mulliken"] else qm_outs['mull_chrgs']
         qm_outs['dip'] = True if post_qm["dipole_moments"] else qm_outs['dip']
         qm_outs['osc'] = True if post_qm["osc_strengths"] else qm_outs['osc']
         qm_outs['mol'] = True if post_qm["coupling"] else qm_outs['mol']
@@ -815,7 +819,17 @@ class Trajectory():
             # make sure selected residue name equals desired molecule_name
             selected_name = np.unique(self.trajectory_u.select_atoms(f'resid {id}').resnames)[0]
             assert(selected_name == molecule_constituents[i])
-
+        
+        # (2) get fragment lengths in both fragments if fragments[0] = 'molecule'
+        if fragment_type == 'molecule':
+            fragments_length = []
+            for i, constituent_name in enumerate(molecule_constituents):
+                assert(fragment_identifiers[i] == constituent_name)
+                fragments_length.append(len(molecules_u[i].atoms.names))
+        # TODO : implement this
+        elif fragment_type == 'atom_group':
+            pass
+        
         # (3) check how many residues the molecule is composed of and allow for max of 2 
         if len(molecule) == 1:
             molecule_u = molecules_u[0]
@@ -824,6 +838,13 @@ class Trajectory():
             molecule_u = mda.Merge(molecules_u[0].atoms, molecules_u[1].atoms)
         else:
             raise NotImplementedError('Only two neighboring residues currently implemented!')
+        
+        # (3) get fragment indices
+        if fragment_type == 'molecule':
+            fragment_indices = [[i for i in range(len(molecule_u.atoms[:fragments_length[0]]))], [i for i in range(len(molecule_u.atoms[:fragments_length[0]]), len(molecule_u.atoms))]]
+        # TODO : implement this 
+        elif fragment_type == 'atom_group':
+            pass
         
 
         # (optional) enforce symmetry if they are composed of a single dye
@@ -840,10 +861,10 @@ class Trajectory():
         # (6) convert to other input format for processing of trajectory
         chromophore_conv = self.convertChromophore(chromophore, conversion) if conversion else None
 
-        # (7) (optional) get atom indices of fragments (e.g. for Mulliken analysis)
-        # TODO : maybe add this to convertChromophore function
-
-        return chromophore, chromophore_conv
+        if fragments is None:
+            return chromophore, chromophore_conv
+        else:
+            return chromophore, chromophore_conv, fragment_indices
 
 
 
@@ -852,14 +873,18 @@ class Trajectory():
     # TODO : might want to add this to Chromophore class
     @staticmethod
     def convertChromophore(chromophore, conversion = 'pyscf'):
-        # can only convert to PySCF or QChem input
-        if conversion not in ['pyscf', 'qchem']:
-            raise ValueError("Specify valid format to convert Chromophore object to.")
+
+        # can only convert to PySCF input
+        if conversion not in ['pyscf']:
+            raise NotImplementedError("Specify valid format to convert Chromophore object to.")
+        
         # convert Chromophore object to PySCF input 
         if conversion == 'pyscf':
+
             xyz, names = chromophore.xyz, chromophore.names
             molecule_conv = []
             for i, coords in enumerate(xyz):
+                # pyscf molecule input
                 atom = [names[i][0], tuple(coords)]
                 molecule_conv.append(atom)
         # convert Chromophore object to QChem input
@@ -893,28 +918,28 @@ class Trajectory():
                 if self.quant_info[0]["coupling"]:
                     # compute coupling based on QM (DFT/TDDFT) output
                     coupling_out = qm.getVCoulombic(output_qm['mol'], output_qm['tdm'], states, coupling_type=self.quant_info[1]['coupling'])
-                    # add to output dict
+                    # add to output df
                     self.output_quant.loc[time_idx, [(self.transition_names[i], key) for key in coupling_out.keys()]] = list(coupling_out.values())
 
                 # (b) get excitation energies
                 if self.quant_info[0]["excited_energies"]:
                     # get excited state energies based on QM (DFT/TDDFT) output
                     energies_out = qm.getExcEnergiesTransition(output_qm['exc'], states, molecule_names=self.molecule_names, excitation_energy_type=self.quant_info[1]['excited_energies'])
-                    # add to output dict
+                    # add to output df
                     self.output_quant.loc[time_idx, [(self.transition_names[i], key) for key in energies_out.keys()]] = list(energies_out.values())
                 
                 # (c) get oscillator strengths
                 if self.quant_info[0]["osc_strengths"]:
                     # get oscillator strengths based on QM (DFT/TDDFT) output
                     osc_out = qm.getOscillatorStrengths(output_qm['osc'], states, molecule_names=self.molecule_names,osc_strength_type=self.quant_info[1]['osc_strengths'])
-                    # add to output dict
+                    # add to output df
                     self.output_quant.loc[time_idx, [(self.transition_names[i], key) for key in osc_out.keys()]] = list(osc_out.values())
                 
                 # (d) get transition dipoles
                 if self.quant_info[0]["dipole_moments"]:
                     # get transition dipole moments based on QM (DFT/TDDFT) output
                     dipoles_out = qm.getTransitionDipoles(output_qm['dip'], states, molecule_names=self.molecule_names,dipole_moment_type=self.quant_info[1]['dipole_moments'])
-                    # add to output dict
+                    # add to output df
                     self.output_quant.loc[time_idx, [(self.transition_names[i], key) for key in dipoles_out.keys()]] = list(dipoles_out.values())
 
 
@@ -926,7 +951,7 @@ class Trajectory():
                 which_outs = ["exc", "osc"]
                 # get desired TDDFT output
                 tddft_out = qm.getTDDFToutput(output_qm, which_outs, self.settings_tddft["state_ids"], molecule_names = self.molecule_names)
-                # add to output dict
+                # add to output df
                 for molecule_name in self.molecule_names:
                     for which_out in which_outs:
                         for state_id in self.settings_tddft["state_ids"]:
@@ -937,7 +962,7 @@ class Trajectory():
                 orbital_types = ["occ", "virt"]
                 # get orbital energies from DFT output
                 orbit_energies_out = qm.getOrbitalEnergies(output_qm, orbital_types, molecule_names = self.molecule_names)
-                # add to output dict
+                # add to output df
                 for molecule_name in self.molecule_names:
                     for orbital_type in orbital_types:
                         self.output_quant.loc[time_idx, (molecule_name, f"{orbital_type}")] = orbit_energies_out[f"{molecule_name} {orbital_type}"]
@@ -946,14 +971,20 @@ class Trajectory():
             if "excited_energies" in self.quant_info[0]: 
                 # get excited state energies from TDDFT output
                 exc_energies_out = qm.getExcitedEnergies(output_qm, molecule_names = self.molecule_names)
-                # add to output dict
+                # add to output df
                 for molecule_name in self.molecule_names:
                     self.output_quant.loc[time_idx, (molecule_name, f"exc_enrgs ({'singlets' if self.settings_tddft['singlet'] else 'triplets'}): {' ,'.join(str(state_id) for state_id in self.settings_tddft['state_ids'])}")] = exc_energies_out[molecule_name] 
 
             
             # (d) get Mulliken analysis on specified fragment
             if "mulliken" in self.quant_info[0]:
-                pass
+                # get Mulliken analysis on atom index group in self.chromophores_fragments
+                mulliken_out = qm.getMullikenFragmentAnalysis(output_qm, self.settings_tddft['state_ids'], fragments=self.chromophores_fragments, molecule_names=self.molecule_names)
+                # add to output df
+                for i, molecule_name in enumerate(self.molecule_names):
+                    # Mulliken analysis per molecule for each specified fragment
+                    for fragment_indices in self.chromophores_fragments[i]:
+                        pass
 
 
             else:
@@ -1003,23 +1034,28 @@ class Trajectory():
             # (1) get chromophores of interest 
             self.chromophores = []
             self.chromophores_conv = []
+            self.chromophores_fragments = [] if self.do_mulliken else None
             for i, molecule in enumerate(self.molecules):
 
                 
                 #chromophore, chromophore_conv = self.getChromophoreSnapshotOld(idx, molecule, self.molecule_names[i], conversion = 'pyscf')
 
                 if self.do_mulliken:
-                    chromophore, chromophore_conv = self.getChromophoreSnapshot(time_idx = idx,
+                    chromophore, chromophore_conv, fragment_indices = self.getChromophoreSnapshot(time_idx = idx,
                                                                                 molecule = molecule,
                                                                                 molecule_constituents = self.molecule_constituents[i],
                                                                                 fragments = [self.fragment_type, self.fragments],
                                                                                 enforce_symmetry = False,
                                                                                 conversion = 'pyscf'
                                                                                 )
+                    
+                    self.chromophores_fragments.append(fragment_indices)
+                    
                 else:
                     chromophore, chromophore_conv = self.getChromophoreSnapshot(time_idx = idx,
                                                                                 molecule = molecule,
                                                                                 molecule_constituents = self.molecule_constituents[i],
+                                                                                fragments = None,
                                                                                 enforce_symmetry = False,
                                                                                 conversion = 'pyscf'
                                                                                 )
