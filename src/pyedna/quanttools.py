@@ -861,8 +861,11 @@ def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = Fal
 def doMullikenAnalysis(molecule_mf, molecule_mol, molecule_tdms, state_ids = [0]):
 
     atom_pops, atom_charges = [], []
+    print(molecule_mf)
+    print(molecule_mol)
     for i, state_id in enumerate(state_ids):
         pop, charges = molecule_mf.mulliken_pop(molecule_mol, molecule_tdms[i])
+        print('pop', pop, charges)
         atom_pops.append(pop)
         atom_charges.append(charges)
     
@@ -924,10 +927,6 @@ def doQM_gpu(molecules, output_keys, verbosity = 0):
         for key in output:
             output[key].append(load(f"{key}_{i}.joblib"))
 
-    print(output["tdm"])
-    print(output["tdm"][0].shape)
-    print(output["exc"])
-    print(output["mull_pops"])
 
     # (3) clean subprocess cache 
     utils.cleanCache()
