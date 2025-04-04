@@ -1153,7 +1153,7 @@ def getExcitedEnergies(output_qm, molecule_names = ["D", "A"]):
 def getMullikenFragmentAnalysis(output_qm, state_ids, fragments = None, molecule_names = ["D", "A"]):
 
     test = output_qm["mull_pops"]
-    print(test)
+    print('mull test', test)
 
     pass
 
