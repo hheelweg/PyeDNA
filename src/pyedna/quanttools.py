@@ -925,6 +925,7 @@ def doQM_gpu(molecules, output_keys, verbosity = 0):
             output[key].append(load(f"{key}_{i}.joblib"))
 
     print(output["mol"])
+    print(output["exc"])
     print(output["mull_pops"])
 
     # (3) clean subprocess cache 
