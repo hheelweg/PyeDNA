@@ -860,11 +860,10 @@ def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = Fal
 # do Mulliken analysis for all (excited) states
 def doMullikenAnalysis(molecule_mf, molecule_mol, molecule_tdms, state_ids = [0]):
 
-    from pyscf.tools import molden
-
     atom_pops, atom_charges = [], []
     for i, state_id in enumerate(state_ids):
         pop, charges = molecule_mf.mulliken_pop(molecule_mol, molecule_tdms[i])
+        print(pop, charges, flush = True)
         atom_pops.append(pop)
         atom_charges.append(charges)
     
@@ -918,12 +917,13 @@ def doQM_gpu(molecules, output_keys, verbosity = 0):
             print("STDOUT:", stdout, flush =True)
         elif verbosity == 2:
             print("STDERR:", stderr, flush=True) 
+    
+    print(output["mull_pops"])
 
     # (2) load and store relevant data from output of subprocesses
     # TODO : flexibilize this for quantities we are interested in
     for i, molecule in enumerate(molecules):
         for key in output:
-            print(key)
             output[key].append(load(f"{key}_{i}.joblib"))
 
     # (3) clean subprocess cache 
