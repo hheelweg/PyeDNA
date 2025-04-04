@@ -338,7 +338,6 @@ class Trajectory():
         
         # parse output information for QM and MD simulations
         self.qm_outs, self.quant_info, self.class_info, self.time_slice = self.parseParameters(traj_params_file, parse_trajectory_out=True)
-        print('test', self.qm_outs)
         # parse details on QM (DFT/TDDFT) calculations
         self.settings_dft, self.settings_tddft = self.setQMSettings(qm_params_file)
         print('Settings for DFT: ', self.settings_dft, flush=True)

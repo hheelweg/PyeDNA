@@ -923,6 +923,7 @@ def doQM_gpu(molecules, output_keys, verbosity = 0):
     # TODO : flexibilize this for quantities we are interested in
     for i, molecule in enumerate(molecules):
         for key in output:
+            print(key)
             output[key].append(load(f"{key}_{i}.joblib"))
 
     # (3) clean subprocess cache 
