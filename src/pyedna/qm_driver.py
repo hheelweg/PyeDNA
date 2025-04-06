@@ -29,8 +29,8 @@ def main(molecule_id):
     
     # (3) perform Mulliken analysis if specified in traj.params
     print('testtt print', flush = True)
-    print(output_params_file, flush = True)
-    if "mulliken" in output_params_file:
+    print(output_keys, flush = True)
+    if "mulliken" in output_keys:
         print('do mullikkkk', flush = True)
         if output_params_file["mulliken"]:
             print('do mull', flush = True)
