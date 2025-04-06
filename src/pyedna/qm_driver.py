@@ -29,7 +29,9 @@ def main(molecule_id):
     
     # (3) perform Mulliken analysis if specified in traj.params
     if "mulliken" in output_params_file:
+        print('do mullikkkk', flush = True)
         if output_params_file["mulliken"]:
+            print('do mull', flush = True)
             values['mull_pops'], values['mull_chrgs'] = qm.doMullikenAnalysis(values['mf'], values['mol'], values['tdm'], state_ids=settings_tddft['state_ids'])
 
 
