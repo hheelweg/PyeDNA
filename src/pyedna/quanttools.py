@@ -859,11 +859,11 @@ def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = Fal
 
 # do Mulliken analysis for all (excited) states
 def doMullikenAnalysis(molecule_mf, molecule_mol, molecule_tdms, state_ids = [0]):
-    import sys
+    from pyscf.scf import mulliken
     atom_pops, atom_charges = [], []
     print('run Mulliken')
     for i, state_id in enumerate(state_ids):
-        pop, charges = molecule_mf.mulliken_pop(molecule_mol, molecule_tdms[i])
+        pop, charges = mulliken.mulliken_pop(molecule_mol, molecule_mf.get_ovlp(), molecule_tdms[i])
         print('pop', pop, charges, flush = True)
         atom_pops.append(pop)
         atom_charges.append(charges)
