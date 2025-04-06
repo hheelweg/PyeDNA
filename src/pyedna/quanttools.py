@@ -857,6 +857,29 @@ def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = Fal
     return np.array(exc_energies), np.array([tdm.get() for tdm in tdms]), np.array(trans_dipoles), np.array(osc_strengths), osc_idx
 
 
+def safe_mulliken_pop(mol, s, dm):
+    """
+    A safer Mulliken population analysis that avoids spinor_label issues.
+    """
+    import numpy as np
+
+    # 1. Total population per AO
+    pop = np.einsum('ij,ji->i', dm, s).real
+
+    # 2. Map AO indices to atom indices
+    ao2atom = np.array([atm_id for atm_id, _, _ in mol.ao_labels(fmt=None)])
+
+    # 3. Sum AO populations per atom
+    natm = mol.natm
+    chg = np.zeros(natm)
+    for ao, p in enumerate(pop):
+        chg[ao2atom[ao]] += p
+
+    # 4. Compute atomic charges: Z - N
+    charges = mol.atom_charges() - chg
+    return pop, charges
+
+
 # do Mulliken analysis for all (excited) states
 def doMullikenAnalysis(molecule_mf, molecule_mol, molecule_tdms, state_ids = [0]):
     from pyscf.scf import dhf
@@ -868,17 +891,17 @@ def doMullikenAnalysis(molecule_mf, molecule_mol, molecule_tdms, state_ids = [0]
         tdm = molecule_tdms[i]
         assert tdm.shape == (molecule_mol.nao, molecule_mol.nao)
 
-        # Mulliken populations
-        pop = np.einsum('ij,ji->i', tdm, S).real
+        # # Mulliken populations
+        # pop = np.einsum('ij,ji->i', tdm, S).real
 
-        print(pop, flush=True)
-        # Mulliken charges
-        charges = np.zeros(molecule_mol.natm)
-        for i, s in enumerate(molecule_mol.spinor_labels(fmt=None)):
-            charges[s[0]] += pop[i]
-        charges = molecule_mol.atom_charges() - charges
+        # print(pop, flush=True)
+        # # Mulliken charges
+        # charges = np.zeros(molecule_mol.natm)
+        # for i, s in enumerate(molecule_mol.spinor_labels(fmt=None)):
+        #     charges[s[0]] += pop[i]
+        # charges = molecule_mol.atom_charges() - charges
 
-        #pop, charges = dhf.mulliken_pop(molecule_mol, tdm, S)
+        pop, charges = safe_mulliken_pop(molecule_mol, S, tdm)
         print('pop and charges', pop, charges, flush = True)
         atom_pops.append(pop)
         atom_charges.append(charges)
