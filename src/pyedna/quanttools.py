@@ -867,7 +867,7 @@ def safe_mulliken_pop(mol, s, dm):
     pop = np.einsum('ij,ji->i', dm, s).real
 
     # 2. Map AO indices to atom indices
-    ao2atom = np.array([atm_id for atm_id, _, _ in mol.ao_labels(fmt=None)])
+    ao2atom = np.array([label[0] for label in mol.ao_labels(fmt=None)])
 
     # 3. Sum AO populations per atom
     natm = mol.natm
