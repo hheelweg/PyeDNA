@@ -28,11 +28,9 @@ def main(molecule_id):
         values['exc'], values['tdm'], values['dip'], values['osc'], values['idx'] = qm.doTDDFT_gpu(values['mf'], values['occ'], values['virt'], **settings_tddft)
     
     # (3) perform Mulliken analysis if specified in traj.params
-    print('testtt print', flush = True)
-    print(output_keys, flush = True)
-    if "mull_pops" in output_keys:
-        print('do mull', flush = True)
-        values['mull_pops'], values['mull_chrgs'] = qm.doMullikenAnalysis(values['mf'], values['mol'], values['tdm'], state_ids=settings_tddft['state_ids'])
+    if "mull_pops" in output_keys or "mull_chrgs" in output_keys:
+        if output_keys["mull_pops"] or output_keys["mull_chrgs"]:
+            values['mull_pops'], values['mull_chrgs'] = qm.doMullikenAnalysis(values['mf'], values['mol'], values['tdm'], state_ids=settings_tddft['state_ids'])
 
 
     # (3) output quantities of interest

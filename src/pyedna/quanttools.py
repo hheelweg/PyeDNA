@@ -857,23 +857,24 @@ def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = Fal
     return np.array(exc_energies), np.array([tdm.get() for tdm in tdms]), np.array(trans_dipoles), np.array(osc_strengths), osc_idx
 
 
-def safe_mulliken_pop(mol, s, dm):
+# get Mulliken populations/charges for each atom
+def do_mulliken_pop(mol, s, dm):
     nao = mol.nao
     natm = mol.natm
 
-    # 1. AO populations (contract density with overlap)
+    # (1) AO populations (contract density with overlap)
     ao_pops = np.einsum('ij,ji->i', dm, s).real   # shape: (nao,)
 
-    # 2. Map AO index → atom index
+    # (2) Map AO index → atom index
     ao2atom = np.array([label[0] for label in mol.ao_labels(fmt=None)])
 
-    # 3. Sum AO populations per atom
+    # (3) Sum AO populations per atom
     atom_pops = np.zeros(natm)
     for ao_idx in range(nao):
         atom_idx = ao2atom[ao_idx]
         atom_pops[atom_idx] += ao_pops[ao_idx]
 
-    # 4. Mulliken charges: Z - N
+    # (4) Mulliken charges: Z - N
     atom_charges = mol.atom_charges() - atom_pops
 
     return atom_pops, atom_charges
@@ -890,19 +891,8 @@ def doMullikenAnalysis(molecule_mf, molecule_mol, molecule_tdms, state_ids = [0]
         tdm = molecule_tdms[i]
         assert tdm.shape == (molecule_mol.nao, molecule_mol.nao)
 
-        # # Mulliken populations
-        # pop = np.einsum('ij,ji->i', tdm, S).real
+        pop, charges = do_mulliken_pop(molecule_mol, S, tdm)
 
-        # print(pop, flush=True)
-        # # Mulliken charges
-        # charges = np.zeros(molecule_mol.natm)
-        # for i, s in enumerate(molecule_mol.spinor_labels(fmt=None)):
-        #     charges[s[0]] += pop[i]
-        # charges = molecule_mol.atom_charges() - charges
-
-        pop, charges = safe_mulliken_pop(molecule_mol, S, tdm)
-        print('pop and charges', pop, charges, flush = True)
-        print('shapes', pop.shape, charges.shape, flush = True)
         atom_pops.append(pop)
         atom_charges.append(charges)
     
@@ -1198,7 +1188,7 @@ def getExcitedEnergies(output_qm, molecule_names = ["D", "A"]):
 def getMullikenFragmentAnalysis(output_qm, state_ids, fragments = None, molecule_names = ["D", "A"]):
 
     test = output_qm["mull_pops"]
-    print('mull test', test, flush = True)
+    print('mulliken test', test, flush = True)
 
     pass
 
