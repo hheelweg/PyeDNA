@@ -863,7 +863,7 @@ def doMullikenAnalysis(molecule_mf, molecule_mol, molecule_tdms, state_ids = [0]
     atom_pops, atom_charges = [], []
     for i, state_id in enumerate(state_ids):
         pop, charges = molecule_mf.mulliken_pop(molecule_mol, molecule_tdms[i])
-        print('pop', pop, charges)
+        print('pop', pop, charges, flush = True)
         atom_pops.append(pop)
         atom_charges.append(charges)
     
@@ -890,11 +890,6 @@ def launchQMdriver(molecule_no, gpu_ids):
                                 text=True
                                 )
 
-    # # Forward output in real-time
-    # for line in process.stdout:
-    #     print(line, end="")  # line already includes newline       
-
-    # process.wait()
     return process
 
 
