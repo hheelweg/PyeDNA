@@ -867,7 +867,7 @@ def doMullikenAnalysis(molecule_mf, molecule_mol, molecule_tdms, state_ids = [0]
     for i, state_id in enumerate(state_ids):
         tdm = molecule_tdms[i]
         print(tdm.shape, flush = True)
-        print(tdm.type, flush = True)
+        print(tdm.dtype, flush = True)
         assert tdm.shape == (molecule_mol.nao, molecule_mol.nao)
         pop, charges = hf.mulliken_pop(molecule_mol, S, tdm)
         print('pop', pop, charges, flush = True)
