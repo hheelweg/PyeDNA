@@ -887,15 +887,14 @@ def launchQMdriver(molecule_no, gpu_ids):
                                 shell=True, 
                                 stdout=subprocess.PIPE, 
                                 stderr=subprocess.STDOUT, 
-                                text=True,
-                                bufsize=1  # line-buffered
+                                text=True
                                 )
 
-    # Forward output in real-time
-    for line in process.stdout:
-        print(line, end="")  # line already includes newline       
+    # # Forward output in real-time
+    # for line in process.stdout:
+    #     print(line, end="")  # line already includes newline       
 
-    process.wait()
+    # process.wait()
     return process
 
 
