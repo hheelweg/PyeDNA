@@ -882,7 +882,7 @@ def launchQMdriver(molecule_no, gpu_ids):
     qm_driver_module = 'pyedna.qm_driver'
 
     # run driver for QM calcualtions as module
-    cmd = f"python -m {qm_driver_module} {molecule_no}"
+    cmd = f"python -u -m {qm_driver_module} {molecule_no}"
     process = subprocess.Popen(cmd, env=env,
                                 shell=True, 
                                 stdout=subprocess.PIPE, 
@@ -1164,7 +1164,7 @@ def getExcitedEnergies(output_qm, molecule_names = ["D", "A"]):
 def getMullikenFragmentAnalysis(output_qm, state_ids, fragments = None, molecule_names = ["D", "A"]):
 
     test = output_qm["mull_pops"]
-    print('mull test', test)
+    print('mull test', test, flush = True)
 
     pass
 
