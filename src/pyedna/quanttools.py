@@ -858,26 +858,25 @@ def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = Fal
 
 
 def safe_mulliken_pop(mol, s, dm):
-    """
-    A safer Mulliken population analysis that avoids spinor_label issues.
-    """
-    import numpy as np
+    nao = mol.nao
+    natm = mol.natm
 
-    # 1. Total population per AO
-    pop = np.einsum('ij,ji->i', dm, s).real
+    # 1. AO populations (contract density with overlap)
+    ao_pops = np.einsum('ij,ji->i', dm, s).real   # shape: (nao,)
 
-    # 2. Map AO indices to atom indices
+    # 2. Map AO index → atom index
     ao2atom = np.array([label[0] for label in mol.ao_labels(fmt=None)])
 
     # 3. Sum AO populations per atom
-    natm = mol.natm
-    chg = np.zeros(natm)
-    for ao, p in enumerate(pop):
-        chg[ao2atom[ao]] += p
+    atom_pops = np.zeros(natm)
+    for ao_idx in range(nao):
+        atom_idx = ao2atom[ao_idx]
+        atom_pops[atom_idx] += ao_pops[ao_idx]
 
-    # 4. Compute atomic charges: Z - N
-    charges = mol.atom_charges() - chg
-    return pop, charges
+    # 4. Mulliken charges: Z - N
+    atom_charges = mol.atom_charges() - atom_pops
+
+    return atom_pops, atom_charges
 
 
 # do Mulliken analysis for all (excited) states
@@ -903,6 +902,7 @@ def doMullikenAnalysis(molecule_mf, molecule_mol, molecule_tdms, state_ids = [0]
 
         pop, charges = safe_mulliken_pop(molecule_mol, S, tdm)
         print('pop and charges', pop, charges, flush = True)
+        print('shapes', pop.shape, charges.shape, flush = True)
         atom_pops.append(pop)
         atom_charges.append(charges)
     
