@@ -28,6 +28,7 @@ def main(molecule_id):
         values['exc'], values['tdm'], values['dip'], values['osc'], values['idx'] = qm.doTDDFT_gpu(values['mf'], values['occ'], values['virt'], **settings_tddft)
     
     # (3) perform Mulliken analysis if specified in traj.params
+    print('testtt print', flush = True)
     if "mulliken" in output_params_file:
         print('do mullikkkk', flush = True)
         if output_params_file["mulliken"]:
