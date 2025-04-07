@@ -1187,10 +1187,17 @@ def getExcitedEnergies(output_qm, molecule_names = ["D", "A"]):
 # do Mulliken analysis on excited states specified in state_ids based on specified fragments
 def getMullikenFragmentAnalysis(output_qm, state_ids, fragments = None, molecule_names = ["D", "A"]):
 
-    test = output_qm["mull_pops"]
-    print('mulliken test', test, flush = True)
 
-    pass
+    atom_pops = output_qm["mull_pops"]
+
+    # participation (absolute Mulliken population)
+    atom_participation = np.abs(atom_pops)
+    print('mulliken test', atom_pops, flush = True)
+
+    results = {}
+    for state_id in state_ids:
+
+    return results
 
 
 # compute absorption spectrum from oscillator strength and excitation energies along strajectory
