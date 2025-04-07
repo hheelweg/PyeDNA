@@ -1195,6 +1195,7 @@ def getMullikenFragmentAnalysis(output_qm, state_ids, fragments = None, fragment
             atom_pops = output_qm["mull_pops"][i][state_id]
             # participation (absolute Mulliken population)
             atom_participation = np.abs(atom_pops)
+            print(atom_participation.shape)
             # sum together participation of fragments
             for k, fragment_indices in enumerate(fragments[i]):
                 results[f"{molecule_name} {state_id} {fragment_names[k]}"] = sum(atom_participation[j] for j in fragment_indices)
