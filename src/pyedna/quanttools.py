@@ -1196,7 +1196,7 @@ def getMullikenFragmentAnalysis(output_qm, state_ids, fragments = None, molecule
 
     results = {}
     for state_id in state_ids:
-
+        pass
     return results
 
 
