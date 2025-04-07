@@ -821,9 +821,10 @@ class Trajectory():
         
         # (2) get fragment lengths in both fragments if fragments[0] = 'molecule'
         if fragment_type == 'molecule':
-            fragments_length = []
+            fragments_length, fragment_names = [], []
             for i, constituent_name in enumerate(molecule_constituents):
                 assert(fragment_identifiers[i] == constituent_name)
+                fragment_names.append(fragment_identifiers[i])
                 fragments_length.append(len(molecules_u[i].atoms.names))
         # TODO : implement this
         elif fragment_type == 'atom_group':
@@ -863,7 +864,7 @@ class Trajectory():
         if fragments is None:
             return chromophore, chromophore_conv
         else:
-            return chromophore, chromophore_conv, fragment_indices
+            return chromophore, chromophore_conv, fragment_indices, fragment_names
 
 
 
@@ -978,15 +979,16 @@ class Trajectory():
             # (d) get Mulliken analysis on specified fragment
             if "mulliken" in self.quant_info[0]:
                 # get Mulliken analysis on atom index group in self.chromophores_fragments
-                mulliken_out = qm.getMullikenFragmentAnalysis(output_qm, self.settings_tddft['state_ids'], fragments=self.chromophores_fragments, molecule_names=self.molecule_names)
-                print('chromophoresss', self.chromophores_fragments)
+                mulliken_out = qm.getMullikenFragmentAnalysis(output_qm, self.settings_tddft['state_ids'], fragments=self.chromophores_fragments, fragment_names=self.chromophores_fragment_names, molecule_names=self.molecule_names)
+                print(self.chromophores_fragment_names)
                 # add to output df
                 for i, molecule_name in enumerate(self.molecule_names):
-                    # Mulliken analysis per molecule for each specified fragment
-                    for fragment_indices in self.chromophores_fragments[i]:
-                        pass
+                    for state_id in self.settings_tddft['state_ids']:
+                        # Mulliken analysis per molecule for each specified fragment
+                        for fragment_name in self.chromophores_fragment_names[i]:
+                            self.output_quant.loc[time_idx, (molecule_name, f"mulliken (state {state_id}) {fragment_name}")] = mulliken_out[f"{molecule_name} {state_id} {fragment_name}"]
 
-
+                        
             else:
                 pass
 
@@ -1035,13 +1037,14 @@ class Trajectory():
             self.chromophores = []
             self.chromophores_conv = []
             self.chromophores_fragments = [] if self.do_mulliken else None
+            self.chromophores_fragment_names = [] if self.do_mulliken else None
             for i, molecule in enumerate(self.molecules):
 
                 
                 #chromophore, chromophore_conv = self.getChromophoreSnapshotOld(idx, molecule, self.molecule_names[i], conversion = 'pyscf')
 
                 if self.do_mulliken:
-                    chromophore, chromophore_conv, fragment_indices = self.getChromophoreSnapshot(time_idx = idx,
+                    chromophore, chromophore_conv, fragment_indices, fragment_names = self.getChromophoreSnapshot(time_idx = idx,
                                                                                 molecule = molecule,
                                                                                 molecule_constituents = self.molecule_constituents[i],
                                                                                 fragments = [self.fragment_type, self.fragments],
@@ -1050,6 +1053,7 @@ class Trajectory():
                                                                                 )
                     
                     self.chromophores_fragments.append(fragment_indices)
+                    self.chromophores_fragment_names.append(fragment_names)
                     
                 else:
                     chromophore, chromophore_conv = self.getChromophoreSnapshot(time_idx = idx,

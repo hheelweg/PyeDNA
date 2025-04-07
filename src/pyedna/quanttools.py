@@ -1185,18 +1185,20 @@ def getExcitedEnergies(output_qm, molecule_names = ["D", "A"]):
     return results
 
 # do Mulliken analysis on excited states specified in state_ids based on specified fragments
-def getMullikenFragmentAnalysis(output_qm, state_ids, fragments = None, molecule_names = ["D", "A"]):
+def getMullikenFragmentAnalysis(output_qm, state_ids, fragments = None, fragment_names = None, molecule_names = ["D", "A"]):
 
-
-    atom_pops = output_qm["mull_pops"]
-
-    # participation (absolute Mulliken population)
-    atom_participation = np.abs(atom_pops)
-    print('mulliken test', atom_pops, flush = True)
 
     results = {}
-    for state_id in state_ids:
-        pass
+    for i, molecule_name in molecule_names:
+        for state_id in state_ids:
+             # get Mulliken atom populations
+            atom_pops = output_qm["mull_pops"][i][state_id]
+            # participation (absolute Mulliken population)
+            atom_participation = np.abs(atom_pops)
+            # sum together participation of fragments
+            for k, fragment_indices in enumerate(fragments[i]):
+                results[f"{molecule_name} {state_id} {fragment_names[k]}"] = sum(atom_participation[j] for j in fragment_indices)
+    print(results)
     return results
 
 
