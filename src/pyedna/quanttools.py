@@ -1189,7 +1189,7 @@ def getMullikenFragmentAnalysis(output_qm, state_ids, fragments = None, fragment
 
 
     results = {}
-    for i, molecule_name in molecule_names:
+    for i, molecule_name in enumerate(molecule_names):
         for state_id in state_ids:
              # get Mulliken atom populations
             atom_pops = output_qm["mull_pops"][i][state_id]

@@ -979,8 +979,8 @@ class Trajectory():
             # (d) get Mulliken analysis on specified fragment
             if "mulliken" in self.quant_info[0]:
                 # get Mulliken analysis on atom index group in self.chromophores_fragments
-                mulliken_out = qm.getMullikenFragmentAnalysis(output_qm, self.settings_tddft['state_ids'], fragments=self.chromophores_fragments, fragment_names=self.chromophores_fragment_names, molecule_names=self.molecule_names)
                 print(self.chromophores_fragment_names)
+                mulliken_out = qm.getMullikenFragmentAnalysis(output_qm, self.settings_tddft['state_ids'], fragments=self.chromophores_fragments, fragment_names=self.chromophores_fragment_names, molecule_names=self.molecule_names)
                 # add to output df
                 for i, molecule_name in enumerate(self.molecule_names):
                     for state_id in self.settings_tddft['state_ids']:
