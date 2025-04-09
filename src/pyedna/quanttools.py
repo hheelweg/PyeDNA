@@ -845,6 +845,7 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
     import cupy as cp
 
     print('quantum dict', quantum_dict, flush = True)
+    tddft_output = {}
 
     # (1) number of states
     nstates = len(state_ids)
@@ -868,14 +869,15 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
     # with the occupied orbital in the i-th excitation
     tdms = [cp.sqrt(2) * cp.asarray(occ_orbits).dot(cp.asarray(td.xy[id][0])).dot(cp.asarray(virt_orbits).T) for id in state_ids]
 
+    # (6) Mulliken analysis for excited states
+    if quantum_dict["mull_pops"] or quantum_dict["mull_chrgs"]:
+        tddft_output['mull_pops'], tddft_output['mull_chrgs'] = doMullikenAnalysis(molecule_mf, molecule_mol, tdms, state_ids=state_ids)
+
     # (6) orbital participation analysis for excited states
     # if orbital_participation is not None:
     #     pass
 
-    # return numpy arrays
-    # (7) output
-    tddft_output = {}
-    
+    # (7) output 
     if quantum_dict['exc']:
         tddft_output['exc'] = np.array(exc_energies)
     if quantum_dict['tdm']:
@@ -888,7 +890,8 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
         tddft_output['idx'] = osc_idx
 
     # return tddft_output
-    return np.array(exc_energies), np.array([tdm.get() for tdm in tdms]), np.array(trans_dipoles), np.array(osc_strengths), osc_idx
+    #return np.array(exc_energies), np.array([tdm.get() for tdm in tdms]), np.array(trans_dipoles), np.array(osc_strengths), osc_idx
+    return tddft_output
 
 
 # do Mulliken analysis for all (excited) states
