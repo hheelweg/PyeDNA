@@ -852,7 +852,7 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
     nstates = len(state_ids)
 
     # (2) run TDDFT with or without TDA (Tamm-Dancoff approximation)
-    td = molecule_mf.TDA().run(nstates = nstates) if TDA else molecule_mf.TDDFT().run(nstates = nstates)
+    molecule_td = molecule_mf.TDA().run(nstates = nstates) if TDA else molecule_mf.TDDFT().run(nstates = nstates)
 
     # (3) extract excitation energies and transition dipole moments
     exc_energies = [td.e[id] for id in state_ids]
@@ -868,7 +868,7 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
     # td.xy[i] is tuple (X_i, Y_i) with X_i contains the expansion coefficients for the excitation part of the i-th excited state
     # and Y_1 the expansion coefficients for the de-excitation part; in TDDFT td.xy[i][0] quantifies how the virtual orbitals mix
     # with the occupied orbital in the i-th excitation
-    tdms = [cp.sqrt(2) * cp.asarray(occ_orbits).dot(cp.asarray(td.xy[id][0])).dot(cp.asarray(virt_orbits).T) for id in state_ids]
+    tdms = [cp.sqrt(2) * cp.asarray(occ_orbits).dot(cp.asarray(molecule_td.xy[id][0])).dot(cp.asarray(virt_orbits).T) for id in state_ids]
 
     # (6) write 'baseline' quantities
     tddft_output = {}
@@ -888,8 +888,10 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
         tddft_output['mull_pops'], tddft_output['mull_chrgs'] = doMullikenAnalysis(molecule_mf, molecule_mol, tdms, state_ids=state_ids)
 
     # (8) orbital participation analysis for excited states
-    # if orbital_participation is not None:
-    #     pass
+    result = doOrbitalParticipationAnalysis(molecule_mol, molecule_td, fragments, state_ids=state_ids)
+    print('orbital participation analysis', flush = True)
+    print(result, flush = True)
+    print(result.shape, flush = True)
 
 
     # return tddft_output
@@ -913,6 +915,53 @@ def doMullikenAnalysis(molecule_mf, molecule_mol, molecule_tdms, state_ids = [0]
         atom_charges.append(charges)
     
     return atom_pops, atom_charges
+
+
+def doOrbitalParticipationAnalysis(molecule_mol, molecule_td, fragments, state_ids = [0]):
+
+    # (1) Map AO index -> atom index
+    ao2atom = np.array([label[0] for label in molecule_mol.ao_labels(fmt=None)])
+
+    # (2) get fragment maps (fragment_map[ao_idx] = 0 if in frag0, 1 if in frag1, -1 otherwise)
+    # TODO : generalize this for more than just two fragments
+    assert len(fragments) == 2
+    fragment_map = np.full(len(ao2atom), fill_value=-1)
+    for frag_id, atom_indices in enumerate(fragments):
+        for atom in atom_indices:
+            fragment_map[ao2atom == atom] = frag_id
+    
+    # (3) get MO coefficients
+    C = molecule_td.mo_coeff            
+    nmo = C.shape[1]
+
+    # (4) compute how much each MO is localized on each fragment
+    mo_weights = np.zeros((nmo, len(fragments)))
+    for mo_idx in range(nmo):
+        coeff = C[:, mo_idx]
+        for frag_id in range(len(fragments)):
+            frag_mask = (fragment_map == frag_id)
+            mo_weights[mo_idx, frag_id] = np.sum(coeff[frag_mask]**2)
+    
+    # (5) analzye the excitations 
+    result = []
+    for state_id in state_ids:
+        X, Y = molecule_td.xy[state_id]
+        transitions = molecule_td.transitions[state_id] 
+        amps = X.flatten()                                                      # TDA approximation
+
+        frag_contributions = np.zeros((len(fragments), len(fragments)))  
+
+        for amp, (i_occ, i_virt) in zip(amps, transitions):
+            for frag_h in range(len(fragments)):
+                for frag_p in range(len(fragments)):
+                    weight = mo_weights[i_occ, frag_h] * mo_weights[i_virt, frag_p]
+                    frag_contributions[frag_h, frag_p] += (amp**2) * weight
+        
+        result.append(frag_contributions)
+    
+    return result
+        
+
 
 
 
