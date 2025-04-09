@@ -897,7 +897,7 @@ def doMullikenAnalysis(molecule_mf, molecule_mol, molecule_tdms, state_ids = [0]
 
     atom_pops, atom_charges = [], []
     S = molecule_mf.get_ovlp()
-    for i in range(state_ids):
+    for i in range(len(state_ids)):
 
         tdm = molecule_tdms[i]
         assert tdm.shape == (molecule_mol.nao, molecule_mol.nao)
