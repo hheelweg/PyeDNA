@@ -888,7 +888,7 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
         tddft_output['mull_pops'], tddft_output['mull_chrgs'] = doMullikenAnalysis(molecule_mf, molecule_mol, tdms, state_ids=state_ids)
 
     # (8) orbital participation analysis for excited states
-    #result = doOrbitalParticipationAnalysis(molecule_mol, molecule_td, fragments, state_ids=state_ids, TDA=TDA)
+    result = doOrbitalParticipationAnalysis(molecule_mol, molecule_td, fragments, state_ids=state_ids, TDA=TDA)
     tddft_output['OPA'] = None#result
 
 
@@ -933,32 +933,45 @@ def doOrbitalParticipationAnalysis(molecule_mol, molecule_td, fragments, state_i
 
     # (4) compute how much each MO is localized on each fragment
     mo_weights = np.zeros((nmo, len(fragments)))
+
+    # for mo_idx in range(nmo):
+    #     coeff = C[:, mo_idx]
+    #     for frag_id in range(len(fragments)):
+    #         frag_mask = (fragment_map == frag_id)
+    #         mo_weights[mo_idx, frag_id] = np.sum(coeff[frag_mask]**2)
+    S = molecule_td._scf.get_ovlp()  # or mf.get_ovlp() if passed separately
+
     for mo_idx in range(nmo):
         coeff = C[:, mo_idx]
         for frag_id in range(len(fragments)):
             frag_mask = (fragment_map == frag_id)
-            mo_weights[mo_idx, frag_id] = np.sum(coeff[frag_mask]**2)
-    
-    # (5) analzye the excitations 
+            coeff_frag = coeff[frag_mask]
+            S_frag = S[np.ix_(frag_mask, frag_mask)]
+            mo_weights[mo_idx, frag_id] = coeff_frag @ S_frag @ coeff_frag
+
+
+
+    # (5) analyze the excitations 
     result = []
-    for state_id in state_ids:
-        X, Y = molecule_td.xy[state_id]
-        transitions = molecule_td.transitions[state_id] 
+    # for state_id in state_ids:
+    #     X, Y = molecule_td.xy[state_id]
 
-        if TDA:
-            amps = X.flatten()                                                      # TDA approximation
-        else:
-            amps = (X + Y).flatten()                                                # full-TDDFT
+    #     transitions = molecule_td.transitions[state_id] 
 
-        frag_contributions = np.zeros((len(fragments), len(fragments)))  
+    #     if TDA:
+    #         amps = X.flatten()                                                      # TDA approximation
+    #     else:
+    #         amps = (X + Y).flatten()                                                # full-TDDFT
 
-        for amp, (i_occ, i_virt) in zip(amps, transitions):
-            for frag_h in range(len(fragments)):
-                for frag_p in range(len(fragments)):
-                    weight = mo_weights[i_occ, frag_h] * mo_weights[i_virt, frag_p]
-                    frag_contributions[frag_h, frag_p] += (amp**2) * weight
+    #     frag_contributions = np.zeros((len(fragments), len(fragments)))  
+
+    #     for amp, (i_occ, i_virt) in zip(amps, transitions):
+    #         for frag_h in range(len(fragments)):
+    #             for frag_p in range(len(fragments)):
+    #                 weight = mo_weights[i_occ, frag_h] * mo_weights[i_virt, frag_p]
+    #                 frag_contributions[frag_h, frag_p] += (amp**2) * weight
         
-        result.append(frag_contributions)
+    #     result.append(frag_contributions)
     
     return result
         
