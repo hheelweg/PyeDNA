@@ -833,7 +833,8 @@ def doDFT_geomopt(molecule, point_group = None, basis = '6-31g', xc = 'b3lyp',
 
 # do TDDFT with GPU support
 # TODO : merge with doTDDFT()
-def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict,  
+def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict,
+                fragments = None,  
                 state_ids = [0],
                 TDA = False,
                 singlet = True,
@@ -845,7 +846,7 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
     import cupy as cp
 
     print('quantum dict', quantum_dict, flush = True)
-    tddft_output = {}
+    print('fragments', fragments, flush = True)
 
     # (1) number of states
     nstates = len(state_ids)
@@ -869,15 +870,8 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
     # with the occupied orbital in the i-th excitation
     tdms = [cp.sqrt(2) * cp.asarray(occ_orbits).dot(cp.asarray(td.xy[id][0])).dot(cp.asarray(virt_orbits).T) for id in state_ids]
 
-    # (6) Mulliken analysis for excited states
-    if quantum_dict["mull_pops"] or quantum_dict["mull_chrgs"]:
-        tddft_output['mull_pops'], tddft_output['mull_chrgs'] = doMullikenAnalysis(molecule_mf, molecule_mol, tdms, state_ids=state_ids)
-
-    # (6) orbital participation analysis for excited states
-    # if orbital_participation is not None:
-    #     pass
-
-    # (7) output 
+    # (6) write 'baseline' quantities
+    tddft_output = {}
     if quantum_dict['exc']:
         tddft_output['exc'] = np.array(exc_energies)
     if quantum_dict['tdm']:
@@ -889,6 +883,15 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
     if quantum_dict['idx']:
         tddft_output['idx'] = osc_idx
 
+    # (7) Mulliken analysis for excited states
+    if quantum_dict["mull_pops"] or quantum_dict["mull_chrgs"]:
+        tddft_output['mull_pops'], tddft_output['mull_chrgs'] = doMullikenAnalysis(molecule_mf, molecule_mol, tdms, state_ids=state_ids)
+
+    # (8) orbital participation analysis for excited states
+    # if orbital_participation is not None:
+    #     pass
+
+
     # return tddft_output
     #return np.array(exc_energies), np.array([tdm.get() for tdm in tdms]), np.array(trans_dipoles), np.array(osc_strengths), osc_idx
     return tddft_output
@@ -896,7 +899,6 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
 
 # do Mulliken analysis for all (excited) states
 def doMullikenAnalysis(molecule_mf, molecule_mol, molecule_tdms, state_ids = [0]):
-    from pyscf.scf import dhf
 
     atom_pops, atom_charges = [], []
     S = molecule_mf.get_ovlp()
@@ -940,7 +942,7 @@ def launchQMdriver(molecule_no, gpu_ids):
 
 # do PySCF on molecules = [mol1, mol2] where mol are the nuclear coordinates for PySCF calculations
 # TODO : make this also without GPU-support depending on the available resources
-def doQM_gpu(molecules, output_keys, verbosity = 0):
+def doQM_gpu(molecules, output_keys, fragments = None, verbosity = 0):
 
     # verbosity = 0 : suppress all the output from the QM calculations (default)
     # verbosity = 1 : only print STDOUT of QM calculations
@@ -955,6 +957,8 @@ def doQM_gpu(molecules, output_keys, verbosity = 0):
     for i, molecule in enumerate(molecules):
         # create pyscf input for subprocess and store in cache
         dump(molecule, f"input_{i}.joblib")
+        if fragments is not None:
+            dump(fragments[i] f"fragments_{i}.joblib")
         # run subprocess on single GPU
         procs.append(launchQMdriver(i, gpu_ids = [i]))
     
