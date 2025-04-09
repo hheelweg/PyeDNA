@@ -9,7 +9,7 @@ def mulliken_pop(mol, s, dm):
     # (1) AO populations (contract density with overlap)
     ao_pops = np.einsum('ij,ji->i', dm, s).real   # shape: (nao,)
 
-    # (2) Map AO index → atom index
+    # (2) Map AO index -> atom index
     ao2atom = np.array([label[0] for label in mol.ao_labels(fmt=None)])
 
     # (3) Sum AO populations per atom
@@ -22,3 +22,10 @@ def mulliken_pop(mol, s, dm):
     atom_charges = mol.atom_charges() - atom_pops
 
     return atom_pops, atom_charges
+
+
+
+def orbital_contribution_analysis(mol, td):
+
+    # (1) Map AO index -> atom index
+    ao2atom = np.array([label[0] for label in mol.ao_labels(fmt=None)])

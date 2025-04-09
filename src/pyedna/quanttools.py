@@ -825,7 +825,17 @@ def doDFT_geomopt(molecule, point_group = None, basis = '6-31g', xc = 'b3lyp',
 
 # do TDDFT with GPU support
 # TODO : merge with doTDDFT()
-def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = False, singlet = True):
+def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, 
+                state_ids = [0],
+                TDA = False,
+                singlet = True,
+                excited_states = True,
+                transition_densities = True,
+                transition_dipoles = True,
+                oscillator_strengths = True,
+                strongest_oscillator = True,
+                orbital_participation = None
+                ):
 
     # (0) import gpu4pyscf and GPU support
     from gpu4pyscf import scf, solvent, tdscf
@@ -834,6 +844,7 @@ def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = Fal
 
     # (1) number of states
     nstates = len(state_ids)
+
     # (2) run TDDFT with or without TDA (Tamm-Dancoff approximation)
     td = molecule_mf.TDA().run(nstates = nstates) if TDA else molecule_mf.TDDFT().run(nstates = nstates)
 
@@ -844,7 +855,6 @@ def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = Fal
     # (4) compute oscillator strengths
     # (4.1) for all possible transitions
     osc_strengths = [2/3 * exc_energies[i] * np.linalg.norm(trans_dipoles[i])**2 for i in range(len(exc_energies))]
-    #osc_strengths = np.array(td.oscillator_strength())
     # (4.2) find strongest transition
     osc_idx = np.argmax(osc_strengths) if not any(np.array(osc_strengths) > 0.1) else np.argwhere(np.array(osc_strengths) > 0.1)[0][0]
 
@@ -854,7 +864,25 @@ def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = Fal
     # with the occupied orbital in the i-th excitation
     tdms = [cp.sqrt(2) * cp.asarray(occ_orbits).dot(cp.asarray(td.xy[id][0])).dot(cp.asarray(virt_orbits).T) for id in state_ids]
 
+    # (6) orbital participation analysis for excited states
+    if orbital_participation is not None:
+        pass
+
     # return numpy arrays
+    # (7) output
+    tddft_output = {}
+    if excited_states:
+        tddft_output['exc'] = np.array(exc_energies)
+    if transition_densities:
+        tddft_output['tdm'] = np.array([tdm.get() for tdm in tdms])
+    if transition_dipoles:
+        tddft_output['dip'] = np.array(trans_dipoles)
+    if oscillator_strengths:
+        tddft_output['osc'] = np.array(osc_strengths)
+    if strongest_oscillator:
+        tddft_output['idx'] = osc_idx
+
+    # return tddft_output
     return np.array(exc_energies), np.array([tdm.get() for tdm in tdms]), np.array(trans_dipoles), np.array(osc_strengths), osc_idx
 
 
@@ -864,7 +892,7 @@ def doMullikenAnalysis(molecule_mf, molecule_mol, molecule_tdms, state_ids = [0]
 
     atom_pops, atom_charges = [], []
     S = molecule_mf.get_ovlp()
-    for i, state_id in enumerate(state_ids):
+    for i in range(state_ids):
 
         tdm = molecule_tdms[i]
         assert tdm.shape == (molecule_mol.nao, molecule_mol.nao)
@@ -877,9 +905,6 @@ def doMullikenAnalysis(molecule_mf, molecule_mol, molecule_tdms, state_ids = [0]
     return atom_pops, atom_charges
 
 
-# do orbital contribution analysis
-def doOrbitalContributionAnalysis():
-    pass
 
 
 # NOTE : function that calls python ssubprocess to perform DFT/TDDFT on individual GPUs with PySCF
