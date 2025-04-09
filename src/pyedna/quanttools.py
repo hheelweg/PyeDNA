@@ -13,6 +13,7 @@ from . import fileproc as fp
 from . import const
 from . import structure
 from . import trajectory
+from . import pyscf_utils
 
 
 # convert and optimize molecule in *.cdx (ChemDraw) format into *.pdb file (unconstrained pre-optimization)
@@ -858,6 +859,7 @@ def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = Fal
 
 
 # get Mulliken populations/charges for each atom
+# TODO : maybe put this into a pyscf_utils.py module 
 def do_mulliken_pop(mol, s, dm):
     nao = mol.nao
     natm = mol.natm
@@ -880,6 +882,7 @@ def do_mulliken_pop(mol, s, dm):
     return atom_pops, atom_charges
 
 
+
 # do Mulliken analysis for all (excited) states
 def doMullikenAnalysis(molecule_mf, molecule_mol, molecule_tdms, state_ids = [0]):
     from pyscf.scf import dhf
@@ -897,6 +900,11 @@ def doMullikenAnalysis(molecule_mf, molecule_mol, molecule_tdms, state_ids = [0]
         atom_charges.append(charges)
     
     return atom_pops, atom_charges
+
+
+# do orbital contribution analysis
+def doOrbitalContributionAnalysis():
+    pass
 
 
 # NOTE : function that calls python ssubprocess to perform DFT/TDDFT on individual GPUs with PySCF
