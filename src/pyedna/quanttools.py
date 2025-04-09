@@ -888,8 +888,8 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
         tddft_output['mull_pops'], tddft_output['mull_chrgs'] = doMullikenAnalysis(molecule_mf, molecule_mol, tdms, state_ids=state_ids)
 
     # (8) orbital participation analysis for excited states
-    result = doOrbitalParticipationAnalysis(molecule_mol, molecule_td, fragments, state_ids=state_ids)
-    tddft_output['OPA'] = result
+    #result = doOrbitalParticipationAnalysis(molecule_mol, molecule_td, fragments, state_ids=state_ids, TDA=TDA)
+    tddft_output['OPA'] = None#result
 
 
     return tddft_output
@@ -912,8 +912,9 @@ def doMullikenAnalysis(molecule_mf, molecule_mol, molecule_tdms, state_ids = [0]
     
     return atom_pops, atom_charges
 
-
-def doOrbitalParticipationAnalysis(molecule_mol, molecule_td, fragments, state_ids = [0]):
+# do orbital population analysis for all (excited) states
+# TODO : provide some more comments on the quantities here
+def doOrbitalParticipationAnalysis(molecule_mol, molecule_td, fragments, state_ids = [0], TDA = False):
 
     # (1) Map AO index -> atom index
     ao2atom = np.array([label[0] for label in molecule_mol.ao_labels(fmt=None)])
@@ -943,7 +944,11 @@ def doOrbitalParticipationAnalysis(molecule_mol, molecule_td, fragments, state_i
     for state_id in state_ids:
         X, Y = molecule_td.xy[state_id]
         transitions = molecule_td.transitions[state_id] 
-        amps = X.flatten()                                                      # TDA approximation
+
+        if TDA:
+            amps = X.flatten()                                                      # TDA approximation
+        else:
+            amps = (X + Y).flatten()                                                # full-TDDFT
 
         frag_contributions = np.zeros((len(fragments), len(fragments)))  
 
