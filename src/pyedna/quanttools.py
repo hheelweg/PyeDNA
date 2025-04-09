@@ -855,8 +855,8 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
     molecule_td = molecule_mf.TDA().run(nstates = nstates) if TDA else molecule_mf.TDDFT().run(nstates = nstates)
 
     # (3) extract excitation energies and transition dipole moments
-    exc_energies = [td.e[id] for id in state_ids]
-    trans_dipoles = [td.transition_dipole()[id] for id in state_ids]
+    exc_energies = [molecule_td.e[id] for id in state_ids]
+    trans_dipoles = [molecule_td.transition_dipole()[id] for id in state_ids]
 
     # (4) compute oscillator strengths
     # (4.1) for all possible transitions
