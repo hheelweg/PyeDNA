@@ -891,7 +891,7 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
     result = doOrbitalParticipationAnalysis(molecule_mol, molecule_td, fragments, state_ids=state_ids)
     print('orbital participation analysis', flush = True)
     print(result, flush = True)
-    print(result.shape, flush = True)
+    print(len(result), result[0].shape, flush = True)
 
 
     # return tddft_output
