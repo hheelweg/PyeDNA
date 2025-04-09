@@ -958,7 +958,7 @@ def doQM_gpu(molecules, output_keys, fragments = None, verbosity = 0):
         # create pyscf input for subprocess and store in cache
         dump(molecule, f"input_{i}.joblib")
         if fragments is not None:
-            dump(fragments[i] f"fragments_{i}.joblib")
+            dump(fragments[i], f"fragments_{i}.joblib")
         # run subprocess on single GPU
         procs.append(launchQMdriver(i, gpu_ids = [i]))
     
