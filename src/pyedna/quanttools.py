@@ -858,31 +858,6 @@ def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, state_ids = [0], TDA = Fal
     return np.array(exc_energies), np.array([tdm.get() for tdm in tdms]), np.array(trans_dipoles), np.array(osc_strengths), osc_idx
 
 
-# get Mulliken populations/charges for each atom
-# TODO : maybe put this into a pyscf_utils.py module 
-def do_mulliken_pop(mol, s, dm):
-    nao = mol.nao
-    natm = mol.natm
-
-    # (1) AO populations (contract density with overlap)
-    ao_pops = np.einsum('ij,ji->i', dm, s).real   # shape: (nao,)
-
-    # (2) Map AO index → atom index
-    ao2atom = np.array([label[0] for label in mol.ao_labels(fmt=None)])
-
-    # (3) Sum AO populations per atom
-    atom_pops = np.zeros(natm)
-    for ao_idx in range(nao):
-        atom_idx = ao2atom[ao_idx]
-        atom_pops[atom_idx] += ao_pops[ao_idx]
-
-    # (4) Mulliken charges: Z - N
-    atom_charges = mol.atom_charges() - atom_pops
-
-    return atom_pops, atom_charges
-
-
-
 # do Mulliken analysis for all (excited) states
 def doMullikenAnalysis(molecule_mf, molecule_mol, molecule_tdms, state_ids = [0]):
     from pyscf.scf import dhf
@@ -894,7 +869,7 @@ def doMullikenAnalysis(molecule_mf, molecule_mol, molecule_tdms, state_ids = [0]
         tdm = molecule_tdms[i]
         assert tdm.shape == (molecule_mol.nao, molecule_mol.nao)
 
-        pop, charges = do_mulliken_pop(molecule_mol, S, tdm)
+        pop, charges = pyscf_utils.mulliken_pop(molecule_mol, S, tdm)
 
         atom_pops.append(pop)
         atom_charges.append(charges)
