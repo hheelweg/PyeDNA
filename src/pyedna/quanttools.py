@@ -825,16 +825,10 @@ def doDFT_geomopt(molecule, point_group = None, basis = '6-31g', xc = 'b3lyp',
 
 # do TDDFT with GPU support
 # TODO : merge with doTDDFT()
-def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits, 
+def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict,  
                 state_ids = [0],
                 TDA = False,
                 singlet = True,
-                excited_states = True,
-                transition_densities = True,
-                transition_dipoles = True,
-                oscillator_strengths = True,
-                strongest_oscillator = True,
-                orbital_participation = None
                 ):
 
     # (0) import gpu4pyscf and GPU support
@@ -865,21 +859,22 @@ def doTDDFT_gpu(molecule_mf, occ_orbits, virt_orbits,
     tdms = [cp.sqrt(2) * cp.asarray(occ_orbits).dot(cp.asarray(td.xy[id][0])).dot(cp.asarray(virt_orbits).T) for id in state_ids]
 
     # (6) orbital participation analysis for excited states
-    if orbital_participation is not None:
-        pass
+    # if orbital_participation is not None:
+    #     pass
 
     # return numpy arrays
     # (7) output
     tddft_output = {}
-    if excited_states:
+    
+    if quantum_dict['exc']:
         tddft_output['exc'] = np.array(exc_energies)
-    if transition_densities:
+    if quantum_dict['tdm']:
         tddft_output['tdm'] = np.array([tdm.get() for tdm in tdms])
-    if transition_dipoles:
+    if quantum_dict['dip']:
         tddft_output['dip'] = np.array(trans_dipoles)
-    if oscillator_strengths:
+    if quantum_dict['osc']:
         tddft_output['osc'] = np.array(osc_strengths)
-    if strongest_oscillator:
+    if quantum_dict['idx']:
         tddft_output['idx'] = osc_idx
 
     # return tddft_output
