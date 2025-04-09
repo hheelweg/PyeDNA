@@ -889,9 +889,7 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
 
     # (8) orbital participation analysis for excited states
     result = doOrbitalParticipationAnalysis(molecule_mol, molecule_td, fragments, state_ids=state_ids)
-    print('orbital participation analysis', flush = True)
-    print(result, flush = True)
-    print(len(result), result[0].shape, flush = True)
+    tddft_output['OPA'] = result
 
 
     return tddft_output
@@ -1013,19 +1011,18 @@ def doQM_gpu(molecules, output_keys, fragments = None, verbosity = 0):
     for i, molecule in enumerate(molecules):
         if verbosity == 0:
             continue
-        elif verbosity == 1:
+        elif verbosity == 1: # only STDOUT
             for line in procs[i].stdout:
                 print(f"[molecule {i} STDOUT] {line}", end="")
-        elif verbosity == 2:
+        elif verbosity == 2: # only STDERR
             for line in procs[i].stderr:
                 print(f"[molecule {i} STDERR] {line}", end="")
-        elif verbosity == 3:
+        elif verbosity == 3: # both STDOUT and STDERR
             for line in procs[i].stdout:
                 print(f"[molecule {i} STDOUT] {line}", end="")
             for line in procs[i].stderr:
                 print(f"[molecule {i} STDERR] {line}", end="")
 
-            
         procs[i].wait()
     
 
@@ -1034,7 +1031,6 @@ def doQM_gpu(molecules, output_keys, fragments = None, verbosity = 0):
     for i, molecule in enumerate(molecules):
         for key in output:
             output[key].append(load(f"{key}_{i}.joblib"))
-
 
     # (3) clean subprocess cache 
     utils.cleanCache()
