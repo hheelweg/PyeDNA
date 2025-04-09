@@ -894,8 +894,6 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
     print(len(result), result[0].shape, flush = True)
 
 
-    # return tddft_output
-    #return np.array(exc_energies), np.array([tdm.get() for tdm in tdms]), np.array(trans_dipoles), np.array(osc_strengths), osc_idx
     return tddft_output
 
 
@@ -1017,10 +1015,16 @@ def doQM_gpu(molecules, output_keys, fragments = None, verbosity = 0):
             continue
         elif verbosity == 1:
             for line in procs[i].stdout:
-                print(f"[molecule {i}] {line}", end="")
+                print(f"[molecule {i} STDOUT] {line}", end="")
         elif verbosity == 2:
             for line in procs[i].stderr:
-                print(f"[molecule {i}] {line}", end="")
+                print(f"[molecule {i} STDERR] {line}", end="")
+        elif verbosity == 3:
+            for line in procs[i].stdout:
+                print(f"[molecule {i} STDOUT] {line}", end="")
+            for line in procs[i].stderr:
+                print(f"[molecule {i} STDERR] {line}", end="")
+
             
         procs[i].wait()
     
