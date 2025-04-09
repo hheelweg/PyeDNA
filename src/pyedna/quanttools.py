@@ -928,7 +928,7 @@ def doOrbitalParticipationAnalysis(molecule_mol, molecule_td, fragments, state_i
     #         fragment_map[ao2atom == atom] = frag_id
     
     # (3) get MO coefficients
-    C = molecule_td.mo_coeff            
+    C = molecule_td._scf.mo_coeff            
     nmo = C.shape[1]
 
     # # (4) compute how much each MO is localized on each fragment
