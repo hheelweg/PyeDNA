@@ -689,10 +689,18 @@ def constrainedOptimization(mf, molecule_idx, freeze_atom_string):
 
 # do DFT with GPU support
 # TODO : merge with doDFT()
-def doDFT_gpu(molecule, molecule_id, basis = '6-31g', xc = 'b3lyp', 
-              density_fit = False, charge = 0, spin = 0, scf_cycles = 200, verbosity = 4, optimize_cap = False):
+def doDFT_gpu(molecule, molecule_id,  
+              basis = '6-31g',
+              xc = 'b3lyp', 
+              density_fit = False,
+              charge = 0, 
+              spin = 0, 
+              scf_cycles = 200, 
+              verbosity = 4, 
+              optimize_cap = False
+              ):
     
-    # (0) import gou4pyscf and GPU support
+    # (0) import gpu4pyscf and GPU support
     from gpu4pyscf import scf, solvent, tdscf
     from gpu4pyscf.dft import rks
     import cupy as cp
@@ -835,6 +843,8 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
     from gpu4pyscf import scf, solvent, tdscf
     from gpu4pyscf.dft import rks
     import cupy as cp
+
+    print('quantum dict', quantum_dict, flush = True)
 
     # (1) number of states
     nstates = len(state_ids)
