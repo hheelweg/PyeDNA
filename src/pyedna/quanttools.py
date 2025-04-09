@@ -917,7 +917,7 @@ def doMullikenAnalysis(molecule_mf, molecule_mol, molecule_tdms, state_ids = [0]
 def doOrbitalParticipationAnalysis(molecule_mol, molecule_td, fragments, state_ids = [0], TDA = False):
 
     # # (1) Map AO index -> atom index
-    # ao2atom = np.array([label[0] for label in molecule_mol.ao_labels(fmt=None)])
+    ao2atom = np.array([label[0] for label in molecule_mol.ao_labels(fmt=None)])
 
     # # (2) get fragment maps (fragment_map[ao_idx] = 0 if in frag0, 1 if in frag1, -1 otherwise)
     # # TODO : generalize this for more than just two fragments
@@ -927,9 +927,9 @@ def doOrbitalParticipationAnalysis(molecule_mol, molecule_td, fragments, state_i
     #     for atom in atom_indices:
     #         fragment_map[ao2atom == atom] = frag_id
     
-    # # (3) get MO coefficients
-    # C = molecule_td.mo_coeff            
-    # nmo = C.shape[1]
+    # (3) get MO coefficients
+    C = molecule_td.mo_coeff            
+    nmo = C.shape[1]
 
     # # (4) compute how much each MO is localized on each fragment
     # mo_weights = np.zeros((nmo, len(fragments)))
