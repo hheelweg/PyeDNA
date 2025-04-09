@@ -15,7 +15,7 @@ def main(molecule_id):
     # (0) load output information to see which outputs we need to store
     output_params_file = utils.findFileWithName('traj.params')
     output_keys = traj.Trajectory.parseParameters(output_params_file)
-    print('testt', output_keys, flush=True)
+    print('output keys', output_keys, flush=True)
     # intialize value dict for storing outputs
     values = {key: None for key in output_keys}
 
@@ -30,15 +30,9 @@ def main(molecule_id):
     values['mol'], values['mf'], values['occ'], values['virt'], values['orbit_enrgs'] = qm.doDFT_gpu(chromophore_conv, molecule_id, **settings_dft)
     #values['mol'], values['mf'], values['occ'], values['virt'] = qm.doDFT_geomopt(chromophore_conv, **settings_dft)
     if settings_tddft.pop("do_tddft", False):
-        #values['exc'], values['tdm'], values['dip'], values['osc'], values['idx'] = qm.doTDDFT_gpu(values['mol'], values['mf'], values['occ'], values['virt'], output_keys, **settings_tddft)
         tddft_output = qm.doTDDFT_gpu(values['mol'], values['mf'], values['occ'], values['virt'], output_keys, fragments = chromophore_fragments, **settings_tddft)
         values.update(tddft_output)
     
-    # # (3) perform Mulliken analysis if specified in traj.params
-    # if "mull_pops" in output_keys or "mull_chrgs" in output_keys:
-    #     if output_keys["mull_pops"] or output_keys["mull_chrgs"]:
-    #         values['mull_pops'], values['mull_chrgs'] = qm.doMullikenAnalysis(values['mf'], values['mol'], values['tdm'], state_ids=settings_tddft['state_ids'])
-
 
     # (3) output quantities of interest
     # TODO : might want to add that specific outputs are only possible if do_tddft is set to True

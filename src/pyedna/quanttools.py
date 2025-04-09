@@ -933,7 +933,7 @@ def launchQMdriver(molecule_no, gpu_ids):
     process = subprocess.Popen(cmd, env=env,
                                 shell=True, 
                                 stdout=subprocess.PIPE, 
-                                stderr=subprocess.STDOUT, 
+                                stderr=subprocess.PIPE, 
                                 text=True
                                 )
 
@@ -964,19 +964,16 @@ def doQM_gpu(molecules, output_keys, fragments = None, verbosity = 0):
     
     # wait for subprocesses to finish and print STDOUT or STDERR if desired
     for i, molecule in enumerate(molecules):
-        #stdout, stderr = procs[i].communicate()
-        for line in procs[i].stdout:
-            if verbosity == 1:
-                print(f"[mol {i}] {line}", end="")
-            elif verbosity == 0:
-                continue
+        if verbosity == 0:
+            continue
+        elif verbosity == 1:
+            for line in procs[i].stdout:
+                print(f"[molecule {i}] {line}", end="")
+        elif verbosity == 2:
+            for line in procs[i].stderr:
+                print(f"[molecule {i}] {line}", end="")
+            
         procs[i].wait()
-        # if verbosity == 0:
-        #     continue
-        # elif verbosity == 1:
-        #     print("STDOUT:", stdout, flush =True)
-        # elif verbosity == 2:
-        #     print("STDERR:", stderr, flush=True) 
     
 
     # (2) load and store relevant data from output of subprocesses
@@ -1249,6 +1246,7 @@ def getAbsorptionSpectrum(osc_strengths, exc_energies, sigma = 0.1, energy_units
 
 
 # function that handles energy conversion from Hartree to energy_units
+# TODO : do we need this?
 def energyConversion(out_unit):
     if out_unit not in ['cm-1', 'E_h', 'eV']:
         raise ValueError("Specify valid energy unit!")
