@@ -36,7 +36,7 @@ def main(molecule_id):
     print('orbital participation analysis (OPA)', flush = True)
     result = values['OPA']
     print(result, flush = True)
-    # print(len(result), result[0].shape, flush = True)
+    print(len(result), result[0].shape, flush = True)
     # (3) output quantities of interest
     # TODO : might want to add that specific outputs are only possible if do_tddft is set to True
     output = {key: values[key] for key, value in output_keys.items() if value}

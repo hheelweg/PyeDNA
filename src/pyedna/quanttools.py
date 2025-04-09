@@ -889,7 +889,7 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
 
     # (8) orbital participation analysis for excited states
     result = doOrbitalParticipationAnalysis(molecule_mol, molecule_td, fragments, state_ids=state_ids, TDA=TDA)
-    tddft_output['OPA'] = None#result
+    tddft_output['OPA'] = result
 
 
     return tddft_output
@@ -953,25 +953,25 @@ def doOrbitalParticipationAnalysis(molecule_mol, molecule_td, fragments, state_i
 
     # (5) analyze the excitations 
     result = []
-    # for state_id in state_ids:
-    #     X, Y = molecule_td.xy[state_id]
+    for state_id in state_ids:
+        X, Y = molecule_td.xy[state_id]
 
-    #     transitions = molecule_td.transitions[state_id] 
+        transitions = molecule_td.transitions[state_id] 
 
-    #     if TDA:
-    #         amps = X.flatten()                                                      # TDA approximation
-    #     else:
-    #         amps = (X + Y).flatten()                                                # full-TDDFT
+        if TDA:
+            amps = X.flatten()                                                      # TDA approximation
+        else:
+            amps = (X + Y).flatten()                                                # full-TDDFT
 
-    #     frag_contributions = np.zeros((len(fragments), len(fragments)))  
+        frag_contributions = np.zeros((len(fragments), len(fragments)))  
 
-    #     for amp, (i_occ, i_virt) in zip(amps, transitions):
-    #         for frag_h in range(len(fragments)):
-    #             for frag_p in range(len(fragments)):
-    #                 weight = mo_weights[i_occ, frag_h] * mo_weights[i_virt, frag_p]
-    #                 frag_contributions[frag_h, frag_p] += (amp**2) * weight
+        for amp, (i_occ, i_virt) in zip(amps, transitions):
+            for frag_h in range(len(fragments)):
+                for frag_p in range(len(fragments)):
+                    weight = mo_weights[i_occ, frag_h] * mo_weights[i_virt, frag_p]
+                    frag_contributions[frag_h, frag_p] += (amp**2) * weight
         
-    #     result.append(frag_contributions)
+        result.append(frag_contributions)
     
     return result
         
