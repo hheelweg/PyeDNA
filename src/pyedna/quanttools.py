@@ -952,13 +952,19 @@ def doQM_gpu(molecules, output_keys, verbosity = 0):
     
     # wait for subprocesses to finish and print STDOUT or STDERR if desired
     for i, molecule in enumerate(molecules):
-        stdout, stderr = procs[i].communicate()
-        if verbosity == 0:
-            continue
-        elif verbosity == 1:
-            print("STDOUT:", stdout, flush =True)
-        elif verbosity == 2:
-            print("STDERR:", stderr, flush=True) 
+        #stdout, stderr = procs[i].communicate()
+        for line in procs[i].stdout:
+            if verbosity == 1:
+                print(f"[mol {i}] {line}", end="")
+            elif verbosity == 0:
+                continue
+        procs[i].wait()
+        # if verbosity == 0:
+        #     continue
+        # elif verbosity == 1:
+        #     print("STDOUT:", stdout, flush =True)
+        # elif verbosity == 2:
+        #     print("STDERR:", stderr, flush=True) 
     
 
     # (2) load and store relevant data from output of subprocesses
