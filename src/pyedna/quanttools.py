@@ -919,35 +919,35 @@ def doOrbitalParticipationAnalysis(molecule_mol, molecule_td, fragments, state_i
     # # (1) Map AO index -> atom index
     ao2atom = np.array([label[0] for label in molecule_mol.ao_labels(fmt=None)])
 
-    # # (2) get fragment maps (fragment_map[ao_idx] = 0 if in frag0, 1 if in frag1, -1 otherwise)
-    # # TODO : generalize this for more than just two fragments
-    # assert len(fragments) == 2
-    # fragment_map = np.full(len(ao2atom), fill_value=-1)
-    # for frag_id, atom_indices in enumerate(fragments):
-    #     for atom in atom_indices:
-    #         fragment_map[ao2atom == atom] = frag_id
+    # (2) get fragment maps (fragment_map[ao_idx] = 0 if in frag0, 1 if in frag1, -1 otherwise)
+    # TODO : generalize this for more than just two fragments
+    assert len(fragments) == 2
+    fragment_map = np.full(len(ao2atom), fill_value=-1)
+    for frag_id, atom_indices in enumerate(fragments):
+        for atom in atom_indices:
+            fragment_map[ao2atom == atom] = frag_id
     
     # (3) get MO coefficients
     C = molecule_td._scf.mo_coeff            
     nmo = C.shape[1]
 
-    # # (4) compute how much each MO is localized on each fragment
-    # mo_weights = np.zeros((nmo, len(fragments)))
+    # (4) compute how much each MO is localized on each fragment
+    mo_weights = np.zeros((nmo, len(fragments)))
 
-    # for mo_idx in range(nmo):
-    #     coeff = C[:, mo_idx]
-    #     for frag_id in range(len(fragments)):
-    #         frag_mask = (fragment_map == frag_id)
-    #         mo_weights[mo_idx, frag_id] = np.sum(coeff[frag_mask]**2)
-    # S = molecule_td._scf.get_ovlp()  # or mf.get_ovlp() if passed separately
+    for mo_idx in range(nmo):
+        coeff = C[:, mo_idx]
+        for frag_id in range(len(fragments)):
+            frag_mask = (fragment_map == frag_id)
+            mo_weights[mo_idx, frag_id] = np.sum(coeff[frag_mask]**2)
+    S = molecule_td._scf.get_ovlp()  # or mf.get_ovlp() if passed separately
 
-    # for mo_idx in range(nmo):
-    #     coeff = C[:, mo_idx]
-    #     for frag_id in range(len(fragments)):
-    #         frag_mask = (fragment_map == frag_id)
-    #         coeff_frag = coeff[frag_mask]
-    #         S_frag = S[np.ix_(frag_mask, frag_mask)]
-    #         mo_weights[mo_idx, frag_id] = coeff_frag @ S_frag @ coeff_frag
+    for mo_idx in range(nmo):
+        coeff = C[:, mo_idx]
+        for frag_id in range(len(fragments)):
+            frag_mask = (fragment_map == frag_id)
+            coeff_frag = coeff[frag_mask]
+            S_frag = S[np.ix_(frag_mask, frag_mask)]
+            mo_weights[mo_idx, frag_id] = coeff_frag @ S_frag @ coeff_frag
 
 
 
