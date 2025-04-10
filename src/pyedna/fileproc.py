@@ -5,6 +5,7 @@ import os
 # from current package
 from . import trajectory as traj
 
+# class that us handling .pdb files
 class PDB_DF():
 
     def __init__(self) -> None:
@@ -114,6 +115,11 @@ class PDB_DF():
             if print_connect:
                 f.write(connect_data)
             f.write("END")
+
+
+# class that is handling ORCA input
+class ORCAInput():
+    pass
 
 
 
