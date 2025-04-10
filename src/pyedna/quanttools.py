@@ -956,7 +956,9 @@ def doOrbitalParticipationAnalysis(molecule_mol, molecule_td, fragments, state_i
     for state_id in state_ids:
         X, Y = molecule_td.xy[state_id]
 
-        transitions = molecule_td.transitions[state_id] 
+        nocc = molecule_td._scf.mol.nelec[0]  # for closed-shell RKS
+        nvirt = C.shape[1] - nocc
+        transitions = [(i, j) for i in range(nocc) for j in range(nocc, nocc + nvirt)] 
 
         if TDA:
             amps = X.flatten()                                                      # TDA approximation
