@@ -24,8 +24,3 @@ def mulliken_pop(mol, s, dm):
     return atom_pops, atom_charges
 
 
-
-def orbital_contribution_analysis(mol, td):
-
-    # (1) Map AO index -> atom index
-    ao2atom = np.array([label[0] for label in mol.ao_labels(fmt=None)])
