@@ -888,8 +888,8 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
         tddft_output['mull_pops'], tddft_output['mull_chrgs'] = doMullikenAnalysis(molecule_mf, molecule_mol, tdms, state_ids=state_ids)
 
     # (8) orbital participation analysis for excited states
-    result = doOrbitalParticipationAnalysis(molecule_mol, molecule_td, fragments, state_ids=state_ids, TDA=TDA)
-    tddft_output['OPA'] = result
+    if quantum_dict['OPA']:
+        tddft_output['OPA'] = doOrbitalParticipationAnalysis(molecule_mol, molecule_td, fragments, state_ids=state_ids, TDA=TDA)
 
 
     return tddft_output
@@ -933,11 +933,7 @@ def doOrbitalParticipationAnalysis(molecule_mol, molecule_td, fragments, state_i
 
     # (4) compute how much each MO is localized on each fragment
     mo_weights = np.zeros((nmo, len(fragments)))
-    # for mo_idx in range(nmo):
-    #     coeff = C[:, mo_idx]
-    #     for frag_id in range(len(fragments)):
-    #         frag_mask = (fragment_map == frag_id)
-    #         mo_weights[mo_idx, frag_id] = np.sum(coeff[frag_mask]**2)
+
     S = molecule_td._scf.get_ovlp()  # or mf.get_ovlp() if passed separately
     for mo_idx in range(nmo):
         coeff = C[:, mo_idx]
@@ -946,11 +942,6 @@ def doOrbitalParticipationAnalysis(molecule_mol, molecule_td, fragments, state_i
             coeff_frag = coeff[frag_mask]
             S_frag = S[np.ix_(frag_mask, frag_mask)]
             mo_weights[mo_idx, frag_id] = coeff_frag @ S_frag @ coeff_frag
-
-    # mo_weights_sum = mo_weights.sum(axis=1, keepdims=True)
-    # mo_weights_sum[mo_weights_sum == 0] = 1  # prevent divide-by-zero
-    # mo_weights /= mo_weights_sum
-
 
     # (5) analyze the excitations 
     result = []
@@ -974,6 +965,7 @@ def doOrbitalParticipationAnalysis(molecule_mol, molecule_td, fragments, state_i
                     weight = mo_weights[i_occ, frag_h] * mo_weights[i_virt, frag_p]
                     frag_contributions[frag_h, frag_p] += (amp**2) * weight
         
+        # normalize 
         total = frag_contributions.sum()
         if total > 0:
             frag_contributions /= total
@@ -981,7 +973,6 @@ def doOrbitalParticipationAnalysis(molecule_mol, molecule_td, fragments, state_i
     
     return result
         
-
 
 
 

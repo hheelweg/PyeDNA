@@ -399,6 +399,7 @@ class Trajectory():
                 "idx" :         True,
                 "mull_pops" :   False,
                 "mull_chrgs" :  False,
+                "OPA" :         False,
                 "file_qm" :     "out_quant.txt",
                 "file_class":   "out_class.txt"
 
@@ -423,7 +424,7 @@ class Trajectory():
         qm_options =    [
                         "transitions",                                                                                          # transitions
                         "coupling", "coupling_type", "excited_energies", "dipole_moments", "osc_strengths",                     # quantities per transition
-                        "abs_spec", "orbit_energies", "mulliken"                                                                # quantities per molecule (transitions = None)
+                        "abs_spec", "orbit_energies", "mulliken", "pop_analysis"                                                # quantities per molecule (transitions = None)
                         ]
 
         post_qm = {key: out.get(key) for key in qm_options}              
@@ -440,6 +441,7 @@ class Trajectory():
         qm_outs['exc'] = True if post_qm["excited_energies"] else qm_outs['exc']
         qm_outs['mull_pops'] = True if post_qm["mulliken"] else qm_outs['mull_pops']
         qm_outs['mull_chrgs'] = True if post_qm["mulliken"] else qm_outs['mull_chrgs']
+        qm_outs['OPA'] = True if post_qm["popanalysis"] else qm_outs['OPA']
         qm_outs['dip'] = True if post_qm["dipole_moments"] else qm_outs['dip']
         qm_outs['osc'] = True if post_qm["osc_strengths"] else qm_outs['osc']
         qm_outs['mol'] = True if post_qm["coupling"] else qm_outs['mol']
@@ -694,6 +696,19 @@ class Trajectory():
 
                 columns_per_molecule += [f"mulliken (state {state_id}) {fragment_name}" for state_id in self.settings_tddft["state_ids"] for fragment_name in self.fragment_names]
                 
+            # TODO : maybe parse information for orbital population analysis (OPA) in different functions
+            if "popanalysis" in self.quant_info[0]:
+
+                # parse Mulliken information
+                self.do_mulliken = True
+                self.fragment_type = self.quant_info[1]["popanalysis"][0]
+                self.fragments = self.quant_info[1]["popanalysis"][1]
+                if self.fragment_type == "molecule":
+                    self.fragment_names = self.fragments
+                elif self.fragment_type == "atom_group":
+                    self.fragment_names = [f'group {i}' for i in range(len(self.fragments))]
+
+                columns_per_molecule += [f"popanalysis (state {state_id})" for state_id in self.settings_tddft["state_ids"]]
 
 
             # construct output DataFrame
@@ -762,9 +777,7 @@ class Trajectory():
             # (3) read symmetry info
             self.molecule_information[unique_dye]["symm_info"] = fp.readParams(symmetry_info_file)
         
-
-
-            
+   
     # get MDAnalysis object of specified residues at specified time slice
     # TODO : delete this?
     def getChromophoreSnapshotOld(self, idx, molecule, molecule_name, conversion = None, cap = True):
@@ -986,7 +999,15 @@ class Trajectory():
                         # Mulliken analysis per molecule for each specified fragment
                         for fragment_name in self.chromophores_fragment_names[i]:
                             self.output_quant.loc[time_idx, (molecule_name, f"mulliken (state {state_id}) {fragment_name}")] = mulliken_out[f"{molecule_name} {state_id} {fragment_name}"]
-
+            
+            # (e) orbital population analysis (OPA) on specified fragment
+            if "popanalysis" in self.quant_info[0]:
+                # get orbital population analysis (OPA) on atom index group in self.chromophores_fragments
+                # mulliken_out = qm.getMullikenFragmentAnalysis(output_qm, self.settings_tddft['state_ids'], fragments=self.chromophores_fragments, fragment_names=self.chromophores_fragment_names, molecule_names=self.molecule_names)
+                # add to output df
+                for i, molecule_name in enumerate(self.molecule_names):
+                    for state_id in self.settings_tddft['state_ids']:
+                        self.output_quant.loc[time_idx, (molecule_name, f"popanalysis (state {state_id})")] = output_qm['OPA'][state_id]
                         
             else:
                 pass
