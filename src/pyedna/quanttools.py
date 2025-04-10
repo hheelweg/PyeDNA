@@ -933,19 +933,23 @@ def doOrbitalParticipationAnalysis(molecule_mol, molecule_td, fragments, state_i
 
     # (4) compute how much each MO is localized on each fragment
     mo_weights = np.zeros((nmo, len(fragments)))
-    for mo_idx in range(nmo):
-        coeff = C[:, mo_idx]
-        for frag_id in range(len(fragments)):
-            frag_mask = (fragment_map == frag_id)
-            mo_weights[mo_idx, frag_id] = np.sum(coeff[frag_mask]**2)
-    # S = molecule_td._scf.get_ovlp()  # or mf.get_ovlp() if passed separately
     # for mo_idx in range(nmo):
     #     coeff = C[:, mo_idx]
     #     for frag_id in range(len(fragments)):
     #         frag_mask = (fragment_map == frag_id)
-    #         coeff_frag = coeff[frag_mask]
-    #         S_frag = S[np.ix_(frag_mask, frag_mask)]
-    #         mo_weights[mo_idx, frag_id] = coeff_frag @ S_frag @ coeff_frag
+    #         mo_weights[mo_idx, frag_id] = np.sum(coeff[frag_mask]**2)
+    S = molecule_td._scf.get_ovlp()  # or mf.get_ovlp() if passed separately
+    for mo_idx in range(nmo):
+        coeff = C[:, mo_idx]
+        for frag_id in range(len(fragments)):
+            frag_mask = (fragment_map == frag_id)
+            coeff_frag = coeff[frag_mask]
+            S_frag = S[np.ix_(frag_mask, frag_mask)]
+            mo_weights[mo_idx, frag_id] = coeff_frag @ S_frag @ coeff_frag
+
+    mo_weights_sum = mo_weights.sum(axis=1, keepdims=True)
+    mo_weights_sum[mo_weights_sum == 0] = 1  # prevent divide-by-zero
+    mo_weights /= mo_weights_sum
 
 
     # (5) analyze the excitations 
