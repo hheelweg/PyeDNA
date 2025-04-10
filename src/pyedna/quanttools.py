@@ -947,9 +947,9 @@ def doOrbitalParticipationAnalysis(molecule_mol, molecule_td, fragments, state_i
             S_frag = S[np.ix_(frag_mask, frag_mask)]
             mo_weights[mo_idx, frag_id] = coeff_frag @ S_frag @ coeff_frag
 
-    mo_weights_sum = mo_weights.sum(axis=1, keepdims=True)
-    mo_weights_sum[mo_weights_sum == 0] = 1  # prevent divide-by-zero
-    mo_weights /= mo_weights_sum
+    # mo_weights_sum = mo_weights.sum(axis=1, keepdims=True)
+    # mo_weights_sum[mo_weights_sum == 0] = 1  # prevent divide-by-zero
+    # mo_weights /= mo_weights_sum
 
 
     # (5) analyze the excitations 
@@ -974,6 +974,9 @@ def doOrbitalParticipationAnalysis(molecule_mol, molecule_td, fragments, state_i
                     weight = mo_weights[i_occ, frag_h] * mo_weights[i_virt, frag_p]
                     frag_contributions[frag_h, frag_p] += (amp**2) * weight
         
+        total = frag_contributions.sum()
+        if total > 0:
+            frag_contributions /= total
         result.append(frag_contributions)
     
     return result
