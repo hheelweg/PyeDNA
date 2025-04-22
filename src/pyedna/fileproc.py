@@ -151,7 +151,7 @@ class ORCAInput():
                 self.write_solvent(f)
             
             # write parallization instructions
-            f.write("%pal nprocs 8 end \n")
+            f.write("%pal nprocs 48 end \n")
             f.write("\n")
 
             # write coordinates
