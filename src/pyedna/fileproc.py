@@ -120,22 +120,77 @@ class PDB_DF():
 # class that is handling ORCA input
 class ORCAInput():
     
-    def __init__(self, file_name, charge, multiplicity):
+    def __init__(self, file_name, pyscf_mol, settings_dft, do_tddft = True, do_geom = True, implicit_sol = True):
         self.file_name = file_name
-        self.charge = charge
-        self.multiplicity = multiplicity
+        self.pyscf_mol = pyscf_mol
+        self.settings_dft = settings_dft
+        # specify boolean options
+        self.do_tddft = do_tddft
+        self.do_geom = do_geom
+        self.implicit_sol = implicit_sol
 
-    def write(self, pyscf_mol):
+    # write ORCA input script
+    def write(self):
+
         with open(self.file_name, "w") as f:
 
+            # write methods and options
+            self.write_methods(f)
+
+            # write TDDFT
+            if self.do_tddft:
+                self.write_tddft(f)
+
+            # write geometry optimization
+            if self.do_geom:
+                self.write_geom(f)
+
+            # write implicit solvent
+            if self.implicit_sol:
+                self.write_solvent(f)
+            
+            # write parallization instructions
+            f.write("%pal nprocs 8 end \n")
+            f.write("\n")
+
             # write coordinates
-            self.write_coords_from_pyscf(pyscf_mol, f)
+            self.write_coords_from_pyscf(f)
+
+    def write_methods(self, f):
+        self.basis = self.settings_dft["basis"].upper()
+        self.xc = self.settings_dft["xc"].upper()
+        # information for TDDFT and geometry optimization
+        if self.do_tddft:
+            f.write(f"! {self.xc} {self.basis} TightSCF TDDFT TightOpt CPCM\n")
+        else:
+            f.write(f"! {self.xc} {self.basis} TightSCF CPCM\n")
+        f.write("\n")
+    
+
+    def write_tddft(self, f, nroots = 5, root = 1):
+        f.write("% tddft\n")
+        f.write(f"  nroots {nroots}\n")
+        f.write(f"  root {root}\n")
+        f.write("end\n")
+        f.write("\n")
+
+    def write_geom(self, f):
+        f.write("% geom\n")
+        f.write(f"  calc_hess false\n")
+        f.write("end\n")
+        f.write("\n")
+
+    def write_solvent(self, f, epsilon = 78.4):
+        f.write("% cpcm\n")
+        f.write(f"  epsilon {epsilon}\n")
+        f.write("end\n")
+        f.write("\n")
 
     # write coordinates
-    def write_coords_from_pyscf(self, pyscf_mol, f):
-        f.write(f"* xyz {self.charge} {self.multiplicity}\n")
-        for i, coord in enumerate(pyscf_mol.atom_coords()):
-            symbol = pyscf_mol.atom_symbol(i)
+    def write_coords_from_pyscf(self, f):
+        f.write(f"* xyz {self.pyscf_mol.charge} {self.pyscf_mol.multiplicity}\n")
+        for i, coord in enumerate(self.pyscf_mol.atom_coords()):
+            symbol = self.pyscf_mol.atom_symbol(i)
             f.write(f"{symbol}    {coord[0]:.4f}   {coord[1]:.4f}   {coord[2]:.4f}\n")
         f.write("*\n")
             

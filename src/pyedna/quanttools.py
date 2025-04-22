@@ -690,11 +690,10 @@ def constrainedOptimization(mf, molecule_idx, freeze_atom_string):
 
 def getMolPySCF(molecule,  
                 basis = '6-31g',
-                xc = 'b3lyp', 
-                density_fit = False,
                 charge = 0, 
                 spin = 0
                 ):
+    # mol object
     mol = gto.M(atom = molecule,
                 basis = basis,
                 charge = charge,
