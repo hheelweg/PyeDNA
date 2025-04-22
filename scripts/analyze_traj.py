@@ -1,6 +1,5 @@
 import torch
 import numpy as np
-from pyscf import gto, lib
 from joblib import dump, load
 import pyedna
 

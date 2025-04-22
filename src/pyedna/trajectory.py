@@ -1013,7 +1013,7 @@ class Trajectory():
 
     
     # TODO : delelte this (this is a test function only)
-    def testORCA(self, settings_dft):
+    def testORCA(self):
         
         # get some test snapshot of chromophore
         idx = 10
@@ -1031,12 +1031,11 @@ class Trajectory():
             
             # pyscf mol object
             pyscf_mol = qm.getMolPySCF(chromophore_conv,
-                                       charge=settings_dft["charge"],
-                                       spin=settings_dft["spin"]
+                                       charge=self.settings_dft["charge"],
+                                       spin=self.settings_dft["spin"]
                                        )
             # convert to ORCA input
-            print(pyscf_mol.atom)
-            orca = fp.ORCAInput('orca_test.in', charge = pyscf_mol.charge, multiplicity = pyscf_mol.spin + 1)
+            orca = fp.ORCAInput('orca_test.inp', charge = pyscf_mol.charge, multiplicity = pyscf_mol.spin + 1)
             orca.write(pyscf_mol)
 
 
