@@ -197,15 +197,15 @@ class ORCAInput():
             
     
     def run(self):
-        output_file = os.path.splitext(self.file_name)[0] + ".out"
 
-        cmd = f"orca {self.file_name} > {output_file}"
+        cmd = f"orca {self.file_name} > test.out"
         process = subprocess.Popen(cmd,
                                 shell=True, 
                                 stdout=subprocess.PIPE, 
                                 stderr=subprocess.PIPE, 
                                 text=True
                                 )
+        process.wait()
     
 
 
