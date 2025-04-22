@@ -153,6 +153,8 @@ class ORCAInput():
             # write parallization instructions
             f.write("%pal nprocs 8 end \n")
             f.write("\n")
+            f.write("%scf MPI false end \n")
+            f.write("\n")
 
             # write coordinates
             self.write_coords_from_pyscf(f)
@@ -198,39 +200,14 @@ class ORCAInput():
     
     def run(self):
         orca_home = os.getenv("ORCAHOME")
-        if not orca_home:
-            raise EnvironmentError("ORCAHOME environment variable is not set.")
-
-        orca_bin = os.path.join(orca_home, "orca")
-        if not os.path.isfile(orca_bin):
-            raise FileNotFoundError(f"ORCA binary not found at: {orca_bin}")
-
-        output_file = "test.out"
-        cmd = [orca_bin, self.file_name]
-
-        # Ensure OpenMP mode
-        env = os.environ.copy()
-        env["OMP_NUM_THREADS"] = "8"
-        env["RSH_COMMAND"] = "ssh"
-        env["LD_LIBRARY_PATH"] = f"{orca_home}:{env.get('LD_LIBRARY_PATH', '')}"
-        env["PATH"] = f"{orca_home}:{env.get('PATH', '')}"
-
-        # Run ORCA
-        with open(output_file, "w") as out_f:
-            process = subprocess.Popen(
-                cmd,
-                stdout=out_f,
-                stderr=subprocess.PIPE,
-                text=True,
-                env=env
-            )
-            _, stderr = process.communicate()
-
-        if process.returncode != 0:
-            print("ORCA run failed. STDERR:")
-            print(stderr)
-        else:
-            print(f"ORCA run completed. Output written to {output_file}")
+        cmd = f"{os.path.join(orca_home, 'orca')} {self.file_name} > test.out"
+        process = subprocess.Popen(cmd,
+                                shell=True, 
+                                stdout=subprocess.PIPE, 
+                                stderr=subprocess.PIPE, 
+                                text=True
+                                )
+        process.wait()
     
 
 
