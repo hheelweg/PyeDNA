@@ -198,14 +198,32 @@ class ORCAInput():
     
     def run(self):
         orca_home = os.getenv("ORCAHOME")
-        cmd = f"{os.path.join(orca_home, 'orca')} {self.file_name} > test.out"
-        process = subprocess.Popen(cmd,
-                                shell=True, 
-                                stdout=subprocess.PIPE, 
-                                stderr=subprocess.PIPE, 
-                                text=True
-                                )
-        process.wait()
+        if not orca_home:
+            raise EnvironmentError("ORCAHOME environment variable is not set.")
+
+        orca_bin = os.path.join(orca_home, "orca")
+        if not os.path.isfile(orca_bin):
+            raise FileNotFoundError(f"ORCA binary not found at: {orca_bin}")
+
+        # Command as list (no shell=True)
+        cmd = [orca_bin, self.file_name]
+
+        # Include necessary environment variables
+        env = os.environ.copy()
+        env["PATH"] = f"{orca_home}:{env.get('PATH', '')}"
+        env["LD_LIBRARY_PATH"] = f"{orca_home}:{env.get('LD_LIBRARY_PATH', '')}"
+        env["RSH_COMMAND"] = "ssh"
+
+        # Launch process
+        with open("test.out", "w") as out_file:
+            process = subprocess.Popen(cmd, stdout=out_file, stderr=subprocess.PIPE, text=True, env=env)
+            _, stderr = process.communicate()
+
+        if process.returncode != 0:
+            print("ORCA run failed. STDERR:")
+            print(stderr)
+        else:
+            print("ORCA run completed successfully.")
     
 
 
