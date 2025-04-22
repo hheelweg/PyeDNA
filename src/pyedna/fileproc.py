@@ -198,9 +198,7 @@ class ORCAInput():
     
     def run(self):
         orca_home = os.getenv("ORCAHOME")
-        print(orca_home)
-        print(os.path.join(orca_home, 'orca'))
-        cmd = f"{os.path.join(orca_home, 'orca')} {self.file_name} > test.out"
+        cmd = f"mpirun -np 8 {os.path.join(orca_home, 'orca_startup_mpi')} {self.file_name} > test.out"
         process = subprocess.Popen(cmd,
                                 shell=True, 
                                 stdout=subprocess.PIPE, 
