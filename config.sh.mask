@@ -7,6 +7,10 @@ source activate [env-name]
 export AMBERHOME="$/path/to/amber24"
 export PATH="$AMBERHOME/bin:$PATH"
 
+# Add path to ORCA 
+export ORCAHOME="$/path/to/orca"
+export PATH="$ORCAHOME:$PATH"
+
 # Add path to PyeDNA and define PyeDNA home
 export PYTHONPATH=$PYTHONPATH:/path/to/PyeDNA/scripts
 export PYEDNA_HOME="/path/to/PyeDNA"
