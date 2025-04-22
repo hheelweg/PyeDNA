@@ -28,6 +28,7 @@ fi
 
 # Force unbuffered output
 export PYTHONUNBUFFERED=1
+mpirun --version
 
 # Run ORCA vibrational analysis calculation
 python -m vibrational
