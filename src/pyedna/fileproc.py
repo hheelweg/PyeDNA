@@ -153,8 +153,6 @@ class ORCAInput():
             # write parallization instructions
             f.write("%pal nprocs 8 end \n")
             f.write("\n")
-            f.write("%scf MPI false end \n")
-            f.write("\n")
 
             # write coordinates
             self.write_coords_from_pyscf(f)
@@ -200,14 +198,41 @@ class ORCAInput():
     
     def run(self):
         orca_home = os.getenv("ORCAHOME")
-        cmd = f"{os.path.join(orca_home, 'orca')} {self.file_name} > test.out"
-        process = subprocess.Popen(cmd,
-                                shell=True, 
-                                stdout=subprocess.PIPE, 
-                                stderr=subprocess.PIPE, 
-                                text=True
-                                )
-        process.wait()
+        if not orca_home:
+            raise EnvironmentError("ORCAHOME environment variable is not set.")
+
+        orca_bin = os.path.join(orca_home, "orca")
+        if not os.path.isfile(orca_bin):
+            raise FileNotFoundError(f"ORCA binary not found at: {orca_bin}")
+
+        # Set up environment
+        env = os.environ.copy()
+        env["PATH"] = f"{orca_home}:{env.get('PATH', '')}"
+        env["LD_LIBRARY_PATH"] = f"{orca_home}:{env.get('LD_LIBRARY_PATH', '')}"
+        env["RSH_COMMAND"] = "ssh"  # required for parallel startup
+        env["OMP_NUM_THREADS"] = str(8)  # match %pal nprocs 8
+
+        # Optional: dynamically name output file
+        outfile = os.path.splitext(self.file_name)[0] + ".out"
+
+        # Construct ORCA command
+        cmd = [orca_bin, self.file_name]
+
+        # Launch ORCA
+        with open(outfile, "w") as out_f:
+            process = subprocess.Popen(
+                cmd,
+                stdout=out_f,
+                stderr=subprocess.PIPE,
+                text=True,
+                env=env
+            )
+            _, stderr = process.communicate()
+
+        if process.returncode != 0:
+            print(f"ORCA run failed! STDERR:\n{stderr}")
+        else:
+            print(f"ORCA run completed successfully. Output written to {outfile}")
     
 
 
