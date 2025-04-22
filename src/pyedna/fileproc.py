@@ -199,7 +199,7 @@ class ORCAInput():
     def run(self):
         output_file = os.path.splitext(self.file_name)[0] + ".out"
 
-        cmd = f"orca {qm_driver_module} {molecule_no}"
+        cmd = f"orca {self.file_name} > {output_file}"
         process = subprocess.Popen(cmd, env=env,
                                 shell=True, 
                                 stdout=subprocess.PIPE, 
