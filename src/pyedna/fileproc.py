@@ -136,7 +136,7 @@ class ORCAInput():
             f.write(f"{symbol}    {coord[0]:.4f}   {coord[1]:.4f}   {coord[2]:.4f}\n")
         f.write("*\n")
             
-
+    
     
 
 
