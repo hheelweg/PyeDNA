@@ -150,9 +150,9 @@ class ORCAInput():
             if self.implicit_sol:
                 self.write_solvent(f)
             
-            # write parallization instructions
-            f.write("%pal nprocs 8 end \n")
-            f.write("\n")
+            # # write parallization instructions
+            # f.write("%pal nprocs 8 end \n")
+            # f.write("\n")
 
             # write coordinates
             self.write_coords_from_pyscf(f)
@@ -198,7 +198,7 @@ class ORCAInput():
     
     def run(self):
         orca_home = os.getenv("ORCAHOME")
-        cmd = f"mpirun -np 8 {os.path.join(orca_home, 'orca_startup_mpi')} {self.file_name} > test.out"
+        cmd = f"{os.path.join(orca_home, 'orca')} {self.file_name} > test.out"
         process = subprocess.Popen(cmd,
                                 shell=True, 
                                 stdout=subprocess.PIPE, 
