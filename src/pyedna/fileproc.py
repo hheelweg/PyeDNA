@@ -170,7 +170,7 @@ class ORCAInput():
 
     def write_tddft(self, f, nroots = 5, root = 1):
         f.write("%tddft\n")
-        #f.write(f"  NRoots {nroots}\n")
+        f.write(f"  NRoots {nroots}\n")
         f.write(f"  IRoot {root}\n")
         f.write("end\n")
         f.write("\n")
@@ -197,8 +197,10 @@ class ORCAInput():
             
     
     def run(self):
-
-        cmd = f"orca {self.file_name} > test.out"
+        orca_home = os.getenv("ORCAHOME")
+        print(orca_home)
+        print(os.path.join(orca_home, 'orca'))
+        cmd = f"{os.path.join(orca_home, 'orca')} {self.file_name} > test.out"
         process = subprocess.Popen(cmd,
                                 shell=True, 
                                 stdout=subprocess.PIPE, 
