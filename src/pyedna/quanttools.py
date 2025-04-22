@@ -687,6 +687,20 @@ def constrainedOptimization(mf, molecule_idx, freeze_atom_string):
 
     return molecule_eq
 
+
+def getMolPySCF(molecule,  
+                basis = '6-31g',
+                xc = 'b3lyp', 
+                density_fit = False,
+                charge = 0, 
+                spin = 0
+                ):
+    mol = gto.M(atom = molecule,
+                basis = basis,
+                charge = charge,
+                spin = spin)
+    return mol
+
 # do DFT with GPU support
 # TODO : merge with doDFT()
 def doDFT_gpu(molecule, molecule_id,  

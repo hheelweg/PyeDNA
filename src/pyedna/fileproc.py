@@ -127,12 +127,15 @@ class ORCAInput():
 
     def write(self, pyscf_mol):
         with open(self.file_name, "w") as f:
+
+            # write coordinates
             self.write_coords_from_pyscf(pyscf_mol, f)
 
+    # write coordinates
     def write_coords_from_pyscf(self, pyscf_mol, f):
         f.write(f"* xyz {self.charge} {self.multiplicity}\n")
-        for atom_idx, coord in zip(pyscf_mol.atom_charges(), pyscf_mol.atom_coords()):
-            symbol = pyscf_mol.atom_symbol(atom_idx)
+        for i, coord in enumerate(pyscf_mol.atom_coords()):
+            symbol = pyscf_mol.atom_symbol(i)
             f.write(f"{symbol}    {coord[0]:.4f}   {coord[1]:.4f}   {coord[2]:.4f}\n")
         f.write("*\n")
             

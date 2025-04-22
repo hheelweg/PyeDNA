@@ -1011,6 +1011,34 @@ class Trajectory():
             else:
                 pass
 
+    
+    # TODO : delelte this (this is a test function only)
+    def testORCA(self, settings_dft):
+        
+        # get some test snapshot of chromophore
+        idx = 10
+        self.chromophores = []
+        self.chromophores_conv = []
+        self.initOutput(self.time_slice[1]  - self.time_slice[0])
+        for i, molecule in enumerate(self.molecules):
+            chromophore, chromophore_conv, _, _ = self.getChromophoreSnapshot(time_idx = idx,
+                                                                        molecule = molecule,
+                                                                        molecule_constituents = self.molecule_constituents[i],
+                                                                        fragments = [self.fragment_type, self.fragments],
+                                                                        enforce_symmetry = False,
+                                                                        conversion = 'pyscf'
+                                                                        )
+            
+            # pyscf mol object
+            pyscf_mol = qm.getMolPySCF(chromophore_conv,
+                                       charge=settings_dft["charge"],
+                                       spin=settings_dft["spin"]
+                                       )
+            # convert to ORCA input
+            print(pyscf_mol.atom)
+            orca = fp.ORCAInput('orca_test.in', charge = pyscf_mol.charge, multiplicity = pyscf_mol.spin + 1)
+            orca.write(pyscf_mol)
+
 
 
     # TODO : this function needs to be updated a lot and more functionalities implemented
