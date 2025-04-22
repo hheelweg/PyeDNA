@@ -1,8 +1,10 @@
 #!/bin/bash
-#SBATCH --partition=normal              # nromal partition
-#SBATCH --cpus-per-task=48              # Request 48 CPU cores
-#SBATCH --job-name=orca                 # Job name
-#SBATCH --output=orca.log               # Output file
+#SBATCH --partition=gpu             # GPU partition
+#SBATCH --nodelist=gpu001           # Run on GPU node gpu001
+#SBATCH --gres=gpu:2                # Request 2 GPU
+#SBATCH --cpus-per-task=48          # Request 48 CPU cores
+#SBATCH --job-name=orca             # Job name
+#SBATCH --output=orca.log           # Output file
 
 # USAGE:
 # sbatch this_script.sh
