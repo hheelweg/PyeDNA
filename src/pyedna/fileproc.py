@@ -205,25 +205,32 @@ class ORCAInput():
         if not os.path.isfile(orca_bin):
             raise FileNotFoundError(f"ORCA binary not found at: {orca_bin}")
 
-        # Command as list (no shell=True)
+        output_file = "test.out"
         cmd = [orca_bin, self.file_name]
 
-        # Include necessary environment variables
+        # Ensure OpenMP mode
         env = os.environ.copy()
-        env["PATH"] = f"{orca_home}:{env.get('PATH', '')}"
-        env["LD_LIBRARY_PATH"] = f"{orca_home}:{env.get('LD_LIBRARY_PATH', '')}"
+        env["OMP_NUM_THREADS"] = "8"
         env["RSH_COMMAND"] = "ssh"
+        env["LD_LIBRARY_PATH"] = f"{orca_home}:{env.get('LD_LIBRARY_PATH', '')}"
+        env["PATH"] = f"{orca_home}:{env.get('PATH', '')}"
 
-        # Launch process
-        with open("test.out", "w") as out_file:
-            process = subprocess.Popen(cmd, stdout=out_file, stderr=subprocess.PIPE, text=True, env=env)
+        # Run ORCA
+        with open(output_file, "w") as out_f:
+            process = subprocess.Popen(
+                cmd,
+                stdout=out_f,
+                stderr=subprocess.PIPE,
+                text=True,
+                env=env
+            )
             _, stderr = process.communicate()
 
         if process.returncode != 0:
             print("ORCA run failed. STDERR:")
             print(stderr)
         else:
-            print("ORCA run completed successfully.")
+            print(f"ORCA run completed. Output written to {output_file}")
     
 
 
