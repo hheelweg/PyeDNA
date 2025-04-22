@@ -169,20 +169,20 @@ class ORCAInput():
     
 
     def write_tddft(self, f, nroots = 5, root = 1):
-        f.write("%tddft\n")
+        f.write("%cis\n")
         f.write(f"  nroots {nroots}\n")
         f.write(f"  root {root}\n")
         f.write("end\n")
         f.write("\n")
 
     def write_geom(self, f):
-        f.write("% geom\n")
+        f.write("%geom\n")
         f.write(f"  calc_hess false\n")
         f.write("end\n")
         f.write("\n")
 
     def write_solvent(self, f, epsilon = 78.4):
-        f.write("% cpcm\n")
+        f.write("%cpcm\n")
         f.write(f"  epsilon {epsilon}\n")
         f.write("end\n")
         f.write("\n")
