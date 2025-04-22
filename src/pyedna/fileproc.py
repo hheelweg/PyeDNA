@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import os
+import subprocess
 
 # from current package
 from . import trajectory as traj
@@ -195,6 +196,19 @@ class ORCAInput():
         f.write("*\n")
             
     
+    def run(self):
+        output_file = os.path.splitext(self.file_name)[0] + ".out"
+
+        try:
+            result = subprocess.run(
+                ['orca', self.file_name],
+                stdout=open(output_file, "w"),
+                stderr=subprocess.STDOUT,
+                check=True
+            )
+            print(f"ORCA run completed. Output saved to: {output_file}")
+        except subprocess.CalledProcessError as e:
+            print(f"ORCA run failed. See {output_file} for details.")
     
 
 

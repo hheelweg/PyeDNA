@@ -325,7 +325,7 @@ class Trajectory():
         self.nc = trajectory_data[1]                                    # load *.nc from Amber MD simulation
         self.out = trajectory_data[2]                                   # load *.out file
         # make sure *.nc file is NetCDF3 (as required for MDAnalysis) and not NetCDF4 (as created by Amber)
-        self.convertTrajectory()
+        # self.convertTrajectory()
 
         # load MDSimulation object which contains all information
         warnings.filterwarnings("ignore", message="Reader has no dt information")
@@ -1037,6 +1037,7 @@ class Trajectory():
             # convert to ORCA input
             orca = fp.ORCAInput('orca_test.inp', pyscf_mol=pyscf_mol, settings_dft = self.settings_dft, do_tddft = True)
             orca.write()
+            orca.run()
 
             # execute file
 
