@@ -150,9 +150,9 @@ class ORCAInput():
             if self.implicit_sol:
                 self.write_solvent(f)
             
-            # # write parallization instructions
-            # f.write("%pal nprocs 8 end \n")
-            # f.write("\n")
+            # write parallization instructions
+            f.write("%pal nprocs 8 end \n")
+            f.write("\n")
 
             # write coordinates
             self.write_coords_from_pyscf(f)
