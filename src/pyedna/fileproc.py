@@ -198,31 +198,33 @@ class ORCAInput():
     
     def run(self):
         orca_home = os.getenv("ORCAHOME")
-        mpi_home = os.getenv("MPIHOME", os.path.expanduser("~/opt/openmpi-4.1.6"))
+        mpi_home = os.getenv("MPIHOME")
 
-        if not os.path.exists(os.path.join(mpi_home, "bin", "mpirun")):
-            raise EnvironmentError("OpenMPI 4.1.6 not found. Please install or set MPIHOME.")
+        if not orca_home:
+            raise EnvironmentError("ORCAHOME is not set.")
+        if not mpi_home:
+            raise EnvironmentError("MPIHOME is not set.")
 
         orca_bin = os.path.join(orca_home, "orca")
         if not os.path.isfile(orca_bin):
-            raise FileNotFoundError(f"ORCA binary not found at: {orca_bin}")
+            raise FileNotFoundError(f"ORCA binary not found: {orca_bin}")
 
         env = os.environ.copy()
         env["PATH"] = f"{os.path.join(mpi_home, 'bin')}:{orca_home}:{env.get('PATH', '')}"
         env["LD_LIBRARY_PATH"] = f"{os.path.join(mpi_home, 'lib')}:{orca_home}:{env.get('LD_LIBRARY_PATH', '')}"
         env["RSH_COMMAND"] = "ssh"
-        env["OMP_NUM_THREADS"] = "8"
+        env["OMP_NUM_THREADS"] = "48"  # match SLURM cpus-per-task
 
-        outfile = os.path.splitext(self.file_name)[0] + ".out"
-        cmd = f'"{orca_bin}" "{self.file_name}" > "{outfile}"'
+        inp_file = self.file_name
+        out_file = os.path.splitext(inp_file)[0] + ".out"
 
-        process = subprocess.Popen(cmd, shell=True, env=env)
-        process.wait()
+        print(f"Running ORCA: {orca_bin} {inp_file}")
+        result = subprocess.run([orca_bin, inp_file], env=env)
 
-        if process.returncode != 0:
-            print(f"ORCA run failed with return code {process.returncode}")
+        if result.returncode != 0:
+            raise RuntimeError(f"ORCA run failed with code {result.returncode}")
         else:
-            print(f"ORCA run completed successfully. Output written to {outfile}")
+            print(f"ORCA finished successfully. Output: {out_file}")
     
 
 
