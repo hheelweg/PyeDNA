@@ -169,9 +169,9 @@ class ORCAInput():
     
 
     def write_tddft(self, f, nroots = 5, root = 1):
-        f.write("%cis\n")
-        f.write(f"  NRoots {nroots}\n")
-        f.write(f"  Root {root}\n")
+        f.write("%tddft\n")
+        #f.write(f"  NRoots {nroots}\n")
+        f.write(f"  IRoot {root}\n")
         f.write("end\n")
         f.write("\n")
 
