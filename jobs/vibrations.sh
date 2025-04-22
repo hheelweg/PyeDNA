@@ -2,7 +2,7 @@
 #SBATCH --partition=gpu             # GPU partition
 #SBATCH --nodelist=gpu001           # Run on GPU node gpu001
 #SBATCH --gres=gpu:2                # Request 2 GPU
-#SBATCH --cpus-per-task=48          # Request 48 CPU cores
+#SBATCH --cpus-per-task=8           # Request 48 CPU cores
 #SBATCH --job-name=orca             # Job name
 #SBATCH --output=orca.log           # Output file
 
@@ -28,7 +28,6 @@ fi
 
 # Force unbuffered output
 export PYTHONUNBUFFERED=1
-mpirun --version
 
 # Run ORCA vibrational analysis calculation
 python -m vibrational

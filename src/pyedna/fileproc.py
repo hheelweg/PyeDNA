@@ -151,7 +151,7 @@ class ORCAInput():
                 self.write_solvent(f)
             
             # write parallization instructions
-            f.write("%pal nprocs 48 end \n")
+            f.write("%pal nprocs 8 end \n")
             f.write("\n")
 
             # write coordinates
@@ -213,7 +213,7 @@ class ORCAInput():
         env["PATH"] = f"{os.path.join(mpi_home, 'bin')}:{orca_home}:{env.get('PATH', '')}"
         env["LD_LIBRARY_PATH"] = f"{os.path.join(mpi_home, 'lib')}:{orca_home}:{env.get('LD_LIBRARY_PATH', '')}"
         env["RSH_COMMAND"] = "ssh"
-        env["OMP_NUM_THREADS"] = "48"  # match SLURM cpus-per-task
+        env["OMP_NUM_THREADS"] = "8"  # match SLURM cpus-per-task
 
         inp_file = self.file_name
         out_file = os.path.splitext(inp_file)[0] + ".out"
