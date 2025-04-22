@@ -214,14 +214,13 @@ class ORCAInput():
         env["OMP_NUM_THREADS"] = "8"
 
         outfile = os.path.splitext(self.file_name)[0] + ".out"
-        cmd = [orca_bin, self.file_name]
+        cmd = f'"{orca_bin}" "{self.file_name}" > "{outfile}"'
 
-        with open(outfile, "w") as out_f:
-            process = subprocess.Popen(cmd, stdout=out_f, stderr=subprocess.PIPE, text=True, env=env)
-            _, stderr = process.communicate()
+        process = subprocess.Popen(cmd, shell=True, env=env)
+        process.wait()
 
         if process.returncode != 0:
-            print(f"ORCA run failed. STDERR:\n{stderr}")
+            print(f"ORCA run failed with return code {process.returncode}")
         else:
             print(f"ORCA run completed successfully. Output written to {outfile}")
     
