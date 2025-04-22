@@ -219,7 +219,7 @@ class ORCAInput():
         out_file = os.path.splitext(inp_file)[0] + ".out"
 
         print(f"Running ORCA: {orca_bin} {inp_file}")
-        result = subprocess.run([orca_bin, inp_file], env=env)
+        result = subprocess.run([orca_bin, inp_file, "--oversubscribe"], env=env)
 
         if result.returncode != 0:
             raise RuntimeError(f"ORCA run failed with code {result.returncode}")
