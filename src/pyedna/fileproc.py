@@ -162,7 +162,7 @@ class ORCAInput():
         self.xc = self.settings_dft["xc"].upper()
         # information for TDDFT and geometry optimization
         if self.do_tddft:
-            f.write(f"! {self.xc} {self.basis} TightSCF TDDFT TightOpt CPCM\n")
+            f.write(f"! {self.xc} {self.basis} TightSCF TightOpt CPCM\n")
         else:
             f.write(f"! {self.xc} {self.basis} TightSCF CPCM\n")
         f.write("\n")
