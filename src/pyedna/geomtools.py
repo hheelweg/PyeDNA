@@ -108,6 +108,42 @@ def enforceSymmetry(mda_u, axis_atom_names, support_name = 'N1', tol = 0.1):
     return new_universe
 
 
+def getDistance(mda_u, distance_type):
+    # extract infromation from distance_type list
+    if distance_type[0] == 'residues':
+        point_1 = mda_u.select_atoms(f"resid {distance_type[1]}").center_of_geometry()
+        point_2 = mda_u.select_atoms(f"resid {distance_type[2]}").center_of_geometry()
+    else:
+        raise NotImplementedError("Currently only distances between centers of geometry for different residues implemented!")
+    
+    # compute distance
+    distance = np.linalg.norm(point_1-point_2)
+    return distance
+
+
+def getAxisAngle(mda_u, axis_angle_type):
+
+    # (1) compute axis vectors
+    axis_vectors = []
+    for i in range(2):
+        # atom 1
+        atom1_info = axis_angle_type[i][0]
+        atom1_pos = mda_u.select_atoms(f"resid {atom1_info[0]} and name {atom1_info[1]}")[0].position
+        # atom 2
+        atom2_info = axis_angle_type[i][1]
+        atom2_pos = mda_u.select_atoms(f"resid {atom2_info[0]} and name {atom2_info[1]}")[0].position
+        # axis vector
+        axis_vectors.append(atom1_pos - atom2_pos)
+
+    # (2) compute angle between axes
+    axis1, axis2 = axis_vectors[0], axis_vectors[1]
+    cos_theta = np.dot(axis1, axis2) / (np.linalg.norm(axis1) * np.linalg.norm(axis2))
+
+    # if we actually care about the angle (in radians)
+    angle_rad = np.arccos(np.clip(cos_theta, -1.0, 1.0)) 
+
+    return cos_theta
+
 
 # align molecule (mobile) with target (stationary)
 # NOTE : currently implemented for len(target) = len(current) = 2 (2 points of attachment)

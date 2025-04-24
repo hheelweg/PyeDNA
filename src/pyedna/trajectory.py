@@ -338,6 +338,9 @@ class Trajectory():
         
         # parse output information for QM and MD simulations
         self.qm_outs, self.quant_info, self.class_info, self.time_slice = self.parseParameters(traj_params_file, parse_trajectory_out=True)
+        # decide whether we perform quantum-mechanical and/or classical analysis
+        self.do_quantum = bool(self.quant_info[0])
+        self.do_classical = bool(self.class_info[0])
         # parse details on QM (DFT/TDDFT) calculations
         self.settings_dft, self.settings_tddft = self.setQMSettings(qm_params_file)
         print('Settings for DFT: ', self.settings_dft, flush=True)
@@ -416,19 +419,18 @@ class Trajectory():
 
 
         # (1) QM (DFT/TDDFT) outputs (NOTE : only boolean)
-        qm_outs = {key: out.get(key) for key in ["exc", "mol", "tdm", "mf", "occ", "virt", "orbit_enrgs", "dip", "osc", "idx", "mull_pops", "mull_chrgs"]}               
+        qm_outs = {key: out.get(key) for key in ["exc", "mol", "tdm", "mf", "occ", "virt", "orbit_enrgs", "dip", "osc", "idx", "mull_pops", "mull_chrgs", "OPA"]}               
 
         # (2) trajectory-based outputs per time steps
-
-        # (2.1) quantum-mechanical based parameters and methods
         qm_options =    [
                         "transitions",                                                                                          # transitions
                         "coupling", "coupling_type", "excited_energies", "dipole_moments", "osc_strengths",                     # quantities per transition
                         "abs_spec", "orbit_energies", "mulliken", "popanalysis"                                                 # quantities per molecule (transitions = None)
                         ]
 
-        post_qm = {key: out.get(key) for key in qm_options}              
+        post_qm = {key: out.get(key) for key in qm_options}           
         qm_flags = {key: value for key, value in post_qm.items() if isinstance(value, bool) and value}                          # NOTE : only bool/True param
+        # specify name of output file
         qm_out_file = out["file_qm"]
 
 
@@ -447,7 +449,9 @@ class Trajectory():
         qm_outs['mol'] = True if post_qm["coupling"] else qm_outs['mol']
         qm_outs['tdm'] = True if post_qm["coupling"] else qm_outs['tdm']
 
-        qm_flags.update({"transitions": post_qm["transitions"]})
+        if "transitions" in out:
+            qm_flags.update({"transitions": post_qm["transitions"]})
+
         # for each flag we either set specified methods_type or default
         qm_methods = {
                         key: out[f"{key}_type"] if f"{key}_type" in out else post_qm.get(f"{key}_type", "default")
@@ -455,25 +459,30 @@ class Trajectory():
                         if isinstance(qm_flags[key], bool)
                     }
 
-        # (2.2) classical parameters and methods
-        post_class = {key: out.get(key) for key in ["distance", "distance_type"]}                                               # all MD options
+        # (3) classical parameters and methods
+        class_options = [
+                        "distance", "axis_angle"
+                        ]
+
+        post_class = {key: out.get(key) for key in class_options if key in out}                                                              
         class_flags = {key: value for key, value in post_class.items() if isinstance(value, bool) and value}                    # NOTE : only bool/True param
+        # check that appropriate types are specified in order to avoid ambiguity
+        for key in class_flags:
+            assert f"{key}_type" in out, f"Type for {key} needs to be specified. More information required!"
+        # specify name of output file
         class_out_file = out["file_class"]
         # for each flag we either set specified methods_type or default
-        class_methods = {
-            key: post_class.get(f"{key}_type", "default") for key in class_flags
-        }
+        class_methods = {key: out[f"{key}_type"] for key in class_flags}
+        
 
         if parse_trajectory_out:
             if verbose:
                 # print parsed output for trajectory analysis
                 print(" *** Parsed Output for Trajectory Analysis:")
                 print(f"(1) classical parameters to evaluate at each time step: {', '.join(class_flags.keys())}")
-                print(f"(1) we use the following methods (in order): {', '.join(class_methods.values())}")
-                if qm_flags['transitions'] is not None:
+                if "transitions" in qm_flags and qm_flags['transitions'] is not None:
                     print(f"(2) we study the following state transitions [stateA, stateB]: {', '.join(str(transition) for transition in qm_flags['transitions'])}")
                 print(f"(2) quantum parameters to evaluate at each time step: {', '.join(key for key, value in qm_flags.items() if isinstance(value, bool))}")
-                # print(f"(2) we use the following methods (in order): {', '.join(qm_methods.values())}")
             return qm_outs, [qm_flags, qm_methods, qm_out_file], [class_flags, class_methods, class_out_file], time_range
         else:
             return qm_outs
@@ -590,145 +599,150 @@ class Trajectory():
     # initialize output based on desired output parameters 
     def initOutput(self, output_length):
 
-        # (1) define QM states we are interested in (0-indexed), i.e. (S_0^A , S_{stateB + 1}^B) <--> (S_{stateA + 1}^A, S_0^B)
-        self.transitions = self.quant_info[0]["transitions"]
-        # check that length of each transition in self.transitions agrees with number of molecules
-        if self.transitions is not None:
-            for transition in self.transitions:
-                assert(len(transition) == self.num_molecules)
 
-        # TODO : might also want to add DataFrame for the direct QM (DFT/TDDFT) outputs 
+        # ##############      (1)   Classical analysis                       ###############
 
-        # (2) which trajectory-ensemble outputs are we interested in:
-
-        # (2.1) classical MD output parameters:
-        columns_class = [key for key, value in self.class_info[0].items() if isinstance(value, bool) and value]
-        if not columns_class:
-            self.output_class = pd.DataFrame()
-        else:
-            self.output_class = pd.DataFrame(index = range(output_length), columns = ["time"] + columns_class)
-        
-        # (2.2) quantum output parameters if we want to get resolution per transition in self.transitions
-        if self.transitions is not None:
-            # (output the same quantities for every transition in self.transitions)
-            # NOTE : since states are 0-indexed, 0 actually corresponds to the 1st excited state of molecule A/B, 1 to the
-            # 2nd excited state of molecule A/B etc.
-            self.transition_names = [self.generateTransitionString(states, self.molecule_names) for states in self.transitions]
-            self.quant_info[0].pop("transitions")
-            columns_per_transitions = [key for key, value in self.quant_info[0].items() if isinstance(value, bool) and value]
-
-            # get columns for each transition
-            columns_per_transitions = []
-
-            # initialize columns for Coulomb coupling
-            if self.quant_info[0]["coupling"]:
-                columns_per_transitions += ['coupling cJ', 'coupling cK', 'coupling V_C']
-
-            # initialize columns for excitation energies
-            if self.quant_info[0]["excited_energies"]:
-                if len(self.molecule_names) == 2:
-                    columns_per_transitions += [f'energy {self.molecule_names[0]}', f'energy {self.molecule_names[1]}']
-                elif len(self.molecule_names) == 1:
-                    columns_per_transitions += [f'energy {self.molecule_names[0]}']
-
-            # intialize columns for oscillator strengths
-            if self.quant_info[0]["osc_strengths"]:
-                if len(self.molecule_names) == 2:
-                    columns_per_transitions += [f'osc_strength {self.molecule_names[0]}', f'osc_strength {self.molecule_names[1]}']
-                elif len(self.molecule_names) == 1:
-                    columns_per_transitions += [f'osc_strength {self.molecule_names[0]}']
-
-            # initialize columns for transition dipole moments
-            if self.quant_info[0]["dipole_moments"]:
-                if len(self.molecule_names) == 2:
-                    columns_per_transitions += [f'dip_moment {self.molecule_names[0]}', f'dip_moment {self.molecule_names[1]}']
-                elif len(self.molecule_names) == 1:
-                    columns_per_transitions += [f'dip_moment {self.molecule_names[0]}']
-
-            # TODO : add more as desired
-            
-            # construct output DataFrame
-            if not columns_per_transitions:
-                self.output_quant = pd.DataFrame()
+        if self.do_classical:
+            # (1.1) classical MD output parameters:
+            columns_class = [key for key, value in self.class_info[0].items() if isinstance(value, bool) and value]
+            if not columns_class:
+                self.output_class = pd.DataFrame()
             else:
-                columns_quant = pd.MultiIndex.from_tuples(
-                    [("time", "")] +
-                    [(transition_name, value_name) for transition_name in self.transition_names for value_name in columns_per_transitions]
-                )
-                self.output_quant = pd.DataFrame(index = range(output_length), columns = columns_quant)
+                self.output_class = pd.DataFrame(index = range(output_length), columns = ["time"] + columns_class)
+
         
-        # if we want to print direct DFT/TDDFT output per each time step (e.g. if abs_spec = True), do this here. We output these quantities
-        # for every molecule specified in self.molecules.
-        # NOTE : need to specify transitions = None for this!
-        elif self.transitions is None:
+        # ##############      (2)   Quantum-mechanical analysis               ###############
 
-            self.quant_info[0].pop("transitions")
+        if self.do_quantum:
 
-            columns_per_molecule = []
+            # (2.1) define QM states we are interested in (0-indexed), i.e. (S_0^A , S_{stateB + 1}^B) <--> (S_{stateA + 1}^A, S_0^B)
+            self.transitions = self.quant_info[0]["transitions"]
+            # check that length of each transition in self.transitions agrees with number of molecules
+            if self.transitions is not None:
+                for transition in self.transitions:
+                    assert(len(transition) == self.num_molecules)
+        
+            # (2.2) quantum output parameters if we want to get resolution per transition in self.transitions
+            if self.transitions is not None:
+                # (output the same quantities for every transition in self.transitions)
+                # NOTE : since states are 0-indexed, 0 actually corresponds to the 1st excited state of molecule A/B, 1 to the
+                # 2nd excited state of molecule A/B etc.
+                self.transition_names = [self.generateTransitionString(states, self.molecule_names) for states in self.transitions]
+                self.quant_info[0].pop("transitions")
+                columns_per_transitions = [key for key, value in self.quant_info[0].items() if isinstance(value, bool) and value]
 
-            # initialize columns for plotting of absorption spectrum
-            if "abs_spec" in self.quant_info[0]:
-                # which direct outputs of the TDDFT calculations do we need?
-                which_outs = ['exc', 'osc']
-                columns_per_molecule += [f"{which_out} {state_id}" for which_out in which_outs for state_id in self.settings_tddft["state_ids"]]
+                # get columns for each transition
+                columns_per_transitions = []
 
-            # initialize columns for orbital energies
-            if "orbit_energies" in self.quant_info[0]:
-                orbital_types = ['occ', 'virt']
-                columns_per_molecule += [f"{orbital_type}" for orbital_type in orbital_types]
+                # initialize columns for Coulomb coupling
+                if self.quant_info[0]["coupling"]:
+                    columns_per_transitions += ['coupling cJ', 'coupling cK', 'coupling V_C']
 
-            # initialize columns for excited energies
-            if "excited_energies" in self.quant_info[0]:
-                columns_per_molecule += [f"exc_enrgs ({'singlets' if self.settings_tddft['singlet'] else 'triplets'}): {' ,'.join(str(state_id) for state_id in self.settings_tddft['state_ids'])}"]
+                # initialize columns for excitation energies
+                if self.quant_info[0]["excited_energies"]:
+                    if len(self.molecule_names) == 2:
+                        columns_per_transitions += [f'energy {self.molecule_names[0]}', f'energy {self.molecule_names[1]}']
+                    elif len(self.molecule_names) == 1:
+                        columns_per_transitions += [f'energy {self.molecule_names[0]}']
 
-            # initialize columns for Mulliken analysis of excited state populations
-            # TODO : maybe parse information for Mulliken analysis in different functions
-            if "mulliken" in self.quant_info[0]:
+                # intialize columns for oscillator strengths
+                if self.quant_info[0]["osc_strengths"]:
+                    if len(self.molecule_names) == 2:
+                        columns_per_transitions += [f'osc_strength {self.molecule_names[0]}', f'osc_strength {self.molecule_names[1]}']
+                    elif len(self.molecule_names) == 1:
+                        columns_per_transitions += [f'osc_strength {self.molecule_names[0]}']
 
-                # parse Mulliken information
-                self.do_mulliken = True
-                self.fragment_type = self.quant_info[1]["mulliken"][0]
-                self.fragments = self.quant_info[1]["mulliken"][1]
-                if self.fragment_type == "molecule":
-                    self.fragment_names = self.fragments
-                elif self.fragment_type == "atom_group":
-                    self.fragment_names = [f'group {i}' for i in range(len(self.fragments))]
+                # initialize columns for transition dipole moments
+                if self.quant_info[0]["dipole_moments"]:
+                    if len(self.molecule_names) == 2:
+                        columns_per_transitions += [f'dip_moment {self.molecule_names[0]}', f'dip_moment {self.molecule_names[1]}']
+                    elif len(self.molecule_names) == 1:
+                        columns_per_transitions += [f'dip_moment {self.molecule_names[0]}']
 
-                columns_per_molecule += [f"mulliken (state {state_id}) {fragment_name}" for state_id in self.settings_tddft["state_ids"] for fragment_name in self.fragment_names]
+                # TODO : add more as desired
                 
-            # TODO : maybe parse information for orbital population analysis (OPA) in different functions
-            if "popanalysis" in self.quant_info[0]:
+                # construct output DataFrame
+                if not columns_per_transitions:
+                    self.output_quant = pd.DataFrame()
+                else:
+                    columns_quant = pd.MultiIndex.from_tuples(
+                        [("time", "")] +
+                        [(transition_name, value_name) for transition_name in self.transition_names for value_name in columns_per_transitions]
+                    )
+                    self.output_quant = pd.DataFrame(index = range(output_length), columns = columns_quant)
+            
+            # if we want to print direct DFT/TDDFT output per each time step (e.g. if abs_spec = True), do this here. We output these quantities
+            # for every molecule specified in self.molecules.
+            # NOTE : need to specify transitions = None for this!
+            elif self.transitions is None:
 
-                # parse Mulliken information
-                self.do_mulliken = True
-                self.fragment_type = self.quant_info[1]["popanalysis"][0]
-                self.fragments = self.quant_info[1]["popanalysis"][1]
-                if self.fragment_type == "molecule":
-                    self.fragment_names = self.fragments
-                elif self.fragment_type == "atom_group":
-                    self.fragment_names = [f'group {i}' for i in range(len(self.fragments))]
+                self.quant_info[0].pop("transitions")
 
-                columns_per_molecule += [f"popanalysis (state {state_id})" for state_id in self.settings_tddft["state_ids"]]
+                columns_per_molecule = []
+
+                # initialize columns for plotting of absorption spectrum
+                if "abs_spec" in self.quant_info[0]:
+                    # which direct outputs of the TDDFT calculations do we need?
+                    which_outs = ['exc', 'osc']
+                    columns_per_molecule += [f"{which_out} {state_id}" for which_out in which_outs for state_id in self.settings_tddft["state_ids"]]
+
+                # initialize columns for orbital energies
+                if "orbit_energies" in self.quant_info[0]:
+                    orbital_types = ['occ', 'virt']
+                    columns_per_molecule += [f"{orbital_type}" for orbital_type in orbital_types]
+
+                # initialize columns for excited energies
+                if "excited_energies" in self.quant_info[0]:
+                    columns_per_molecule += [f"exc_enrgs ({'singlets' if self.settings_tddft['singlet'] else 'triplets'}): {' ,'.join(str(state_id) for state_id in self.settings_tddft['state_ids'])}"]
+
+                # initialize columns for Mulliken analysis of excited state populations
+                # TODO : maybe parse information for Mulliken analysis in different functions
+                if "mulliken" in self.quant_info[0]:
+
+                    # parse Mulliken information
+                    self.do_mulliken = True
+                    self.fragment_type = self.quant_info[1]["mulliken"][0]
+                    self.fragments = self.quant_info[1]["mulliken"][1]
+                    if self.fragment_type == "molecule":
+                        self.fragment_names = self.fragments
+                    elif self.fragment_type == "atom_group":
+                        self.fragment_names = [f'group {i}' for i in range(len(self.fragments))]
+
+                    columns_per_molecule += [f"mulliken (state {state_id}) {fragment_name}" for state_id in self.settings_tddft["state_ids"] for fragment_name in self.fragment_names]
+                    
+                # TODO : maybe parse information for orbital population analysis (OPA) in different functions
+                if "popanalysis" in self.quant_info[0]:
+
+                    # parse Mulliken information
+                    self.do_mulliken = True
+                    self.fragment_type = self.quant_info[1]["popanalysis"][0]
+                    self.fragments = self.quant_info[1]["popanalysis"][1]
+                    if self.fragment_type == "molecule":
+                        self.fragment_names = self.fragments
+                    elif self.fragment_type == "atom_group":
+                        self.fragment_names = [f'group {i}' for i in range(len(self.fragments))]
+
+                    columns_per_molecule += [f"popanalysis (state {state_id})" for state_id in self.settings_tddft["state_ids"]]
 
 
-            # construct output DataFrame
-            if not columns_per_molecule:
-                self.output_quant = pd.DataFrame()
-            else:
-                columns_quant = pd.MultiIndex.from_tuples(
-                    [("time", "")] +
-                    [(molecule_name, value_name) for molecule_name in self.molecule_names for value_name in columns_per_molecule]
-                )
-                self.output_quant = pd.DataFrame(index = range(output_length), columns = columns_quant)
+                # construct output DataFrame
+                if not columns_per_molecule:
+                    self.output_quant = pd.DataFrame()
+                else:
+                    columns_quant = pd.MultiIndex.from_tuples(
+                        [("time", "")] +
+                        [(molecule_name, value_name) for molecule_name in self.molecule_names for value_name in columns_per_molecule]
+                    )
+                    self.output_quant = pd.DataFrame(index = range(output_length), columns = columns_quant)     
 
 
-        print("*** Intialization of output done!")
         
 
     # TODO : write simulation data into the header
     @staticmethod
-    def writeOutputFiles(data_frame, file_name, write_meta_data = True):
+    def writeOutputFiles(data_frame, file_name, write_meta_data = True, dir = None):
         # TODO : write meta data into header
+        file_name = dir + file_name if dir else file_name
         # store DateFrame (classical or quantum) with meta data header (optional)
         if not data_frame.empty:
             with open(file_name, "w") as f:
@@ -737,6 +751,7 @@ class Trajectory():
                     pass
                 # write output
                 data_frame.to_csv(f, sep = "\t", index=False)
+                
 
     
     # initialize molecules from params file
@@ -800,17 +815,17 @@ class Trajectory():
 
         return chromophore, chromophore_conv
     
+
     # get MDAnalysis object of specified residues at specified time slice
-    def getChromophoreSnapshot(self, time_idx, molecule, molecule_constituents, 
+    def getChromophoreSnapshot(self, molecule, molecule_constituents, 
                                fragments = None, enforce_symmetry = False, conversion = None, cap = True):
 
-        # (1) set time step
-        self.trajectory_u.trajectory[time_idx]
-
-        # (2) (optional) load fragment information
+        # (1) (optional) load fragment information
         if fragments is not None:
             fragment_type = fragments[0]
             fragment_identifiers = fragments[1]
+        else:
+            fragment_type, fragment_identifiers = None, None
 
 
         # (2) get positions of all residues (constituents) specified in residue_ids
@@ -832,7 +847,7 @@ class Trajectory():
             selected_name = np.unique(self.trajectory_u.select_atoms(f'resid {id}').resnames)[0]
             assert(selected_name == molecule_constituents[i])
         
-        # (2) get fragment lengths in both fragments if fragments[0] = 'molecule'
+        # (3) get fragment lengths in both fragments if fragments[0] = 'molecule'
         if fragment_type == 'molecule':
             fragments_length, fragment_names = [], []
             for i, constituent_name in enumerate(molecule_constituents):
@@ -842,8 +857,11 @@ class Trajectory():
         # TODO : implement this
         elif fragment_type == 'atom_group':
             pass
+        elif fragment_type is None:
+            pass
         
-        # (3) check how many residues the molecule is composed of and allow for max of 2 
+        
+        # (4) check how many residues the molecule is composed of and allow for max of 2 
         if len(molecule) == 1:
             molecule_u = molecules_u[0]
             symmetry_info = self.molecule_information[molecule_constituents[0]]["symm_info"]
@@ -852,11 +870,13 @@ class Trajectory():
         else:
             raise NotImplementedError('Only two neighboring residues currently implemented!')
         
-        # (3) get fragment indices
+        # (5) get fragment indices
         if fragment_type == 'molecule':
             fragment_indices = [[i for i in range(len(molecule_u.atoms[:fragments_length[0]]))], [i for i in range(len(molecule_u.atoms[:fragments_length[0]]), len(molecule_u.atoms))]]
         # TODO : implement this 
         elif fragment_type == 'atom_group':
+            pass
+        elif fragment_type is None:
             pass
         
 
@@ -868,10 +888,10 @@ class Trajectory():
                 molecule_u = geom.enforceSymmetry(molecule_u, symmetry_info["symmetry_axis"], symmetry_info["support_atom"])
             else:
                 raise NotImplementedError('Only Cs point group symmetry implemented for DFT/TDDFT analysis')
-        # (5) define instance of Chromophore class 
+        # (6) define instance of Chromophore class 
         chromophore = structure.Chromophore(molecule_u)
 
-        # (6) convert to other input format for processing of trajectory
+        # (7) convert to other input format for processing of trajectory
         chromophore_conv = self.convertChromophore(chromophore, conversion) if conversion else None
 
         if fragments is None:
@@ -1050,13 +1070,16 @@ class Trajectory():
         self.output_class.loc[time_idx, "time"] = (time_idx + 1) * self.dt
 
         # (1) compute distance metric:
-        # TODO : add an actual function here and not just some kind of dummy
         if self.class_info[0]["distance"]:
-            self.output_class.loc[time_idx, "distance"] = 4
+            self.output_class.loc[time_idx, "distance"] = geom.getDistance(self.trajectory_u, self.class_info[1]["distance"])
+        
+        # (2) compute angle between two axes
+        if self.class_info[0]["axis_angle"]:
+            self.output_class.loc[time_idx, "axis_angle"] = geom.getAxisAngle(self.trajectory_u, self.class_info[1]["axis_angle"])
         
                 
     # analyze trajectory based on specific molecules of interest
-    def loopTrajectory(self):
+    def loopTrajectory(self, output_dir = None):
 
  
         # (1) time range of interest: time_slice = [idx_start, idx_end]
@@ -1065,7 +1088,7 @@ class Trajectory():
         else:                                                                   # study specified time-slice 
             pass
 
-        print(f'*** We loop through {self.time_slice[1] + 1 - self.time_slice[0]} frames for the trajectory analysis!')
+        print(f'*** Looping through {self.time_slice[1] + 1 - self.time_slice[0]} frames for the trajectory analysis!')
 
 
         # (2) check whether molecules have been defined and initialized
@@ -1075,25 +1098,35 @@ class Trajectory():
         # (3) initialize output DataFrames
         self.initOutput(self.time_slice[1]  - self.time_slice[0]) 
 
+        print("*** Intialization of output done!")
+
 
         # (3) analyze trajectory
         for idx in range(self.time_slice[0], self.time_slice[1] + 1):
 
             start_time = time.time()
+
             print(f"*** Running Time Step {idx + 1} ...")
+
+            # (0) set snapshot
+            self.trajectory_u.trajectory[idx]
 
             # (1) get chromophores of interest 
             self.chromophores = []
             self.chromophores_conv = []
-            self.chromophores_fragments = [] if self.do_mulliken else None
-            self.chromophores_fragment_names = [] if self.do_mulliken else None
+
+            # individual fragments only necessary when doing a mulliken population analysis
+            if self.do_quantum:
+                self.chromophores_fragments = [] if self.do_mulliken else None
+                self.chromophores_fragment_names = [] if self.do_mulliken else None
+
             for i, molecule in enumerate(self.molecules):
 
                 
                 #chromophore, chromophore_conv = self.getChromophoreSnapshotOld(idx, molecule, self.molecule_names[i], conversion = 'pyscf')
 
-                if self.do_mulliken:
-                    chromophore, chromophore_conv, fragment_indices, fragment_names = self.getChromophoreSnapshot(time_idx = idx,
+                if self.do_quantum and self.do_mulliken:
+                    chromophore, chromophore_conv, fragment_indices, fragment_names = self.getChromophoreSnapshot(
                                                                                 molecule = molecule,
                                                                                 molecule_constituents = self.molecule_constituents[i],
                                                                                 fragments = [self.fragment_type, self.fragments],
@@ -1105,7 +1138,7 @@ class Trajectory():
                     self.chromophores_fragment_names.append(fragment_names)
                     
                 else:
-                    chromophore, chromophore_conv = self.getChromophoreSnapshot(time_idx = idx,
+                    chromophore, chromophore_conv = self.getChromophoreSnapshot(
                                                                                 molecule = molecule,
                                                                                 molecule_constituents = self.molecule_constituents[i],
                                                                                 fragments = None,
@@ -1119,18 +1152,19 @@ class Trajectory():
 
 
             # (2) analyze with respect to QM quantities of interest
-            # TODO : only execute this when we have quantum quantities to analyze
-            # (2.1) run QM calculation
-            if self.do_mulliken:
-                output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, fragments=self.chromophores_fragments, verbosity = 1)
-            else:
-                output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, verbosity = 1)
-            # (2.2) post-processing of QM output
-            self.analyzeSnapshotQuantum(idx, output_qm)
+            if self.do_quantum:
+                # (2.1) run QM calculation
+                if self.do_mulliken:
+                    output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, fragments=self.chromophores_fragments, verbosity = 1)
+                else:
+                    output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, verbosity = 1)
+
+                # (2.2) post-processing of QM output
+                self.analyzeSnapshotQuantum(idx, output_qm)
 
             # (3) analyze with respect to classical quantities of interest
-            # TODO : only do the following if we have classical aspects to study
-            # self.analyzeSnapshotClassical(idx)
+            if self.do_classical:
+                self.analyzeSnapshotClassical(idx)
             
             # (4) take time per time step
             end_time = time.time()
@@ -1139,11 +1173,17 @@ class Trajectory():
 
         print('*** Successfully looped through all trajectory snapshots!')
         
+        
         # (4) write output files
         # (4.1) quantum output
-        self.writeOutputFiles(self.output_quant, self.quant_info[2])
+        if self.do_quantum:
+            self.writeOutputFiles(self.output_quant, self.quant_info[2], dir = output_dir)
         # (4.2) classical output
-        self.writeOutputFiles(self.output_class, self.class_info[2])
+        if self.do_classical:
+            self.writeOutputFiles(self.output_class, self.class_info[2], dir = output_dir)
+
+
+        print('*** Finished writing oputput files!')
 
 
 
