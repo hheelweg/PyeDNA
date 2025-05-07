@@ -347,6 +347,8 @@ class Trajectory():
         print('Settings for TDDFT: ', self.settings_tddft, flush=True)
 
         self.defined_molecules = False                                  # flag to track whether molecules have been defined
+        # TODO : maybe delete this
+        self.do_mulliken = False
 
 
     # set parameters for QM (DFT/TDDFT) simulation
