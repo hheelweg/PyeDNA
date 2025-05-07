@@ -23,7 +23,7 @@ def main(molecule_id):
 
     # (1) load fragment information
     # TODO : only load this if specified
-    chromophore_fragments = load(f"fragments_{molecule_id}.joblib")
+    # chromophore_fragments = load(f"fragments_{molecule_id}.joblib")
 
     # (2) perform DFT/TDDFT calculation and store outputs
     values['mol'], values['mf'], values['occ'], values['virt'], values['orbit_enrgs'] = qm.doDFT_gpu(chromophore_conv, molecule_id, **settings_dft)

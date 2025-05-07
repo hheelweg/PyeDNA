@@ -1155,7 +1155,6 @@ class Trajectory():
 
             # (2) analyze with respect to QM quantities of interest
             if self.do_quantum:
-                print(f'**** Run QM {self.do_mulliken}')
                 # (2.1) run QM calculation
                 if self.do_mulliken:
                     output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, fragments=self.chromophores_fragments, verbosity = 1)
