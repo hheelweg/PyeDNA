@@ -29,7 +29,9 @@ def main(molecule_id):
     values['mol'], values['mf'], values['occ'], values['virt'], values['orbit_enrgs'] = qm.doDFT_gpu(chromophore_conv, molecule_id, **settings_dft)
     #values['mol'], values['mf'], values['occ'], values['virt'] = qm.doDFT_geomopt(chromophore_conv, **settings_dft)
     if settings_tddft.pop("do_tddft", False):
-        tddft_output = qm.doTDDFT_gpu(values['mol'], values['mf'], values['occ'], values['virt'], output_keys, fragments = chromophore_fragments, **settings_tddft)
+        # TODO : only load this if chromophore_fragments specified
+        #tddft_output = qm.doTDDFT_gpu(values['mol'], values['mf'], values['occ'], values['virt'], output_keys, fragments = chromophore_fragments, **settings_tddft)
+        tddft_output = qm.doTDDFT_gpu(values['mol'], values['mf'], values['occ'], values['virt'], output_keys, fragments = None, **settings_tddft)
         values.update(tddft_output)
     
     # (3) output quantities of interest
