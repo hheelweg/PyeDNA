@@ -1107,6 +1107,7 @@ def getInterCJCK(molA, molB, tdmA, tdmB, get_cK = False):
 
 # (intramolecular) coupling terms for the computation cJ and cK of molecule 
 # NOTE : this returns (by default) the couplings in Hartree units 
+# TODO : this can be deleted?!
 def getIntraCJCK(mol, tdm, get_cK = False):
     from pyscf.scf import jk, _vhf
     from pyscf import lib
@@ -1155,8 +1156,11 @@ def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
     #     tdm = tdms[0][state]
 
     stateA, stateB = states[0], states[1]
+    print(stateA, stateB)
     molA, molB = mols[0], mols[0]
     tdmA, tdmB = tdms[0][stateA], tdms[0][stateB]
+    print(tdmA.shape, molA.nao, molA.nao)
+    print(tdmB.shape, molB.nao, molB.nao)  
 
     if coupling_type in ['electronic', 'cK']:
         # if intermolecular:
