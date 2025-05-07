@@ -1155,12 +1155,10 @@ def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
     #     mol = mols[0]
     #     tdm = tdms[0][state]
 
+    # for intramolecular
     stateA, stateB = states[0], states[1]
-    print(stateA, stateB)
     molA, molB = mols[0], mols[0]
     tdmA, tdmB = np.squeeze(tdms[0][stateA]), np.squeeze(tdms[0][stateB])
-    print(tdmA.shape, molA.nao, molA.nao)
-    print(tdmB.shape, molB.nao, molB.nao)  
 
     if coupling_type in ['electronic', 'cK']:
         # if intermolecular:
