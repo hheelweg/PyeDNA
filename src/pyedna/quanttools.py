@@ -1139,20 +1139,24 @@ def getIntraCJCK(mol, tdm, get_cK = False):
 # stateA and stateB default to 0 to for the transition (S_0^A , S_1^B) <--> (S_1^A, S_0^B)
 def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
 
-    assert(len(mols) == len(tdms) == len(states))
+    #assert(len(mols) == len(tdms) == len(states))
     if len(states) == 2:
         intermolecular, intramolecular = True, False
     elif len(states) == 1:
         intermolecular, intramolecular = False, True
 
-    if intermolecular:
-        stateA, stateB = states[0], states[1]
-        molA, molB = mols[0], mols[1]
-        tdmA, tdmB = tdms[0][stateA], tdms[1][stateB]
-    if intramolecular:
-        state = states[0]
-        mol = mols[0]
-        tdm = tdms[0][state]
+    # if intermolecular:
+    #     stateA, stateB = states[0], states[1]
+    #     molA, molB = mols[0], mols[1]
+    #     tdmA, tdmB = tdms[0][stateA], tdms[1][stateB]
+    # if intramolecular:
+    #     state = states[0]
+    #     mol = mols[0]
+    #     tdm = tdms[0][state]
+
+    stateA, stateB = states[0], states[1]
+    molA, molB = mols[0], mols[0]
+    tdmA, tdmB = tdms[0][stateA], tdms[0][stateB]
 
     if coupling_type in ['electronic', 'cK']:
         # if intermolecular:
