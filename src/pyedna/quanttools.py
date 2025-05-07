@@ -1158,7 +1158,7 @@ def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
     stateA, stateB = states[0], states[1]
     print(stateA, stateB)
     molA, molB = mols[0], mols[0]
-    tdmA, tdmB = tdms[0][stateA], tdms[0][stateB]
+    tdmA, tdmB = np.squeeze(tdms[0][stateA]), np.squeeze(tdms[0][stateB])
     print(tdmA.shape, molA.nao, molA.nao)
     print(tdmB.shape, molB.nao, molB.nao)  
 
