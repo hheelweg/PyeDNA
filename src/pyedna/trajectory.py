@@ -1155,11 +1155,12 @@ class Trajectory():
 
             # (2) analyze with respect to QM quantities of interest
             if self.do_quantum:
+                print('**** Run QM')
                 # (2.1) run QM calculation
                 if self.do_mulliken:
                     output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, fragments=self.chromophores_fragments, verbosity = 1)
                 else:
-                    output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, verbosity = 1)
+                    output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, verbosity = 3)
 
                 # (2.2) post-processing of QM output
                 self.analyzeSnapshotQuantum(idx, output_qm)
