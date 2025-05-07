@@ -1140,9 +1140,9 @@ def getIntraCJCK(mol, tdm, get_cK = False):
 def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
 
     assert(len(mols) == len(tdms) == len(states))
-    if len(mols) == 2:
+    if len(states) == 2:
         intermolecular, intramolecular = True, False
-    elif len(mols) == 1:
+    elif len(states) == 1:
         intermolecular, intramolecular = False, True
 
     if intermolecular:
@@ -1155,15 +1155,15 @@ def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
         tdm = tdms[0][state]
 
     if coupling_type in ['electronic', 'cK']:
-        if intermolecular:
-            cJ, cK = getInterCJCK(molA, molB, tdmA, tdmB, get_cK=True)
-        if intramolecular:
-            cJ, cK = getIntraCJCK(mol, tdm, get_cK=True)
+        # if intermolecular:
+        cJ, cK = getInterCJCK(molA, molB, tdmA, tdmB, get_cK=True)
+        # if intramolecular:
+        #     cJ, cK = getIntraCJCK(mol, tdm, get_cK=True)
     elif coupling_type in ['cJ']:
-        if intermolecular:
-            cJ, _ = getInterCJCK(molA, molB, tdmA, tdmB, get_cK=False)
-        if intramolecular:
-            cJ, _ = getIntraCJCK(mol, tdm, get_cK=False)
+        # if intermolecular:
+        cJ, _ = getInterCJCK(molA, molB, tdmA, tdmB, get_cK=False)
+        # if intramolecular:
+        #     cJ, _ = getIntraCJCK(mol, tdm, get_cK=False)
     else:
         raise NotImplementedError("Invalid coupling type specified!")
     
