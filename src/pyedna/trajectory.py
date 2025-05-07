@@ -1118,7 +1118,7 @@ class Trajectory():
             self.chromophores_conv = []
 
             # individual fragments only necessary when doing a mulliken population analysis
-            if self.do_quantum:
+            if self.do_quantum and self.do_mulliken:
                 self.chromophores_fragments = [] if self.do_mulliken else None
                 self.chromophores_fragment_names = [] if self.do_mulliken else None
 
@@ -1159,7 +1159,7 @@ class Trajectory():
                 if self.do_mulliken:
                     output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, fragments=self.chromophores_fragments, verbosity = 1)
                 else:
-                    output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, verbosity = 3)
+                    output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, verbosity = 1)
 
                 # (2.2) post-processing of QM output
                 self.analyzeSnapshotQuantum(idx, output_qm)
