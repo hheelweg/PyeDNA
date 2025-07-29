@@ -1211,6 +1211,12 @@ def getVCoulombic(mols, tdms, tdms_inter, states, coupling_type = 'electronic'):
     gamma_A = (np.cos(theta)**2) * tdmA + (np.sin(theta)**2) * tdmB + np.sin(theta)*np.cos(theta)*(tdm_inter + tdm_inter_T)
     gamma_B = (np.sin(theta)**2) * tdmA + (np.cos(theta)**2) * tdmB - np.sin(theta)*np.cos(theta)*(tdm_inter + tdm_inter_T)
     print(gamma_A.shape, gamma_B.shape)
+    inner_product = np.trace(gamma_A.conj().T @ gamma_B)
+    print("inner product =", inner_product)
+    norm_A = np.trace(gamma_A.conj().T @ gamma_A)
+    norm_B = np.trace(gamma_B.conj().T @ gamma_B)
+    print("norm A =", norm_A)
+    print("norm B =", norm_B)
 
 
     if coupling_type in ['electronic', 'cK']:
