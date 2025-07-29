@@ -912,8 +912,13 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
     gamma_12 = occ_orbits @ x1x2T @ occ_orbits.T + virt_orbits @ y1y2T @ virt_orbits.T
     tddft_output['tdm_inter'] = gamma_12
 
+    # NOTE : delete this (this is just for debugging)
     # Get NTOs for state A
     r, c = molecule_td.get_nto(state=2)
+    if r.ndim == 1:
+        r = r[:, None]
+    if c.ndim == 1:
+        c = c[:, None]
     from pyscf.tools import cubegen
     cubegen.orbital(molecule_mol, 'holeA.cube', r[:,0])
     cubegen.orbital(molecule_mol, 'elecA.cube', c[:,0])
