@@ -421,7 +421,7 @@ class Trajectory():
 
 
         # (1) QM (DFT/TDDFT) outputs (NOTE : only boolean)
-        qm_outs = {key: out.get(key) for key in ["exc", "mol", "tdm", "mf", "occ", "virt", "orbit_enrgs", "dip", "osc", "idx", "mull_pops", "mull_chrgs", "OPA"]}               
+        qm_outs = {key: out.get(key) for key in ["exc", "mol", "tdm", "tdm_inter","mf", "occ", "virt", "orbit_enrgs", "dip", "osc", "idx", "mull_pops", "mull_chrgs", "OPA"]}               
 
         # (2) trajectory-based outputs per time steps
         qm_options =    [
@@ -450,6 +450,8 @@ class Trajectory():
         qm_outs['osc'] = True if post_qm["osc_strengths"] else qm_outs['osc']
         qm_outs['mol'] = True if post_qm["coupling"] else qm_outs['mol']
         qm_outs['tdm'] = True if post_qm["coupling"] else qm_outs['tdm']
+        # NOTE : only for intramolecular
+        qm_outs['tdm_inter'] = True
 
         if "transitions" in out:
             qm_flags.update({"transitions": post_qm["transitions"]})
@@ -1165,7 +1167,7 @@ class Trajectory():
                 if self.do_mulliken:
                     output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, fragments=self.chromophores_fragments, verbosity = 1)
                 else:
-                    output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, verbosity = 3)
+                    output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, verbosity = 1)
 
                 # (2.2) post-processing of QM output
                 self.analyzeSnapshotQuantum(idx, output_qm)
