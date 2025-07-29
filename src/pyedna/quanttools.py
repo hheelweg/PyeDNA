@@ -1123,6 +1123,8 @@ def getIntraCJCK(mol, tdmA, tdmB, get_cK=False):
     assert tdmA.shape == (mol.nao, mol.nao)
     assert tdmB.shape == (mol.nao, mol.nao)
 
+
+
     # (1) Use original molecule
     dm = tdmB  # this will be used for prescreening
 
@@ -1166,6 +1168,7 @@ def getIntraCJCK(mol, tdmA, tdmB, get_cK=False):
 def getVCoulombic(mols, tdms, tdms_inter, states, coupling_type = 'electronic'):
 
     print(tdms_inter)
+    print(tdms_inter.shape)
 
     #assert(len(mols) == len(tdms) == len(states))
     if len(states) == 2:
@@ -1182,11 +1185,14 @@ def getVCoulombic(mols, tdms, tdms_inter, states, coupling_type = 'electronic'):
     #     mol = mols[0]
     #     tdm = tdms[0][state]
 
-    # for intramolecular
+    # NOTE : for intramolecular
     stateA, stateB = states[0], states[1]
     molA, molB = mols[0], mols[0]
     mol = molA
     tdmA, tdmB = np.squeeze(tdms[0][stateA]), np.squeeze(tdms[0][stateB])
+    print(tdmA.shape, tdmB.shape)
+
+    # NOTE : for intermolecular
 
     if coupling_type in ['electronic', 'cK']:
         # if intermolecular:
