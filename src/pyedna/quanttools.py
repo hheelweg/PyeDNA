@@ -1108,6 +1108,9 @@ def getInterCJCK(molA, molB, tdmA, tdmB, get_cK = False):
 # (intramolecular) coupling terms for the computation cJ and cK of molecule 
 # NOTE : this returns (by default) the couplings in Hartree units 
 def getIntraCJCK(mol, tdmA, tdmB, get_cK=False):
+
+    from pyscf.scf import jk, _vhf
+
     assert tdmA.shape == (mol.nao, mol.nao)
     assert tdmB.shape == (mol.nao, mol.nao)
 
