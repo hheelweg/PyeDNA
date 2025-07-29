@@ -921,8 +921,8 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
         c = c[:, None]
 
     # Transform to AO basis
-    hole_ao = molecule_mf.mo_coeff @ r[:, 0]
-    elec_ao = molecule_mf.mo_coeff @ c[:, 0]
+    hole_ao = cp.asnumpy(molecule_mf.mo_coeff) @ cp.asnumpy(r[:, 0])
+    elec_ao = cp.asnumpy(molecule_mf.mo_coeff) @ cp.asnumpy(c[:, 0])
     from pyscf.tools import cubegen
     cubegen.orbital(molecule_mol, 'holeA.cube', hole_ao)
     cubegen.orbital(molecule_mol, 'elecA.cube', elec_ao)
