@@ -1107,19 +1107,44 @@ def getInterCJCK(molA, molB, tdmA, tdmB, get_cK = False):
 
 # (intramolecular) coupling terms for the computation cJ and cK of molecule 
 # NOTE : this returns (by default) the couplings in Hartree units 
-def getIntraCJCK(mol, tdmA, tdmB, get_cK = False):
-    from pyscf.scf import jk
+def getIntraCJCK(mol, tdmA, tdmB, get_cK=False):
+    assert tdmA.shape == (mol.nao, mol.nao)
+    assert tdmB.shape == (mol.nao, mol.nao)
 
-    vJ = jk.get_j(mol, tdmB)
-    cJ = np.einsum('ij,ij->', vJ, tdmA)
+    # (1) Use original molecule
+    dm = tdmB  # this will be used for prescreening
 
-    vK = jk.get_k(mol, tdmB)
-    cK = np.einsum('ij,ij->', vK, tdmA)
+    # (2) Set up HF infrastructure for prescreened integral evaluation
+    vhfopt = _vhf.VHFOpt(mol, 'int2e', 'CVHFnrs8_prescreen',
+                         'CVHFsetnr_direct_scf', 'CVHFsetnr_direct_scf_dm')
+    vhfopt.set_dm(dm, mol._atm, mol._bas, mol._env)
+    vhfopt._dmcondname = None
 
-    if get_cK == True:
-        return cJ, cK
+    # (3) Compute Coulomb integral ⟨tdmA|J[tdmB]⟩
+    with lib.temporary_env(vhfopt._this.contents,
+                           fprescreen=_vhf._fpointer('CVHFnrs8_vj_prescreen')):
+        # shls_slice = (i, j, k, l, ...) → match ⟨ij|kl⟩ index order
+        shls_slice = (0, mol.nbas, 0, mol.nbas,
+                      0, mol.nbas, 0, mol.nbas)
+        vJ = jk.get_jk(mol, tdmB, 'ijkl,lk->s2ij',
+                       shls_slice=shls_slice, vhfopt=vhfopt,
+                       aosym='s4', hermi=1)
+        cJ = np.einsum('ij,ij->', vJ, tdmA)
+
+    # (4) Compute Exchange integral ⟨tdmA|K[tdmB]⟩ if requested
+    if get_cK:
+        with lib.temporary_env(vhfopt._this.contents,
+                               fprescreen=_vhf._fpointer('CVHFnrs8_vk_prescreen')):
+            shls_slice = (0, mol.nbas, 0, mol.nbas,
+                          0, mol.nbas, 0, mol.nbas)
+            vK = jk.get_jk(mol, tdmB, 'ijkl,jk->il',
+                           shls_slice=shls_slice, vhfopt=vhfopt,
+                           aosym='s1', hermi=0)
+            cK = np.einsum('ij,ij->', vK, tdmA)
     else:
-        return cJ, 0
+        cK = 0.0
+
+    return cJ, cK
 
 
 # compute coupling terms ('cJ', 'cK', 'electronic', 'both') for the states (S_0^A , S_{stateB + 1}^B) <--> (S_{stateA + 1}^A, S_0^B)
