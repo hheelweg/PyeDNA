@@ -1205,11 +1205,12 @@ def getVCoulombic(mols, tdms, tdms_inter, states, coupling_type = 'electronic'):
     tdm_inter = tdms_inter[0]
     tdm_inter_T = np.conj(tdm_inter).T
     print(tdm_inter.shape)
+    print(np.trace(tdm_inter.conj().T @ tdm_inter))
     # compute new tdms from superposition information
     ratio = np.sqrt(0.65/0.35)
     theta = np.arctan(ratio)
-    gamma_A = (np.cos(theta)**2) * tdmA + (np.sin(theta)**2) * tdmB #+ np.sin(theta)*np.cos(theta)*(tdm_inter + tdm_inter_T)
-    gamma_B = (np.sin(theta)**2) * tdmA + (np.cos(theta)**2) * tdmB #- np.sin(theta)*np.cos(theta)*(tdm_inter + tdm_inter_T)
+    gamma_A = (np.cos(theta)**2) * tdmA + (np.sin(theta)**2) * tdmB + np.sin(theta)*np.cos(theta)*(tdm_inter + tdm_inter_T)
+    gamma_B = (np.sin(theta)**2) * tdmA + (np.cos(theta)**2) * tdmB - np.sin(theta)*np.cos(theta)*(tdm_inter + tdm_inter_T)
     print(gamma_A.shape, gamma_B.shape)
     inner_product = np.trace(gamma_A.conj().T @ gamma_B)
     print("inner product =", inner_product)
