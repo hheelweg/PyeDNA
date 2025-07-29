@@ -1201,9 +1201,9 @@ def getVCoulombic(mols, tdms, tdms_inter, states, coupling_type = 'electronic'):
     tdm_inter = tdms_inter[0]
     tdm_inter_T = np.conj(tdm_inter).T
     print(tdm_inter.shape)
-
-    # compute new tdms
-    theta = 0.5
+    # compute new tdms from superposition information
+    ratio = np.sqrt(0.35/0.65)
+    theta = np.arctan(ratio)
     gamma_A = (np.cos(theta)**2) * tdmA + (np.sin(theta)**2) * tdmB + np.sin(theta)*np.cos(theta)*(tdm_inter + tdm_inter_T)
     gamma_B = (np.sin(theta)**2) * tdmA + (np.cos(theta)**2) * tdmB - np.sin(theta)*np.cos(theta)*(tdm_inter + tdm_inter_T)
     print(gamma_A.shape, gamma_B.shape)
@@ -1213,12 +1213,12 @@ def getVCoulombic(mols, tdms, tdms_inter, states, coupling_type = 'electronic'):
         # if intermolecular:
         # cJ, cK = getInterCJCK(molA, molB, tdmA, tdmB, get_cK=True)
         #if intramolecular:
-        cJ, cK = getIntraCJCK(mol, tdmA, tdmB, get_cK=True)
+        cJ, cK = getIntraCJCK(mol, gamma_A, gamma_B, get_cK=True)
     elif coupling_type in ['cJ']:
         # if intermolecular:
         # cJ, _ = getInterCJCK(molA, molB, tdmA, tdmB, get_cK=False)
         # if intramolecular:
-        cJ, _ = getIntraCJCK(mol, tdmA, tdmB, get_cK=False)
+        cJ, _ = getIntraCJCK(mol, gamma_A, gamma_B, get_cK=False)
     else:
         raise NotImplementedError("Invalid coupling type specified!")
     
