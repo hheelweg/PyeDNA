@@ -1174,8 +1174,6 @@ def getIntraCJCK(mol, tdmA, tdmB, get_cK=False):
 # stateA and stateB default to 0 to for the transition (S_0^A , S_1^B) <--> (S_1^A, S_0^B)
 def getVCoulombic(mols, tdms, tdms_inter, states, coupling_type = 'electronic'):
 
-    print(tdms_inter)
-    print(tdms_inter.shape)
 
     #assert(len(mols) == len(tdms) == len(states))
     if len(states) == 2:
@@ -1200,6 +1198,16 @@ def getVCoulombic(mols, tdms, tdms_inter, states, coupling_type = 'electronic'):
     print(tdmA.shape, tdmB.shape)
 
     # NOTE : for intermolecular
+    tdm_inter = tdms_inter[0]
+    tdm_inter_T = np.conj(tdm_inter).T
+    print(tdm_inter.shape)
+
+    # compute new tdms
+    theta = 0.5
+    gamma_A = (np.cos(theta)**2) * tdmA + (np.sin(theta)**2) * tdmB + np.sin(theta)*np.cos(theta)*(tdm_inter + tdm_inter_T)
+    gamma_B = (np.sin(theta)**2) * tdmA + (np.cos(theta)**2) * tdmB - np.sin(theta)*np.cos(theta)*(tdm_inter + tdm_inter_T)
+    print(gamma_A.shape, gamma_B.shape)
+
 
     if coupling_type in ['electronic', 'cK']:
         # if intermolecular:
