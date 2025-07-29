@@ -912,7 +912,14 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
     print("x2:", x2_np.shape, flush=True)
     print("y1:", y1_np.shape, flush=True)
     print("y2:", y2_np.shape, flush=True)
-    gamma_12 = occ_orbits @ (x1_np @ x2_np.T) @ virt_orbits.T + virt_orbits @ (y1_np @ y2_np.T) @ occ_orbits.T
+    x1x2T = x1_np @ x2_np.T     # (183, 183)
+    y1y2T = y1_np @ y2_np.T     # (183, 183)
+    print("x1x2:", x1x2T.shape, flush=True)
+    print("y1y2:", y1y2T.shape, flush=True)
+
+    # Final contractions
+    gamma_12 = occ_orbits @ x1x2T @ occ_orbits.T + virt_orbits @ y1y2T @ virt_orbits.T
+    #gamma_12 = occ_orbits @ (x1_np @ x2_np.T) @ virt_orbits.T + virt_orbits @ (y1_np @ y2_np.T) @ occ_orbits.T
     tddft_output['tdm_inter'] = gamma_12
 
     # (7) Mulliken analysis for excited states
