@@ -919,9 +919,13 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
         r = r[:, None]
     if c.ndim == 1:
         c = c[:, None]
+
+    # Transform to AO basis
+    hole_ao = molecule_mf.mo_coeff @ r[:, 0]
+    elec_ao = molecule_mf.mo_coeff @ c[:, 0]
     from pyscf.tools import cubegen
-    cubegen.orbital(molecule_mol, 'holeA.cube', r[:,0])
-    cubegen.orbital(molecule_mol, 'elecA.cube', c[:,0])
+    cubegen.orbital(molecule_mol, 'holeA.cube', hole_ao)
+    cubegen.orbital(molecule_mol, 'elecA.cube', elec_ao)
 
     # (7) Mulliken analysis for excited states
     if quantum_dict["mull_pops"] or quantum_dict["mull_chrgs"]:
