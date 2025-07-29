@@ -913,7 +913,7 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
     print("y1:", y1_np.shape, flush=True)
     print("y2:", y2_np.shape, flush=True)
     x1x2T = x1_np @ x2_np.T     # (183, 183)
-    y1y2T = y1_np @ y2_np.T     # (183, 183)
+    y1y2T = y1_np.T @ y2_np     # (183, 183)
     print("x1x2:", x1x2T.shape, flush=True)
     print("y1y2:", y1y2T.shape, flush=True)
 
