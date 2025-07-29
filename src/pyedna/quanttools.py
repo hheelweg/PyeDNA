@@ -914,11 +914,20 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
 
     # NOTE : delete this (this is just for debugging)
     # Get NTOs for state A
-    r, c = molecule_td.get_nto(state=2)
-    if r.ndim == 1:
-        r = r[:, None]
-    if c.ndim == 1:
-        c = c[:, None]
+    # Get number of occupied and virtual orbitals
+    nocc = molecule_mf.mol.nelectron // 2
+    nmo = molecule_mf.mo_coeff.shape[1]
+    nvir = nmo - nocc
+
+    # Get NTOs (hole lives in occ, particle in vir space)
+    r, c = molecule_td.get_nto(state=0)
+
+    # Promote NTOs to full MO space
+    hole_mo = np.zeros(nmo)
+    elec_mo = np.zeros(nmo)
+
+    hole_mo[:nocc] = r if r.ndim == 1 else r[:, 0]
+    elec_mo[nocc:] = c if c.ndim == 1 else c[:, 0]
 
     # Transform to AO basis
     hole_ao = cp.asnumpy(molecule_mf.mo_coeff) @ cp.asnumpy(r[:, 0])
