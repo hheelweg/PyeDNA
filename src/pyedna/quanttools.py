@@ -912,6 +912,12 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
     gamma_12 = occ_orbits @ x1x2T @ occ_orbits.T + virt_orbits @ y1y2T @ virt_orbits.T
     tddft_output['tdm_inter'] = gamma_12
 
+    # Get NTOs for state A
+    r, c = molecule_td.get_nto(state=2)
+    from pyscf.tools import cubegen
+    cubegen.orbital(molecule_mol, 'holeA.cube', r[:,0])
+    cubegen.orbital(molecule_mol, 'elecA.cube', c[:,0])
+
     # (7) Mulliken analysis for excited states
     if quantum_dict["mull_pops"] or quantum_dict["mull_chrgs"]:
         tddft_output['mull_pops'], tddft_output['mull_chrgs'] = doMullikenAnalysis(molecule_mf, molecule_mol, tdms, state_ids=state_ids)
@@ -1201,6 +1207,8 @@ def getVCoulombic(mols, tdms, tdms_inter, states, coupling_type = 'electronic'):
     print("inner product =",  np.trace(tdmA.conj().T @ tdmB))
     cubegen.density(mol, 'tdmA.cube', tdmA, nx=80, ny=80, nz=80)
     cubegen.density(mol, 'tdmB.cube', tdmB, nx=80, ny=80, nz=80)
+
+    
 
     # NOTE : for intermolecular
     tdm_inter = tdms_inter[0]
