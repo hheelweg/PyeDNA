@@ -900,9 +900,13 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
     # for INTRAMOLECULAR transfer between the TDMs within one molecules
     # we here only assume two states
     # TDDFT excitation vectors
+    virt_orbits = cp.asnumpy(virt_orbits)
+    occ_orbits = cp.asnumpy(occ_orbits)
     x1, y1 = molecule_td.xy[0]
     x2, y2 = molecule_td.xy[1]
-    gamma_12 = occ_orbits @ (x1 @ x2.T) @ virt_orbits.T + virt_orbits @ (y1 @ y2.T) @ occ_orbits.T
+    x1_np, y1_np = cp.asnumpy(x1), cp.asnumpy(y1)
+    x2_np, y2_np = cp.asnumpy(x2), cp.asnumpy(y2)
+    gamma_12 = occ_orbits @ (x1_np @ x2_np.T) @ virt_orbits.T + virt_orbits @ (y1_np @ y2_np.T) @ occ_orbits.T
     tddft_output['tdm_inter'] = gamma_12
 
     # (7) Mulliken analysis for excited states
