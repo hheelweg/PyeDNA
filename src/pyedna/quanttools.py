@@ -1198,8 +1198,8 @@ def getVCoulombic(mols, tdms, tdms_inter, states, coupling_type = 'electronic'):
     mol = molA
     tdmA, tdmB = np.squeeze(tdms[0][stateA]), np.squeeze(tdms[0][stateB])
     print(tdmA.shape, tdmB.shape)
-    cubegen.density(mol, 'tdmA.cube', tdmA, nx=80, ny=80, nz=80, box_cut=6)
-    cubegen.density(mol, 'tdmB.cube', tdmB, nx=80, ny=80, nz=80, box_cut=6)
+    cubegen.density(mol, 'tdmA.cube', tdmA, nx=80, ny=80, nz=80)
+    cubegen.density(mol, 'tdmB.cube', tdmB, nx=80, ny=80, nz=80)
 
     # NOTE : for intermolecular
     tdm_inter = tdms_inter[0]
