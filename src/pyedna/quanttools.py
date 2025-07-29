@@ -895,6 +895,15 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
         tddft_output['osc'] = np.array(osc_strengths)
     if quantum_dict['idx']:
         tddft_output['idx'] = osc_idx
+    
+    # (07/29/25) NOTE : added this for interference TDMs for interference term between transition density matrices
+    # for INTRAMOLECULAR transfer between the TDMs within one molecules
+    # we here only assume two states
+    # TDDFT excitation vectors
+    x1, y1 = molecule_td.xy[0]
+    x2, y2 = molecule_td.xy[1]
+    gamma_12 = occ_orbits @ (x1 @ x2.T) @ virt_orbits.T + virt_orbits @ (y1 @ y2.T) @ occ_orbits.T
+    tddft_output['tdm_inter'] = gamma_12
 
     # (7) Mulliken analysis for excited states
     if quantum_dict["mull_pops"] or quantum_dict["mull_chrgs"]:
@@ -1154,7 +1163,9 @@ def getIntraCJCK(mol, tdmA, tdmB, get_cK=False):
 # 'cJ' only returns the electrostatic interaction, 'cK' only the exchange interaction, 'electronic' returns 2 * cJ - cK
 # NOTE : stateA and stateB are zero-indexed here so stateA = 0 corresponds to the first excited state of molecule A etc.
 # stateA and stateB default to 0 to for the transition (S_0^A , S_1^B) <--> (S_1^A, S_0^B)
-def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
+def getVCoulombic(mols, tdms, tdms_inter, states, coupling_type = 'electronic'):
+
+    print(tdms_inter)
 
     #assert(len(mols) == len(tdms) == len(states))
     if len(states) == 2:
