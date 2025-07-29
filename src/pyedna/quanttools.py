@@ -1108,27 +1108,16 @@ def getInterCJCK(molA, molB, tdmA, tdmB, get_cK = False):
 # (intramolecular) coupling terms for the computation cJ and cK of molecule 
 # NOTE : this returns (by default) the couplings in Hartree units 
 # TODO : this can be deleted?!
-def getIntraCJCK(mol, tdm, get_cK = False):
-    from pyscf.scf import jk, _vhf
-    from pyscf import lib
+def getIntraCJCK(mol, tdmA, tdmB, get_cK = False):
+    from pyscf.scf import jk
 
-    assert tdm.shape == (mol.nao, mol.nao)
+    vJ = jk.get_j(mol, tdmB)
+    cJ = np.einsum('ij,ij->', vJ, tdmA)
 
-    # (1) Setup HF infrastructure for prescreened 2-electron integrals
-    vhfopt = _vhf.VHFOpt(mol, 'int2e', 'CVHFnrs8_prescreen', 'CVHFsetnr_direct_scf', 'CVHFsetnr_direct_scf_dm')                    
-    vhfopt.set_dm(tdm, mol._atm, mol._bas, mol._env)             
-    vhfopt._dmcondname = None
+    vK = jk.get_k(mol, tdmB)
+    cK = np.einsum('ij,ij->', vK, tdmA)
 
-    # (2) compute Coulomb integral (J)
-    with lib.temporary_env(vhfopt._this.contents, fprescreen=_vhf._fpointer('CVHFnrs8_vj_prescreen')):
-        vJ = jk.get_jk(mol, tdm, 'ijkl,lk->s2ij', vhfopt=vhfopt, aosym='s4', hermi=1)
-        cJ = np.einsum('ij,ij->', vJ, tdm)
-
-    # (3) compute Exchange integral (K)
-    if get_cK:
-        with lib.temporary_env(vhfopt._this.contents, fprescreen=_vhf._fpointer('CVHFnrs8_vk_prescreen')):
-            vK = jk.get_jk(mol, tdm, 'ijkl,jk->il', vhfopt=vhfopt, aosym='s1', hermi=0)
-            cK = np.einsum('ij,ij->', vK, tdm)
+    if get_cK == True:
         return cJ, cK
     else:
         return cJ, 0
@@ -1158,18 +1147,19 @@ def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
     # for intramolecular
     stateA, stateB = states[0], states[1]
     molA, molB = mols[0], mols[0]
+    mol = molA
     tdmA, tdmB = np.squeeze(tdms[0][stateA]), np.squeeze(tdms[0][stateB])
 
     if coupling_type in ['electronic', 'cK']:
         # if intermolecular:
-        cJ, cK = getInterCJCK(molA, molB, tdmA, tdmB, get_cK=True)
-        # if intramolecular:
-        #     cJ, cK = getIntraCJCK(mol, tdm, get_cK=True)
+        # cJ, cK = getInterCJCK(molA, molB, tdmA, tdmB, get_cK=True)
+        if intramolecular:
+            cJ, cK = getIntraCJCK(mol, tdmA, tdmB, get_cK=True)
     elif coupling_type in ['cJ']:
         # if intermolecular:
-        cJ, _ = getInterCJCK(molA, molB, tdmA, tdmB, get_cK=False)
-        # if intramolecular:
-        #     cJ, _ = getIntraCJCK(mol, tdm, get_cK=False)
+        # cJ, _ = getInterCJCK(molA, molB, tdmA, tdmB, get_cK=False)
+        if intramolecular:
+            cJ, _ = getIntraCJCK(mol, tdmA, tdmB, get_cK=False)
     else:
         raise NotImplementedError("Invalid coupling type specified!")
     

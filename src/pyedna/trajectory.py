@@ -585,7 +585,7 @@ class Trajectory():
                 stateA, stateB = states[0] + 1, states[1] + 1
             nameA, nameB = molecule_names[0], molecule_names[1]
             return f"[{nameA}({stateA}), {nameB}(0)] <--> [{nameA}(0), {nameB}({stateB})]"
-        # Case 2 : consider intermolecular transitions
+        # Case 2 : consider intramolecular transitions
         if len(states) == 1:
             # (a) consider transitions involving the largest oscillator strengths
             if states == ['strongest']:
