@@ -1219,8 +1219,8 @@ def getVCoulombic(mols, tdms, tdms_inter, states, coupling_type = 'electronic'):
     molA, molB = mols[0], mols[0]
     mol = molA
     tdmA, tdmB = np.squeeze(tdms[0][stateA]), np.squeeze(tdms[0][stateB])
-    print(tdmA.shape, tdmB.shape)
-    print("inner product =",  np.trace(tdmA.conj().T @ tdmB))
+    # print(tdmA.shape, tdmB.shape)
+    # print("inner product =",  np.trace(tdmA.conj().T @ tdmB))
     cubegen.density(mol, 'tdmA.cube', tdmA, nx=80, ny=80, nz=80)
     cubegen.density(mol, 'tdmB.cube', tdmB, nx=80, ny=80, nz=80)
 
@@ -1230,8 +1230,8 @@ def getVCoulombic(mols, tdms, tdms_inter, states, coupling_type = 'electronic'):
     P_A = np.zeros((mol.nao_nr(), mol.nao_nr()))
     for i in frag_ids:
         P_A[i, i] = 1.0
-    print('projector', P_A)
-    print('projector shape', P_A.shape)
+    # print('projector', P_A)
+    # print('projector shape', P_A.shape)
     # compute projector onto rest
     P_B = np.eye(mol.nao_nr()) - P_A
     
