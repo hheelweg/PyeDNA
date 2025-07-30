@@ -1228,7 +1228,7 @@ def getVCoulombic(mols, tdms, tdms_inter, states, coupling_type = 'electronic'):
     cubegen.density(mol, 'tdmB.cube', tdmB, nx=80, ny=80, nz=80)
 
 
-    def project_tdm_fragment_lowdin(gamma, S, frag_ao_idx):
+    def project_tdm_fragment_lowdin(gamma, S, frag_ao_idx, scaling = 1.0):
         """
         Project transition density matrix `gamma` onto a fragment defined by `frag_ao_idx`
         using Löwdin orthogonalization.
@@ -1265,7 +1265,7 @@ def getVCoulombic(mols, tdms, tdms_inter, states, coupling_type = 'electronic'):
 
         # Step 5: Transform back to original AO basis
         gamma_frag = S_sqrt @ gamma_frag_ortho @ S_sqrt
-        gamma_frag /= np.sqrt(np.trace(gamma_frag.conj().T @ gamma_frag))
+        gamma_frag *= np.sqrt(scaling / np.trace(gamma_frag.conj().T @ gamma_frag))
 
         return gamma_frag
 
@@ -1295,8 +1295,8 @@ def getVCoulombic(mols, tdms, tdms_inter, states, coupling_type = 'electronic'):
     # gamma_B = P_B @ tdmB @ P_B
     S = tdms_inter[0]
     print('S shape', S.shape)
-    gamma_A = project_tdm_fragment_lowdin(tdmA, S, frag_A)
-    gamma_B = project_tdm_fragment_lowdin(tdmB, S, frag_B)
+    gamma_A = project_tdm_fragment_lowdin(tdmA, S, frag_A, scaling=np.trace(tdmA.conj().T @ tdmA))
+    gamma_B = project_tdm_fragment_lowdin(tdmB, S, frag_B, scaling=np.trace(tdmB.conj().T @ tdmB))
 
 
     # run some checks
