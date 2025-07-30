@@ -1144,7 +1144,7 @@ class Trajectory():
                                                                                 enforce_symmetry = False,
                                                                                 conversion = 'pyscf'
                                                                                 )
-                    
+                    print(fragment_indices, flush = True)
                     self.chromophores_fragments.append(fragment_indices)
                     self.chromophores_fragment_names.append(fragment_names)
                     
