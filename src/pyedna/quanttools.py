@@ -1221,7 +1221,9 @@ def getVCoulombic(mols, tdms, tdms_inter, states, coupling_type = 'electronic'):
     mol = molA
     tdmA, tdmB = np.squeeze(tdms[0][stateA]), np.squeeze(tdms[0][stateB])
     # print(tdmA.shape, tdmB.shape)
-    # print("inner product =",  np.trace(tdmA.conj().T @ tdmB))
+    print("inner product =",  np.trace(tdmA.conj().T @ tdmB))
+    print("norm A =",  np.trace(tdmA.conj().T @ tdmA))
+    print("norm B =",  np.trace(tdmB.conj().T @ tdmB))
     cubegen.density(mol, 'tdmA.cube', tdmA, nx=80, ny=80, nz=80)
     cubegen.density(mol, 'tdmB.cube', tdmB, nx=80, ny=80, nz=80)
 
@@ -1263,7 +1265,7 @@ def getVCoulombic(mols, tdms, tdms_inter, states, coupling_type = 'electronic'):
 
         # Step 5: Transform back to original AO basis
         gamma_frag = S_sqrt @ gamma_frag_ortho @ S_sqrt
-        gamma_frag /= np.trace(gamma_frag @ S @ gamma_frag)
+        gamma_frag /= np.trace(gamma_frag.conj().T @ gamma_frag)
 
         return gamma_frag
 
