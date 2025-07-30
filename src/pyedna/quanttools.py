@@ -1222,11 +1222,11 @@ def getVCoulombic(mols, tdms, tdms_inter, states, coupling_type = 'electronic'):
     mol = molA
     tdmA, tdmB = np.squeeze(tdms[0][stateA]), np.squeeze(tdms[0][stateB])
     # print(tdmA.shape, tdmB.shape)
-    print("inner product =",  np.trace(tdmA.conj().T @ tdmB))
-    print("norm A =",  np.trace(tdmA.conj().T @ tdmA))
-    print("norm B =",  np.trace(tdmB.conj().T @ tdmB))
-    cubegen.density(mol, 'tdmA.cube', tdmA, nx=80, ny=80, nz=80)
-    cubegen.density(mol, 'tdmB.cube', tdmB, nx=80, ny=80, nz=80)
+    # print("inner product =",  np.trace(tdmA.conj().T @ tdmB))
+    # print("norm A =",  np.trace(tdmA.conj().T @ tdmA))
+    # print("norm B =",  np.trace(tdmB.conj().T @ tdmB))
+    # cubegen.density(mol, 'tdmA.cube', tdmA, nx=80, ny=80, nz=80)
+    # cubegen.density(mol, 'tdmB.cube', tdmB, nx=80, ny=80, nz=80)
 
 
     def project_tdm_fragment_lowdin(gamma, S, frag_ao_idx, scaling = 1.0):
@@ -1284,42 +1284,44 @@ def getVCoulombic(mols, tdms, tdms_inter, states, coupling_type = 'electronic'):
     # gamma_A = P_A @ tdmA @ P_A
     # gamma_B = P_B @ tdmB @ P_B
     
-    # NOTE : for intermolecular
-    tdm_inter = tdms_inter[0]
-    tdm_inter_T = np.conj(tdm_inter).T
-    print(tdm_inter.shape)
-    print(np.trace(tdm_inter.conj().T @ tdm_inter))
-    # compute new tdms from superposition information
-    ratio = np.sqrt(0.65/0.35)
-    theta = np.arctan(ratio)
-    gamma_A = (np.cos(theta)**2) * tdmA + (np.sin(theta)**2) * tdmB + np.sin(theta)*np.cos(theta)*(tdm_inter + tdm_inter_T)
-    gamma_B = (np.sin(theta)**2) * tdmA + (np.cos(theta)**2) * tdmB - np.sin(theta)*np.cos(theta)*(tdm_inter + tdm_inter_T)
+    # # NOTE : for intermolecular
+    # tdm_inter = tdms_inter[0]
+    # tdm_inter_T = np.conj(tdm_inter).T
+    # print(tdm_inter.shape)
+    # print(np.trace(tdm_inter.conj().T @ tdm_inter))
+    # # compute new tdms from superposition information
+    # ratio = np.sqrt(0.65/0.35)
+    # theta = np.arctan(ratio)
+    # gamma_A = (np.cos(theta)**2) * tdmA + (np.sin(theta)**2) * tdmB + np.sin(theta)*np.cos(theta)*(tdm_inter + tdm_inter_T)
+    # gamma_B = (np.sin(theta)**2) * tdmA + (np.cos(theta)**2) * tdmB - np.sin(theta)*np.cos(theta)*(tdm_inter + tdm_inter_T)
 
     # S = tdms_inter[0]
     # print('S shape', S.shape)
     # gamma_A = project_tdm_fragment_lowdin(tdmA, S, frag_A, scaling=np.trace(tdmA.conj().T @ tdmA))
     # gamma_B = project_tdm_fragment_lowdin(tdmB, S, frag_B, scaling=np.trace(tdmB.conj().T @ tdmB))
 
-    # run some checks
-    print(gamma_A.shape, gamma_B.shape)
-    inner_product = np.trace(gamma_A.conj().T @ gamma_B)
-    print("inner product =", inner_product)
-    norm_A = np.trace(gamma_A.conj().T @ gamma_A)
-    norm_B = np.trace(gamma_B.conj().T @ gamma_B)
-    print("norm A =", norm_A)
-    print("norm B =", norm_B)
+    # # run some checks
+    # print(gamma_A.shape, gamma_B.shape)
+    # inner_product = np.trace(gamma_A.conj().T @ gamma_B)
+    # print("inner product =", inner_product)
+    # norm_A = np.trace(gamma_A.conj().T @ gamma_A)
+    # norm_B = np.trace(gamma_B.conj().T @ gamma_B)
+    # print("norm A =", norm_A)
+    # print("norm B =", norm_B)
 
 
     if coupling_type in ['electronic', 'cK']:
         # if intermolecular:
         # cJ, cK = getInterCJCK(molA, molB, tdmA, tdmB, get_cK=True)
         #if intramolecular:
-        cJ, cK = getIntraCJCK(mol, gamma_A, gamma_B, get_cK=True)
+        # cJ, cK = getIntraCJCK(mol, gamma_A, gamma_B, get_cK=True)
+        cJ, cK = getIntraCJCK(mol, tdmA, tdmB, get_cK=True)
     elif coupling_type in ['cJ']:
         # if intermolecular:
         # cJ, _ = getInterCJCK(molA, molB, tdmA, tdmB, get_cK=False)
         # if intramolecular:
-        cJ, _ = getIntraCJCK(mol, gamma_A, gamma_B, get_cK=False)
+        # cJ, _ = getIntraCJCK(mol, gamma_A, gamma_B, get_cK=False)
+        cJ, _ = getIntraCJCK(mol, tdmA, tdmB, get_cK=False)
     else:
         raise NotImplementedError("Invalid coupling type specified!")
     
