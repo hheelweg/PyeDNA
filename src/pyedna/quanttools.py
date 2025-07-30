@@ -1263,7 +1263,7 @@ def getVCoulombic(mols, tdms, tdms_inter, states, coupling_type = 'electronic'):
 
         # Step 5: Transform back to original AO basis
         gamma_frag = S_sqrt @ gamma_frag_ortho @ S_sqrt
-        gamma_frag /= np.trace(gamma_frag_ortho @ S @ gamma_frag_ortho)
+        gamma_frag /= np.trace(gamma_frag @ S @ gamma_frag)
 
         return gamma_frag
 
