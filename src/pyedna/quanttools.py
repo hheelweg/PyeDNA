@@ -910,7 +910,7 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
     x1x2T = x1_np @ x2_np.T     
     y1y2T = y1_np.T @ y2_np     
     gamma_12 = occ_orbits @ x1x2T @ occ_orbits.T + virt_orbits @ y1y2T @ virt_orbits.T
-    tddft_output['tdm_inter'] = molecule_mf.get_ovlp() #gamma_12
+    tddft_output['tdm_inter'] = cp.asarray(molecule_mf.get_ovlp()) #gamma_12
 
     # NOTE : delete this (this is just for debugging)
     # Get NTOs for state A
