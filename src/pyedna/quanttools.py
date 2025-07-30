@@ -910,14 +910,15 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
     x1x2T = x1_np @ x2_np.T     
     y1y2T = y1_np.T @ y2_np     
     gamma_12 = occ_orbits @ x1x2T @ occ_orbits.T + virt_orbits @ y1y2T @ virt_orbits.T
-    tddft_output['tdm_inter'] = cp.asnumpy(molecule_mf.get_ovlp()) #gamma_12
+    #tddft_output['tdm_inter'] = cp.asnumpy(molecule_mf.get_ovlp()) #gamma_12
+    tddft_output['tdm_inter'] = gamma_12
 
-    # NOTE : delete this (this is just for debugging)
-    # Get NTOs for state A
-    # Get number of occupied and virtual orbitals
-    nocc = molecule_mf.mol.nelectron // 2
-    nmo = molecule_mf.mo_coeff.shape[1]
-    nvir = nmo - nocc
+    # # NOTE : delete this (this is just for debugging)
+    # # Get NTOs for state A
+    # # Get number of occupied and virtual orbitals
+    # nocc = molecule_mf.mol.nelectron // 2
+    # nmo = molecule_mf.mo_coeff.shape[1]
+    # nvir = nmo - nocc
 
     # NOTE : I had this in during the testing for intramolecular rates
     # # Get NTOs (hole lives in occ, particle in vir space)
@@ -1270,8 +1271,8 @@ def getVCoulombic(mols, tdms, tdms_inter, states, coupling_type = 'electronic'):
         return gamma_frag
 
     # manually obtained indices for one of the fragments
-    frag_A = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49]
-    frag_B = [50, 51, 52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103]
+    # frag_A = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49]
+    # frag_B = [50, 51, 52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103]
     # # compute projector onto frag_ids
     # P_A = np.zeros((mol.nao_nr(), mol.nao_nr()))
     # for i in frag_A:
@@ -1280,24 +1281,24 @@ def getVCoulombic(mols, tdms, tdms_inter, states, coupling_type = 'electronic'):
     # # print('projector shape', P_A.shape)
     # # compute projector onto rest
     # P_B = np.eye(mol.nao_nr()) - P_A
-    
-    # NOTE : for intermolecular
-    # tdm_inter = tdms_inter[0]
-    # tdm_inter_T = np.conj(tdm_inter).T
-    # print(tdm_inter.shape)
-    # print(np.trace(tdm_inter.conj().T @ tdm_inter))
-    # # compute new tdms from superposition information
-    # ratio = np.sqrt(0.65/0.35)
-    # theta = np.arctan(ratio)
-    # gamma_A = (np.cos(theta)**2) * tdmA + (np.sin(theta)**2) * tdmB + np.sin(theta)*np.cos(theta)*(tdm_inter + tdm_inter_T)
-    # gamma_B = (np.sin(theta)**2) * tdmA + (np.cos(theta)**2) * tdmB - np.sin(theta)*np.cos(theta)*(tdm_inter + tdm_inter_T)
     # gamma_A = P_A @ tdmA @ P_A
     # gamma_B = P_B @ tdmB @ P_B
-    S = tdms_inter[0]
-    print('S shape', S.shape)
-    gamma_A = project_tdm_fragment_lowdin(tdmA, S, frag_A, scaling=np.trace(tdmA.conj().T @ tdmA))
-    gamma_B = project_tdm_fragment_lowdin(tdmB, S, frag_B, scaling=np.trace(tdmB.conj().T @ tdmB))
+    
+    # NOTE : for intermolecular
+    tdm_inter = tdms_inter[0]
+    tdm_inter_T = np.conj(tdm_inter).T
+    print(tdm_inter.shape)
+    print(np.trace(tdm_inter.conj().T @ tdm_inter))
+    # compute new tdms from superposition information
+    ratio = np.sqrt(0.65/0.35)
+    theta = np.arctan(ratio)
+    gamma_A = (np.cos(theta)**2) * tdmA + (np.sin(theta)**2) * tdmB + np.sin(theta)*np.cos(theta)*(tdm_inter + tdm_inter_T)
+    gamma_B = (np.sin(theta)**2) * tdmA + (np.cos(theta)**2) * tdmB - np.sin(theta)*np.cos(theta)*(tdm_inter + tdm_inter_T)
 
+    # S = tdms_inter[0]
+    # print('S shape', S.shape)
+    # gamma_A = project_tdm_fragment_lowdin(tdmA, S, frag_A, scaling=np.trace(tdmA.conj().T @ tdmA))
+    # gamma_B = project_tdm_fragment_lowdin(tdmB, S, frag_B, scaling=np.trace(tdmB.conj().T @ tdmB))
 
     # run some checks
     print(gamma_A.shape, gamma_B.shape)
