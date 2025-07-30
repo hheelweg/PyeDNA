@@ -1197,6 +1197,7 @@ def getIntraCJCK(mol, tdmA, tdmB, get_cK=False):
 def getVCoulombic(mols, tdms, tdms_inter, states, coupling_type = 'electronic'):
 
     from pyscf.tools import cubegen
+    import numpy as np
 
 
     #assert(len(mols) == len(tdms) == len(states))
@@ -1224,8 +1225,6 @@ def getVCoulombic(mols, tdms, tdms_inter, states, coupling_type = 'electronic'):
     cubegen.density(mol, 'tdmA.cube', tdmA, nx=80, ny=80, nz=80)
     cubegen.density(mol, 'tdmB.cube', tdmB, nx=80, ny=80, nz=80)
 
-
-    import numpy as np
 
     def project_tdm_fragment_lowdin(gamma, S, frag_ao_idx):
         """
@@ -1291,10 +1290,10 @@ def getVCoulombic(mols, tdms, tdms_inter, states, coupling_type = 'electronic'):
     # gamma_B = (np.sin(theta)**2) * tdmA + (np.cos(theta)**2) * tdmB - np.sin(theta)*np.cos(theta)*(tdm_inter + tdm_inter_T)
     # gamma_A = P_A @ tdmA @ P_A
     # gamma_B = P_B @ tdmB @ P_B
-    S = tdms_inter
+    S = tdms_inter[0]
     print('S shape', S.shape)
     gamma_A = project_tdm_fragment_lowdin(tdmA, S, frag_A)
-    gamma_B = project_tdm_fragment_lowdin(tdmB, S, frag_A)
+    gamma_B = project_tdm_fragment_lowdin(tdmB, S, frag_B)
 
 
     # run some checks
