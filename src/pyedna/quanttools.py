@@ -919,22 +919,20 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
     nmo = molecule_mf.mo_coeff.shape[1]
     nvir = nmo - nocc
 
-    # Get NTOs (hole lives in occ, particle in vir space)
-    r, c = molecule_td.get_nto(state=0)
-
-    # Promote NTOs to full MO space
-    hole_mo = np.zeros(nmo)
-    elec_mo = np.zeros(nmo)
-
-    hole_mo[:nocc] = r if r.ndim == 1 else r[:, 0]
-    elec_mo[nocc:] = c if c.ndim == 1 else c[:, 0]
-
-    # Transform to AO basis
-    hole_ao = cp.asnumpy(molecule_mf.mo_coeff) @ cp.asnumpy(r[:, 0])
-    elec_ao = cp.asnumpy(molecule_mf.mo_coeff) @ cp.asnumpy(c[:, 0])
-    from pyscf.tools import cubegen
-    cubegen.orbital(molecule_mol, 'holeA.cube', hole_ao)
-    cubegen.orbital(molecule_mol, 'elecA.cube', elec_ao)
+    # NOTE : I had this in during the testing for intramolecular rates
+    # # Get NTOs (hole lives in occ, particle in vir space)
+    # r, c = molecule_td.get_nto(state=0)
+    # # Promote NTOs to full MO space
+    # hole_mo = np.zeros(nmo)
+    # elec_mo = np.zeros(nmo)
+    # hole_mo[:nocc] = r if r.ndim == 1 else r[:, 0]
+    # elec_mo[nocc:] = c if c.ndim == 1 else c[:, 0]
+    # # Transform to AO basis
+    # hole_ao = cp.asnumpy(molecule_mf.mo_coeff) @ cp.asnumpy(r[:, 0])
+    # elec_ao = cp.asnumpy(molecule_mf.mo_coeff) @ cp.asnumpy(c[:, 0])
+    # from pyscf.tools import cubegen
+    # cubegen.orbital(molecule_mol, 'holeA.cube', hole_ao)
+    # cubegen.orbital(molecule_mol, 'elecA.cube', elec_ao)
 
     # (7) Mulliken analysis for excited states
     if quantum_dict["mull_pops"] or quantum_dict["mull_chrgs"]:
@@ -1226,6 +1224,14 @@ def getVCoulombic(mols, tdms, tdms_inter, states, coupling_type = 'electronic'):
     cubegen.density(mol, 'tdmA.cube', tdmA, nx=80, ny=80, nz=80)
     cubegen.density(mol, 'tdmB.cube', tdmB, nx=80, ny=80, nz=80)
 
+    # manually obtained indices for one of the fragments
+    frag_ids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49]
+
+    P_A = np.zeros((mol.nao_nr(), mol.nao_nr()))
+    for i in frag_ids:
+        P_A[i, i] = 1.0
+    print('projector', P_A)
+    print('projector shape', P_A.shape)
     
 
     # NOTE : for intermolecular
