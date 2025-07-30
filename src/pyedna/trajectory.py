@@ -1130,6 +1130,7 @@ class Trajectory():
                 self.chromophores_fragments = [] if self.do_mulliken else None
                 self.chromophores_fragment_names = [] if self.do_mulliken else None
 
+
             for i, molecule in enumerate(self.molecules):
 
                 
@@ -1151,7 +1152,7 @@ class Trajectory():
                     chromophore, chromophore_conv = self.getChromophoreSnapshot(
                                                                                 molecule = molecule,
                                                                                 molecule_constituents = self.molecule_constituents[i],
-                                                                                fragments = None,
+                                                                                fragments = None, 
                                                                                 enforce_symmetry = False,
                                                                                 conversion = 'pyscf'
                                                                                 )
