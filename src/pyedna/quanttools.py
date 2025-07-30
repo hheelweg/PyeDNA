@@ -910,7 +910,7 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
     x1x2T = x1_np @ x2_np.T     
     y1y2T = y1_np.T @ y2_np     
     gamma_12 = occ_orbits @ x1x2T @ occ_orbits.T + virt_orbits @ y1y2T @ virt_orbits.T
-    tddft_output['tdm_inter'] = gamma_12
+    tddft_output['tdm_inter'] = molecule_mf.get_ovlp() #gamma_12
 
     # NOTE : delete this (this is just for debugging)
     # Get NTOs for state A
@@ -1224,16 +1224,60 @@ def getVCoulombic(mols, tdms, tdms_inter, states, coupling_type = 'electronic'):
     cubegen.density(mol, 'tdmA.cube', tdmA, nx=80, ny=80, nz=80)
     cubegen.density(mol, 'tdmB.cube', tdmB, nx=80, ny=80, nz=80)
 
+
+    import numpy as np
+
+    def project_tdm_fragment_lowdin(gamma, S, frag_ao_idx):
+        """
+        Project transition density matrix `gamma` onto a fragment defined by `frag_ao_idx`
+        using Löwdin orthogonalization.
+        
+        Parameters
+        ----------
+        gamma : (nao, nao) np.ndarray
+            Transition density matrix in AO basis (real or complex).
+        S : (nao, nao) np.ndarray
+            AO overlap matrix.
+        frag_ao_idx : list[int]
+            Indices of atomic orbitals belonging to the fragment.
+
+        Returns
+        -------
+        gamma_frag : (nao, nao) np.ndarray
+            Fragment-projected TDM in original AO basis.
+        """
+        # Step 1: Löwdin orthogonalization matrix S^{-1/2}
+        evals, evecs = np.linalg.eigh(S)
+        S_inv_sqrt = evecs @ np.diag(1.0 / np.sqrt(evals)) @ evecs.T
+        S_sqrt = evecs @ np.diag(np.sqrt(evals)) @ evecs.T
+
+        # Step 2: Transform TDM to orthogonalized AO basis
+        gamma_ortho = S_inv_sqrt @ gamma @ S_inv_sqrt
+
+        # Step 3: Construct fragment projector in orthogonal AO basis
+        nao = S.shape[0]
+        P_frag = np.zeros((nao, nao))
+        P_frag[np.ix_(frag_ao_idx, frag_ao_idx)] = 1.0
+
+        # Step 4: Project TDM in orthogonal basis
+        gamma_frag_ortho = P_frag @ gamma_ortho @ P_frag
+
+        # Step 5: Transform back to original AO basis
+        gamma_frag = S_sqrt @ gamma_frag_ortho @ S_sqrt
+
+        return gamma_frag
+
     # manually obtained indices for one of the fragments
-    frag_ids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49]
-    # compute projector onto frag_ids
-    P_A = np.zeros((mol.nao_nr(), mol.nao_nr()))
-    for i in frag_ids:
-        P_A[i, i] = 1.0
-    # print('projector', P_A)
-    # print('projector shape', P_A.shape)
-    # compute projector onto rest
-    P_B = np.eye(mol.nao_nr()) - P_A
+    frag_A = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49]
+    frag_B = [50, 51, 52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103]
+    # # compute projector onto frag_ids
+    # P_A = np.zeros((mol.nao_nr(), mol.nao_nr()))
+    # for i in frag_A:
+    #     P_A[i, i] = 1.0
+    # # print('projector', P_A)
+    # # print('projector shape', P_A.shape)
+    # # compute projector onto rest
+    # P_B = np.eye(mol.nao_nr()) - P_A
     
     # NOTE : for intermolecular
     # tdm_inter = tdms_inter[0]
@@ -1245,8 +1289,13 @@ def getVCoulombic(mols, tdms, tdms_inter, states, coupling_type = 'electronic'):
     # theta = np.arctan(ratio)
     # gamma_A = (np.cos(theta)**2) * tdmA + (np.sin(theta)**2) * tdmB + np.sin(theta)*np.cos(theta)*(tdm_inter + tdm_inter_T)
     # gamma_B = (np.sin(theta)**2) * tdmA + (np.cos(theta)**2) * tdmB - np.sin(theta)*np.cos(theta)*(tdm_inter + tdm_inter_T)
-    gamma_A = P_A @ tdmA @ P_A
-    gamma_B = P_B @ tdmB @ P_B
+    # gamma_A = P_A @ tdmA @ P_A
+    # gamma_B = P_B @ tdmB @ P_B
+    S = tdms_inter
+    print('S shape', S.shape)
+    gamma_A = project_tdm_fragment_lowdin(tdmA, S, frag_A)
+    gamma_B = project_tdm_fragment_lowdin(tdmB, S, frag_A)
+
 
     # run some checks
     print(gamma_A.shape, gamma_B.shape)
