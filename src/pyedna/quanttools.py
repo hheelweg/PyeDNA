@@ -1226,24 +1226,29 @@ def getVCoulombic(mols, tdms, tdms_inter, states, coupling_type = 'electronic'):
 
     # manually obtained indices for one of the fragments
     frag_ids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49]
-
+    # compute projector onto frag_ids
     P_A = np.zeros((mol.nao_nr(), mol.nao_nr()))
     for i in frag_ids:
         P_A[i, i] = 1.0
     print('projector', P_A)
     print('projector shape', P_A.shape)
+    # compute projector onto rest
+    P_B = np.eye(mol.nao_nr()) - P_A
     
-
     # NOTE : for intermolecular
-    tdm_inter = tdms_inter[0]
-    tdm_inter_T = np.conj(tdm_inter).T
-    print(tdm_inter.shape)
-    print(np.trace(tdm_inter.conj().T @ tdm_inter))
-    # compute new tdms from superposition information
-    ratio = np.sqrt(0.65/0.35)
-    theta = np.arctan(ratio)
-    gamma_A = (np.cos(theta)**2) * tdmA + (np.sin(theta)**2) * tdmB + np.sin(theta)*np.cos(theta)*(tdm_inter + tdm_inter_T)
-    gamma_B = (np.sin(theta)**2) * tdmA + (np.cos(theta)**2) * tdmB - np.sin(theta)*np.cos(theta)*(tdm_inter + tdm_inter_T)
+    # tdm_inter = tdms_inter[0]
+    # tdm_inter_T = np.conj(tdm_inter).T
+    # print(tdm_inter.shape)
+    # print(np.trace(tdm_inter.conj().T @ tdm_inter))
+    # # compute new tdms from superposition information
+    # ratio = np.sqrt(0.65/0.35)
+    # theta = np.arctan(ratio)
+    # gamma_A = (np.cos(theta)**2) * tdmA + (np.sin(theta)**2) * tdmB + np.sin(theta)*np.cos(theta)*(tdm_inter + tdm_inter_T)
+    # gamma_B = (np.sin(theta)**2) * tdmA + (np.cos(theta)**2) * tdmB - np.sin(theta)*np.cos(theta)*(tdm_inter + tdm_inter_T)
+    gamma_A = P_A @ tdmA @ P_A
+    gamma_B = P_B @ tdmB @ P_B
+
+    # run some checks
     print(gamma_A.shape, gamma_B.shape)
     inner_product = np.trace(gamma_A.conj().T @ gamma_B)
     print("inner product =", inner_product)
