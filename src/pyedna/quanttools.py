@@ -1221,7 +1221,7 @@ def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
     # molA, molB = mols[0], mols[1]
     # tdmA, tdmB = tdms[0][stateA], tdms[1][stateB]
 
-    NOTE : for intramolecular
+    # NOTE : for intramolecular
     stateA, stateB = states[0], states[1]
     molA, molB = mols[0], mols[0]
     mol = molA
