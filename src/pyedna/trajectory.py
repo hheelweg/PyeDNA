@@ -957,13 +957,13 @@ class Trajectory():
                 if self.quant_info[0]["coupling"]:
                     # compute coupling based on QM (DFT/TDDFT) output
                     # TODO : for intramolecular
-                    if i == 0:
-                        coupling_out = qm.getVCoulombic(output_qm['mol'], output_qm['tdm'],  [self.transitions[i], self.transitions[i+1]], coupling_type=self.quant_info[1]['coupling'])
-                    if i == 1:
-                        coupling_out = qm.getVCoulombic(output_qm['mol'], output_qm['tdm'],  [self.transitions[i-1], self.transitions[i]], coupling_type=self.quant_info[1]['coupling'])
+                    #if i == 0:
+                    #    coupling_out = qm.getVCoulombic(output_qm['mol'], output_qm['tdm'],  [self.transitions[i], self.transitions[i+1]], coupling_type=self.quant_info[1]['coupling'])
+                    #if i == 1:
+                    #    coupling_out = qm.getVCoulombic(output_qm['mol'], output_qm['tdm'],  [self.transitions[i-1], self.transitions[i]], coupling_type=self.quant_info[1]['coupling'])
                     # TODO : go back to this:
                     # TODO : for intermolecular
-                    #coupling_out = qm.getVCoulombic(output_qm['mol'], output_qm['tdm'], states, coupling_type=self.quant_info[1]['coupling'])
+                    coupling_out = qm.getVCoulombic(output_qm['mol'], output_qm['tdm'], states, coupling_type=self.quant_info[1]['coupling'])
                     # add to output df
                     self.output_quant.loc[time_idx, [(self.transition_names[i], key) for key in coupling_out.keys()]] = list(coupling_out.values())
 
