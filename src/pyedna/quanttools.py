@@ -1277,13 +1277,13 @@ def getVCoulombic(mols, tdms, tdms_inter, states, coupling_type = 'electronic'):
 
     if coupling_type in ['electronic', 'cK']:
         # if intermolecular:
-        # cJ, cK = getInterCJCK(molA, molB, tdmA, tdmB, get_cK=True)
+        cJ, cK = getInterCJCK(molA, molB, tdmA, tdmB, get_cK=True)
         #if intramolecular:
         # cJ, cK = getIntraCJCK(mol, gamma_A, gamma_B, get_cK=True)
         # cJ, cK = getIntraCJCK(mol, tdmA, tdmB, get_cK=True)
     elif coupling_type in ['cJ']:
         # if intermolecular:
-        # cJ, _ = getInterCJCK(molA, molB, tdmA, tdmB, get_cK=False)
+        cJ, _ = getInterCJCK(molA, molB, tdmA, tdmB, get_cK=False)
         # if intramolecular:
         # cJ, _ = getIntraCJCK(mol, gamma_A, gamma_B, get_cK=False)
         # cJ, _ = getIntraCJCK(mol, tdmA, tdmB, get_cK=False)
