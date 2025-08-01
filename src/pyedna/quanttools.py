@@ -1195,7 +1195,7 @@ def getIntraCJCK(mol, tdmA, tdmB, get_cK=False):
 # 'cJ' only returns the electrostatic interaction, 'cK' only the exchange interaction, 'electronic' returns 2 * cJ - cK
 # NOTE : stateA and stateB are zero-indexed here so stateA = 0 corresponds to the first excited state of molecule A etc.
 # stateA and stateB default to 0 to for the transition (S_0^A , S_1^B) <--> (S_1^A, S_0^B)
-def getVCoulombic(mols, tdms, tdms_inter, states, coupling_type = 'electronic'):
+def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
 
     from pyscf.tools import cubegen
     import numpy as np

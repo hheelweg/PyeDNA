@@ -954,13 +954,14 @@ class Trajectory():
                 # (a) get Coulombic coupling information
                 if self.quant_info[0]["coupling"]:
                     # compute coupling based on QM (DFT/TDDFT) output
-                    # TODO : delete this
+                    # TODO : for intramolecular
                     if i == 0:
-                        coupling_out = qm.getVCoulombic(output_qm['mol'], output_qm['tdm'],  output_qm['tdm_inter'], [self.transitions[i], self.transitions[i+1]], coupling_type=self.quant_info[1]['coupling'])
+                        coupling_out = qm.getVCoulombic(output_qm['mol'], output_qm['tdm'],  [self.transitions[i], self.transitions[i+1]], coupling_type=self.quant_info[1]['coupling'])
                     if i == 1:
-                        coupling_out = qm.getVCoulombic(output_qm['mol'], output_qm['tdm'],  output_qm['tdm_inter'], [self.transitions[i-1], self.transitions[i]], coupling_type=self.quant_info[1]['coupling'])
+                        coupling_out = qm.getVCoulombic(output_qm['mol'], output_qm['tdm'],  [self.transitions[i-1], self.transitions[i]], coupling_type=self.quant_info[1]['coupling'])
                     # TODO : go back to this:
-                    #coupling_out = qm.getVCoulombic(output_qm['mol'], output_qm['tdm'], states, coupling_type=self.quant_info[1]['coupling'])
+                    # TODO : for intermolecular
+                    coupling_out = qm.getVCoulombic(output_qm['mol'], output_qm['tdm'], states, coupling_type=self.quant_info[1]['coupling'])
                     # add to output df
                     self.output_quant.loc[time_idx, [(self.transition_names[i], key) for key in coupling_out.keys()]] = list(coupling_out.values())
 
@@ -1168,7 +1169,7 @@ class Trajectory():
                 if self.do_mulliken:
                     output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, fragments=self.chromophores_fragments, verbosity = 1)
                 else:
-                    output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, verbosity = 3)
+                    output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, verbosity = 1)
 
                 # (2.2) post-processing of QM output
                 self.analyzeSnapshotQuantum(idx, output_qm)
