@@ -1216,6 +1216,11 @@ def getVCoulombic(mols, tdms, tdms_inter, states, coupling_type = 'electronic'):
     #     mol = mols[0]
     #     tdm = tdms[0][state]
 
+    # NOTE : for intermolecular
+    stateA, stateB = states[0], states[1]
+    molA, molB = mols[0], mols[1]
+    tdmA, tdmB = tdms[0][stateA], tdms[1][stateB]
+
     # NOTE : for intramolecular
     stateA, stateB = states[0], states[1]
     molA, molB = mols[0], mols[0]
@@ -1225,51 +1230,10 @@ def getVCoulombic(mols, tdms, tdms_inter, states, coupling_type = 'electronic'):
     # print("inner product =",  np.trace(tdmA.conj().T @ tdmB))
     # print("norm A =",  np.trace(tdmA.conj().T @ tdmA))
     # print("norm B =",  np.trace(tdmB.conj().T @ tdmB))
-    # cubegen.density(mol, 'tdmA.cube', tdmA, nx=80, ny=80, nz=80)
-    # cubegen.density(mol, 'tdmB.cube', tdmB, nx=80, ny=80, nz=80)
+    cubegen.density(mol, 'tdmA.cube', tdmA, nx=80, ny=80, nz=80)
+    cubegen.density(mol, 'tdmB.cube', tdmB, nx=80, ny=80, nz=80)
 
-
-    def project_tdm_fragment_lowdin(gamma, S, frag_ao_idx, scaling = 1.0):
-        """
-        Project transition density matrix `gamma` onto a fragment defined by `frag_ao_idx`
-        using Löwdin orthogonalization.
-        
-        Parameters
-        ----------
-        gamma : (nao, nao) np.ndarray
-            Transition density matrix in AO basis (real or complex).
-        S : (nao, nao) np.ndarray
-            AO overlap matrix.
-        frag_ao_idx : list[int]
-            Indices of atomic orbitals belonging to the fragment.
-
-        Returns
-        -------
-        gamma_frag : (nao, nao) np.ndarray
-            Fragment-projected TDM in original AO basis.
-        """
-        # Step 1: Löwdin orthogonalization matrix S^{-1/2}
-        evals, evecs = np.linalg.eigh(S)
-        S_inv_sqrt = evecs @ np.diag(1.0 / np.sqrt(evals)) @ evecs.T
-        S_sqrt = evecs @ np.diag(np.sqrt(evals)) @ evecs.T
-
-        # Step 2: Transform TDM to orthogonalized AO basis
-        gamma_ortho = S_inv_sqrt @ gamma @ S_inv_sqrt
-
-        # Step 3: Construct fragment projector in orthogonal AO basis
-        nao = S.shape[0]
-        P_frag = np.zeros((nao, nao))
-        P_frag[np.ix_(frag_ao_idx, frag_ao_idx)] = 1.0
-
-        # Step 4: Project TDM in orthogonal basis
-        gamma_frag_ortho = P_frag @ gamma_ortho @ P_frag
-
-        # Step 5: Transform back to original AO basis
-        gamma_frag = S_sqrt @ gamma_frag_ortho @ S_sqrt
-        gamma_frag *= np.sqrt(scaling / np.trace(gamma_frag.conj().T @ gamma_frag))
-
-        return gamma_frag
-
+    # ----------------------- OLD --------------------------------
     # manually obtained indices for one of the fragments
     # frag_A = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49]
     # frag_B = [50, 51, 52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103]
@@ -1284,7 +1248,7 @@ def getVCoulombic(mols, tdms, tdms_inter, states, coupling_type = 'electronic'):
     # gamma_A = P_A @ tdmA @ P_A
     # gamma_B = P_B @ tdmB @ P_B
     
-    # # NOTE : for intermolecular
+    # # NOTE : for intermolecular (test-wise)
     # tdm_inter = tdms_inter[0]
     # tdm_inter_T = np.conj(tdm_inter).T
     # print(tdm_inter.shape)
@@ -1308,6 +1272,7 @@ def getVCoulombic(mols, tdms, tdms_inter, states, coupling_type = 'electronic'):
     # norm_B = np.trace(gamma_B.conj().T @ gamma_B)
     # print("norm A =", norm_A)
     # print("norm B =", norm_B)
+    # -------------------------------------------------------------------------
 
 
     if coupling_type in ['electronic', 'cK']:
@@ -1315,13 +1280,13 @@ def getVCoulombic(mols, tdms, tdms_inter, states, coupling_type = 'electronic'):
         # cJ, cK = getInterCJCK(molA, molB, tdmA, tdmB, get_cK=True)
         #if intramolecular:
         # cJ, cK = getIntraCJCK(mol, gamma_A, gamma_B, get_cK=True)
-        cJ, cK = getIntraCJCK(mol, tdmA, tdmB, get_cK=True)
+        # cJ, cK = getIntraCJCK(mol, tdmA, tdmB, get_cK=True)
     elif coupling_type in ['cJ']:
         # if intermolecular:
         # cJ, _ = getInterCJCK(molA, molB, tdmA, tdmB, get_cK=False)
         # if intramolecular:
         # cJ, _ = getIntraCJCK(mol, gamma_A, gamma_B, get_cK=False)
-        cJ, _ = getIntraCJCK(mol, tdmA, tdmB, get_cK=False)
+        # cJ, _ = getIntraCJCK(mol, tdmA, tdmB, get_cK=False)
     else:
         raise NotImplementedError("Invalid coupling type specified!")
     
