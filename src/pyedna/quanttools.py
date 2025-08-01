@@ -1222,16 +1222,16 @@ def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
     tdmA, tdmB = tdms[0][stateA], tdms[1][stateB]
 
     # NOTE : for intramolecular
-    stateA, stateB = states[0], states[1]
-    molA, molB = mols[0], mols[0]
-    mol = molA
-    tdmA, tdmB = np.squeeze(tdms[0][stateA]), np.squeeze(tdms[0][stateB])
+    # stateA, stateB = states[0], states[1]
+    # molA, molB = mols[0], mols[0]
+    # mol = molA
+    # tdmA, tdmB = np.squeeze(tdms[0][stateA]), np.squeeze(tdms[0][stateB])
     # print(tdmA.shape, tdmB.shape)
     # print("inner product =",  np.trace(tdmA.conj().T @ tdmB))
     # print("norm A =",  np.trace(tdmA.conj().T @ tdmA))
     # print("norm B =",  np.trace(tdmB.conj().T @ tdmB))
-    cubegen.density(mol, 'tdmA.cube', tdmA, nx=80, ny=80, nz=80)
-    cubegen.density(mol, 'tdmB.cube', tdmB, nx=80, ny=80, nz=80)
+    cubegen.density(molA, 'tdmA.cube', tdmA, nx=80, ny=80, nz=80)
+    cubegen.density(molB, 'tdmB.cube', tdmB, nx=80, ny=80, nz=80)
 
     # ----------------------- OLD --------------------------------
     # manually obtained indices for one of the fragments
