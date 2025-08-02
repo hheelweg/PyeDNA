@@ -484,6 +484,7 @@ class Trajectory():
                             for key in class_flags
                             if isinstance(class_flags[key], bool)
                         }
+        print(class_flags, class_methods)
         
 
         if parse_trajectory_out:
