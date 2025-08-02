@@ -472,20 +472,14 @@ class Trajectory():
 
         post_class = {key: out.get(key) for key in class_options}# if key in out}                                                              
         class_flags = {key: value for key, value in post_class.items() if isinstance(value, bool) and value}                    # NOTE : only bool/True param
-        # # check that appropriate types are specified in order to avoid ambiguity
-        # for key in class_flags:
-        #     assert f"{key}_type" in out, f"Type for {key} needs to be specified. More information required!"
         # specify name of output file
         class_out_file = out["file_class"]
         # for each flag we either set specified methods_type or default
-        # class_methods = {key: out[f"{key}_type"] for key in class_flags}
         class_methods = {
                             key: out[f"{key}_type"] if f"{key}_type" in out else post_class.get(f"{key}_type", "default")
                             for key in class_flags
                             if isinstance(class_flags[key], bool)
                         }
-        print(qm_flags, qm_methods)
-        print(class_flags, class_methods)
         
 
         if parse_trajectory_out:
@@ -1094,12 +1088,10 @@ class Trajectory():
         self.output_class.loc[time_idx, "time"] = (time_idx + 1) * self.dt
 
         # (1) compute distance metric:
-        #if self.class_info[0]["distance"]:
         if "distance" in self.class_info[0]:
             self.output_class.loc[time_idx, "distance"] = geom.getDistance(self.trajectory_u, self.class_info[1]["distance"])
         
         # (2) compute angle between two axes
-        #if self.class_info[0]["axis_angle"]:
         if "axis_angle" in self.class_info[0]:
             self.output_class.loc[time_idx, "axis_angle"] = geom.getAxisAngle(self.trajectory_u, self.class_info[1]["axis_angle"])
         
