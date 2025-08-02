@@ -1094,11 +1094,13 @@ class Trajectory():
         self.output_class.loc[time_idx, "time"] = (time_idx + 1) * self.dt
 
         # (1) compute distance metric:
-        if self.class_info[0]["distance"]:
+        #if self.class_info[0]["distance"]:
+        if "distance" in self.class_info[0]:
             self.output_class.loc[time_idx, "distance"] = geom.getDistance(self.trajectory_u, self.class_info[1]["distance"])
         
         # (2) compute angle between two axes
-        if self.class_info[0]["axis_angle"]:
+        #if self.class_info[0]["axis_angle"]:
+        if "axis_angle" in self.class_info[0]:
             self.output_class.loc[time_idx, "axis_angle"] = geom.getAxisAngle(self.trajectory_u, self.class_info[1]["axis_angle"])
         
                 
