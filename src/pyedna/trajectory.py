@@ -472,9 +472,9 @@ class Trajectory():
 
         post_class = {key: out.get(key) for key in class_options}# if key in out}                                                              
         class_flags = {key: value for key, value in post_class.items() if isinstance(value, bool) and value}                    # NOTE : only bool/True param
-        # check that appropriate types are specified in order to avoid ambiguity
-        for key in class_flags:
-            assert f"{key}_type" in out, f"Type for {key} needs to be specified. More information required!"
+        # # check that appropriate types are specified in order to avoid ambiguity
+        # for key in class_flags:
+        #     assert f"{key}_type" in out, f"Type for {key} needs to be specified. More information required!"
         # specify name of output file
         class_out_file = out["file_class"]
         # for each flag we either set specified methods_type or default
@@ -484,6 +484,7 @@ class Trajectory():
                             for key in class_flags
                             if isinstance(class_flags[key], bool)
                         }
+        print(qm_flags, qm_methods)
         print(class_flags, class_methods)
         
 
