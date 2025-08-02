@@ -405,6 +405,8 @@ class Trajectory():
                 "mull_pops" :   False,
                 "mull_chrgs" :  False,
                 "OPA" :         False,
+                "distance" :    False,
+                'axis_angle' :  False,
                 "file_qm" :     "out_quant.txt",
                 "file_class":   "out_class.txt"
 
@@ -849,7 +851,7 @@ class Trajectory():
 
             # # NOTE : only do this when trying to export .pdb file
             # molecule_u.atoms.write(f"snap_molecule_{id}.pdb")
-            
+
             molecules_u.append(molecule_u)
             # make sure selected residue name equals desired molecule_name
             selected_name = np.unique(self.trajectory_u.select_atoms(f'resid {id}').resnames)[0]
