@@ -470,7 +470,7 @@ class Trajectory():
                         "distance", "axis_angle"
                         ]
 
-        post_class = {key: out.get(key) for key in class_options if key in out}                                                              
+        post_class = {key: out.get(key) for key in class_options}# if key in out}                                                              
         class_flags = {key: value for key, value in post_class.items() if isinstance(value, bool) and value}                    # NOTE : only bool/True param
         # check that appropriate types are specified in order to avoid ambiguity
         for key in class_flags:
