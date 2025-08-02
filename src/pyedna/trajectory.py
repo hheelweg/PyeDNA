@@ -478,7 +478,12 @@ class Trajectory():
         # specify name of output file
         class_out_file = out["file_class"]
         # for each flag we either set specified methods_type or default
-        class_methods = {key: out[f"{key}_type"] for key in class_flags}
+        # class_methods = {key: out[f"{key}_type"] for key in class_flags}
+        class_methods = {
+                            key: out[f"{key}_type"] if f"{key}_type" in out else post_class.get(f"{key}_type", "default")
+                            for key in class_flags
+                            if isinstance(class_flags[key], bool)
+                        }
         
 
         if parse_trajectory_out:
