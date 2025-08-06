@@ -1233,30 +1233,12 @@ def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
     # print("norm B =",  np.trace(tdmB.conj().T @ tdmB))
 
     # Monkey patch _write_cube to use safer float formatting
-    import types
+    threshold = 1e-99
+    tdmA_cleaned = np.where(np.abs(tdmA) < threshold, 0.0, tdmA)
+    tdmB_cleaned = np.where(np.abs(tdmA) < threshold, 0.0, tdmB)
 
-    def patched_write_cube(f, data, nx, ny, nz):
-        count = 0
-        for ix in range(nx):
-            for iy in range(ny):
-                for iz in range(nz):
-                    val = data[ix, iy, iz]
-                    if abs(val) < 1e-90:
-                        val = 0.0  # zero out numerical noise if desired
-                    f.write("%20.12E" % val)
-                    count += 1
-                    if count % 6 == 0:
-                        f.write("\n")
-                    else:
-                        f.write(" ")
-            if count % 6 != 0:
-                f.write("\n")
-    
-    # Replace the original writer
-    cubegen._write_cube = types.MethodType(patched_write_cube, cubegen)
-
-    cubegen.density(mol, 'tdmA.cube', tdmA, nx=80, ny=80, nz=80)
-    cubegen.density(mol, 'tdmB.cube', tdmB, nx=80, ny=80, nz=80)
+    cubegen.density(mol, 'tdmA.cube', tdmA_cleaned, nx=80, ny=80, nz=80)
+    cubegen.density(mol, 'tdmB.cube', tdmB_cleaned, nx=80, ny=80, nz=80)
 
     # ----------------------- OLD --------------------------------
     # manually obtained indices for one of the fragments
