@@ -1287,23 +1287,23 @@ def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
     print(tdmB.shape)
     print(type(tdmA))
     print(type(tdmB))
-    print(np.min(tdmA), np.min(tdmA))
+    print(np.min(tdmA), np.min(tdmB))
 
     # Modify tdm in-place
-    small = np.abs(tdmA) < threshold
-    tdmA[small] = np.sign(tdmA[small]) * threshold
+    gridA = cubegen.density(mol, tdmA, nx=80, ny=80, nz=80, use_c=True, write_file=False)
+    gridA[np.abs(gridA) < threshold] = np.sign(gridA[np.abs(gridA) < threshold]) * threshold
 
-    small = np.abs(tdmB) < threshold
-    tdmB[small] = np.sign(tdmB[small]) * threshold
+    gridB = cubegen.density(mol, tdmB, nx=80, ny=80, nz=80, use_c=True, write_file=False)
+    gridB[np.abs(gridB) < threshold] = np.sign(gridB[np.abs(gridB) < threshold]) * threshold
 
     # Step 1: Create the cube file (e.g., TDM in real-space grid)
-    print(np.min(tdmA), np.min(tdmA))
-    cubegen.density(mol, 'tdmA.cube', tdmA, nx=80, ny=80, nz=80)
-    cubegen.density(mol, 'tdmB.cube', tdmB, nx=80, ny=80, nz=80)
+    print(np.min(gridA), np.min(gridB))
+    cubegen.density(mol, 'tdmA.cube', gridA, nx=80, ny=80, nz=80)
+    cubegen.density(mol, 'tdmB.cube', gridB, nx=80, ny=80, nz=80)
 
-    # Step 2: Fix the formatting (overwrite original file)
-    _ = fix_cube_spacing('tdmA.cube', outfile='tdmA_1.cube')  # overwrites in-place
-    _ = fix_cube_spacing('tdmB.cube', outfile='tdmB_1.cube')  # overwrites in-place
+    # # Step 2: Fix the formatting (overwrite original file)
+    # _ = fix_cube_spacing('tdmA.cube', outfile='tdmA_1.cube')  # overwrites in-place
+    # _ = fix_cube_spacing('tdmB.cube', outfile='tdmB_1.cube')  # overwrites in-place
 
     # cubegen.density(mol, 'tdmA.cube', tdmA_cleaned, nx=80, ny=80, nz=80)
     # cubegen.density(mol, 'tdmB.cube', tdmB_cleaned, nx=80, ny=80, nz=80)
