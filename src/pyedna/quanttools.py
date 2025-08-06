@@ -1233,12 +1233,38 @@ def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
     # print("norm B =",  np.trace(tdmB.conj().T @ tdmB))
 
     # Monkey patch _write_cube to use safer float formatting
-    threshold = 1e-99
-    tdmA_cleaned = np.where(np.abs(tdmA) < threshold, 0.0, tdmA)
-    tdmB_cleaned = np.where(np.abs(tdmA) < threshold, 0.0, tdmB)
+    # Define your function (copy/paste unchanged)
+    import re 
+    def fix_cube_spacing(infile, outfile=None, min_abs_val=1e-90):
+        outfile = outfile or infile + ".fixed"
+        pattern = re.compile(rb'([Ee][+-]\d{2})(?=[-0-9])')
 
-    cubegen.density(mol, 'tdmA.cube', tdmA_cleaned, nx=80, ny=80, nz=80)
-    cubegen.density(mol, 'tdmB.cube', tdmB_cleaned, nx=80, ny=80, nz=80)
+        with open(infile, 'rb') as f_in, open(outfile, 'wb') as f_out:
+            for line in f_in:
+                if b'E' in line:
+                    fixed_line = pattern.sub(rb'\1 ', line)
+                    try:
+                        numbers = [float(n) for n in fixed_line.strip().split()]
+                        cleaned = [f"{n:.12E}" if abs(n) >= min_abs_val else " 0.000000000000E+00" for n in numbers]
+                        f_out.write((" ".join(cleaned) + "\n").encode())
+                    except Exception:
+                        f_out.write(line)
+                else:
+                    f_out.write(line)
+
+        print("Post-processed cube file saved to:", outfile)
+        return outfile
+
+    # Step 1: Create the cube file (e.g., TDM in real-space grid)
+    cubegen.density(mol, 'tdmA.cube', tdmA, nx=80, ny=80, nz=80)
+    cubegen.density(mol, 'tdmB.cube', tdmB, nx=80, ny=80, nz=80)
+
+    # Step 2: Fix the formatting (overwrite original file)
+    _ = fix_cube_spacing('tdmA.cube', outfile='tdmA.cube')  # overwrites in-place
+    _ = fix_cube_spacing('tdmB.cube', outfile='tdmB.cube')  # overwrites in-place
+
+    # cubegen.density(mol, 'tdmA.cube', tdmA_cleaned, nx=80, ny=80, nz=80)
+    # cubegen.density(mol, 'tdmB.cube', tdmB_cleaned, nx=80, ny=80, nz=80)
 
     # ----------------------- OLD --------------------------------
     # manually obtained indices for one of the fragments
