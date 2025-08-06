@@ -1237,22 +1237,41 @@ def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
     import re 
     def fix_cube_spacing(infile, outfile=None, min_abs_val=1e-90):
         outfile = outfile or infile + ".fixed"
-        pattern = re.compile(rb'([Ee][+-]\d{2})(?=[-0-9])')
+
+        # Regex pattern to insert space between two floats that are stuck together
+        pattern = re.compile(rb'([+-]?\d\.\d+E[+-]\d{2})(?=[+-]\d)')
 
         with open(infile, 'rb') as f_in, open(outfile, 'wb') as f_out:
-            for line in f_in:
-                if b'E' in line:
-                    fixed_line = pattern.sub(rb'\1 ', line)
-                    try:
-                        numbers = [float(n) for n in fixed_line.strip().split()]
-                        cleaned = [f"{n:.12E}" if abs(n) >= min_abs_val else " 0.000000000000E+00" for n in numbers]
-                        f_out.write((" ".join(cleaned) + "\n").encode())
-                    except Exception:
-                        f_out.write(line)
-                else:
-                    f_out.write(line)
+            for raw_line in f_in:
+                # Leave header lines untouched
+                if b'E' not in raw_line:
+                    f_out.write(raw_line)
+                    continue
 
-        print("Post-processed cube file saved to:", outfile)
+                # Try to patch and process the data line
+                try:
+                    # Fix spacing between floats
+                    fixed_line = pattern.sub(rb'\1 ', raw_line)
+
+                    # Decode to string for processing
+                    str_line = fixed_line.decode('utf-8').strip()
+                    float_vals = [float(s) for s in str_line.split()]
+
+                    # Apply thresholding
+                    cleaned = [
+                        f"{v:.12E}" if abs(v) >= min_abs_val else " 0.000000000000E+00"
+                        for v in float_vals
+                    ]
+
+                    # Write line, 6 values per line
+                    for i in range(0, len(cleaned), 6):
+                        f_out.write((" ".join(cleaned[i:i+6]) + "\n").encode())
+
+                except Exception as e:
+                    print("Skipping line due to error:", e)
+                    f_out.write(raw_line)
+
+        print(f"Post-processed cube file saved to: {outfile}")
         return outfile
 
     # Step 1: Create the cube file (e.g., TDM in real-space grid)
