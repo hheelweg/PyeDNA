@@ -1216,81 +1216,24 @@ def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
     #     mol = mols[0]
     #     tdm = tdms[0][state]
 
-    # # NOTE : for intermolecular
-    # stateA, stateB = states[0], states[1]
-    # molA, molB = mols[0], mols[1]
-    # tdmA, tdmB = tdms[0][stateA], tdms[1][stateB]
-
-    # NOTE : for intramolecular
+    # NOTE : for intermolecular
     stateA, stateB = states[0], states[1]
-    molA, molB = mols[0], mols[0]
-    mol = molA
-    tdmA, tdmB = np.squeeze(tdms[0][stateA]), np.squeeze(tdms[0][stateB])
+    molA, molB = mols[0], mols[1]
+    tdmA, tdmB = tdms[0][stateA], tdms[1][stateB]
+
+    # # NOTE : for intramolecular
+    # stateA, stateB = states[0], states[1]
+    # molA, molB = mols[0], mols[0]
+    # mol = molA
+    # tdmA, tdmB = np.squeeze(tdms[0][stateA]), np.squeeze(tdms[0][stateB])
 
     # print(tdmA.shape, tdmB.shape)
     # print("inner product =",  np.trace(tdmA.conj().T @ tdmB))
     # print("norm A =",  np.trace(tdmA.conj().T @ tdmA))
     # print("norm B =",  np.trace(tdmB.conj().T @ tdmB))
 
-    # Monkey patch _write_cube to use safer float formatting
-    # Define your function (copy/paste unchanged)
-    import re 
-    def fix_cube_spacing(infile, outfile=None, min_abs_val=1e-90):
-        outfile = outfile or infile + ".fixed"
 
-        float_fix_pattern = re.compile(r'([Ee][+-]\d{2})(?=[+-]\d)')
-
-        with open(infile, 'r') as f_in, open(outfile, 'w') as f_out:
-            lines = f_in.readlines()
-
-        # First 6 lines are cube header
-        header_lines = lines[:6]
-
-        # Line 3 gives atom count
-        num_atoms = int(header_lines[2].split()[0])
-        atom_lines = lines[6:6 + num_atoms]
-
-        # Rest is voxel data
-        data_lines = lines[6 + num_atoms:]
-
-        # Write header and atom lines unchanged
-        with open(outfile, 'w') as f_out:
-            f_out.writelines(header_lines)
-            f_out.writelines(atom_lines)
-
-            # Process voxel data lines
-            for line in data_lines:
-                fixed_line = float_fix_pattern.sub(r'\1 ', line.strip())
-
-                tokens = fixed_line.split()
-                cleaned = []
-                for tok in tokens:
-                    try:
-                        val = float(tok)
-                        if abs(val) < min_abs_val:
-                            val = 0.0
-                        cleaned.append(f"{val: .12E}")
-                    except ValueError:
-                        cleaned.append(tok)
-
-                for i in range(0, len(cleaned), 6):
-                    f_out.write(" ".join(cleaned[i:i+6]) + "\n")
-
-        print(f"Cleaned cube file saved to: {outfile}")
-        return outfile
-
-
-
-    threshold = 1e-99
-
-    print(tdmA.shape)
-    print(tdmB.shape)
-    print(type(tdmA))
-    print(type(tdmB))
-    print(np.min(tdmA), np.min(tdmB))
-
-    from pyscf.dft import numint
-
+    # only if .cube entries are getting super super small (<1E-100)
     def write_thresholded_density_cube(mol, tdm, filename, nx=80, ny=80, nz=80, margin=3.0, threshold=1e-99):
         """
         Generate and write a thresholded density cube file from a transition density matrix.
@@ -1310,6 +1253,8 @@ def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
         threshold : float
             Minimum absolute value to keep in real-space density; values below are thresholded.
         """
+        from pyscf.dft import numint
+
         # Build grid bounding box
         coords = mol.atom_coords()
         origin = coords.min(axis=0) - margin
@@ -1363,15 +1308,10 @@ def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
 
         print(f"✓ Written cube file to: {filename}")
 
+    # only if .cube entries are getting super super small (<1E-100)
+    # write_thresholded_density_cube(mol, tdmA, 'tdmA.cube')
+    # write_thresholded_density_cube(mol, tdmB, 'tdmB.cube')
     
-    write_thresholded_density_cube(mol, tdmA, 'tdmA.cube')
-    write_thresholded_density_cube(mol, tdmB, 'tdmB.cube')
-    
-
-
-    # # Step 2: Fix the formatting (overwrite original file)
-    # _ = fix_cube_spacing('tdmA.cube', outfile='tdmA_1.cube')  # overwrites in-place
-    # _ = fix_cube_spacing('tdmB.cube', outfile='tdmB_1.cube')  # overwrites in-place
 
     # cubegen.density(mol, 'tdmA.cube', tdmA_cleaned, nx=80, ny=80, nz=80)
     # cubegen.density(mol, 'tdmB.cube', tdmB_cleaned, nx=80, ny=80, nz=80)
@@ -1420,16 +1360,16 @@ def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
 
     if coupling_type in ['electronic', 'cK']:
         # if intermolecular:
-        #cJ, cK = getInterCJCK(molA, molB, tdmA, tdmB, get_cK=True)
+        cJ, cK = getInterCJCK(molA, molB, tdmA, tdmB, get_cK=True)
         #if intramolecular:
         #cJ, cK = getIntraCJCK(mol, gamma_A, gamma_B, get_cK=True)
-        cJ, cK = getIntraCJCK(mol, tdmA, tdmB, get_cK=True)
+        #cJ, cK = getIntraCJCK(mol, tdmA, tdmB, get_cK=True)
     elif coupling_type in ['cJ']:
         # if intermolecular:
-        #cJ, _ = getInterCJCK(molA, molB, tdmA, tdmB, get_cK=False)
+        cJ, _ = getInterCJCK(molA, molB, tdmA, tdmB, get_cK=False)
         # if intramolecular:
         #cJ, _ = getIntraCJCK(mol, gamma_A, gamma_B, get_cK=False)
-        cJ, _ = getIntraCJCK(mol, tdmA, tdmB, get_cK=False)
+        #cJ, _ = getIntraCJCK(mol, tdmA, tdmB, get_cK=False)
     else:
         raise NotImplementedError("Invalid coupling type specified!")
     
