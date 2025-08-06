@@ -1289,6 +1289,10 @@ def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
     tdmB_scaled = tdmB * (desired_max / max_val)
 
     # Step 1: Create the cube file (e.g., TDM in real-space grid)
+    print(tdmA.shape)
+    print(tdmB.shape)
+    print(type(tdmA))
+    print(type(tdmB))
     cubegen.density(mol, 'tdmA.cube', tdmA_scaled, nx=80, ny=80, nz=80)
     cubegen.density(mol, 'tdmB.cube', tdmB_scaled, nx=80, ny=80, nz=80)
 
