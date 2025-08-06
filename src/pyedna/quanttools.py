@@ -1309,8 +1309,8 @@ def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
         print(f"✓ Written cube file to: {filename}")
 
     # only if .cube entries are getting super super small (<1E-100)
-    write_thresholded_density_cube(mol, tdmA, 'tdmA.cube')
-    write_thresholded_density_cube(mol, tdmB, 'tdmB.cube')
+    write_thresholded_density_cube(mol, tdmA, 'tdmA_1.cube')
+    write_thresholded_density_cube(mol, tdmB, 'tdmB_1.cube')
     
 
     #cubegen.density(molA, 'tdmA.cube', tdmA, nx=80, ny=80, nz=80)
