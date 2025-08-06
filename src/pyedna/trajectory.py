@@ -851,7 +851,7 @@ class Trajectory():
                 molecule_u = self.capWithHydrogens(molecule_u, capped_positions=capped_positions)
 
             # # NOTE : only do this when trying to export .pdb file
-            # molecule_u.atoms.write(f"snap_molecule_{id}.pdb")
+            molecule_u.atoms.write(f"snap_molecule_{id}.pdb")
 
             molecules_u.append(molecule_u)
             # make sure selected residue name equals desired molecule_name
