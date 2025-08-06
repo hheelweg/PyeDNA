@@ -1310,24 +1310,35 @@ def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
         threshold : float
             Minimum absolute value to keep in real-space density; values below are thresholded.
         """
-        # Generate grid coordinates
-        coords, weights = cubegen.make_grid(mol, nx, ny, nz, margin=margin)
+        # Determine bounding box with margin
+        coord = mol.atom_coords()
+        box_min = coord.min(axis=0) - margin
+        box_max = coord.max(axis=0) + margin
+        box = box_max - box_min
 
-        # Evaluate AO basis functions at grid points
-        ao = numint.eval_ao(mol, coords)
+        # Grid axes
+        xs = np.linspace(box_min[0], box_max[0], nx)
+        ys = np.linspace(box_min[1], box_max[1], ny)
+        zs = np.linspace(box_min[2], box_max[2], nz)
 
-        # Contract density: ρ(r) = Σ_μν TDM_μν φ_μ(r) φ_ν(r)
+        # Create grid points
+        grid = np.array(np.meshgrid(xs, ys, zs, indexing='ij')).reshape(3, -1).T  # shape: (npoints, 3)
+
+        # Evaluate AO basis functions on grid
+        ao = dft.numint.eval_ao(mol, grid)  # shape: (npoints, nAO)
+
+        # Compute density: ρ(r) = Σ_μν TDM_μν φ_μ(r) φ_ν(r)
         rho = np.einsum('pi,ij,pj->p', ao, tdm, ao)
 
-        # Threshold values (avoid underflow formatting issues)
-        mask = np.abs(rho) < threshold
-        rho[mask] = np.sign(rho[mask]) * threshold
+        # Threshold to avoid underflow
+        small = np.abs(rho) < threshold
+        rho[small] = np.sign(rho[small]) * threshold
 
-        # Reshape to cube grid
+        # Reshape back to cube
         rho_cube = rho.reshape((nx, ny, nz))
 
-        # Write to cube
-        cubegen.write_cube(mol, outfile, rho_cube, nx, ny, nz, margin=margin)
+        # Write the cube file
+        cubegen.write_cube(mol, outfile, rho_cube, nx=nx, ny=ny, nz=nz, margin=margin)
 
     
     write_thresholded_density_cube(mol, tdmA, 'tdmA.cube')
