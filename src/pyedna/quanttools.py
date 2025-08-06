@@ -1238,37 +1238,43 @@ def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
     def fix_cube_spacing(infile, outfile=None, min_abs_val=1e-90):
         outfile = outfile or infile + ".fixed"
 
-        # Pattern to split stuck floats like "E-100-2.87E-101"
-        # It finds an exponent and inserts a space before the next minus sign (or plus) if it's a new float
         float_fix_pattern = re.compile(r'([Ee][+-]\d{2})(?=[+-]\d)')
 
         with open(infile, 'r') as f_in, open(outfile, 'w') as f_out:
-            header_lines = 6  # Standard number of header lines in .cube
-            for i, line in enumerate(f_in):
-                if i < header_lines:
-                    f_out.write(line)  # preserve header
-                    continue
+            lines = f_in.readlines()
 
-                # Fix missing space between floats
+        # First 6 lines are cube header
+        header_lines = lines[:6]
+
+        # Line 3 gives atom count
+        num_atoms = int(header_lines[2].split()[0])
+        atom_lines = lines[6:6 + num_atoms]
+
+        # Rest is voxel data
+        data_lines = lines[6 + num_atoms:]
+
+        # Write header and atom lines unchanged
+        with open(outfile, 'w') as f_out:
+            f_out.writelines(header_lines)
+            f_out.writelines(atom_lines)
+
+            # Process voxel data lines
+            for line in data_lines:
                 fixed_line = float_fix_pattern.sub(r'\1 ', line.strip())
 
-                # Split floats
                 tokens = fixed_line.split()
-                cleaned_floats = []
+                cleaned = []
                 for tok in tokens:
                     try:
                         val = float(tok)
-                        # Threshold filter
                         if abs(val) < min_abs_val:
                             val = 0.0
-                        cleaned_floats.append(f"{val: .12E}")
+                        cleaned.append(f"{val: .12E}")
                     except ValueError:
-                        # Not a float? Just preserve
-                        cleaned_floats.append(tok)
+                        cleaned.append(tok)
 
-                # Write in blocks of 6 values per line
-                for j in range(0, len(cleaned_floats), 6):
-                    f_out.write(" ".join(cleaned_floats[j:j+6]) + "\n")
+                for i in range(0, len(cleaned), 6):
+                    f_out.write(" ".join(cleaned[i:i+6]) + "\n")
 
         print(f"Cleaned cube file saved to: {outfile}")
         return outfile
