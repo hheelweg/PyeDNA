@@ -1298,8 +1298,9 @@ def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
 
     # Step 1: Create the cube file (e.g., TDM in real-space grid)
     print(np.min(gridA), np.min(gridB))
-    cubegen.density(mol, 'tdmA.cube', gridA, nx=80, ny=80, nz=80)
-    cubegen.density(mol, 'tdmB.cube', gridB, nx=80, ny=80, nz=80)
+    from pyscf.tools.cubegen import write_cube
+    write_cube(mol, 'tdmA.cube', gridA, nx=80, ny=80, nz=80)
+    write_cube(mol, 'tdmB.cube', gridB, nx=80, ny=80, nz=80)
 
     # # Step 2: Fix the formatting (overwrite original file)
     # _ = fix_cube_spacing('tdmA.cube', outfile='tdmA_1.cube')  # overwrites in-place
