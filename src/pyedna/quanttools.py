@@ -1291,7 +1291,7 @@ def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
 
     from pyscf.dft import numint
 
-    def write_thresholded_density_cube(mol, tdm, outfile, nx=80, ny=80, nz=80, margin=3.0, threshold=1e-99):
+    def write_thresholded_density_cube(mol, tdm, filename, nx=80, ny=80, nz=80, margin=3.0, threshold=1e-99):
         """
         Generate and write a thresholded density cube file from a transition density matrix.
 
@@ -1310,35 +1310,58 @@ def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
         threshold : float
             Minimum absolute value to keep in real-space density; values below are thresholded.
         """
-        # Determine bounding box with margin
-        coord = mol.atom_coords()
-        box_min = coord.min(axis=0) - margin
-        box_max = coord.max(axis=0) + margin
-        box = box_max - box_min
+        # Build grid bounding box
+        coords = mol.atom_coords()
+        origin = coords.min(axis=0) - margin
+        boxsize = coords.max(axis=0) - coords.min(axis=0) + 2 * margin
+        dx = boxsize[0] / nx
+        dy = boxsize[1] / ny
+        dz = boxsize[2] / nz
 
-        # Grid axes
-        xs = np.linspace(box_min[0], box_max[0], nx)
-        ys = np.linspace(box_min[1], box_max[1], ny)
-        zs = np.linspace(box_min[2], box_max[2], nz)
+        x = np.linspace(origin[0], origin[0] + dx * (nx - 1), nx)
+        y = np.linspace(origin[1], origin[1] + dy * (ny - 1), ny)
+        z = np.linspace(origin[2], origin[2] + dz * (nz - 1), nz)
 
-        # Create grid points
-        grid = np.array(np.meshgrid(xs, ys, zs, indexing='ij')).reshape(3, -1).T  # shape: (npoints, 3)
+        grid = np.array(np.meshgrid(x, y, z, indexing='ij')).reshape(3, -1).T
 
-        # Evaluate AO basis functions on grid
-        ao = dft.numint.eval_ao(mol, grid)  # shape: (npoints, nAO)
+        # AO basis on grid
+        ao = dft.numint.eval_ao(mol, grid)
 
-        # Compute density: ρ(r) = Σ_μν TDM_μν φ_μ(r) φ_ν(r)
+        # Compute real-space scalar field from TDM
         rho = np.einsum('pi,ij,pj->p', ao, tdm, ao)
 
-        # Threshold to avoid underflow
+        # Threshold very small values
         small = np.abs(rho) < threshold
         rho[small] = np.sign(rho[small]) * threshold
+        rho = rho.reshape((nx, ny, nz))
 
-        # Reshape back to cube
-        rho_cube = rho.reshape((nx, ny, nz))
+        # Start writing cube
+        with open(filename, 'w') as f:
+            f.write("CUBE FILE\nGenerated from PySCF TDM\n")
+            f.write(f"{mol.natm:5d}{origin[0]:12.6f}{origin[1]:12.6f}{origin[2]:12.6f}\n")
+            f.write(f"{nx:5d}{dx:12.6f}{0.0:12.6f}{0.0:12.6f}\n")
+            f.write(f"{ny:5d}{0.0:12.6f}{dy:12.6f}{0.0:12.6f}\n")
+            f.write(f"{nz:5d}{0.0:12.6f}{0.0:12.6f}{dz:12.6f}\n")
 
-        # Write the cube file
-        cubegen.write_cube(mol, outfile, rho_cube, nx=nx, ny=ny, nz=nz, margin=margin)
+            for ia in range(mol.natm):
+                charge = mol.atom_charge(ia)
+                x, y, z = mol.atom_coord(ia)
+                f.write(f"{int(charge):5d}{0.0:12.6f}{x:12.6f}{y:12.6f}{z:12.6f}\n")
+
+            # Write volumetric data in blocks of 6
+            count = 0
+            for i in range(nx):
+                for j in range(ny):
+                    for k in range(nz):
+                        val = rho[i, j, k]
+                        f.write(f"{val:13.5E}")
+                        count += 1
+                        if count % 6 == 0:
+                            f.write("\n")
+                    if count % 6 != 0:
+                        f.write("\n")
+
+        print(f"✓ Written cube file to: {filename}")
 
     
     write_thresholded_density_cube(mol, tdmA, 'tdmA.cube')
