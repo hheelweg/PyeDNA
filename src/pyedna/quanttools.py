@@ -1289,18 +1289,51 @@ def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
     print(type(tdmB))
     print(np.min(tdmA), np.min(tdmB))
 
-    # Modify tdm in-place
-    gridA = cubegen.density(mol, tdmA, nx=80, ny=80, nz=80, use_c=True, write_file=False)
-    gridA[np.abs(gridA) < threshold] = np.sign(gridA[np.abs(gridA) < threshold]) * threshold
+    from pyscf.dft import numint
 
-    gridB = cubegen.density(mol, tdmB, nx=80, ny=80, nz=80, use_c=True, write_file=False)
-    gridB[np.abs(gridB) < threshold] = np.sign(gridB[np.abs(gridB) < threshold]) * threshold
+    def write_thresholded_density_cube(mol, tdm, outfile, nx=80, ny=80, nz=80, margin=3.0, threshold=1e-99):
+        """
+        Generate and write a thresholded density cube file from a transition density matrix.
 
-    # Step 1: Create the cube file (e.g., TDM in real-space grid)
-    print(np.min(gridA), np.min(gridB))
-    from pyscf.tools.cubegen import write_cube
-    write_cube(mol, 'tdmA.cube', gridA, nx=80, ny=80, nz=80)
-    write_cube(mol, 'tdmB.cube', gridB, nx=80, ny=80, nz=80)
+        Parameters
+        ----------
+        mol : pyscf.gto.Mole
+            PySCF molecule object.
+        tdm : np.ndarray
+            AO-basis transition density matrix (nAO x nAO).
+        outfile : str
+            Path to save the cube file.
+        nx, ny, nz : int
+            Number of grid points in x, y, z directions.
+        margin : float
+            Angstroms of padding around the molecule bounding box.
+        threshold : float
+            Minimum absolute value to keep in real-space density; values below are thresholded.
+        """
+        # Generate grid coordinates
+        coords, weights = cubegen.make_grid(mol, nx, ny, nz, margin=margin)
+
+        # Evaluate AO basis functions at grid points
+        ao = numint.eval_ao(mol, coords)
+
+        # Contract density: ρ(r) = Σ_μν TDM_μν φ_μ(r) φ_ν(r)
+        rho = np.einsum('pi,ij,pj->p', ao, tdm, ao)
+
+        # Threshold values (avoid underflow formatting issues)
+        mask = np.abs(rho) < threshold
+        rho[mask] = np.sign(rho[mask]) * threshold
+
+        # Reshape to cube grid
+        rho_cube = rho.reshape((nx, ny, nz))
+
+        # Write to cube
+        cubegen.write_cube(mol, outfile, rho_cube, nx, ny, nz, margin=margin)
+
+    
+    write_thresholded_density_cube(mol, tdmA, 'tdmA.cube')
+    write_thresholded_density_cube(mol, tdmB, 'tdmB.cube')
+    
+
 
     # # Step 2: Fix the formatting (overwrite original file)
     # _ = fix_cube_spacing('tdmA.cube', outfile='tdmA_1.cube')  # overwrites in-place
