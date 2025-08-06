@@ -1279,9 +1279,16 @@ def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
         print(f"Cleaned cube file saved to: {outfile}")
         return outfile
 
+
+    fro_norm = np.linalg.norm(tdmA, 'fro')
+    tdmA_normalized = tdmA / fro_norm
+
+    fro_norm = np.linalg.norm(tdmB, 'fro')
+    tdmB_normalized = tdmB / fro_norm
+
     # Step 1: Create the cube file (e.g., TDM in real-space grid)
-    cubegen.density(mol, 'tdmA.cube', tdmA, nx=80, ny=80, nz=80)
-    cubegen.density(mol, 'tdmB.cube', tdmB, nx=80, ny=80, nz=80)
+    cubegen.density(mol, 'tdmA.cube', tdmA_normalized, nx=80, ny=80, nz=80)
+    cubegen.density(mol, 'tdmB.cube', tdmB_normalized, nx=80, ny=80, nz=80)
 
     # Step 2: Fix the formatting (overwrite original file)
     _ = fix_cube_spacing('tdmA.cube', outfile='tdmA_1.cube')  # overwrites in-place
