@@ -1238,40 +1238,39 @@ def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
     def fix_cube_spacing(infile, outfile=None, min_abs_val=1e-90):
         outfile = outfile or infile + ".fixed"
 
-        # Regex pattern to insert space between two floats that are stuck together
-        pattern = re.compile(rb'([+-]?\d\.\d+E[+-]\d{2})(?=[+-]\d)')
+        # Pattern to split stuck floats like "E-100-2.87E-101"
+        # It finds an exponent and inserts a space before the next minus sign (or plus) if it's a new float
+        float_fix_pattern = re.compile(r'([Ee][+-]\d{2})(?=[+-]\d)')
 
-        with open(infile, 'rb') as f_in, open(outfile, 'wb') as f_out:
-            for raw_line in f_in:
-                # Leave header lines untouched
-                if b'E' not in raw_line:
-                    f_out.write(raw_line)
+        with open(infile, 'r') as f_in, open(outfile, 'w') as f_out:
+            header_lines = 6  # Standard number of header lines in .cube
+            for i, line in enumerate(f_in):
+                if i < header_lines:
+                    f_out.write(line)  # preserve header
                     continue
 
-                # Try to patch and process the data line
-                try:
-                    # Fix spacing between floats
-                    fixed_line = pattern.sub(rb'\1 ', raw_line)
+                # Fix missing space between floats
+                fixed_line = float_fix_pattern.sub(r'\1 ', line.strip())
 
-                    # Decode to string for processing
-                    str_line = fixed_line.decode('utf-8').strip()
-                    float_vals = [float(s) for s in str_line.split()]
+                # Split floats
+                tokens = fixed_line.split()
+                cleaned_floats = []
+                for tok in tokens:
+                    try:
+                        val = float(tok)
+                        # Threshold filter
+                        if abs(val) < min_abs_val:
+                            val = 0.0
+                        cleaned_floats.append(f"{val: .12E}")
+                    except ValueError:
+                        # Not a float? Just preserve
+                        cleaned_floats.append(tok)
 
-                    # Apply thresholding
-                    cleaned = [
-                        f"{v:.12E}" if abs(v) >= min_abs_val else " 0.000000000000E+00"
-                        for v in float_vals
-                    ]
+                # Write in blocks of 6 values per line
+                for j in range(0, len(cleaned_floats), 6):
+                    f_out.write(" ".join(cleaned_floats[j:j+6]) + "\n")
 
-                    # Write line, 6 values per line
-                    for i in range(0, len(cleaned), 6):
-                        f_out.write((" ".join(cleaned[i:i+6]) + "\n").encode())
-
-                except Exception as e:
-                    print("Skipping line due to error:", e)
-                    f_out.write(raw_line)
-
-        print(f"Post-processed cube file saved to: {outfile}")
+        print(f"Cleaned cube file saved to: {outfile}")
         return outfile
 
     # Step 1: Create the cube file (e.g., TDM in real-space grid)
@@ -1279,8 +1278,8 @@ def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
     cubegen.density(mol, 'tdmB.cube', tdmB, nx=80, ny=80, nz=80)
 
     # Step 2: Fix the formatting (overwrite original file)
-    _ = fix_cube_spacing('tdmA.cube', outfile='tdmA.cube')  # overwrites in-place
-    _ = fix_cube_spacing('tdmB.cube', outfile='tdmB.cube')  # overwrites in-place
+    _ = fix_cube_spacing('tdmA.cube', outfile='tdmA_1.cube')  # overwrites in-place
+    _ = fix_cube_spacing('tdmB.cube', outfile='tdmB_1.cube')  # overwrites in-place
 
     # cubegen.density(mol, 'tdmA.cube', tdmA_cleaned, nx=80, ny=80, nz=80)
     # cubegen.density(mol, 'tdmB.cube', tdmB_cleaned, nx=80, ny=80, nz=80)
