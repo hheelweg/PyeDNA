@@ -1313,8 +1313,8 @@ def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
     # write_thresholded_density_cube(mol, tdmB, 'tdmB.cube')
     
 
-    # cubegen.density(mol, 'tdmA.cube', tdmA_cleaned, nx=80, ny=80, nz=80)
-    # cubegen.density(mol, 'tdmB.cube', tdmB_cleaned, nx=80, ny=80, nz=80)
+    cubegen.density(molA, 'tdmA.cube', tdmA, nx=80, ny=80, nz=80)
+    cubegen.density(molB, 'tdmB.cube', tdmB, nx=80, ny=80, nz=80)
 
     # ----------------------- OLD --------------------------------
     # manually obtained indices for one of the fragments
