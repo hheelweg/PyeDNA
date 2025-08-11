@@ -834,11 +834,11 @@ class Trajectory():
         else:
             fragment_type, fragment_identifiers = None, None
 
-        # # NOTE : only do this when trying to export .pdb file of the whole DNA
-        res_max = 46
-        residue_sel_string = f"resid 1:{res_max}"
-        dna_u = self.trajectory_u.select_atoms(residue_sel_string)
-        dna_u.atoms.write(f"dna_snapshot.pdb")
+        # # # NOTE : only do this when trying to export .pdb file of the whole DNA
+        # res_max = 46
+        # residue_sel_string = f"resid 1:{res_max}"
+        # dna_u = self.trajectory_u.select_atoms(residue_sel_string)
+        # dna_u.atoms.write(f"dna_snapshot.pdb")
 
 
 
@@ -858,7 +858,7 @@ class Trajectory():
                 molecule_u = self.capWithHydrogens(molecule_u, capped_positions=capped_positions)
 
             # # NOTE : only do this when trying to export .pdb file of chromophores
-            molecule_u.atoms.write(f"snap_molecule_{id}.pdb")
+            # molecule_u.atoms.write(f"snap_molecule_{id}.pdb")
 
             molecules_u.append(molecule_u)
             # make sure selected residue name equals desired molecule_name
