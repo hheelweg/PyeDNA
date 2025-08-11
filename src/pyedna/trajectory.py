@@ -835,7 +835,7 @@ class Trajectory():
             fragment_type, fragment_identifiers = None, None
 
         # # NOTE : only do this when trying to export .pdb file of the whole DNA
-        res_max = 44
+        res_max = 46
         residue_sel_string = f"resid 1:{res_max}"
         dna_u = self.trajectory_u.select_atoms(residue_sel_string)
         dna_u.atoms.write(f"dna_snapshot.pdb")
