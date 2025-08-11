@@ -838,7 +838,7 @@ class Trajectory():
         res_max = 44
         residue_sel_string = f"resid 1:{res_max}"
         dna_u = self.trajectory_u.select_atoms(residue_sel_string)
-        dna_u.atoms.write(f"dna.pdb")
+        dna_u.atoms.write(f"dna_snapshot.pdb")
 
 
 
