@@ -858,8 +858,6 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
     from gpu4pyscf.dft import rks
     import cupy as cp
 
-    print('quantum dict', quantum_dict, flush = True)
-    print('fragments', fragments, flush = True)
 
     # (1) number of states
     nstates = len(state_ids)
