@@ -13,7 +13,14 @@
 # sbatch this_script.sh [my_job_name] --sim [sim_program] --clean [clean_level]
 
 echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
-
+python - << 'EOF'
+import os, torch
+print("CUDA_VISIBLE_DEVICES:", os.environ.get("CUDA_VISIBLE_DEVICES"))
+print("cuda available:", torch.cuda.is_available())
+print("device_count:", torch.cuda.device_count())
+for i in range(torch.cuda.device_count()):
+    print(f"GPU {i} name:", torch.cuda.get_device_name(i))
+EOF
 
 # Check if PYEDNA_HOME is set
 if [[ -z "$PYEDNA_HOME" ]]; then
