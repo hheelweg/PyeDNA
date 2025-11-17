@@ -12,6 +12,8 @@
 # USAGE:
 # sbatch this_script.sh [my_job_name] --sim [sim_program] --clean [clean_level]
 
+echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
+
 
 # Check if PYEDNA_HOME is set
 if [[ -z "$PYEDNA_HOME" ]]; then
