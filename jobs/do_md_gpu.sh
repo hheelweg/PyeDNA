@@ -14,12 +14,11 @@
 
 echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 python - << 'EOF'
-import sys, os, torch
-print("Imported torch object:", torch)
-print("torch module file:", getattr(torch, "__file__", None))
-print("First entries in sys.path:")
-for p in sys.path[:10]:
-    print("  ", p)
+try:
+    import torch
+    print("torch imported as:", torch)
+except ImportError as e:
+    print("ImportError (expected):", e)
 EOF
 
 # Check if PYEDNA_HOME is set
