@@ -14,13 +14,12 @@
 
 echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 python - << 'EOF'
-import os, torch
-print("torch:", torch.__version__)
-print("CUDA_VISIBLE_DEVICES:", os.environ.get("CUDA_VISIBLE_DEVICES"))
-print("cuda available:", torch.cuda.is_available())
-print("device_count:", torch.cuda.device_count())
-for i in range(torch.cuda.device_count()):
-    print(f"GPU {i} name:", torch.cuda.get_device_name(i))
+import sys, os, torch
+print("Imported torch object:", torch)
+print("torch module file:", getattr(torch, "__file__", None))
+print("First entries in sys.path:")
+for p in sys.path[:10]:
+    print("  ", p)
 EOF
 
 # Check if PYEDNA_HOME is set
