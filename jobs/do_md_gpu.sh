@@ -15,6 +15,7 @@
 echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 python - << 'EOF'
 import os, torch
+print("torch:", torch.__version__)
 print("CUDA_VISIBLE_DEVICES:", os.environ.get("CUDA_VISIBLE_DEVICES"))
 print("cuda available:", torch.cuda.is_available())
 print("device_count:", torch.cuda.device_count())
