@@ -1155,6 +1155,9 @@ class Trajectory():
                     output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, fragments=self.chromophores_fragments, verbosity = 3)
                 else:
                     output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, verbosity = 3)
+                
+                # NOTE : set verbosity = 1 for production runs, and verbosity = 3 for debugging. 
+                # TODO : verify verbosity settings again in pyscf documentation
 
                 # (2.2) post-processing of QM output
                 self.analyzeSnapshotQuantum(idx, output_qm)

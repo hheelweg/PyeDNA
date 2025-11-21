@@ -894,44 +894,37 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
     if quantum_dict['idx']:
         tddft_output['idx'] = osc_idx
     
-    # (07/29/25) NOTE : added this for interference TDMs for interference term between transition density matrices
-    # for INTRAMOLECULAR transfer between the TDMs within one molecules
-    # we here only assume two states
-    # TDDFT excitation vectors
-    virt_orbits = cp.asnumpy(virt_orbits)
-    occ_orbits = cp.asnumpy(occ_orbits)
-    x1, y1 = molecule_td.xy[0]
-    x2, y2 = molecule_td.xy[1]
-    x1_np, y1_np = cp.asnumpy(x1), cp.asnumpy(y1)
-    x2_np, y2_np = cp.asnumpy(x2), cp.asnumpy(y2)
+    # # (07/29/25) NOTE : added this for interference TDMs for interference term between transition density matrices
+    # # for INTRAMOLECULAR transfer between the TDMs within one molecules
+    # # we here only assume two states
+    # # TDDFT excitation vectors
+    # virt_orbits = cp.asnumpy(virt_orbits)
+    # occ_orbits = cp.asnumpy(occ_orbits)
+    # x1, y1 = molecule_td.xy[0]
+    # x2, y2 = molecule_td.xy[1]
+    # x1_np, y1_np = cp.asnumpy(x1), cp.asnumpy(y1)
+    # x2_np, y2_np = cp.asnumpy(x2), cp.asnumpy(y2)
 
-    x1x2T = x1_np @ x2_np.T     
-    y1y2T = y1_np.T @ y2_np     
-    gamma_12 = occ_orbits @ x1x2T @ occ_orbits.T + virt_orbits @ y1y2T @ virt_orbits.T
-    #tddft_output['tdm_inter'] = cp.asnumpy(molecule_mf.get_ovlp()) #gamma_12
-    tddft_output['tdm_inter'] = gamma_12
+    # x1x2T = x1_np @ x2_np.T     
+    # y1y2T = y1_np.T @ y2_np     
+    # gamma_12 = occ_orbits @ x1x2T @ occ_orbits.T + virt_orbits @ y1y2T @ virt_orbits.T
+    # #tddft_output['tdm_inter'] = cp.asnumpy(molecule_mf.get_ovlp()) #gamma_12
+    # tddft_output['tdm_inter'] = gamma_12
 
-    # # NOTE : delete this (this is just for debugging)
-    # # Get NTOs for state A
-    # # Get number of occupied and virtual orbitals
-    # nocc = molecule_mf.mol.nelectron // 2
-    # nmo = molecule_mf.mo_coeff.shape[1]
-    # nvir = nmo - nocc
-
-    # NOTE : I had this in during the testing for intramolecular rates
-    # # Get NTOs (hole lives in occ, particle in vir space)
-    # r, c = molecule_td.get_nto(state=0)
-    # # Promote NTOs to full MO space
-    # hole_mo = np.zeros(nmo)
-    # elec_mo = np.zeros(nmo)
-    # hole_mo[:nocc] = r if r.ndim == 1 else r[:, 0]
-    # elec_mo[nocc:] = c if c.ndim == 1 else c[:, 0]
-    # # Transform to AO basis
-    # hole_ao = cp.asnumpy(molecule_mf.mo_coeff) @ cp.asnumpy(r[:, 0])
-    # elec_ao = cp.asnumpy(molecule_mf.mo_coeff) @ cp.asnumpy(c[:, 0])
-    # from pyscf.tools import cubegen
-    # cubegen.orbital(molecule_mol, 'holeA.cube', hole_ao)
-    # cubegen.orbital(molecule_mol, 'elecA.cube', elec_ao)
+    # # NOTE : I had this in during the testing for intramolecular rates
+    # # # Get NTOs (hole lives in occ, particle in vir space)
+    # # r, c = molecule_td.get_nto(state=0)
+    # # # Promote NTOs to full MO space
+    # # hole_mo = np.zeros(nmo)
+    # # elec_mo = np.zeros(nmo)
+    # # hole_mo[:nocc] = r if r.ndim == 1 else r[:, 0]
+    # # elec_mo[nocc:] = c if c.ndim == 1 else c[:, 0]
+    # # # Transform to AO basis
+    # # hole_ao = cp.asnumpy(molecule_mf.mo_coeff) @ cp.asnumpy(r[:, 0])
+    # # elec_ao = cp.asnumpy(molecule_mf.mo_coeff) @ cp.asnumpy(c[:, 0])
+    # # from pyscf.tools import cubegen
+    # # cubegen.orbital(molecule_mol, 'holeA.cube', hole_ao)
+    # # cubegen.orbital(molecule_mol, 'elecA.cube', elec_ao)
 
     # (7) Mulliken analysis for excited states
     if quantum_dict["mull_pops"] or quantum_dict["mull_chrgs"]:
