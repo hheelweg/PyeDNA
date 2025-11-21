@@ -453,8 +453,8 @@ class Trajectory():
         qm_outs['osc'] = True if post_qm["osc_strengths"] else qm_outs['osc']
         qm_outs['mol'] = True if post_qm["coupling"] else qm_outs['mol']
         qm_outs['tdm'] = True if post_qm["coupling"] else qm_outs['tdm']
-        # NOTE : only for intramolecular
-        qm_outs['tdm_inter'] = True
+        # NOTE : only for intramolecular transfer studies, turn to True
+        qm_outs['tdm_inter'] = False
 
         if "transitions" in out:
             qm_flags.update({"transitions": post_qm["transitions"]})
