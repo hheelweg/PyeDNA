@@ -1140,8 +1140,8 @@ class Trajectory():
                                                                                 enforce_symmetry = False,
                                                                                 conversion = 'pyscf'
                                                                                 )
-                    # optional : write test snapshot
-                    chromophore.atomgroup.atoms.write(f"snapshot_{i}.pdb")
+                    # optional : write test snapshot(s)
+                    chromophore.chromophore_u.atoms.write(f"snapshot_{i}.pdb")
 
                 self.chromophores.append(chromophore)
                 self.chromophores_conv.append(chromophore_conv)
