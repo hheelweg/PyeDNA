@@ -1140,8 +1140,9 @@ class Trajectory():
                                                                                 enforce_symmetry = False,
                                                                                 conversion = 'pyscf'
                                                                                 )
-                    # optional : write test snapshot(s)
-                    chromophore.chromophore_u.atoms.write(f"snapshot_{i}.pdb")
+                    # # TODO : this is only for debugging
+                    # # optional : write test snapshot(s), typically we only need this for debugging
+                    # chromophore.chromophore_u.atoms.write(f"snapshot_{i}.pdb")
 
                 self.chromophores.append(chromophore)
                 self.chromophores_conv.append(chromophore_conv)
@@ -1151,9 +1152,9 @@ class Trajectory():
             if self.do_quantum:
                 # (2.1) run QM calculation
                 if self.do_mulliken:
-                    output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, fragments=self.chromophores_fragments, verbosity = 1)
+                    output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, fragments=self.chromophores_fragments, verbosity = 3)
                 else:
-                    output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, verbosity = 1)
+                    output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, verbosity = 3)
 
                 # (2.2) post-processing of QM output
                 self.analyzeSnapshotQuantum(idx, output_qm)
