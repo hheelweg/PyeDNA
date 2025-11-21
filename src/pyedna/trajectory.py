@@ -326,6 +326,7 @@ class Trajectory():
         self.out = trajectory_data[2]                                   # load *.out file
         # make sure *.nc file is NetCDF3 (as required for MDAnalysis) and not NetCDF4 (as created by Amber)
         self.convertTrajectory()
+        print('Trajectory file succesfully converted from NetCDF4 (Amber) to NetCDF3 (MDAnalysis)!')
 
         # load MDSimulation object which contains all information
         warnings.filterwarnings("ignore", message="Reader has no dt information")
@@ -768,6 +769,7 @@ class Trajectory():
         self.molecules, self.molecule_names, self.molecule_constituents = self.parseMolecules(file)
         self.defined_molecules = True 
         self.num_molecules = len(self.molecules)
+        print(self.num_molecules, self.molecules, self.molecule_names, self.molecule_constituents, flush = True)
 
         # find information of unique residues in list
         unique_dyes = np.unique(np.array(self.molecule_constituents).flatten())
