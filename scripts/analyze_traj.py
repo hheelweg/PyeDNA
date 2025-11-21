@@ -55,6 +55,7 @@ def main():
     name_nc = pyedna.utils.findFileWithExtension('.nc')
     name_out = pyedna.utils.findFileWithExtension('.out')
     traj_data = [name_prmtop, name_nc, name_out]
+    print(traj_data, flush=True)
 
     # (3) parameter file for trajectory analysis
     traj_params = pyedna.utils.findFileWithName('traj.params')
