@@ -20,8 +20,8 @@ def main(molecule_id):
 
     # (1) load chromophore pyscf input from cache as DFT/TDDFT input
     chromophore_conv = load(f"input_{molecule_id}.joblib")
-
-    # 
+    charge = load(f"charge_{molecule_id}.joblib")
+    print('charge', charge, flush=True)
 
     # (1) load fragment information
     # TODO : only load this if specified

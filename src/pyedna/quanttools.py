@@ -1055,13 +1055,12 @@ def doQM_gpu(molecules, output_keys, fragments = None, charges = None, verbosity
     # [] stores data for both molecules in a list-type fashion
     output = {key: [] for key, value in output_keys.items() if value}
 
-    print('charges', charges, flush=True)
-
     # (1) run molecules on different GPUs in parallel
     procs = []
     for i, molecule in enumerate(molecules):
         # create pyscf input for subprocess and store in cache
         dump(molecule, f"input_{i}.joblib")
+        dump(charges[0][i], f"charge_{i}.joblib")
         if fragments is not None:
             dump(fragments[i], f"fragments_{i}.joblib")
         # run subprocess on single GPU
