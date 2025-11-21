@@ -773,6 +773,7 @@ class Trajectory():
 
         # find information of unique residues in list
         unique_dyes = np.unique(np.array(self.molecule_constituents).flatten())
+        print(unique_dyes, flush=True)
         if dye_path is None: 
             dye_base_dir = os.getenv("DYE_DIR")
         else:
