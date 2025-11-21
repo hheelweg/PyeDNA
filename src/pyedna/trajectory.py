@@ -769,11 +769,9 @@ class Trajectory():
         self.molecules, self.molecule_names, self.molecule_constituents = self.parseMolecules(file)
         self.defined_molecules = True 
         self.num_molecules = len(self.molecules)
-        print(self.num_molecules, self.molecules, self.molecule_names, self.molecule_constituents, flush = True)
 
         # find information of unique residues in list
         unique_dyes = np.unique(np.concatenate(self.molecule_constituents))
-        print(unique_dyes, flush=True)
         if dye_path is None: 
             dye_base_dir = os.getenv("DYE_DIR")
         else:
@@ -842,7 +840,6 @@ class Trajectory():
         # residue_sel_string = f"resid 1:{res_max}"
         # dna_u = self.trajectory_u.select_atoms(residue_sel_string)
         # dna_u.atoms.write(f"dna_snapshot.pdb")
-
 
 
         # (2) get positions of all residues (constituents) specified in residue_ids
@@ -1143,7 +1140,8 @@ class Trajectory():
                                                                                 enforce_symmetry = False,
                                                                                 conversion = 'pyscf'
                                                                                 )
-
+                    # optional : write test snapshot
+                    chromophore.write_pdb(f"snapshot_{i}.pdb")
 
                 self.chromophores.append(chromophore)
                 self.chromophores_conv.append(chromophore_conv)
