@@ -1141,7 +1141,7 @@ class Trajectory():
                                                                                 conversion = 'pyscf'
                                                                                 )
                     # optional : write test snapshot
-                    chromophore.write_pdb(f"snapshot_{i}.pdb")
+                    chromophore.atomgroup.atoms.write(f"snapshot_{i}.pdb")
 
                 self.chromophores.append(chromophore)
                 self.chromophores_conv.append(chromophore_conv)
