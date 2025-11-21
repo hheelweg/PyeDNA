@@ -1158,12 +1158,12 @@ class Trajectory():
                     output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, 
                                             fragments=self.chromophores_fragments,
                                             charges=self.molecule_charges,
-                                            verbosity = 3
+                                            verbosity = 1
                                             )
                 else:
                     output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs,
                                             charges=self.molecule_charges, 
-                                            verbosity = 3
+                                            verbosity = 1
                                             )
                 
                 # NOTE : set verbosity = 0 for production runs, and verbosity = 2 for debugging. 
