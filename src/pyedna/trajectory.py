@@ -508,7 +508,8 @@ class Trajectory():
                 "name_1" :          None,
                 "name_2" :          None,
                 "constituents_1":   None,
-                "constituents_2":   None
+                "constituents_2":   None,
+                "charges":          None,
         }
 
         # read user parameters for molecules
@@ -523,6 +524,8 @@ class Trajectory():
         molecule_names = [value for key, value in mols.items() if key.startswith("name_") and value is not None]
         # store constituents of each molecules
         molecule_consituents = [value for key, value in mols.items() if key.startswith("constituents_") and value is not None]
+        # store charges of each molecules
+        molecule_charges = [value for key, value in mols.items() if key.startswith("charges") and value is not None]
 
         # checkpoint
         assert(len(molecule_names) == len(molecules))
@@ -531,7 +534,7 @@ class Trajectory():
         elif len(molecules) > 2:
             raise NotImplementedError("More than 2 molecules (currently) not implemented!")
 
-        return molecules, molecule_names, molecule_consituents
+        return molecules, molecule_names, molecule_consituents, molecule_charges
 
     # read and parse DataFrame trajectory analysis output
     @staticmethod
@@ -766,7 +769,7 @@ class Trajectory():
     def initMolecules(self, file, dye_path = None):
 
         # parse information of molecules attached and their consitutent builidng blocks
-        self.molecules, self.molecule_names, self.molecule_constituents = self.parseMolecules(file)
+        self.molecules, self.molecule_names, self.molecule_constituents, self.molecule_charges = self.parseMolecules(file)
         self.defined_molecules = True 
         self.num_molecules = len(self.molecules)
 
@@ -1152,12 +1155,18 @@ class Trajectory():
             if self.do_quantum:
                 # (2.1) run QM calculation
                 if self.do_mulliken:
-                    output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, fragments=self.chromophores_fragments, verbosity = 3)
+                    output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, 
+                                            fragments=self.chromophores_fragments,
+                                            charges=self.molecule_charges,
+                                            verbosity = 3
+                                            )
                 else:
-                    output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, verbosity = 3)
+                    output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs,
+                                            charges=self.molecule_charges, 
+                                            verbosity = 3
+                                            )
                 
-                # NOTE : set verbosity = 1 for production runs, and verbosity = 3 for debugging. 
-                # TODO : verify verbosity settings again in pyscf documentation
+                # NOTE : set verbosity = 0 for production runs, and verbosity = 2 for debugging. 
 
                 # (2.2) post-processing of QM output
                 self.analyzeSnapshotQuantum(idx, output_qm)

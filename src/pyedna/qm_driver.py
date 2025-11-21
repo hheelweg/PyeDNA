@@ -21,13 +21,14 @@ def main(molecule_id):
     # (1) load chromophore pyscf input from cache as DFT/TDDFT input
     chromophore_conv = load(f"input_{molecule_id}.joblib")
 
+    # 
+
     # (1) load fragment information
     # TODO : only load this if specified
     # chromophore_fragments = load(f"fragments_{molecule_id}.joblib")
 
     # (2) perform DFT/TDDFT calculation and store outputs
     values['mol'], values['mf'], values['occ'], values['virt'], values['orbit_enrgs'] = qm.doDFT_gpu(chromophore_conv, molecule_id, **settings_dft)
-    #values['mol'], values['mf'], values['occ'], values['virt'] = qm.doDFT_geomopt(chromophore_conv, **settings_dft)
     if settings_tddft.pop("do_tddft", False):
         # TODO : only load this if chromophore_fragments specified
         #tddft_output = qm.doTDDFT_gpu(values['mol'], values['mf'], values['occ'], values['virt'], output_keys, fragments = chromophore_fragments, **settings_tddft)
