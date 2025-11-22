@@ -1177,7 +1177,7 @@ class Trajectory():
                                             charges=self.molecule_charges, 
                                             verbosity = 3
                                             )
-                # NOTE : set verbosity = 0 for production runs, and verbosity = 2 for debugging. 
+                # NOTE : set verbosity = 0 for production runs, and verbosity = 3 for debugging (STDOUT, STDERR). 
 
                 # (2.2) post-processing of QM output
                 self.analyzeSnapshotQuantum(idx, output_qm)

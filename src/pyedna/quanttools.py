@@ -858,6 +858,9 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
     from gpu4pyscf.dft import rks
     import cupy as cp
 
+    # TODO : for debugging
+    print('fragments', fragments, flush=True)
+
 
     # (1) number of states
     nstates = len(state_ids)
@@ -931,7 +934,6 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
         tddft_output['mull_pops'], tddft_output['mull_chrgs'] = doMullikenAnalysis(molecule_mf, molecule_mol, tdms, state_ids=state_ids)
 
     # (8) orbital participation analysis for excited states
-    print('fragments', fragments, flush=True)
     if quantum_dict['OPA']:
         tddft_output['OPA'] = doOrbitalParticipationAnalysis(molecule_mol, molecule_td, fragments, state_ids=state_ids, TDA=TDA)
 
