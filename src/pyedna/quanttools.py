@@ -931,6 +931,7 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
         tddft_output['mull_pops'], tddft_output['mull_chrgs'] = doMullikenAnalysis(molecule_mf, molecule_mol, tdms, state_ids=state_ids)
 
     # (8) orbital participation analysis for excited states
+    print('fragments', fragments, flush=True)
     if quantum_dict['OPA']:
         tddft_output['OPA'] = doOrbitalParticipationAnalysis(molecule_mol, molecule_td, fragments, state_ids=state_ids, TDA=TDA)
 
@@ -1062,7 +1063,6 @@ def doQM_gpu(molecules, output_keys, do_fragments = None, fragments = None, char
         dump(molecule, f"input_{i}.joblib")
         dump(charges[i], f"charge_{i}.joblib")
         if do_fragments[i] and fragments is not None:
-            print(f'[molecule {i}]', do_fragments[i], flush=True)
             dump(fragments[i], f"fragments_{i}.joblib")
         # run subprocess on single GPU
         procs.append(launchQMdriver(i, gpu_ids = [i]))
