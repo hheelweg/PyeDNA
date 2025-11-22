@@ -528,7 +528,7 @@ class Trajectory():
         # store charges of each molecules
         molecule_charges = [value for key, value in mols.items() if key.startswith("charges") and value is not None]
         # are we doing a fragment analysis for the specific molecule?
-        molecule_do_fragments = [value for key, value in mols.items() if key.startswith("fragmentation") and value is not None]
+        molecule_do_fragments = [value for key, value in mols.items() if key.startswith("fragments") and value is not None]
         print('do frgamentation', molecule_do_fragments, flush=True)
 
         # checkpoint
