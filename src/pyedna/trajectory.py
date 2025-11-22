@@ -529,7 +529,6 @@ class Trajectory():
         molecule_charges = [value for key, value in mols.items() if key.startswith("charge_") and value is not None]
         # are we doing a fragment analysis for the specific molecule?
         molecule_do_fragments = [value for key, value in mols.items() if key.startswith("do_fragments_") and value is not None]
-        print('do fragmentation test', molecule_do_fragments, flush=True)
 
         # checkpoint
         assert(len(molecule_names) == len(molecules))
@@ -538,7 +537,7 @@ class Trajectory():
         elif len(molecules) > 2:
             raise NotImplementedError("More than 2 molecules (currently) not implemented!")
 
-        return molecules, molecule_names, molecule_consituents, molecule_charges
+        return molecules, molecule_names, molecule_consituents, molecule_charges, molecule_do_fragments
 
     # read and parse DataFrame trajectory analysis output
     @staticmethod
@@ -773,7 +772,7 @@ class Trajectory():
     def initMolecules(self, file, dye_path = None):
 
         # parse information of molecules attached and their consitutent builidng blocks
-        self.molecules, self.molecule_names, self.molecule_constituents, self.molecule_charges = self.parseMolecules(file)
+        self.molecules, self.molecule_names, self.molecule_constituents, self.molecule_charges, self.molecule_do_fragments = self.parseMolecules(file)
         self.defined_molecules = True 
         self.num_molecules = len(self.molecules)
 
@@ -839,10 +838,11 @@ class Trajectory():
         if fragments is not None:
             fragment_type = fragments[0]
             fragment_identifiers = fragments[1]
+            do_fragmens = fragments[2]
         else:
             fragment_type, fragment_identifiers = None, None
         
-        print('tests', fragment_type, fragment_identifiers, molecule_constituents, flush=True)
+        print('tests', fragment_type, fragment_identifiers, molecule_constituents, do_fragmens, flush=True)
 
         # # # NOTE : only do this when trying to export .pdb file of the whole DNA
         # res_max = 46
@@ -1132,7 +1132,7 @@ class Trajectory():
                     chromophore, chromophore_conv, fragment_indices, fragment_names = self.getChromophoreSnapshot(
                                                                                 molecule = molecule,
                                                                                 molecule_constituents = self.molecule_constituents[i],
-                                                                                fragments = [self.fragment_type, self.fragments],
+                                                                                fragments = [self.fragment_type, self.fragments, self.molecule_do_fragments[i]],
                                                                                 enforce_symmetry = False,
                                                                                 conversion = 'pyscf'
                                                                                 )
