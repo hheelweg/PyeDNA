@@ -840,8 +840,6 @@ class Trajectory():
             fragment_identifiers = fragments[1]
         else:
             fragment_type, fragment_identifiers = None, None
-        
-        print('tests', fragment_type, fragment_identifiers, molecule_constituents, flush=True)
 
         # # # NOTE : only do this when trying to export .pdb file of the whole DNA
         # res_max = 46
@@ -923,6 +921,8 @@ class Trajectory():
         fragmentation_info = dict()
         fragmentation_info['fragment_indices'] = fragment_indices if fragments is not None else None
         fragmentation_info['fragment_names'] = fragment_names if fragments is not None else None
+
+        print('TEST', fragmentation_info['fragment_indices'], fragmentation_info['fragment_names'], flush=True)
 
         return chromophore, chromophore_conv, fragmentation_info
 
