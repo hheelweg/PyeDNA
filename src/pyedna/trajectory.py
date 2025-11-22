@@ -1166,7 +1166,8 @@ class Trajectory():
             if self.do_quantum:
                 # (2.1) run QM calculation
                 if self.do_mulliken:
-                    output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, 
+                    output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs,
+                                            do_fragments=self.molecule_do_fragments, 
                                             fragments=self.chromophores_fragments,
                                             charges=self.molecule_charges,
                                             verbosity = 0

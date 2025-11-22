@@ -1045,7 +1045,7 @@ def launchQMdriver(molecule_no, gpu_ids):
 
 # do PySCF on molecules = [mol1, mol2] where mol are the nuclear coordinates for PySCF calculations
 # TODO : make this also without GPU-support depending on the available resources
-def doQM_gpu(molecules, output_keys, fragments = None, charges = None, verbosity = 0):
+def doQM_gpu(molecules, output_keys, do_fragments = None, fragments = None, charges = None, verbosity = 0):
 
     # verbosity = 0 : suppress all the output from the QM calculations (default)
     # verbosity = 1 : only print STDOUT of QM calculations
@@ -1061,7 +1061,7 @@ def doQM_gpu(molecules, output_keys, fragments = None, charges = None, verbosity
         # create pyscf input for subprocess and store in cache
         dump(molecule, f"input_{i}.joblib")
         dump(charges[i], f"charge_{i}.joblib")
-        if fragments is not None:
+        if do_fragments[i] and fragments is not None:
             dump(fragments[i], f"fragments_{i}.joblib")
         # run subprocess on single GPU
         procs.append(launchQMdriver(i, gpu_ids = [i]))
