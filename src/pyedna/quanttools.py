@@ -1062,6 +1062,7 @@ def doQM_gpu(molecules, output_keys, do_fragments = None, fragments = None, char
         dump(molecule, f"input_{i}.joblib")
         dump(charges[i], f"charge_{i}.joblib")
         if do_fragments[i] and fragments is not None:
+            print(f'[molecule {i}]', do_fragments[i], flush=True)
             dump(fragments[i], f"fragments_{i}.joblib")
         # run subprocess on single GPU
         procs.append(launchQMdriver(i, gpu_ids = [i]))
