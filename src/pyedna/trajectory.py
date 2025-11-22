@@ -510,6 +510,7 @@ class Trajectory():
                 "constituents_1":   None,
                 "constituents_2":   None,
                 "charges":          None,
+                "fragmentation":    None,
         }
 
         # read user parameters for molecules
@@ -526,6 +527,9 @@ class Trajectory():
         molecule_consituents = [value for key, value in mols.items() if key.startswith("constituents_") and value is not None]
         # store charges of each molecules
         molecule_charges = [value for key, value in mols.items() if key.startswith("charges") and value is not None]
+        # are we doing a fragment analysis for the specific molecule?
+        molecule_do_fragments = [value for key, value in mols.items() if key.startswith("fragmentation") and value is not None]
+        print('do frgamentation', molecule_do_fragments, flush=True)
 
         # checkpoint
         assert(len(molecule_names) == len(molecules))
@@ -1113,7 +1117,7 @@ class Trajectory():
             self.chromophores = []
             self.chromophores_conv = []
 
-            # individual fragments only necessary when doing a mulliken population analysis
+            # individual fragments per molecule; only necessary when doing a mulliken population analysis
             if self.do_quantum and self.do_mulliken:
                 self.chromophores_fragments = [] if self.do_mulliken else None
                 self.chromophores_fragment_names = [] if self.do_mulliken else None
@@ -1132,7 +1136,6 @@ class Trajectory():
                                                                                 enforce_symmetry = False,
                                                                                 conversion = 'pyscf'
                                                                                 )
-                    print(fragment_indices, flush = True)
                     self.chromophores_fragments.append(fragment_indices)
                     self.chromophores_fragment_names.append(fragment_names)
                     
