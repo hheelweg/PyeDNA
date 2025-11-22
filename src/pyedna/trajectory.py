@@ -921,8 +921,8 @@ class Trajectory():
 
         # hash fragmentation info
         fragmentation_info = dict()
-        fragmentation_info['fragment_indices'] = fragment_indices if do_fragments else None
-        fragmentation_info['fragment_names'] = fragment_names if do_fragments else None
+        fragmentation_info['fragment_indices'] = fragment_indices if fragments is not None else None
+        fragmentation_info['fragment_names'] = fragment_names if fragments is not None else None
 
         return chromophore, chromophore_conv, fragmentation_info
 
