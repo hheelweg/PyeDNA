@@ -26,6 +26,11 @@ def main(molecule_id):
 
     # (1) load fragment information
     # TODO : only load this if specified
+    try:
+        fragment_file = utils.findFileWithName(f"fragments_{molecule_id}.joblib")
+        chromophore_fragments = load(fragment_file)
+    except:
+        fragment_file = None
     # chromophore_fragments = load(f"fragments_{molecule_id}.joblib")
 
     # (2) perform DFT/TDDFT calculation and store outputs
