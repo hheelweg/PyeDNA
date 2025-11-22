@@ -728,7 +728,6 @@ class Trajectory():
                     self.do_mulliken = True
                     self.fragment_type = self.quant_info[1]["popanalysis"][0]
                     self.fragments = self.quant_info[1]["popanalysis"][1]
-                    print('fragements', self.fragments, self.fragment_type, flush=True)
                     if self.fragment_type == "molecule":
                         self.fragment_names = self.fragments
                     elif self.fragment_type == "atom_group":
@@ -838,6 +837,8 @@ class Trajectory():
             fragment_identifiers = fragments[1]
         else:
             fragment_type, fragment_identifiers = None, None
+        
+        print('tests', fragment_type, fragment_identifiers, molecule_constituents, flush=True)
 
         # # # NOTE : only do this when trying to export .pdb file of the whole DNA
         # res_max = 46
