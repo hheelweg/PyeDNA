@@ -1060,7 +1060,7 @@ def doQM_gpu(molecules, output_keys, fragments = None, charges = None, verbosity
     for i, molecule in enumerate(molecules):
         # create pyscf input for subprocess and store in cache
         dump(molecule, f"input_{i}.joblib")
-        dump(charges[0][i], f"charge_{i}.joblib")
+        dump(charges[i], f"charge_{i}.joblib")
         if fragments is not None:
             dump(fragments[i], f"fragments_{i}.joblib")
         # run subprocess on single GPU
