@@ -728,6 +728,7 @@ class Trajectory():
                     self.do_mulliken = True
                     self.fragment_type = self.quant_info[1]["popanalysis"][0]
                     self.fragments = self.quant_info[1]["popanalysis"][1]
+                    print('fragements', self.fragments, self.fragment_type, flush=True)
                     if self.fragment_type == "molecule":
                         self.fragment_names = self.fragments
                     elif self.fragment_type == "atom_group":
@@ -843,7 +844,6 @@ class Trajectory():
         # residue_sel_string = f"resid 1:{res_max}"
         # dna_u = self.trajectory_u.select_atoms(residue_sel_string)
         # dna_u.atoms.write(f"dna_snapshot.pdb")
-
 
         # (2) get positions of all residues (constituents) specified in residue_ids
         molecules_u = []
@@ -1158,12 +1158,12 @@ class Trajectory():
                     output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs, 
                                             fragments=self.chromophores_fragments,
                                             charges=self.molecule_charges,
-                                            verbosity = 1
+                                            verbosity = 0
                                             )
                 else:
                     output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs,
                                             charges=self.molecule_charges, 
-                                            verbosity = 1
+                                            verbosity = 0
                                             )
                 
                 # NOTE : set verbosity = 0 for production runs, and verbosity = 2 for debugging. 
