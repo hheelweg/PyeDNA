@@ -841,7 +841,7 @@ class Trajectory():
         else:
             fragment_type, fragment_identifiers = None, None
         
-        print('tests', fragment_type, fragment_identifiers, molecule_constituents, do_fragments, flush=True)
+        print('tests', fragment_type, fragment_identifiers, molecule_constituents, flush=True)
 
         # # # NOTE : only do this when trying to export .pdb file of the whole DNA
         # res_max = 46
