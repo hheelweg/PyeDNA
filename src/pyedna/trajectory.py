@@ -838,11 +838,10 @@ class Trajectory():
         if fragments is not None:
             fragment_type = fragments[0]
             fragment_identifiers = fragments[1]
-            do_fragmens = fragments[2]
         else:
             fragment_type, fragment_identifiers = None, None
         
-        print('tests', fragment_type, fragment_identifiers, molecule_constituents, do_fragmens, flush=True)
+        print('tests', fragment_type, fragment_identifiers, molecule_constituents, do_fragments, flush=True)
 
         # # # NOTE : only do this when trying to export .pdb file of the whole DNA
         # res_max = 46
@@ -920,10 +919,17 @@ class Trajectory():
         # (7) convert to other input format for processing of trajectory
         chromophore_conv = self.convertChromophore(chromophore, conversion) if conversion else None
 
-        if fragments is None:
-            return chromophore, chromophore_conv
-        else:
-            return chromophore, chromophore_conv, fragment_indices, fragment_names
+        # hash fragmentation info
+        fragmentation_info = dict()
+        fragmentation_info['fragment_indices'] = fragment_indices if do_fragments else None
+        fragmentation_info['fragment_names'] = fragment_names if do_fragments else None
+
+        return chromophore, chromophore_conv, fragmentation_info
+
+        # if fragments is None:
+        #     return chromophore, chromophore_conv
+        # else:
+        #     return chromophore, chromophore_conv, fragment_indices, fragment_names
 
 
 
@@ -1128,25 +1134,26 @@ class Trajectory():
                 
                 #chromophore, chromophore_conv = self.getChromophoreSnapshotOld(idx, molecule, self.molecule_names[i], conversion = 'pyscf')
 
-                if self.do_quantum and self.do_mulliken:
-                    chromophore, chromophore_conv, fragment_indices, fragment_names = self.getChromophoreSnapshot(
+                if self.do_quantum and self.do_mulliken and self.molecule_do_fragments[i]:
+                    chromophore, chromophore_conv, fragmentation_info = self.getChromophoreSnapshot(
                                                                                 molecule = molecule,
                                                                                 molecule_constituents = self.molecule_constituents[i],
-                                                                                fragments = [self.fragment_type, self.fragments, self.molecule_do_fragments[i]],
+                                                                                fragments = [self.fragment_type, self.fragments],
                                                                                 enforce_symmetry = False,
                                                                                 conversion = 'pyscf'
                                                                                 )
-                    self.chromophores_fragments.append(fragment_indices)
-                    self.chromophores_fragment_names.append(fragment_names)
+                    self.chromophores_fragments.append(fragmentation_info['fragment_indices'])
+                    self.chromophores_fragment_names.append(fragmentation_info['fragment_names'])
                     
                 else:
-                    chromophore, chromophore_conv = self.getChromophoreSnapshot(
+                    chromophore, chromophore_conv, _ = self.getChromophoreSnapshot(
                                                                                 molecule = molecule,
                                                                                 molecule_constituents = self.molecule_constituents[i],
                                                                                 fragments = None, 
                                                                                 enforce_symmetry = False,
                                                                                 conversion = 'pyscf'
                                                                                 )
+                
                     # # TODO : this is only for debugging
                     # # optional : write test snapshot(s), typically we only need this for debugging
                     # chromophore.chromophore_u.atoms.write(f"snapshot_{i}.pdb")
