@@ -858,9 +858,8 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
     from gpu4pyscf.dft import rks
     import cupy as cp
 
-    # TODO : for debugging
-    print('fragments', fragments, flush=True)
-
+    # TODO : for debugging only
+    print('fragments TEST', fragments, flush=True)
 
     # (1) number of states
     nstates = len(state_ids)
@@ -934,9 +933,8 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
         tddft_output['mull_pops'], tddft_output['mull_chrgs'] = doMullikenAnalysis(molecule_mf, molecule_mol, tdms, state_ids=state_ids)
 
     # (8) orbital participation analysis for excited states
-    if quantum_dict['OPA']:
+    if quantum_dict['OPA'] and fragments is not None:
         tddft_output['OPA'] = doOrbitalParticipationAnalysis(molecule_mol, molecule_td, fragments, state_ids=state_ids, TDA=TDA)
-
 
     return tddft_output
 
@@ -1052,7 +1050,8 @@ def doQM_gpu(molecules, output_keys, do_fragments = None, fragments = None, char
 
     # verbosity = 0 : suppress all the output from the QM calculations (default)
     # verbosity = 1 : only print STDOUT of QM calculations
-    # verbosity = 2 : only print STDERR of QM calculations (for debugging)
+    # verbosity = 2 : only print STDERR of QM calculations 
+    # verbosity = 3 : only print STDOUT and STDERR of QM calculations (for debugging)
 
     # (0) initialize output dictionary for quantities of interest
     # [] stores data for both molecules in a list-type fashion
