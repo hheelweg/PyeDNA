@@ -30,7 +30,8 @@ def main(molecule_id):
         fragment_file = utils.findFileWithName(f"fragments_{molecule_id}.joblib")
         chromophore_fragments = load(fragment_file)
     except:
-        fragment_file = None
+        chromophore_fragments = None
+    print('chromophore fragments', chromophore_fragments, flushg=True)
     # chromophore_fragments = load(f"fragments_{molecule_id}.joblib")
 
     # (2) perform DFT/TDDFT calculation and store outputs
