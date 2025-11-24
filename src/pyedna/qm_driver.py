@@ -22,6 +22,7 @@ def main(molecule_id):
     chromophore_conv = load(f"input_{molecule_id}.joblib")
     charge = load(f"charge_{molecule_id}.joblib")
     # overwrite charge in qm.params
+    # TODO : might want to get rid of charge in qm.params alltogether
     settings_dft['charge'] = charge
 
     # (1) load fragment information
