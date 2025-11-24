@@ -740,6 +740,7 @@ class Trajectory():
 
                     columns_per_molecule += [f"popanalysis (state {state_id})" for state_id in self.settings_tddft["state_ids"]]
 
+                print('columns per molecule', columns_per_molecule, flush=True)
 
                 # construct output DataFrame
                 if not columns_per_molecule:
