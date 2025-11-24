@@ -31,8 +31,9 @@ def main(molecule_id):
         chromophore_fragments = load(fragment_file)
     except:
         chromophore_fragments = None
-    print('chromophore fragments', chromophore_fragments, flush=True)
+    # TODO : delete this eventually!
     # chromophore_fragments = load(f"fragments_{molecule_id}.joblib")
+    print('chromophore fragments', chromophore_fragments, flush=True)
 
     # (2) perform DFT/TDDFT calculation and store outputs
     values['mol'], values['mf'], values['occ'], values['virt'], values['orbit_enrgs'] = qm.doDFT_gpu(chromophore_conv, molecule_id, **settings_dft)

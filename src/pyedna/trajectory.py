@@ -1053,17 +1053,27 @@ class Trajectory():
             # (d) get Mulliken analysis on specified fragment
             if "mulliken" in self.quant_info[0]:
                 # get Mulliken analysis on atom index group in self.chromophores_fragments
-                mulliken_out = qm.getMullikenFragmentAnalysis(output_qm, self.settings_tddft['state_ids'], fragments=self.chromophores_fragments, fragment_names=self.chromophores_fragment_names, molecule_names=self.molecule_names)
+                mulliken_out = qm.getMullikenFragmentAnalysis(output_qm, self.settings_tddft['state_ids'], 
+                                                              fragments=self.chromophores_fragments, 
+                                                              fragment_names=self.chromophores_fragment_names,
+                                                              do_fragments = self.molecule_do_fragments,
+                                                              molecule_names = self.molecule_names)
                 # add to output df
                 for i, molecule_name in enumerate(self.molecule_names):
                     for state_id in self.settings_tddft['state_ids']:
-                        # Mulliken analysis per molecule for each specified fragment
-                        for fragment_name in self.chromophores_fragment_names[i]:
-                            self.output_quant.loc[time_idx, (molecule_name, f"mulliken (state {state_id}) {fragment_name}")] = mulliken_out[f"{molecule_name} {state_id} {fragment_name}"]
-            
+                        # do fragment analysis only if we have activated it for specific molecules, otherwise add "dummy" 0's.
+                        if self.molecule_do_fragments[i]:
+                            # Mulliken analysis per molecule for each specified fragment
+                            for fragment_name in self.chromophores_fragment_names[i]:
+                                self.output_quant.loc[time_idx, (molecule_name, f"mulliken (state {state_id}) {fragment_name}")] = mulliken_out[f"{molecule_name} {state_id} {fragment_name}"]
+                        else:
+                            # TODO : maybe find a better way than just setting this to zero?
+                            for fragment_name in self.chromophores_fragment_names[i]:
+                                self.output_quant.loc[time_idx, (molecule_name, f"mulliken (state {state_id}) {fragment_name}")] = 0
+
+
             # (e) orbital population analysis (OPA) on specified fragment
             if "popanalysis" in self.quant_info[0]:
-                # get orbital population analysis (OPA) on atom index group in self.chromophores_fragments
                 # add to output df
                 for i, molecule_name in enumerate(self.molecule_names):
                     for state_id in self.settings_tddft['state_ids']:
@@ -1071,6 +1081,7 @@ class Trajectory():
                         if self.molecule_do_fragments[i]:
                             self.output_quant.loc[time_idx, (molecule_name, f"popanalysis (state {state_id})")] = output_qm['OPA'][i][state_id]
                         else:
+                            # TODO : maybe find a better way than just setting this to zero?
                             self.output_quant.loc[time_idx, (molecule_name, f"popanalysis (state {state_id})")] = 0
                         
             else:
