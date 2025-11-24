@@ -509,8 +509,10 @@ class Trajectory():
                 "name_2" :          None,
                 "constituents_1":   None,
                 "constituents_2":   None,
-                "charges":          None,
-                "fragmentation":    None,
+                "charge_1":         None,
+                "charge_2":         None,
+                "do_fragments_1":   False,
+                "do_fragments_2":   False,
         }
 
         # read user parameters for molecules
@@ -922,10 +924,10 @@ class Trajectory():
         fragmentation_info['fragment_indices'] = fragment_indices if fragments is not None else None
         fragmentation_info['fragment_names'] = fragment_names if fragments is not None else None
 
-        print('TEST', fragmentation_info['fragment_indices'], fragmentation_info['fragment_names'], flush=True)
 
         return chromophore, chromophore_conv, fragmentation_info
 
+        # TODO : delte this!
         # if fragments is None:
         #     return chromophore, chromophore_conv
         # else:
@@ -1174,12 +1176,12 @@ class Trajectory():
                                             do_fragments=self.molecule_do_fragments, 
                                             fragments=self.chromophores_fragments,
                                             charges=self.molecule_charges,
-                                            verbosity = 3
+                                            verbosity = 0
                                             )
                 else:
                     output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs,
                                             charges=self.molecule_charges, 
-                                            verbosity = 3
+                                            verbosity = 0
                                             )
                 # NOTE : set verbosity = 0 for production runs, and verbosity = 3 for debugging (STDOUT, STDERR). 
 
