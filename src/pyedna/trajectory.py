@@ -760,18 +760,30 @@ class Trajectory():
         
 
     # TODO : write simulation data into the header
+    # @staticmethod
+    # def writeOutputFiles(data_frame, file_name, write_meta_data = True, dir = None):
+    #     # TODO : write meta data into header
+    #     file_name = dir + file_name if dir else file_name
+    #     # store DateFrame (classical or quantum) with meta data header (optional)
+    #     if not data_frame.empty:
+    #         with open(file_name, "w") as f:
+    #             # optional: write meta data
+    #             if write_meta_data:
+    #                 pass
+    #             # write output
+    #             data_frame.to_csv(f, sep = "\t", index=False)
+    
+
     @staticmethod
-    def writeOutputFiles(data_frame, file_name, write_meta_data = True, dir = None):
-        # TODO : write meta data into header
+    def writeOutputFiles(data_frame, file_name, write_meta_data=True, dir=None,
+                     mode="w", header=True):
         file_name = dir + file_name if dir else file_name
-        # store DateFrame (classical or quantum) with meta data header (optional)
         if not data_frame.empty:
-            with open(file_name, "w") as f:
-                # optional: write meta data
-                if write_meta_data:
-                    pass
-                # write output
-                data_frame.to_csv(f, sep = "\t", index=False)
+            with open(file_name, mode) as f:
+                # optional meta data only when writing header
+                if write_meta_data and header:
+                    pass  # write metadata here if you want
+                data_frame.to_csv(f, sep="\t", index=False, header=header)
                 
 
     
@@ -1161,16 +1173,20 @@ class Trajectory():
             pass
 
         print(f'*** Looping through {self.time_slice[1] + 1 - self.time_slice[0]} frames for the trajectory analysis!')
-
-
         # (2) check whether molecules have been defined and initialized
         if not self.defined_molecules:
             raise AttributeError("Molecules to study have not been defined!")
         
         # (3) initialize output DataFrames
         self.initOutput(self.time_slice[1]  - self.time_slice[0]) 
-
         print("*** Intialization of output done!")
+
+        # (3a) if you want incremental writing, write only header & empty body once
+        if self.do_quantum and not self.output_quant.empty:
+            # Create an empty DataFrame with same columns but no rows
+            empty_q = self.output_quant.iloc[0:0]
+            self.writeOutputFiles(empty_q, self.quant_info[2], dir=output_dir,
+                                mode="w", header=True)
 
 
         # (3) analyze trajectory
@@ -1246,6 +1262,11 @@ class Trajectory():
                 # (2.2) post-processing of QM output
                 self.analyzeSnapshotQuantum(idx, output_qm)
 
+                if not self.output_quant.empty:
+                    row_df = self.output_quant.iloc[[idx - self.time_slice[0]]]  # 1-row DF
+                    self.writeOutputFiles(row_df, self.quant_info[2], dir=output_dir,
+                                        mode="a", header=False)
+
             # (3) analyze with respect to classical quantities of interest
             if self.do_classical:
                 self.analyzeSnapshotClassical(idx)
@@ -1258,13 +1279,13 @@ class Trajectory():
         print('*** Successfully looped through all trajectory snapshots!')
         
         
-        # (4) write output files
-        # (4.1) quantum output
-        if self.do_quantum:
-            self.writeOutputFiles(self.output_quant, self.quant_info[2], dir = output_dir)
-        # (4.2) classical output
-        if self.do_classical:
-            self.writeOutputFiles(self.output_class, self.class_info[2], dir = output_dir)
+        # # (4) write output files
+        # # (4.1) quantum output
+        # if self.do_quantum:
+        #     self.writeOutputFiles(self.output_quant, self.quant_info[2], dir = output_dir)
+        # # (4.2) classical output
+        # if self.do_classical:
+        #     self.writeOutputFiles(self.output_class, self.class_info[2], dir = output_dir)
 
 
         print('*** Finished writing oputput files!')
