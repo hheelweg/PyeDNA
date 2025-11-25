@@ -1017,7 +1017,6 @@ def doOrbitalParticipationAnalysis(molecule_mol, molecule_td, fragments, state_i
 
 
 
-
 # NOTE : function that calls python ssubprocess to perform DFT/TDDFT on individual GPUs with PySCF
 # TODO : make this more flexible with regards to the path where the launcher (DFT_gpu.py) is
 def launchQMdriver(molecule_no, gpu_ids):
@@ -1140,11 +1139,8 @@ def getInterCJCK(molA, molB, tdmA, tdmB, get_cK = False):
 def getIntraCJCK(mol, tdmA, tdmB, get_cK=False):
 
     from pyscf.scf import jk, _vhf
-
     assert tdmA.shape == (mol.nao, mol.nao)
     assert tdmB.shape == (mol.nao, mol.nao)
-
-
 
     # (1) Use original molecule
     dm = tdmB  # this will be used for prescreening
@@ -1486,7 +1482,8 @@ def getMullikenFragmentAnalysis(output_qm, state_ids, fragments = None,
                                 fragment_names = None,
                                 do_fragments = None, 
                                 molecule_names = ["D", "A"]):
-
+    # TODO : for debuggin
+    print('fragments', fragments, fragment_names, do_fragments, flush=True)
     results = {}
     for i, molecule_name in enumerate(molecule_names):
         # do Mulliken fragment analysis only if we activate it for molecule
