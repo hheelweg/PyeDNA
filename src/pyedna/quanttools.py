@@ -954,7 +954,7 @@ def doMullikenAnalysis(molecule_mf, molecule_mol, molecule_tdms, state_ids = [0]
     return atom_pops, atom_charges
 
 # do orbital population analysis for all (excited) states
-# TODO : provide some more comments on the quantities here
+# TODO : provide some more comments on the quantities here; also generalize to more than just two fragments
 def doOrbitalParticipationAnalysis(molecule_mol, molecule_td, fragments, state_ids = [0], TDA = False):
 
     # (1) Map AO index -> atom index
@@ -1477,34 +1477,14 @@ def getExcitedEnergies(output_qm, molecule_names = ["D", "A"]):
         results[molecule_name] = output_qm['exc'][i]
     return results
 
+
 # do Mulliken analysis on excited states specified in state_ids based on specified fragments
-def getMullikenFragmentAnalysis(output_qm, state_ids, fragments = None, 
-                                fragment_names = None,
-                                do_fragments = None, 
-                                molecule_names = ["D", "A"]):
-    # TODO : for debugging
-    print('fragments', fragments, fragment_names, do_fragments, flush=True)
-    results = {}
-    for i, molecule_name in enumerate(molecule_names):
-        # do Mulliken fragment analysis only if we activate it for molecule
-        if do_fragments[i]:
-            for state_id in state_ids:
-                atom_pops = output_qm["mull_pops"][i][state_id]
-                atom_participation = np.abs(atom_pops)
-
-                for k, fragment_indices in enumerate(fragments[i]):
-                    frag_name = fragment_names[i][k]
-                    key = f"{molecule_name} {state_id} {frag_name}"
-                    results[key] = sum(atom_participation[j] for j in fragment_indices)
-        else:
-            continue
-    return results
-
-def getMullikenFragmentAnalysisNew(output_qm, state_ids, fragments=None,
+def getMullikenFragmentAnalysis(output_qm, state_ids, fragments=None,
                                 fragment_names=None,
                                 do_fragments=None,
                                 molecule_names=("D", "A")):
 
+    # TODO : for debugging only 
     print('fragments', fragments, fragment_names, do_fragments, flush=True)
 
     results = {}
@@ -1517,9 +1497,7 @@ def getMullikenFragmentAnalysisNew(output_qm, state_ids, fragments=None,
         frag_lists = fragments[i]          # list of index lists for this molecule
         frag_names_i = fragment_names[i]   # list of fragment names for this molecule
         n_frags = len(frag_lists)
-        assert n_frags == len(frag_names_i), (
-            f"Number of fragments and fragment names mismatch for {molecule_name}"
-        )
+        assert n_frags == len(frag_names_i), (f"Number of fragments and fragment names mismatch for {molecule_name}")
 
         for state_id in state_ids:
             atom_pops = output_qm["mull_pops"][i][state_id]

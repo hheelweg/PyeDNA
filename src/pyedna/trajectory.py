@@ -7,6 +7,7 @@ import re
 import time
 import pandas as pd
 import warnings
+import json
 
 # from current package
 from . import structure
@@ -712,20 +713,7 @@ class Trajectory():
                     columns_per_molecule += [f"exc_enrgs ({'singlets' if self.settings_tddft['singlet'] else 'triplets'}): {' ,'.join(str(state_id) for state_id in self.settings_tddft['state_ids'])}"]
 
                 # initialize columns for Mulliken analysis of excited state populations
-                # TODO : maybe parse information for Mulliken analysis in different functions
-                # if "mulliken" in self.quant_info[0]:
-
-                #     # parse Mulliken information
-                #     self.do_mulliken = True
-                #     self.fragment_type = self.quant_info[1]["mulliken"][0]
-                #     self.fragments = self.quant_info[1]["mulliken"][1]
-                #     if self.fragment_type == "molecule":
-                #         self.fragment_names = self.fragments
-                #     elif self.fragment_type == "atom_group":
-                #         self.fragment_names = [f'group {i}' for i in range(len(self.fragments))]
-
-                #     columns_per_molecule += [f"mulliken (state {state_id}) {fragment_name}" for state_id in self.settings_tddft["state_ids"] for fragment_name in self.fragment_names]
-                    
+                # TODO : maybe parse information for Mulliken analysis in different functions    
                 if "mulliken" in self.quant_info[0]:
                     # parse Mulliken information
                     self.do_mulliken = True
@@ -733,7 +721,7 @@ class Trajectory():
                     self.fragments = self.quant_info[1]["mulliken"][1]
 
                     if self.fragment_type == "molecule":
-                        self.fragment_names = self.fragments          # list per molecule
+                        self.fragment_names = self.fragments         
                     elif self.fragment_type == "atom_group":
                         # names per molecule as list of lists
                         self.fragment_names = [
@@ -757,7 +745,6 @@ class Trajectory():
 
                     columns_per_molecule += [f"popanalysis (state {state_id})" for state_id in self.settings_tddft["state_ids"]]
 
-                print('columns per molecule', columns_per_molecule, flush=True)
 
                 # construct output DataFrame
                 if not columns_per_molecule:
@@ -1094,7 +1081,7 @@ class Trajectory():
             if "mulliken" in self.quant_info[0]:
 
                 # get Mulliken analysis on atom index groups in self.chromophores_fragments
-                mulliken_out = qm.getMullikenFragmentAnalysisNew(
+                mulliken_out = qm.getMullikenFragmentAnalysis(
                     output_qm,
                     self.settings_tddft['state_ids'],
                     fragments=self.chromophores_fragments,
@@ -1103,23 +1090,11 @@ class Trajectory():
                     molecule_names=self.molecule_names,
                 )
 
-                print(
-                    'chromophore fragments',
-                    self.chromophores_fragment_names,
-                    self.molecule_do_fragments,
-                    self.molecule_names,
-                    flush=True,
-                )
-
                 # determine a reference number of fragments (e.g. from the first active molecule)
-                active_idx = next(
-                    (j for j, flag in enumerate(self.molecule_do_fragments) if flag),
-                    None,
-                )
+                active_idx = next((j for j, flag in enumerate(self.molecule_do_fragments) if flag), None,)
                 if active_idx is not None:
                     n_frags_ref = len(self.chromophores_fragment_names[active_idx])
                 else:
-                    # no active fragments at all → nothing meaningful to store
                     n_frags_ref = 0
 
                 # add to output df
@@ -1130,16 +1105,11 @@ class Trajectory():
 
                         if self.molecule_do_fragments[i]:
                             # list of fragment pops for this molecule+state
-                            frag_pops = mulliken_out.get(
-                                key,
-                                [0.0] * n_frags_ref
-                            )
+                            frag_pops = mulliken_out.get(key, [0.0] * n_frags_ref)
                         else:
                             # dummy zeros with same length as an active molecule’s fragment list
                             frag_pops = [0.0] * n_frags_ref
 
-                        print('frag_pops', frag_pops, flush=True)
-                        # store list in a single cell
                         self.output_quant.at[time_idx, col_label] = frag_pops
 
 
@@ -1150,10 +1120,16 @@ class Trajectory():
                     for state_id in self.settings_tddft['state_ids']:
                         # do fragment analysis only if we have activated it for specific molecules, otherwise add "dummy" 0's.
                         if self.molecule_do_fragments[i]:
-                            self.output_quant.loc[time_idx, (molecule_name, f"popanalysis (state {state_id})")] = output_qm['OPA'][i][state_id]
+                            mat = output_qm['OPA'][i][state_id]          # 2x2 np.ndarray
+                            self.output_quant.loc[time_idx, (molecule_name, f"popanalysis (state {state_id})")] = json.dumps(mat.tolist())
                         else:
-                            # TODO : maybe find a better way than just setting this to zero?
-                            self.output_quant.loc[time_idx, (molecule_name, f"popanalysis (state {state_id})")] = 0
+                            self.output_quant.loc[time_idx, (molecule_name, f"popanalysis (state {state_id})")] = json.dumps([[0.0, 0.0], [0.0, 0.0]])
+
+                        # if self.molecule_do_fragments[i]:
+                        #     self.output_quant.loc[time_idx, (molecule_name, f"popanalysis (state {state_id})")] = output_qm['OPA'][i][state_id]
+                        # else:
+                        #     # TODO : maybe find a better way than just setting this to zero?
+                        #     self.output_quant.loc[time_idx, (molecule_name, f"popanalysis (state {state_id})")] = 0
                         
             else:
                 pass
