@@ -23,6 +23,29 @@ def plotExcitedEnergies(exc, exc_std = None, color='limegreen'):
     plt.tight_layout()
     plt.show()
 
+# plot Oscilaltor Strengths (from TDDFT)
+def plotOscillatorStrengths(osc, osc_std = None, color='limegreen'):
+    no_states = len(osc)
+    states = [f"state {i}" for i in range(no_states)]
+    x = np.arange(no_states)
+
+    fig, ax = plt.subplots(figsize=(6, 4), dpi=300)
+
+    if osc_std is not None:
+        osc_std = np.asarray(osc_std, dtype=float)
+        ax.bar(x, osc, yerr=osc_std, capsize=4, color=color, edgecolor='black')
+    else:
+        ax.bar(x, osc, color=color, edgecolor='black')
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(states, rotation=45, ha='right')
+    ax.set_ylabel("Oscillator Strength")
+    ax.set_ylim(bottom=0.0)
+    ax.set_xlabel("Excited State")
+    ax.set_title("Oscillator Strengths (per State)")
+    ax.margins(x=0.05)
+    plt.tight_layout()
+    plt.show()
 
 # plot OPA results
 def plotOPA(opa, cmap='viridis'):
@@ -69,4 +92,31 @@ def plotOPA(opa, cmap='viridis'):
     cbar = fig.colorbar(im, ax=axes.ravel().tolist(), shrink=0.6, pad=0.02)
     cbar.set_label("Population", fontsize=10)
 
+    plt.show()
+
+
+# plot Mulliken Fragment Analysis results
+def plotMulliken(mulliken, fragment_names, colors=None):
+
+    # load number of states and labels
+    no_states = len(mulliken)               
+    states = [f"state {i}" for i in range(no_states)]
+
+    data = np.array(mulliken).T             # shape: (fragments, states)
+
+    fig, ax = plt.subplots(figsize=(6, 4), dpi=300)
+    bottom = np.zeros(no_states)
+    for i, frag in enumerate(fragment_names):
+        color = colors[frag] if colors and frag in colors else None
+        ax.bar(states, data[i], bottom=bottom, label=frag, color=color)
+        bottom += data[i]
+
+    ax.set_ylabel("Normalized Mulliken Charge")
+    ax.set_title(f"Mulliken Charges per Excited State")
+    ax.set_xticks(range(len(states)))
+    ax.set_xticklabels(states, rotation=45)
+    ax.axhline(0.5, color='white', linestyle = 'dashed')
+    ax.legend()
+    ax.grid(axis='y', linestyle='--', alpha=0.3)
+    plt.tight_layout()
     plt.show()
