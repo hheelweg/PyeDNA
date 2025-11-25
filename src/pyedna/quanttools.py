@@ -1484,11 +1484,7 @@ def getMullikenFragmentAnalysis(output_qm, state_ids, fragments=None,
                                 do_fragments=None,
                                 molecule_names=("D", "A")):
 
-    # TODO : for debugging only 
-    print('fragments', fragments, fragment_names, do_fragments, flush=True)
-
     results = {}
-
     for i, molecule_name in enumerate(molecule_names):
         # skip molecules for which fragment analysis is disabled
         if not do_fragments[i]:
@@ -1515,25 +1511,119 @@ def getMullikenFragmentAnalysis(output_qm, state_ids, fragments=None,
     return results
 
 
-# compute absorption spectrum from oscillator strength and excitation energies along strajectory
-# TODO : need to revisit this function
-def getAbsorptionSpectrum(osc_strengths, exc_energies, sigma = 0.1, energy_units = 'eV'):
+# compute spectrum from oscillator strength and excitation energies along strajectory
+# can adjust energy_shift accordingly to account for emission/absorption spectrum as appropriate
+def getSpectrum(excitation_energies,
+                oscillator_strengths,
+                states=None,
+                energy_shift=0.0,
+                n_bins=200,
+                energy_range=None,
+                normalize="area"
+                ):
+    """
+    Compute an oscillator-strength–weighted excitation spectrum
+    from time-series excitation energies and oscillator strengths.
 
-    # (0) convert excitation energies and oscillator strength to appropriate units
-    # TODO : confirm that this is correct
-    conv = energyConversion(energy_units)
-    exc_energies *= conv
-    osc_strengths *= conv
+    Parameters
+    ----------
+    excitation_energies : array-like, shape (n_steps, n_states)
+        Excitation energies (e.g. in eV) for each time step and state.
+    oscillator_strengths : array-like, shape (n_steps, n_states)
+        Oscillator strengths corresponding to excitation_energies.
+    states : list of int or None, optional
+        1-based state indices to include (e.g. [1,2,5]).
+        If None, use all states.
+    energy_shift : float, optional
+        Value to add to all excitation energies before histogramming
+        (e.g. to align with experiment).
+    n_bins : int, optional
+        Number of histogram bins.
+    energy_range : tuple (emin, emax) or None, optional
+        Energy range for histogram. If None, determined from data.
+    normalize : {"area", "max", None}, optional
+        - "area": normalize so that integral of spectrum is 1.
+        - "max":  normalize so that max(spectrum) is 1.
+        - None:  no normalization.
 
-    # (1) define energy grid for the plot
-    energy_grid = np.linspace(0, max(exc_energies) + 1, 1000)
-    spectrum = np.zeros_like(energy_grid)
+    Returns
+    -------
+    bin_centers : np.ndarray, shape (n_bins,)
+        Centers of the energy bins (x-axis for plotting).
+    spectrum : np.ndarray, shape (n_bins,)
+        Oscillator-strength–weighted spectrum (y-axis).
+    """
+    exc = np.asarray(excitation_energies, dtype=float)
+    osc = np.asarray(oscillator_strengths, dtype=float)
 
-    # (2) compute spectrum
-    for i, exc_energy in enumerate(exc_energies):
-        spectrum += osc_strengths[i] * np.exp(-((energy_grid - exc_energy) ** 2) / (2 * sigma ** 2))
+    if exc.shape != osc.shape:
+        raise ValueError("excitation_energies and oscillator_strengths must have the same shape")
 
-    return energy_grid, spectrum
+    n_steps, n_states = exc.shape
+
+    # select states (convert 1-based -> 0-based indices)
+    if states is None:
+        state_indices = np.arange(n_states)
+    else:
+        state_indices = np.array(states, dtype=int) - 1
+        if np.any(state_indices < 0) or np.any(state_indices >= n_states):
+            raise ValueError("State indices in 'states' must be between 1 and n_states")
+
+    # apply shift
+    exc_shifted = exc + energy_shift
+
+    # select and flatten energies + weights
+    energies_sel = exc_shifted[:, state_indices].ravel()
+    weights_sel = osc[:, state_indices].ravel()
+
+    # drop NaNs / infs if present
+    mask = np.isfinite(energies_sel) & np.isfinite(weights_sel)
+    energies_sel = energies_sel[mask]
+    weights_sel = weights_sel[mask]
+
+    if energies_sel.size == 0:
+        raise ValueError("No valid energies/weights after masking. Check your data.")
+
+    # determine energy range if not given
+    if energy_range is None:
+        emin = energies_sel.min()
+        emax = energies_sel.max()
+        # avoid degenerate range
+        if np.isclose(emin, emax):
+            emin -= 0.5
+            emax += 0.5
+        energy_range = (emin, emax)
+    else:
+        emin, emax = energy_range
+
+    # histogram with oscillator-strength weights
+    hist, bin_edges = np.histogram(
+        energies_sel,
+        bins=n_bins,
+        range=energy_range,
+        weights=weights_sel,
+        density=False,
+    )
+
+    bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
+    spectrum = hist.astype(float)
+
+    # normalize
+    if normalize == "area":
+        # normalize area under curve to 1
+        area = np.trapz(spectrum, bin_centers)
+        if area > 0:
+            spectrum /= area
+    elif normalize == "max":
+        m = spectrum.max()
+        if m > 0:
+            spectrum /= m
+    elif normalize is None:
+        pass
+    else:
+        raise ValueError("normalize must be one of {'area', 'max', None}")
+
+    return bin_centers, spectrum
 
 
 

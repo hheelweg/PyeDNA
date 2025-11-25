@@ -55,8 +55,8 @@ def plotExcitedEnergies(exc, exc_std = None, color='limegreen'):
     ax.set_ylabel(r'Energy ($\mathrm{cm}^{-1}$)')
     ax.set_title(f'Excited-State Energy Spectrum')
     ax.grid(True, linestyle='--', alpha=0.4)
-    plt.tight_layout()
-    plt.show()
+    fig.tight_layout()
+    return fig, ax
 
 # plot Oscilaltor Strengths (from TDDFT)
 def plotOscillatorStrengths(osc, osc_std = None, color='limegreen'):
@@ -79,8 +79,37 @@ def plotOscillatorStrengths(osc, osc_std = None, color='limegreen'):
     ax.set_xlabel("Excited State")
     ax.set_title("Oscillator Strengths (per State)")
     ax.margins(x=0.05)
-    plt.tight_layout()
-    plt.show()
+    fig.tight_layout()
+    return fig, ax
+
+# plot spectrum
+def plotSpectrum(x, y, color=None, alpha=0.8, edgecolor="black"):
+    
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
+
+    if x.ndim != 1 or y.ndim != 1 or x.shape != y.shape:
+        raise ValueError("x and y must be 1D arrays of the same length")
+
+    # infer bar width from bin centers so that bars "touch"
+    if len(x) > 1:
+        dx = np.diff(x)
+        # use median spacing to be robust
+        width = np.median(dx)
+    else:
+        # single bin: arbitrary width
+        width = 1.0
+
+    fig, ax = plt.subplots(figsize=(6, 4), dpi=300)
+    ax.bar(x,y,width=width,align="center",color=color,alpha=alpha,edgecolor=edgecolor,)
+    ax.set_xlabel("Energy")
+    ax.set_ylabel("Intensity")
+    ax.set_title("Oscillator-strength–weighted spectrum")
+    ax.margins(x=0.01)
+
+    fig.tight_layout()
+    return fig, ax
+
 
 # plot OPA results
 def plotOPA(opa, cmap='viridis'):
@@ -127,8 +156,7 @@ def plotOPA(opa, cmap='viridis'):
     cbar = fig.colorbar(im, ax=axes.ravel().tolist(), shrink=0.6, pad=0.02)
     cbar.set_label("Population", fontsize=10)
 
-    plt.show()
-
+    return fig, axes
 
 # plot Mulliken Fragment Analysis results
 def plotMulliken(mulliken, fragment_names, colors=None):
@@ -153,5 +181,5 @@ def plotMulliken(mulliken, fragment_names, colors=None):
     ax.axhline(0.5, color='white', linestyle = 'dashed')
     ax.legend()
     ax.grid(axis='y', linestyle='--', alpha=0.3)
-    plt.tight_layout()
-    plt.show()
+    fig.tight_layout()
+    return fig, ax
