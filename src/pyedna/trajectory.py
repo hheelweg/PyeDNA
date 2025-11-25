@@ -1061,17 +1061,18 @@ class Trajectory():
                                                               fragment_names=self.chromophores_fragment_names,
                                                               do_fragments = self.molecule_do_fragments,
                                                               molecule_names = self.molecule_names)
+                print('chromophore fragments', self.chromophores_fragment_names, self.molecule_do_fragments, self.molecule_names, flush=True)
                 # add to output df
                 for i, molecule_name in enumerate(self.molecule_names):
                     for state_id in self.settings_tddft['state_ids']:
                         # do fragment analysis only if we have activated it for specific molecules, otherwise add "dummy" 0's.
                         if self.molecule_do_fragments[i]:
                             # Mulliken analysis per molecule for each specified fragment
-                            for fragment_name in self.chromophores_fragment_names[i]:
+                            for fragment_name in self.chromophores_fragment_names:
                                 self.output_quant.loc[time_idx, (molecule_name, f"mulliken (state {state_id}) {fragment_name}")] = mulliken_out[f"{molecule_name} {state_id} {fragment_name}"]
                         else:
                             # TODO : maybe find a better way than just setting this to zero?
-                            for fragment_name in self.chromophores_fragment_names[i]:
+                            for fragment_name in self.chromophores_fragment_names:
                                 self.output_quant.loc[time_idx, (molecule_name, f"mulliken (state {state_id}) {fragment_name}")] = 0
 
 
