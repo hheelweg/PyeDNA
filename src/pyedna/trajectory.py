@@ -1094,7 +1094,7 @@ class Trajectory():
             if "mulliken" in self.quant_info[0]:
 
                 # get Mulliken analysis on atom index groups in self.chromophores_fragments
-                mulliken_out = qm.getMullikenFragmentAnalysis(
+                mulliken_out = qm.getMullikenFragmentAnalysisNew(
                     output_qm,
                     self.settings_tddft['state_ids'],
                     fragments=self.chromophores_fragments,
