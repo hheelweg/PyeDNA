@@ -1482,7 +1482,7 @@ def getMullikenFragmentAnalysis(output_qm, state_ids, fragments = None,
                                 fragment_names = None,
                                 do_fragments = None, 
                                 molecule_names = ["D", "A"]):
-    # TODO : for debuggin
+    # TODO : for debugging
     print('fragments', fragments, fragment_names, do_fragments, flush=True)
     results = {}
     for i, molecule_name in enumerate(molecule_names):
@@ -1498,6 +1498,42 @@ def getMullikenFragmentAnalysis(output_qm, state_ids, fragments = None,
                     results[key] = sum(atom_participation[j] for j in fragment_indices)
         else:
             continue
+    return results
+
+def getMullikenFragmentAnalysisNew(output_qm, state_ids, fragments=None,
+                                fragment_names=None,
+                                do_fragments=None,
+                                molecule_names=("D", "A")):
+
+    print('fragments', fragments, fragment_names, do_fragments, flush=True)
+
+    results = {}
+
+    for i, molecule_name in enumerate(molecule_names):
+        # skip molecules for which fragment analysis is disabled
+        if not do_fragments[i]:
+            continue
+
+        frag_lists = fragments[i]          # list of index lists for this molecule
+        frag_names_i = fragment_names[i]   # list of fragment names for this molecule
+        n_frags = len(frag_lists)
+        assert n_frags == len(frag_names_i), (
+            f"Number of fragments and fragment names mismatch for {molecule_name}"
+        )
+
+        for state_id in state_ids:
+            atom_pops = output_qm["mull_pops"][i][state_id]
+            atom_participation = np.abs(atom_pops)
+
+            # one value per fragment → list length == len(fragment_names[i])
+            frag_pops = [
+                float(np.sum(atom_participation[idx_list]))
+                for idx_list in frag_lists
+            ]
+
+            key = f"{molecule_name} {state_id}"
+            results[key] = frag_pops
+
     return results
 
 
