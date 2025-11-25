@@ -8,6 +8,7 @@ import time
 import pandas as pd
 import warnings
 import json
+from pathlib import Path
 
 # from current package
 from . import structure
@@ -1182,11 +1183,20 @@ class Trajectory():
         print("*** Intialization of output done!")
 
         # (3a) if you want incremental writing, write only header & empty body once
+        # if self.do_quantum and not self.output_quant.empty:
+        #     # Create an empty DataFrame with same columns but no rows
+        #     empty_q = self.output_quant.iloc[0:0]
+        #     self.writeOutputFiles(empty_q, self.quant_info[2], dir=output_dir,
+        #                         mode="w", header=True)
+        
         if self.do_quantum and not self.output_quant.empty:
-            # Create an empty DataFrame with same columns but no rows
+            quant_file = (output_dir or "") + self.quant_info[2]
+            Path(quant_file).unlink(missing_ok=True)
+
+            # write header once, no rows
             empty_q = self.output_quant.iloc[0:0]
             self.writeOutputFiles(empty_q, self.quant_info[2], dir=output_dir,
-                                mode="w", header=True)
+                                write_meta_data=True, mode="w", header=True)
 
 
         # (3) analyze trajectory
@@ -1263,9 +1273,11 @@ class Trajectory():
                 self.analyzeSnapshotQuantum(idx, output_qm)
 
                 if not self.output_quant.empty:
-                    row_df = self.output_quant.iloc[[idx - self.time_slice[0]]]  # 1-row DF
+                    time_idx = idx - self.time_slice[0]    # map global frame -> local DF index
+                    row_df = self.output_quant.iloc[[time_idx]]  # 1-row DataFrame
                     self.writeOutputFiles(row_df, self.quant_info[2], dir=output_dir,
-                                        mode="a", header=False)
+                                        write_meta_data=False, mode="a", header=False)
+
 
             # (3) analyze with respect to classical quantities of interest
             if self.do_classical:
