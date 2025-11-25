@@ -777,14 +777,13 @@ class Trajectory():
 
     @staticmethod
     def writeOutputFiles(data_frame, file_name, write_meta_data=True, dir=None,
-                     mode="w", header=True):
+                        mode="w", header=True):
         file_name = dir + file_name if dir else file_name
-        if not data_frame.empty:
-            with open(file_name, mode) as f:
-                # optional meta data only when writing header
-                if write_meta_data and header:
-                    pass  # write metadata here if you want
-                data_frame.to_csv(f, sep="\t", index=False, header=header)
+        with open(file_name, mode) as f:
+            # optional meta data only when writing header
+            if write_meta_data and header:
+                pass  # write metadata here if you want
+            data_frame.to_csv(f, sep="\t", index=False, header=header)
                 
 
     
