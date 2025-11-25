@@ -2,6 +2,41 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 
+# get colors for donor and acceptor
+def getColors(role, n = 6):
+    assert role in ["D", "A"], "Specify Donor (D) or Acceptor (A) for color scheme"
+
+    # colormaps for donor and acceptor
+    if role == "D":
+        cmap_name = 'PuBu'
+    elif role == "A":
+        cmap_name = 'RdPu'
+    
+    cmap = plt.get_cmap(cmap_name)
+
+    # sample n colors evenly across the colormap
+    if n < 1:
+        n = 1
+    xs = [i / (n - 1) if n > 1 else 0.5 for i in range(n)]
+    palette = [cmap(x) for x in xs]
+
+    # pick some convenient representatives
+    light = cmap(0.2)               # quite light
+    main  = cmap(0.6)               # mid–strong
+    dark  = cmap(0.9)               # darkest
+
+    color_scheme = dict()
+
+    color_scheme = {
+        "name": role,
+        "cmap_name": cmap_name,
+        "cmap": cmap,
+        "palette": palette,
+        "main": main,
+        "light": light,
+        "dark": dark,
+    }
+    return color_scheme
 
 # plot Excited States Spectrum (from TDDFT)
 def plotExcitedEnergies(exc, exc_std = None, color='limegreen'):
@@ -107,7 +142,7 @@ def plotMulliken(mulliken, fragment_names, colors=None):
     fig, ax = plt.subplots(figsize=(6, 4), dpi=300)
     bottom = np.zeros(no_states)
     for i, frag in enumerate(fragment_names):
-        color = colors[frag] if colors and frag in colors else None
+        color = colors[i] if colors is not None else None
         ax.bar(states, data[i], bottom=bottom, label=frag, color=color)
         bottom += data[i]
 
