@@ -1092,10 +1092,9 @@ class Trajectory():
             #                     self.output_quant.loc[time_idx, (molecule_name, f"mulliken (state {state_id}) {fragment_name}")] = 0
             
             if "mulliken" in self.quant_info[0]:
-                print('mulliken yes', flush=True)
 
                 # get Mulliken analysis on atom index groups in self.chromophores_fragments
-                mulliken_out = qm.getMullikenFragmentAnalysisNew(
+                mulliken_out = qm.getMullikenFragmentAnalysis(
                     output_qm,
                     self.settings_tddft['state_ids'],
                     fragments=self.chromophores_fragments,
@@ -1104,11 +1103,24 @@ class Trajectory():
                     molecule_names=self.molecule_names,
                 )
 
-                print('chromophore fragments',
+                print(
+                    'chromophore fragments',
                     self.chromophores_fragment_names,
                     self.molecule_do_fragments,
                     self.molecule_names,
-                    flush=True)
+                    flush=True,
+                )
+
+                # determine a reference number of fragments (e.g. from the first active molecule)
+                active_idx = next(
+                    (j for j, flag in enumerate(self.molecule_do_fragments) if flag),
+                    None,
+                )
+                if active_idx is not None:
+                    n_frags_ref = len(self.chromophores_fragment_names[active_idx])
+                else:
+                    # no active fragments at all → nothing meaningful to store
+                    n_frags_ref = 0
 
                 # add to output df
                 for i, molecule_name in enumerate(self.molecule_names):
@@ -1118,10 +1130,13 @@ class Trajectory():
 
                         if self.molecule_do_fragments[i]:
                             # list of fragment pops for this molecule+state
-                            frag_pops = mulliken_out.get(key, [0.0] * len(self.chromophores_fragment_names[i]))
+                            frag_pops = mulliken_out.get(
+                                key,
+                                [0.0] * n_frags_ref
+                            )
                         else:
-                            # dummy zeros if fragment analysis not activated
-                            frag_pops = [0.0] * len(self.chromophores_fragment_names[i])
+                            # dummy zeros with same length as an active molecule’s fragment list
+                            frag_pops = [0.0] * n_frags_ref
 
                         print('frag_pops', frag_pops, flush=True)
                         # store list in a single cell
