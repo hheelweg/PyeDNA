@@ -459,7 +459,7 @@ class Trajectory():
         qm_outs['tdm_inter'] = False
 
         if "transitions" in out:
-            print('transitionss', post_qm["transitions"], flush=True)
+            print('transitionss', post_qm["transitions"], post_qm["transitions"], flush=True)
             qm_flags.update({"transitions": post_qm["transitions"]})
 
         # for each flag we either set specified methods_type or default
@@ -636,6 +636,7 @@ class Trajectory():
 
             # (2.1) define QM states we are interested in (0-indexed), i.e. (S_0^A , S_{stateB + 1}^B) <--> (S_{stateA + 1}^A, S_0^B)
             self.transitions = self.quant_info[0]["transitions"]
+            print('tarnsitionsss', self.transitions)
             # check that length of each transition in self.transitions agrees with number of molecules
             if self.transitions is not None:
                 for transition in self.transitions:
