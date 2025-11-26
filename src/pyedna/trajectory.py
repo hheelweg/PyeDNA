@@ -459,6 +459,7 @@ class Trajectory():
         qm_outs['tdm_inter'] = False
 
         if "transitions" in out:
+            print('transitionss', post_qm["transitions"], flush=True)
             qm_flags.update({"transitions": post_qm["transitions"]})
 
         # for each flag we either set specified methods_type or default
