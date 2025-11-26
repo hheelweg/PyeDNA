@@ -1203,16 +1203,16 @@ def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
     #     mol = mols[0]
     #     tdm = tdms[0][state]
 
-    # # NOTE : for intermolecular
-    # stateA, stateB = states[0], states[1]
-    # molA, molB = mols[0], mols[1]
-    # tdmA, tdmB = tdms[0][stateA], tdms[1][stateB]
-
-    # NOTE : for intramolecular
+    # NOTE : for intermolecular
     stateA, stateB = states[0], states[1]
-    molA, molB = mols[0], mols[0]
-    mol = molA
-    tdmA, tdmB = np.squeeze(tdms[0][stateA]), np.squeeze(tdms[0][stateB])
+    molA, molB = mols[0], mols[1]
+    tdmA, tdmB = tdms[0][stateA], tdms[1][stateB]
+
+    # # NOTE : for intramolecular
+    # stateA, stateB = states[0], states[1]
+    # molA, molB = mols[0], mols[0]
+    # mol = molA
+    # tdmA, tdmB = np.squeeze(tdms[0][stateA]), np.squeeze(tdms[0][stateB])
 
     # print(tdmA.shape, tdmB.shape)
     # print("inner product =",  np.trace(tdmA.conj().T @ tdmB))
@@ -1295,9 +1295,9 @@ def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
 
         print(f"✓ Written cube file to: {filename}")
 
-    # only if .cube entries are getting super super small (<1E-100)
-    write_thresholded_density_cube(mol, tdmA, 'tdmA_1.cube')
-    write_thresholded_density_cube(mol, tdmB, 'tdmB_1.cube')
+    # # only if .cube entries are getting super super small (<1E-100)
+    # write_thresholded_density_cube(mol, tdmA, 'tdmA_1.cube')
+    # write_thresholded_density_cube(mol, tdmB, 'tdmB_1.cube')
     
 
     #cubegen.density(molA, 'tdmA.cube', tdmA, nx=80, ny=80, nz=80)
@@ -1347,16 +1347,16 @@ def getVCoulombic(mols, tdms, states, coupling_type = 'electronic'):
 
     if coupling_type in ['electronic', 'cK']:
         # if intermolecular:
-        #cJ, cK = getInterCJCK(molA, molB, tdmA, tdmB, get_cK=True)
+        cJ, cK = getInterCJCK(molA, molB, tdmA, tdmB, get_cK=True)
         #if intramolecular:
-        #cJ, cK = getIntraCJCK(mol, gamma_A, gamma_B, get_cK=True)
-        cJ, cK = getIntraCJCK(mol, tdmA, tdmB, get_cK=True)
+        #cJ, cK = getIntraCJCK(mol, gamma_A, gamma_B, get_cK=True) (don't use this I guess)
+        #cJ, cK = getIntraCJCK(mol, tdmA, tdmB, get_cK=True)
     elif coupling_type in ['cJ']:
         # if intermolecular:
-        #cJ, _ = getInterCJCK(molA, molB, tdmA, tdmB, get_cK=False)
+        cJ, _ = getInterCJCK(molA, molB, tdmA, tdmB, get_cK=False)
         # if intramolecular:
-        #cJ, _ = getIntraCJCK(mol, gamma_A, gamma_B, get_cK=False)
-        cJ, _ = getIntraCJCK(mol, tdmA, tdmB, get_cK=False)
+        #cJ, _ = getIntraCJCK(mol, gamma_A, gamma_B, get_cK=False) (don't use this I guess)
+        #cJ, _ = getIntraCJCK(mol, tdmA, tdmB, get_cK=False)
     else:
         raise NotImplementedError("Invalid coupling type specified!")
     
@@ -1624,7 +1624,6 @@ def getSpectrum(excitation_energies,
         raise ValueError("normalize must be one of {'area', 'max', None}")
 
     return bin_centers, spectrum
-
 
 
 # function that handles energy conversion from Hartree to energy_units

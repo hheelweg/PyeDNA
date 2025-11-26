@@ -758,23 +758,6 @@ class Trajectory():
                     self.output_quant = pd.DataFrame(index = range(output_length), columns = columns_quant)     
 
 
-        
-
-    # TODO : write simulation data into the header
-    # @staticmethod
-    # def writeOutputFiles(data_frame, file_name, write_meta_data = True, dir = None):
-    #     # TODO : write meta data into header
-    #     file_name = dir + file_name if dir else file_name
-    #     # store DateFrame (classical or quantum) with meta data header (optional)
-    #     if not data_frame.empty:
-    #         with open(file_name, "w") as f:
-    #             # optional: write meta data
-    #             if write_meta_data:
-    #                 pass
-    #             # write output
-    #             data_frame.to_csv(f, sep = "\t", index=False)
-    
-
     @staticmethod
     def writeOutputFiles(data_frame, file_name, write_meta_data=True, dir=None,
                         mode="w", header=True):
@@ -1001,14 +984,14 @@ class Trajectory():
                 # (a) get Coulombic coupling information
                 if self.quant_info[0]["coupling"]:
                     # compute coupling based on QM (DFT/TDDFT) output
-                    # TODO : for intramolecular
-                    if i == 0:
-                        coupling_out = qm.getVCoulombic(output_qm['mol'], output_qm['tdm'],  [self.transitions[i], self.transitions[i+1]], coupling_type=self.quant_info[1]['coupling'])
-                    if i == 1:
-                        coupling_out = qm.getVCoulombic(output_qm['mol'], output_qm['tdm'],  [self.transitions[i-1], self.transitions[i]], coupling_type=self.quant_info[1]['coupling'])
+                    # # TODO : for intramolecular
+                    # if i == 0:
+                    #     coupling_out = qm.getVCoulombic(output_qm['mol'], output_qm['tdm'],  [self.transitions[i], self.transitions[i+1]], coupling_type=self.quant_info[1]['coupling'])
+                    # if i == 1:
+                    #     coupling_out = qm.getVCoulombic(output_qm['mol'], output_qm['tdm'],  [self.transitions[i-1], self.transitions[i]], coupling_type=self.quant_info[1]['coupling'])
                     # TODO : go back to this:
                     # TODO : for intermolecular
-                    #coupling_out = qm.getVCoulombic(output_qm['mol'], output_qm['tdm'], states, coupling_type=self.quant_info[1]['coupling'])
+                    coupling_out = qm.getVCoulombic(output_qm['mol'], output_qm['tdm'], states, coupling_type=self.quant_info[1]['coupling'])
                     # add to output df
                     self.output_quant.loc[time_idx, [(self.transition_names[i], key) for key in coupling_out.keys()]] = list(coupling_out.values())
 
@@ -1068,28 +1051,6 @@ class Trajectory():
 
             
             # (d) get Mulliken analysis on specified fragment
-            # if "mulliken" in self.quant_info[0]:
-            #     print('mulliken yes', flush = True)
-            #     # get Mulliken analysis on atom index group in self.chromophores_fragments
-            #     mulliken_out = qm.getMullikenFragmentAnalysis(output_qm, self.settings_tddft['state_ids'], 
-            #                                                   fragments=self.chromophores_fragments, 
-            #                                                   fragment_names=self.chromophores_fragment_names,
-            #                                                   do_fragments = self.molecule_do_fragments,
-            #                                                   molecule_names = self.molecule_names)
-            #     print('chromophore fragments', self.chromophores_fragment_names, self.molecule_do_fragments, self.molecule_names, flush=True)
-            #     # add to output df
-            #     for i, molecule_name in enumerate(self.molecule_names):
-            #         for state_id in self.settings_tddft['state_ids']:
-            #             # do fragment analysis only if we have activated it for specific molecules, otherwise add "dummy" 0's.
-            #             if self.molecule_do_fragments[i]:
-            #                 # Mulliken analysis per molecule for each specified fragment
-            #                 for fragment_name in self.chromophores_fragment_names:
-            #                     self.output_quant.loc[time_idx, (molecule_name, f"mulliken (state {state_id}) {fragment_name}")] = mulliken_out[f"{molecule_name} {state_id} {fragment_name}"]
-            #             else:
-            #                 # TODO : maybe find a better way than just setting this to zero?
-            #                 for fragment_name in self.chromophores_fragment_names:
-            #                     self.output_quant.loc[time_idx, (molecule_name, f"mulliken (state {state_id}) {fragment_name}")] = 0
-            
             if "mulliken" in self.quant_info[0]:
 
                 # get Mulliken analysis on atom index groups in self.chromophores_fragments
@@ -1170,26 +1131,27 @@ class Trajectory():
         
         # (3) initialize output DataFrames
         self.initOutput(self.time_slice[1]  - self.time_slice[0]) 
-        print("*** Intialization of output done!")
 
         # (3a) if you want incremental writing, write only header & empty body once
-        # if self.do_quantum and not self.output_quant.empty:
-        #     # Create an empty DataFrame with same columns but no rows
-        #     empty_q = self.output_quant.iloc[0:0]
-        #     self.writeOutputFiles(empty_q, self.quant_info[2], dir=output_dir,
-        #                         mode="w", header=True)
-        
         if self.do_quantum and not self.output_quant.empty:
             quant_file = (output_dir or "") + self.quant_info[2]
             Path(quant_file).unlink(missing_ok=True)
-
             # write header once, no rows
             empty_q = self.output_quant.iloc[0:0]
             self.writeOutputFiles(empty_q, self.quant_info[2], dir=output_dir,
-                                write_meta_data=True, mode="w", header=True)
+                                  write_meta_data=True, mode="w", header=True)
+        
+        if self.do_classical and not self.output_class.empty:
+            class_file = (output_dir or "") + self.class_info[2]
+            Path(class_file).unlink(missing_ok=True)
+            # write header once, no rows
+            empty_q = self.output_class.iloc[0:0]
+            self.writeOutputFiles(empty_q, self.class_info[2], dir=output_dir,
+                                  write_meta_data=True, mode="w", header=True)
 
+        print("*** Intialization of output done!")
 
-        # (3) analyze trajectory
+        # (4) analyze trajectory
         for idx in range(self.time_slice[0], self.time_slice[1] + 1):
 
             start_time = time.time()
@@ -1211,9 +1173,7 @@ class Trajectory():
 
             for i, molecule in enumerate(self.molecules):
 
-                
-                #chromophore, chromophore_conv = self.getChromophoreSnapshotOld(idx, molecule, self.molecule_names[i], conversion = 'pyscf')
-
+                # TODO : can we unify this if?
                 if self.do_quantum and self.do_mulliken and self.molecule_do_fragments[i]:
                     chromophore, chromophore_conv, fragmentation_info = self.getChromophoreSnapshot(
                                                                                 molecule = molecule,
@@ -1245,6 +1205,7 @@ class Trajectory():
             # (2) analyze with respect to QM quantities of interest
             if self.do_quantum:
                 # (2.1) run QM calculation
+                # TODO : can we unify this no matter if self.do_mulliken is turned on or not?
                 if self.do_mulliken:
                     output_qm = qm.doQM_gpu(self.chromophores_conv, self.qm_outs,
                                             do_fragments=self.molecule_do_fragments, 
@@ -1262,34 +1223,34 @@ class Trajectory():
                 # (2.2) post-processing of QM output
                 self.analyzeSnapshotQuantum(idx, output_qm)
 
+                # (2.3) append to output df (mode = "a")
                 if not self.output_quant.empty:
-                    time_idx = idx - self.time_slice[0]    # map global frame -> local DF index
-                    row_df = self.output_quant.iloc[[time_idx]]  # 1-row DataFrame
+                    time_idx = idx - self.time_slice[0]    
+                    row_df = self.output_quant.iloc[[time_idx]] 
                     self.writeOutputFiles(row_df, self.quant_info[2], dir=output_dir,
                                         write_meta_data=False, mode="a", header=False)
 
 
             # (3) analyze with respect to classical quantities of interest
             if self.do_classical:
+
+                # (3.1) analyzing trajectory snapshot classically
                 self.analyzeSnapshotClassical(idx)
-            
+
+                # (3.2) append to output df (mode = "a")
+                if not self.output_class.empty:
+                    time_idx = idx - self.time_slice[0]    
+                    row_df = self.output_class.iloc[[time_idx]] 
+                    self.writeOutputFiles(row_df, self.class_info[2], dir=output_dir,
+                                          write_meta_data=False, mode="a", header=False)
+        
+
             # (4) take time per time step
             end_time = time.time()
             print(f"Elapsed time for step {idx + 1}: {end_time- start_time:.0f} seconds")
 
 
         print('*** Successfully looped through all trajectory snapshots!')
-        
-        
-        # # (4) write output files
-        # # (4.1) quantum output
-        # if self.do_quantum:
-        #     self.writeOutputFiles(self.output_quant, self.quant_info[2], dir = output_dir)
-        # # (4.2) classical output
-        # if self.do_classical:
-        #     self.writeOutputFiles(self.output_class, self.class_info[2], dir = output_dir)
-
-
         print('*** Finished writing oputput files!')
 
 

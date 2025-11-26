@@ -59,7 +59,7 @@ def plotExcitedEnergies(exc, exc_std = None, color='limegreen'):
     return fig, ax
 
 # plot Oscilaltor Strengths (from TDDFT)
-def plotOscillatorStrengths(osc, osc_std = None, color='limegreen'):
+def plotOscillatorStrengths(osc, osc_std = None, alpha=0.8, color='limegreen'):
     no_states = len(osc)
     states = [f"state {i}" for i in range(no_states)]
     x = np.arange(no_states)
@@ -70,7 +70,7 @@ def plotOscillatorStrengths(osc, osc_std = None, color='limegreen'):
         osc_std = np.asarray(osc_std, dtype=float)
         ax.bar(x, osc, yerr=osc_std, capsize=4, color=color, edgecolor='black')
     else:
-        ax.bar(x, osc, color=color, edgecolor='black')
+        ax.bar(x, osc, color=color, alpha=alpha, edgecolor='black')
 
     ax.set_xticks(x)
     ax.set_xticklabels(states, rotation=45, ha='right')
@@ -83,7 +83,7 @@ def plotOscillatorStrengths(osc, osc_std = None, color='limegreen'):
     return fig, ax
 
 # plot spectrum
-def plotSpectrum(x, y, color=None, alpha=0.8, edgecolor="black"):
+def plotSpectrum(x, y, color=None, alpha=0.8, edgecolor="black", title=None):
     
     x = np.asarray(x, dtype=float)
     y = np.asarray(y, dtype=float)
@@ -102,9 +102,10 @@ def plotSpectrum(x, y, color=None, alpha=0.8, edgecolor="black"):
 
     fig, ax = plt.subplots(figsize=(6, 4), dpi=300)
     ax.bar(x,y,width=width,align="center",color=color,alpha=alpha,edgecolor=edgecolor,)
-    ax.set_xlabel("Energy")
+    ax.set_xlabel(r"Energy ($\mathrm{cm}^{-1}$)")
     ax.set_ylabel("Intensity")
-    ax.set_title("Oscillator-strength–weighted spectrum")
+    if title is not None:
+        ax.set_title(title)
     ax.margins(x=0.01)
 
     fig.tight_layout()
