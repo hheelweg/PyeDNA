@@ -4,13 +4,15 @@ import math
 
 # get colors for donor and acceptor
 def getColors(role, n = 6):
-    assert role in ["D", "A"], "Specify Donor (D) or Acceptor (A) for color scheme"
+    assert role in ["D", "A", "O"], "Specify Donor (D) or Acceptor (A) for color scheme. Or O for other. "
 
     # colormaps for donor and acceptor
     if role == "D":
         cmap_name = 'PuBu'
     elif role == "A":
         cmap_name = 'RdPu'
+    elif role == "O":
+        cmap_name = 'YlGn'
     
     cmap = plt.get_cmap(cmap_name)
 
