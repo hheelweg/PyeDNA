@@ -4,7 +4,7 @@
 #SBATCH --partition=gpu                         # GPU partition	
 #SBATCH --nodelist=gpu001                       # Run on GPU node gpu001	
 #SBATCH --ntasks=1                              # # of tasks
-#SBATCH --gres=gpu:2                            # Request 2 GPU
+#SBATCH --gres=gpu:2                            # Request 1 GPU
 #SBATCH --cpus-per-task=8                       # use 4-8 CPUs per GPU
 #SBATCH --job-name=dummy                        # Use provided job name or "default_job" if none given
 #SBATCH --output=slurm-%j.log                   # Name output log file
