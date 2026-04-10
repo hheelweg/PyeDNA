@@ -21,6 +21,7 @@ dna_dye: production run (NPT)
   ntpr = {prod_ntpr},         ! OUT: How often to write in out file (energy/log data)
   ntwx = {prod_ntwx},         ! OUT: How often to write in traj file (trajectory data)
   ntwr = {prod_ntwr},         ! OUT: How often to write in restart file 
+  ntwf = 1                    ! OUT: also print forces on atoms
   ioutfm = {ioutfm},          ! OUT: trajectory output format ASCII
   restraint_wt = {res_fweak}, ! RESTRAINT: force constant (kcal mol-1 ang-2)
   restraintmask = {res_mask}  ! RESTRAINT: Residue indices to restrain (here: terminal nucleotides)	
