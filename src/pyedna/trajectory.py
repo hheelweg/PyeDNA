@@ -91,7 +91,7 @@ class MDSimulation():
                         'ntt'           :       3,
                         'gamma_ln'      :       5.0,
                         'ig'            :       -1,
-                        'ioutfm'        :       0,
+                        'ioutfm'        :       1,          # NetCDF output set to 1, for ASCII set to 0
                         'eq1_ntpr'      :       5000,
                         'eq2_ntpr'      :       5000,
                         'eq1_ntwx'      :       5000,
