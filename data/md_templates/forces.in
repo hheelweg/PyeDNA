@@ -3,7 +3,7 @@ force evaluation
   imin      = 5,
   ntx       = 1,
   irest     = 0,
-  ntb       = 2,
+  ntb       = 1,
   ntp       = 0,
   ntc       = 1,
   ntf       = 1,
