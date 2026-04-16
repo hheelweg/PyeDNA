@@ -81,14 +81,14 @@ cpptraj -i "$CPPTRAJ_IN"
 # (2) Run force evaluation
 echo "Running sander force evaluation on thinned trajectory..."
 sander -O \
-    -i "$FORCE_TEMPLATE" \
-    -p "$TOP" \
-    -c "$THIN_TRAJ" \
-    -y "$THIN_TRAJ" \
-    -o "$OUT_LOG" \
-    -r "$RESTART_OUT" \
-    -inf "$INFO_OUT" \
-    -frc "$FORCE_TRAJ"
+  -i "$FORCE_TEMPLATE" \
+  -p "$TOP" \
+  -c "$START_RST" \
+  -y "$THIN_TRAJ" \
+  -o "$OUT_LOG" \
+  -r "$RESTART_OUT" \
+  -inf "$INFO_OUT" \
+  -frc "$FORCE_TRAJ"
 
 
 # (3) Clean temporary files
