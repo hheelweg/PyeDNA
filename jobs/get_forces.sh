@@ -77,6 +77,19 @@ EOF
 echo "Running cpptraj to create thinned trajectory: $THIN_TRAJ"
 cpptraj -i "$CPPTRAJ_IN"
 
+START_RST="${NAME}_thin_${EVERY_INT}_first.rst7"
+
+cat > make_restart.in << EOF
+parm $TOP
+trajin $THIN_TRAJ 1 1
+trajout $START_RST restart
+run
+quit
+EOF
+
+cpptraj -i make_restart.in
+rm -f make_restart.in
+
 
 # (2) Run force evaluation
 echo "Running sander force evaluation on thinned trajectory..."
