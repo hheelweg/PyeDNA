@@ -38,7 +38,7 @@ EVERY_INT="$2"
 
 TOP="${NAME}.prmtop"
 TRAJ="${NAME}.nc"
-FORCE_TEMPLATE="../data/md_templates/forces.in"
+FORCE_TEMPLATE="$PYEDNA_HOME/data/md_templates/forces.in"
 
 THIN_TRAJ="${NAME}_thin_${EVERY_INT}.nc"
 CPPTRAJ_IN="${NAME}_thin_${EVERY_INT}.cpptraj.in"
