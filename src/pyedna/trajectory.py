@@ -104,7 +104,7 @@ class MDSimulation():
                         'prod_nstlim'   :       1000000,
                         'ntx'           :       5,
                         'irest'         :       1,
-                        'prod_ntwf'     :       1,          # by default, print forces (set to 1)
+                        'prod_ntwf'     :       0,          # print forces (set to 1) but this is very slow I/O-wise
                         'prod_ntpr'     :       5000,
                         'prod_ntwx'     :       5000,
                         'prod_ntwr'     :       50000
