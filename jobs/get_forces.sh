@@ -101,7 +101,7 @@ sander -O \
   -o "$OUT_LOG" \
   -r "$RESTART_OUT" \
   -inf "$INFO_OUT" \
-  -frc "$FORCE_TRAJ"
+  -frc "${NAME}_forces.nc"
 
 
 # (3) Clean temporary files
