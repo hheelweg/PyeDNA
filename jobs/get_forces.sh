@@ -166,3 +166,64 @@ rmdir "$TMP_DIR" 2>/dev/null || true
 
 echo "Done."
 echo "Force files written to: $FORCE_DIR"
+
+
+# (3) Merge all per-frame force NetCDF files into one force trajectory
+MERGED_FORCE_NC="${NAME}_forces_every_${EVERY_INT}_all.nc"
+
+echo "Merging per-frame force files into: $MERGED_FORCE_NC"
+
+python - << EOF
+import glob
+from netCDF4 import Dataset
+
+files = sorted(glob.glob("${FORCE_DIR}/frame_*.nc"))
+if not files:
+    raise SystemExit("Error: no per-frame force files found to merge.")
+
+# Read dimensions from first file
+with Dataset(files[0], "r") as src0:
+    natom = len(src0.dimensions["atom"])
+    nspatial = len(src0.dimensions["spatial"])
+    spatial_vals = src0.variables["spatial"][:]
+
+# Create merged output
+with Dataset("${MERGED_FORCE_NC}", "w", format="NETCDF4_CLASSIC") as dst:
+    dst.createDimension("frame", None)
+    dst.createDimension("atom", natom)
+    dst.createDimension("spatial", nspatial)
+
+    time_var = dst.createVariable("time", "f4", ("frame",))
+    time_var.units = "picosecond"
+
+    spatial_var = dst.createVariable("spatial", "S1", ("spatial",))
+    spatial_var[:] = spatial_vals
+
+    forces_var = dst.createVariable("forces", "f4", ("frame", "atom", "spatial"))
+    forces_var.units = "kilocalorie/mole/angstrom"
+
+    dst.title = "merged_force_trajectory"
+    dst.application = "AMBER"
+    dst.program = "sander + python merge"
+    dst.Conventions = "AMBER"
+    dst.ConventionVersion = "1.0"
+
+    for i, fn in enumerate(files):
+        with Dataset(fn, "r") as src:
+            if len(src.dimensions["frame"]) != 1:
+                raise SystemExit(f"Error: {fn} does not contain exactly 1 frame.")
+            time_var[i] = src.variables["time"][0]
+            forces_var[i, :, :] = src.variables["forces"][0, :, :]
+EOF
+
+# (4) Clean temporary files
+echo "Cleaning temporary files..."
+rm -f "$CPPTRAJ_IN"
+# keep "$THIN_TRAJ" because it is the coordinate trajectory aligned with the merged forces
+rm -f "$FORCE_TEMPLATE"
+rmdir "$TMP_DIR" 2>/dev/null || true
+
+echo "Done."
+echo "Coordinate trajectory kept as: $THIN_TRAJ"
+echo "Merged force trajectory written to: $MERGED_FORCE_NC"
+echo "Per-frame force files remain in: $FORCE_DIR"
