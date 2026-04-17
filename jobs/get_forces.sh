@@ -53,10 +53,10 @@ THIN_TRAJ="${NAME}_thin_${EVERY_INT}.nc"
 THIN_TOP="${NAME}_thin_${EVERY_INT}.prmtop"
 CPPTRAJ_IN="${NAME}_thin_${EVERY_INT}.cpptraj.in"
 
-FORCE_DIR="${NAME}_forces_every_${EVERY_INT}"
-TMP_DIR="${NAME}_forces_tmp_every_${EVERY_INT}"
+FORCE_DIR="${NAME}_forces_tmp_frames"
+TMP_DIR="${NAME}_forces_tmp_work"
 FORCE_TEMPLATE="${TMP_DIR}/forces.in"
-MERGED_FORCE_NC="${NAME}_forces_every_${EVERY_INT}_all.nc"
+MERGED_FORCE_NC="${NAME}_forces.nc"
 
 if [[ ! -f "$TOP" ]]; then
     echo "Error: Topology file $TOP not found."
@@ -106,8 +106,15 @@ echo "Using force input file:"
 nl -ba "$FORCE_TEMPLATE"
 cat -A "$FORCE_TEMPLATE"
 
-# (1) Thin trajectory
-cat > "$CPPTRAJ_IN" << EOF
+# Decide whether to thin or not
+if [[ "$EVERY_INT" -eq 1 ]]; then
+    echo "EVERY_INT = 1, skipping thinning and using original trajectory."
+    WORK_TRAJ="$TRAJ"
+    WORK_TOP="$TOP"
+else
+    echo "Running cpptraj to create thinned trajectory: $THIN_TRAJ"
+
+    cat > "$CPPTRAJ_IN" << EOF
 parm $TOP
 trajin $TRAJ 1 last $EVERY_INT
 trajout $THIN_TRAJ netcdf
@@ -115,14 +122,16 @@ run
 quit
 EOF
 
-echo "Running cpptraj to create thinned trajectory: $THIN_TRAJ"
-cpptraj -i "$CPPTRAJ_IN"
+    cpptraj -i "$CPPTRAJ_IN"
 
-# Keep a matching topology copy for convenience
-cp -f "$TOP" "$THIN_TOP"
+    cp -f "$TOP" "$THIN_TOP"
 
-# Count frames in thinned trajectory
-NFRAMES=$(ncdump -h "$THIN_TRAJ" | awk '
+    WORK_TRAJ="$THIN_TRAJ"
+    WORK_TOP="$THIN_TOP"
+fi
+
+# Count frames in working trajectory
+NFRAMES=$(ncdump -h "$WORK_TRAJ" | awk '
 /frame = UNLIMITED/ {
     if (match($0, /\(([0-9]+) currently\)/)) {
         s = substr($0, RSTART+1, RLENGTH-11)
@@ -131,13 +140,13 @@ NFRAMES=$(ncdump -h "$THIN_TRAJ" | awk '
 }')
 
 if [[ -z "$NFRAMES" ]]; then
-    echo "Error: Could not determine number of frames in $THIN_TRAJ"
+    echo "Error: Could not determine number of frames in $WORK_TRAJ"
     exit 1
 fi
 
-echo "Thinned trajectory contains $NFRAMES frames."
+echo "Working trajectory contains $NFRAMES frames."
 
-# (2) Loop over frames
+# Loop over frames
 for (( i=1; i<=NFRAMES; i++ )); do
     FRAME_TAG=$(printf "%06d" "$i")
     FRAME_RST="${TMP_DIR}/frame_${FRAME_TAG}.rst7"
@@ -151,8 +160,8 @@ for (( i=1; i<=NFRAMES; i++ )); do
     echo "Processing frame $i / $NFRAMES"
 
     cat > "$FRAME_CPPTRAJ_IN" << EOF
-parm $TOP
-trajin $THIN_TRAJ $i $i
+parm $WORK_TOP
+trajin $WORK_TRAJ $i $i
 trajout $FRAME_RST restart
 run
 quit
@@ -162,7 +171,7 @@ EOF
 
     sander -O \
       -i "$FORCE_TEMPLATE" \
-      -p "$TOP" \
+      -p "$WORK_TOP" \
       -c "$FRAME_RST" \
       -o "$FRAME_OUT" \
       -r "$FRAME_RESTART" \
@@ -173,7 +182,7 @@ EOF
     rm -f "$FRAME_RST"
 done
 
-# (3) Merge all per-frame force NetCDF files into one force trajectory
+# Merge all per-frame force NetCDF files into one force trajectory
 echo "Merging per-frame force files into: $MERGED_FORCE_NC"
 
 python - << EOF
@@ -203,6 +212,8 @@ with Dataset("${MERGED_FORCE_NC}", "w", format="NETCDF4_CLASSIC") as dst:
     forces_var = dst.createVariable("forces", "f4", ("frame", "atom", "spatial"))
     forces_var.units = "kilocalorie/mole/angstrom"
 
+    frame_index_var = dst.createVariable("frame_index", "i4", ("frame",))
+
     dst.title = "merged_force_trajectory"
     dst.application = "AMBER"
     dst.program = "sander + python merge"
@@ -215,14 +226,19 @@ with Dataset("${MERGED_FORCE_NC}", "w", format="NETCDF4_CLASSIC") as dst:
                 raise SystemExit(f"Error: {fn} does not contain exactly 1 frame.")
             time_var[i] = src.variables["time"][0]
             forces_var[i, :, :] = src.variables["forces"][0, :, :]
+            frame_index_var[i] = i + 1
 EOF
 
-# (4) Clean temporary and auxiliary files/directories
+# Clean temporary and auxiliary files/directories
 echo "Cleaning temporary and auxiliary files..."
-rm -f "$CPPTRAJ_IN"
+
 rm -f "$FORCE_TEMPLATE"
 
-# Remove per-frame files and auxiliary directory after successful merge
+if [[ "$EVERY_INT" -ne 1 ]]; then
+    rm -f "$CPPTRAJ_IN"
+fi
+
+# Remove per-frame temporary outputs after successful merge
 rm -f "${FORCE_DIR}"/frame_*.nc
 rm -f "${FORCE_DIR}"/frame_*.out
 rm -f "${FORCE_DIR}"/frame_*.mdinfo
@@ -234,6 +250,13 @@ rm -f "${TMP_DIR}"/*
 rmdir "$TMP_DIR" 2>/dev/null || true
 
 echo "Done."
-echo "Kept coordinate trajectory: $THIN_TRAJ"
-echo "Kept matching topology:     $THIN_TOP"
+
+if [[ "$EVERY_INT" -eq 1 ]]; then
+    echo "Kept coordinate trajectory: $TRAJ"
+    echo "Kept topology:             $TOP"
+else
+    echo "Kept coordinate trajectory: $THIN_TRAJ"
+    echo "Kept matching topology:     $THIN_TOP"
+fi
+
 echo "Kept merged force file:     $MERGED_FORCE_NC"
