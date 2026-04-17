@@ -7,7 +7,7 @@
 #SBATCH --job-name=forces
 #SBATCH --output=slurm-%j.log
 
-set -euo pipefail
+set -eo pipefail
 
 # USAGE:
 # sbatch this_script.sh [name] [every_int]
