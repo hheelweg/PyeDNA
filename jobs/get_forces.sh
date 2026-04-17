@@ -10,8 +10,13 @@
 set -eo pipefail
 
 # USAGE:
-# sbatch this_script.sh [name] [every_int]
-# NOTE: requires name.nc and name.prmtop file
+#   sbatch this_script.sh <name> <every_int>
+#
+# REQUIRES:
+#   - <name>.nc
+#   - <name>.prmtop
+#   - PYEDNA_HOME set
+#   - cpptraj and sander in PATH
 
 # Check if PYEDNA_HOME is set
 if [[ -z "${PYEDNA_HOME:-}" ]]; then
@@ -28,7 +33,7 @@ else
     exit 1
 fi
 
-# check input arguments
+# Check input arguments
 if [[ $# -lt 2 ]]; then
     echo "Usage: sbatch $0 <name> <every_int>"
     exit 1
@@ -44,15 +49,15 @@ fi
 
 TOP="${NAME}.prmtop"
 TRAJ="${NAME}.nc"
-FORCE_TEMPLATE="$PYEDNA_HOME/data/md_templates/forces.in"
 
 THIN_TRAJ="${NAME}_thin_${EVERY_INT}.nc"
 CPPTRAJ_IN="${NAME}_thin_${EVERY_INT}.cpptraj.in"
 
 FORCE_DIR="${NAME}_forces_every_${EVERY_INT}"
 TMP_DIR="${NAME}_forces_tmp_every_${EVERY_INT}"
+FORCE_TEMPLATE="${TMP_DIR}/forces.in"
 
-# check required files
+# Check required files
 if [[ ! -f "$TOP" ]]; then
     echo "Error: Topology file $TOP not found."
     exit 1
@@ -63,15 +68,35 @@ if [[ ! -f "$TRAJ" ]]; then
     exit 1
 fi
 
-if [[ ! -f "$FORCE_TEMPLATE" ]]; then
-    echo "Error: Force template $FORCE_TEMPLATE not found."
-    exit 1
-fi
-
 mkdir -p "$FORCE_DIR"
 mkdir -p "$TMP_DIR"
 
 export OMP_NUM_THREADS="${SLURM_CPUS_PER_TASK:-1}"
+
+# Write local force input file to avoid template parsing issues
+cat > "$FORCE_TEMPLATE" << 'EOF'
+force evaluation
+&cntrl
+  imin      = 1,
+  ntx       = 1,
+  irest     = 0,
+  ntb       = 1,
+  ntp       = 0,
+  ntc       = 1,
+  ntf       = 1,
+  ntpr      = 1,
+  ntwx      = 0,
+  ntwf      = 1,
+  ioutfm    = 1,
+  cut       = 8.0,
+  maxcyc    = 1,
+  ncyc      = 0,
+/
+EOF
+
+echo "Using force input file:"
+nl -ba "$FORCE_TEMPLATE"
+cat -A "$FORCE_TEMPLATE"
 
 # (1) Thin trajectory
 cat > "$CPPTRAJ_IN" << EOF
@@ -104,13 +129,13 @@ echo "Thinned trajectory contains $NFRAMES frames."
 # (2) Loop over frames: extract one restart, run sander, store one force file
 for (( i=1; i<=NFRAMES; i++ )); do
     FRAME_TAG=$(printf "%06d" "$i")
-    FRAME_RST="$TMP_DIR/frame_${FRAME_TAG}.rst7"
-    FRAME_CPPTRAJ_IN="$TMP_DIR/frame_${FRAME_TAG}.cpptraj.in"
+    FRAME_RST="${TMP_DIR}/frame_${FRAME_TAG}.rst7"
+    FRAME_CPPTRAJ_IN="${TMP_DIR}/frame_${FRAME_TAG}.cpptraj.in"
 
-    FRAME_OUT="$FORCE_DIR/frame_${FRAME_TAG}.out"
-    FRAME_INFO="$FORCE_DIR/frame_${FRAME_TAG}.mdinfo"
-    FRAME_RESTART="$FORCE_DIR/frame_${FRAME_TAG}.rst7"
-    FRAME_FORCE="$FORCE_DIR/frame_${FRAME_TAG}.nc"
+    FRAME_OUT="${FORCE_DIR}/frame_${FRAME_TAG}.out"
+    FRAME_INFO="${FORCE_DIR}/frame_${FRAME_TAG}.mdinfo"
+    FRAME_RESTART="${FORCE_DIR}/frame_${FRAME_TAG}.rst7"
+    FRAME_FORCE="${FORCE_DIR}/frame_${FRAME_TAG}.nc"
 
     echo "Processing frame $i / $NFRAMES"
 
@@ -141,6 +166,7 @@ done
 echo "Cleaning temporary files..."
 rm -f "$CPPTRAJ_IN"
 rm -f "$THIN_TRAJ"
+rm -f "$FORCE_TEMPLATE"
 rmdir "$TMP_DIR" 2>/dev/null || true
 
 echo "Done."
