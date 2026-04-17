@@ -106,13 +106,25 @@ echo "Using force input file:"
 nl -ba "$FORCE_TEMPLATE"
 cat -A "$FORCE_TEMPLATE"
 
-# Decide whether to thin or not
 if [[ "$EVERY_INT" -eq 1 ]]; then
-    echo "EVERY_INT = 1, skipping thinning and using original trajectory."
-    WORK_TRAJ="$TRAJ"
-    WORK_TOP="$TOP"
+    echo "EVERY_INT = 1, no thinning, but converting trajectory to NetCDF working file."
+
+    cat > "$CPPTRAJ_IN" << EOF
+parm $TOP
+trajin $TRAJ
+trajout $THIN_TRAJ netcdf
+run
+quit
+EOF
+
+    cpptraj -i "$CPPTRAJ_IN"
+
+    cp -f "$TOP" "$THIN_TOP"
+
+    WORK_TRAJ="$THIN_TRAJ"
+    WORK_TOP="$THIN_TOP"
 else
-    echo "Running cpptraj to create thinned trajectory: $THIN_TRAJ"
+    echo "EVERY_INT > 1, thinning trajectory and writing NetCDF working file."
 
     cat > "$CPPTRAJ_IN" << EOF
 parm $TOP
