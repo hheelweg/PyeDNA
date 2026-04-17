@@ -17,6 +17,7 @@ set -eo pipefail
 #   - <name>.prmtop
 #   - PYEDNA_HOME set
 #   - cpptraj and sander in PATH
+#   - python with netCDF4 installed for merge step
 
 if [[ -z "${PYEDNA_HOME:-}" ]]; then
     echo "Error: PYEDNA_HOME is not set. Please set it in shell."
@@ -49,11 +50,13 @@ TOP="${NAME}.prmtop"
 TRAJ="${NAME}.nc"
 
 THIN_TRAJ="${NAME}_thin_${EVERY_INT}.nc"
+THIN_TOP="${NAME}_thin_${EVERY_INT}.prmtop"
 CPPTRAJ_IN="${NAME}_thin_${EVERY_INT}.cpptraj.in"
 
 FORCE_DIR="${NAME}_forces_every_${EVERY_INT}"
 TMP_DIR="${NAME}_forces_tmp_every_${EVERY_INT}"
 FORCE_TEMPLATE="${TMP_DIR}/forces.in"
+MERGED_FORCE_NC="${NAME}_forces_every_${EVERY_INT}_all.nc"
 
 if [[ ! -f "$TOP" ]]; then
     echo "Error: Topology file $TOP not found."
@@ -70,7 +73,15 @@ mkdir -p "$TMP_DIR"
 
 export OMP_NUM_THREADS="${SLURM_CPUS_PER_TASK:-1}"
 
-# Write force input locally to avoid parsing issues from external template
+# Check merge dependency early
+python - << 'EOF'
+try:
+    import netCDF4
+except ImportError:
+    raise SystemExit("Error: Python package 'netCDF4' is not installed in this environment.")
+EOF
+
+# Write force input locally
 cat > "$FORCE_TEMPLATE" << 'EOF'
 force evaluation via 1 MD step
 &cntrl
@@ -107,6 +118,10 @@ EOF
 echo "Running cpptraj to create thinned trajectory: $THIN_TRAJ"
 cpptraj -i "$CPPTRAJ_IN"
 
+# Keep a matching topology copy for convenience
+cp -f "$TOP" "$THIN_TOP"
+
+# Count frames in thinned trajectory
 NFRAMES=$(ncdump -h "$THIN_TRAJ" | awk '
 /frame = UNLIMITED/ {
     if (match($0, /\(([0-9]+) currently\)/)) {
@@ -158,19 +173,7 @@ EOF
     rm -f "$FRAME_RST"
 done
 
-echo "Cleaning temporary files..."
-rm -f "$CPPTRAJ_IN"
-rm -f "$THIN_TRAJ"
-rm -f "$FORCE_TEMPLATE"
-rmdir "$TMP_DIR" 2>/dev/null || true
-
-echo "Done."
-echo "Force files written to: $FORCE_DIR"
-
-
 # (3) Merge all per-frame force NetCDF files into one force trajectory
-MERGED_FORCE_NC="${NAME}_forces_every_${EVERY_INT}_all.nc"
-
 echo "Merging per-frame force files into: $MERGED_FORCE_NC"
 
 python - << EOF
@@ -181,13 +184,11 @@ files = sorted(glob.glob("${FORCE_DIR}/frame_*.nc"))
 if not files:
     raise SystemExit("Error: no per-frame force files found to merge.")
 
-# Read dimensions from first file
 with Dataset(files[0], "r") as src0:
     natom = len(src0.dimensions["atom"])
     nspatial = len(src0.dimensions["spatial"])
     spatial_vals = src0.variables["spatial"][:]
 
-# Create merged output
 with Dataset("${MERGED_FORCE_NC}", "w", format="NETCDF4_CLASSIC") as dst:
     dst.createDimension("frame", None)
     dst.createDimension("atom", natom)
@@ -216,14 +217,23 @@ with Dataset("${MERGED_FORCE_NC}", "w", format="NETCDF4_CLASSIC") as dst:
             forces_var[i, :, :] = src.variables["forces"][0, :, :]
 EOF
 
-# (4) Clean temporary files
-echo "Cleaning temporary files..."
+# (4) Clean temporary and auxiliary files/directories
+echo "Cleaning temporary and auxiliary files..."
 rm -f "$CPPTRAJ_IN"
-# keep "$THIN_TRAJ" because it is the coordinate trajectory aligned with the merged forces
 rm -f "$FORCE_TEMPLATE"
+
+# Remove per-frame files and auxiliary directory after successful merge
+rm -f "${FORCE_DIR}"/frame_*.nc
+rm -f "${FORCE_DIR}"/frame_*.out
+rm -f "${FORCE_DIR}"/frame_*.mdinfo
+rm -f "${FORCE_DIR}"/frame_*.rst7
+rmdir "$FORCE_DIR" 2>/dev/null || true
+
+# Remove temp working directory
+rm -f "${TMP_DIR}"/*
 rmdir "$TMP_DIR" 2>/dev/null || true
 
 echo "Done."
-echo "Coordinate trajectory kept as: $THIN_TRAJ"
-echo "Merged force trajectory written to: $MERGED_FORCE_NC"
-echo "Per-frame force files remain in: $FORCE_DIR"
+echo "Kept coordinate trajectory: $THIN_TRAJ"
+echo "Kept matching topology:     $THIN_TOP"
+echo "Kept merged force file:     $MERGED_FORCE_NC"
