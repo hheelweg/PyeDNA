@@ -1,6 +1,6 @@
 force evaluation
 &cntrl
-  imin      = 5,
+  imin      = 1,
   ntx       = 1,
   irest     = 0,
   ntb       = 1,
@@ -12,5 +12,6 @@ force evaluation
   ntwf      = 1,
   ioutfm    = 1,
   cut       = 8.0,
-  maxcyc    = 0,
+  maxcyc    = 1,
+  ncyc      = 0,
 /
