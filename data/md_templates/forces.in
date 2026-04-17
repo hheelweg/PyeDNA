@@ -12,5 +12,5 @@ force evaluation
   ntwf      = 1,
   ioutfm    = 1,
   cut       = 8.0,
-  maxcyc    = 1,
+  maxcyc    = 0,
 /
