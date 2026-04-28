@@ -1199,7 +1199,7 @@ class Trajectory():
             # (0a) do normal trajectory loop
             if self.idealized_data is None:
                 self.trajectory_u.trajectory[idx]
-                 molecules_coms = [None, None]
+                molecules_coms = [None, None]
             # (0b) fix snapshot for idealized computation
             else:
                 self.trajectory_u.trajectory[snapshot_idx]
