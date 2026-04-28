@@ -1133,21 +1133,22 @@ class Trajectory():
     # analyze trajectory based on specific molecules of interest
     def loopTrajectory(self, output_dir = None):
 
-        # (0) determine whether we conduct normal or idealized trajectory analysis
+        # (1) decide what we loop over. In standard calculations, this simply is a loop over the trajectory snapshots
+        if self.idealized_data is None:
+            # loop range of interest: time_slice = [idx_start, idx_end]
+            if self.time_slice is None:                                             # study the whole trajectory
+                self.time_slice = [0, self.num_frames - 1]
+            else:                                                                   # study specified time-slice 
+                pass
+            loop_range = self.time_slice
+            print(f'*** Conduct loop through {loop_range[1] + 1 - loop_range[0]} frames for the trajectory analysis!')
+
         if self.idealized_data:
 
             print("*** Conduct idealized trajectory loop")
- 
-        # (1) time range of interest: time_slice = [idx_start, idx_end]
-        if self.time_slice is None:                                             # study the whole trajectory
-            self.time_slice = [0, self.num_frames - 1]
-        else:                                                                   # study specified time-slice 
-            pass
+       
 
-        loop_range = self.time_slice
-
-
-        print(f'*** Looping through {self.time_slice[1] + 1 - self.time_slice[0]} frames for the trajectory analysis!')
+        
         # (2) check whether molecules have been defined and initialized
         if not self.defined_molecules:
             raise AttributeError("Molecules to study have not been defined!")
