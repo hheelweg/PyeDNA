@@ -935,7 +935,7 @@ class Trajectory():
         if com_shift is not None:
             com_shift = np.asarray(com_shift, dtype=float)
             assert com_shift.shape == (3,), "com_shift must be array-like with shape (3,)"
-            current_com = molecule_u.atoms.center_of_mass()
+            current_com = molecule_u.atoms.center_of_geometry()
             molecule_u.atoms.positions += com_shift - current_com
 
         # (6) define instance of Chromophore class 
