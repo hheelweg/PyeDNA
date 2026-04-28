@@ -396,6 +396,7 @@ class Trajectory():
         # TODO : extend this list to have every possible parameter defaulted to something
         out = {
                 "time_slice" :  None,
+                "idealized" :   False,
                 "exc" :         True,
                 "mf"  :         False,
                 "occ" :         False,
@@ -424,6 +425,14 @@ class Trajectory():
 
         # (0) time range of interest
         time_range = out["time_slice"]
+
+        # check if we are supposed to conduct a idealized calculation, i.e. use a single snapshot for the nuclear configuration
+        # of dye molecules, orient their molecular axis so that they are aligned in parallel
+        idealized = out["idealized"]
+        idealized_distance_range = out["distance_range"] if idealized else None
+        idealized_distance_range_num = out["distance_range_num"] if idealized else None
+        idealized_data = [idealized, idealized_distance_range, idealized_distance_range_num]
+        print('test idealized: ', idealized_data, flush=True)
 
 
         # (1) QM (DFT/TDDFT) outputs (NOTE : only boolean)
