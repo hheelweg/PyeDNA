@@ -1266,7 +1266,7 @@ class Trajectory():
                                                                                 enforce_symmetry = False,
                                                                                 conversion = 'pyscf',
                                                                                 com_shift = molecules_coms[i],
-                                                                                target_axis=np.array([0.0, 0.0, 1.0])
+                                                                                #target_axis=np.array([0.0, 0.0, 1.0])
                                                                                 )
                     self.chromophores_fragments.append(fragmentation_info['fragment_indices'])
                     self.chromophores_fragment_names.append(fragmentation_info['fragment_names'])
@@ -1279,7 +1279,7 @@ class Trajectory():
                                                                                 enforce_symmetry = False,
                                                                                 conversion = 'pyscf',
                                                                                 com_shift = molecules_coms[i],
-                                                                                target_axis=np.array([0.0, 0.0, 1.0])
+                                                                                #target_axis=np.array([0.0, 0.0, 1.0])
                                                                                 )
                 
                     # # TODO : this is only for debugging
