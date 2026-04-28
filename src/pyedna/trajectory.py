@@ -1205,6 +1205,7 @@ class Trajectory():
             else:
                 self.trajectory_u.trajectory[snapshot_idx]
                 molecules_coms = [[0,0,0], [0, 5, 0]]
+                molecules_coms = [None, None]
 
             # (1) get chromophores of interest 
             self.chromophores = []
