@@ -1232,7 +1232,7 @@ class Trajectory():
             # (0b) fix snapshot for idealized computation
             else:
                 self.trajectory_u.trajectory[snapshot_idx]
-                molecules_coms = [[0,0,0], [15, 0, 0]]
+                molecules_coms = [[0,0,0], [0, 0, 15]]
 
             # (1) get chromophores of interest 
             self.chromophores = []
