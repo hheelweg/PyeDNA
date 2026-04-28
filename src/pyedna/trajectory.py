@@ -1144,14 +1144,12 @@ class Trajectory():
             print(f'*** Conduct loop through {loop_range[1] + 1 - loop_range[0]} frames for the trajectory analysis!')
 
         if self.idealized_data:
-            # loop range of interest: time_slice = [idx_start, idx_end]
-            if self.time_slice is None:                                             # study the whole trajectory
-                self.time_slice = [0, self.num_frames - 1]
-            else:                                                                   # study specified time-slice 
-                pass
-            loop_range = self.time_slice
+            # loop over different distances of chromophore orientations
+            desired_distances = np.linspace(self.idealized_data[-2][0], self.idealized_data[-2][1], self.idealized_data[-1])
+            print('desired distances: ', desired_distances)
+            loop_range = [0, self.idealized_data[-1] - 1]
 
-            print("*** Conduct idealized trajectory loop")
+            print(f"*** Conduct idealized loop for {loop_range[+1] + 1 - loop_range[0]} frames!")
        
 
         
