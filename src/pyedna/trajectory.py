@@ -1284,7 +1284,7 @@ class Trajectory():
                 self.chromophores.append(chromophore)
                 self.chromophores_conv.append(chromophore_conv)
             
-            if idx == 10:
+            if idx == 29:
                 ag_list = [chrom.chromophore_u.atoms for chrom in self.chromophores]
                 merged = mda.Merge(*ag_list)
                 merged.atoms.write("merged.pdb")
