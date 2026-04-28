@@ -1290,6 +1290,7 @@ class Trajectory():
 
             # (2) analyze with respect to QM quantities of interest
             if self.do_quantum:
+                print('charges', self.molecule_charges)
                 # (2.1) run QM calculation
                 # TODO : can we unify this no matter if self.do_mulliken is turned on or not?
                 if self.do_mulliken:

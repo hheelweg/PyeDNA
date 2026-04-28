@@ -1056,7 +1056,6 @@ def doQM_gpu(molecules, output_keys, do_fragments = None, fragments = None, char
     # (1) run molecules on different GPUs in parallel
     procs = []
     for i, molecule in enumerate(molecules):
-        print("charges, mols", charges, molecules)
         # create pyscf input for subprocess and store in cache
         dump(molecule, f"input_{i}.joblib")
         dump(charges[i], f"charge_{i}.joblib")
