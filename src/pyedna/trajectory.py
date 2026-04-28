@@ -936,8 +936,9 @@ class Trajectory():
             print('attempt shift!')
             com_shift = np.asarray(com_shift, dtype=float)
             assert com_shift.shape == (3,), "com_shift must be array-like with shape (3,)"
-            current_com = molecule_u.atoms.center_of_geometry()
-            molecule_u.atoms.positions += com_shift - current_com
+            current_center = molecule_u.atoms.center_of_geometry()
+            shift_vec = com_shift - current_center
+            molecule_u.atoms.translate(shift_vec)
 
         # (6) define instance of Chromophore class 
         chromophore = structure.Chromophore(molecule_u)
