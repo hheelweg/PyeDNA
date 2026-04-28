@@ -1288,6 +1288,11 @@ class Trajectory():
 
                 self.chromophores.append(chromophore)
                 self.chromophores_conv.append(chromophore_conv)
+            
+            if idx == 0:
+                ag_list = [chrom.chromophore_u.atoms for chrom in self.chromophores]
+                merged = mda.Merge(*ag_list)
+                merged.atoms.write("merged.pdb")
 
 
             # (2) analyze with respect to QM quantities of interest
@@ -1347,7 +1352,6 @@ class Trajectory():
     # TODO : add various distance measure to compare them
     def getDistance(self, chromophore_1, chromophore_2):
         com_1, com_2 = chromophore_1.com, chromophore_2.com
-        print('com_1, com_2', com_1, com_2)
         distance = np.linalg.norm(com_1 - com_2)
         return distance
 
