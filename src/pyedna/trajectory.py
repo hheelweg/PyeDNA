@@ -341,7 +341,7 @@ class Trajectory():
         self.num_frames = self.trajectory_u.trajectory.n_frames         # number of frames in trajectory
         
         # parse output information for QM and MD simulations
-        self.qm_outs, self.quant_info, self.class_info, self.time_slice = self.parseParameters(traj_params_file, parse_trajectory_out=True)
+        self.qm_outs, self.quant_info, self.class_info, self.time_slice, self.idealized_data = self.parseParameters(traj_params_file, parse_trajectory_out=True)
         # decide whether we perform quantum-mechanical and/or classical analysis
         self.do_quantum = bool(self.quant_info[0])
         self.do_classical = bool(self.class_info[0])
@@ -507,7 +507,7 @@ class Trajectory():
                 if "transitions" in qm_flags and qm_flags['transitions'] is not None:
                     print(f"(2) we study the following state transitions [stateA, stateB]: {', '.join(str(transition) for transition in qm_flags['transitions'])}")
                 print(f"(2) quantum parameters to evaluate at each time step: {', '.join(key for key, value in qm_flags.items() if isinstance(value, bool))}")
-            return qm_outs, [qm_flags, qm_methods, qm_out_file], [class_flags, class_methods, class_out_file], time_range
+            return qm_outs, [qm_flags, qm_methods, qm_out_file], [class_flags, class_methods, class_out_file], time_range, idealized_data
         else:
             return qm_outs
 
@@ -1131,6 +1131,9 @@ class Trajectory():
     # analyze trajectory based on specific molecules of interest
     def loopTrajectory(self, output_dir = None):
 
+        # (0) determine whether we conduct normal or idealized trajectory analysis
+        if self.idealized_data:
+            print("*** Conduct idealized trajectory loop")
  
         # (1) time range of interest: time_slice = [idx_start, idx_end]
         if self.time_slice is None:                                             # study the whole trajectory
