@@ -851,7 +851,8 @@ class Trajectory():
     # get MDAnalysis object of specified residues at specified time slice
     def getChromophoreSnapshot(self, molecule, molecule_constituents, 
                                fragments = None, enforce_symmetry = False, conversion = None, cap = True,
-                               com_shift = None, target_axis = None):
+                               com_shift = None, target_normal_axis=None,
+                               plane_atom_names=("N1", "N2", "C11", "C10", "C9", "C8", "C19", "C20")):
 
         # (1) (optional) load fragment information
         if fragments is not None:
@@ -931,51 +932,40 @@ class Trajectory():
             else:
                 raise NotImplementedError('Only Cs point group symmetry implemented for DFT/TDDFT analysis')
         
-        # OPTIONAL: shift the chromophore center-of-mass to com_shift position
+        # OPTIONAL: rotate chromophore so molecular plane normal matches target_normal_axis
+        if target_normal_axis is not None:
+            target_normal_axis = np.asarray(target_normal_axis, dtype=float)
+            assert target_normal_axis.shape == (3,), "target_normal_axis must be array-like with shape (3,)"
+            target_normal_axis /= np.linalg.norm(target_normal_axis)
+            plane_sel = "name " + " ".join(plane_atom_names)
+            plane_atoms = molecule_u.atoms.select_atoms(plane_sel)
+            assert len(plane_atoms) >= 3, "Need at least three atoms to define molecular plane"
+            X = plane_atoms.positions - plane_atoms.positions.mean(axis=0)
+            _, _, vh = np.linalg.svd(X)
+            current_normal_axis = vh[-1]
+            current_normal_axis /= np.linalg.norm(current_normal_axis)
+            rot_axis = np.cross(current_normal_axis, target_normal_axis)
+            rot_axis_norm = np.linalg.norm(rot_axis)
+            cos_angle = np.clip(np.dot(current_normal_axis, target_normal_axis), -1.0, 1.0)
+            anchor = molecule_u.atoms.center_of_geometry()
+            if rot_axis_norm > 1e-8:
+                rot_axis /= rot_axis_norm
+                angle_deg = np.degrees(np.arccos(cos_angle))
+                molecule_u.atoms.rotateby(angle_deg, axis=rot_axis, point=anchor)
+            elif cos_angle < 0:
+                tmp = np.array([1.0, 0.0, 0.0])
+                if abs(np.dot(tmp, current_normal_axis)) > 0.9:
+                    tmp = np.array([0.0, 1.0, 0.0])
+                rot_axis = np.cross(current_normal_axis, tmp)
+                rot_axis /= np.linalg.norm(rot_axis)
+                molecule_u.atoms.rotateby(180.0, axis=rot_axis, point=anchor)
+
+        # OPTIONAL: shift chromophore center-of-geometry to com_shift
         if com_shift is not None:
             com_shift = np.asarray(com_shift, dtype=float)
             assert com_shift.shape == (3,), "com_shift must be array-like with shape (3,)"
             current_center = molecule_u.atoms.center_of_geometry()
-            shift_vec = com_shift - current_center
-            molecule_u.atoms.translate(shift_vec)  
-
-        # OPTIONAL: rotate the chromophore so that current_axis matches target_axis
-        if target_axis is not None:
-            target_axis = np.asarray(target_axis, dtype=float)
-            assert target_axis.shape == (3,), "target_axis must be array-like with shape (3,)"
-            target_axis /= np.linalg.norm(target_axis)
-            n1 = molecule_u.atoms.select_atoms("name N1")
-            n2 = molecule_u.atoms.select_atoms("name N2")
-            assert len(n1) == 1, "Expected exactly one atom named N1"
-            assert len(n2) == 1, "Expected exactly one atom named N2"
-            current_axis = n2.positions[0] - n1.positions[0]
-            current_axis /= np.linalg.norm(current_axis)
-            v = np.cross(current_axis, target_axis)
-            s = np.linalg.norm(v)
-            c = np.dot(current_axis, target_axis)
-            if s < 1e-12:
-                if c > 0:
-                    R = np.eye(3)
-                else:
-                    # 180 degree rotation around any axis perpendicular to current_axis
-                    tmp = np.array([1.0, 0.0, 0.0])
-                    if abs(np.dot(tmp, current_axis)) > 0.9:
-                        tmp = np.array([0.0, 1.0, 0.0])
-                    perp = np.cross(current_axis, tmp)
-                    perp /= np.linalg.norm(perp)
-                    K = np.array([
-                        [0, -perp[2], perp[1]],
-                        [perp[2], 0, -perp[0]],
-                        [-perp[1], perp[0], 0],])
-                    R = np.eye(3) + 2 * K @ K
-            else:
-                K = np.array([
-                    [0, -v[2], v[1]],
-                    [v[2], 0, -v[0]],
-                    [-v[1], v[0], 0],])
-                R = np.eye(3) + K + K @ K * ((1 - c) / s**2)
-            cog = molecule_u.atoms.center_of_geometry()
-            molecule_u.atoms.rotate(R, point=cog)
+            molecule_u.atoms.translate(com_shift - current_center)
 
         # (6) define instance of Chromophore class 
         chromophore = structure.Chromophore(molecule_u)
@@ -1266,7 +1256,7 @@ class Trajectory():
                                                                                 enforce_symmetry = False,
                                                                                 conversion = 'pyscf',
                                                                                 com_shift = molecules_coms[i],
-                                                                                #target_axis=np.array([0.0, 0.0, 1.0])
+                                                                                target_normal_axis=np.array([0.0, 0.0, 1.0])
                                                                                 )
                     self.chromophores_fragments.append(fragmentation_info['fragment_indices'])
                     self.chromophores_fragment_names.append(fragmentation_info['fragment_names'])
@@ -1279,7 +1269,7 @@ class Trajectory():
                                                                                 enforce_symmetry = False,
                                                                                 conversion = 'pyscf',
                                                                                 com_shift = molecules_coms[i],
-                                                                                #target_axis=np.array([0.0, 0.0, 1.0])
+                                                                                target_normal_axis=np.array([0.0, 0.0, 1.0])
                                                                                 )
                 
                     # # TODO : this is only for debugging
