@@ -1134,8 +1134,8 @@ class Trajectory():
 
         # (1) compute distance metric:
         if "distance" in self.class_info[0]:
-            self.output_class.loc[time_idx, "distance"] = geom.getDistance(self.trajectory_u, self.class_info[1]["distance"])
-        
+            #self.output_class.loc[time_idx, "distance"] = geom.getDistance(self.trajectory_u, self.class_info[1]["distance"])
+            self.output_class.loc[time_idx, "distance"] = self.getDistance(self.chromophores[0], self.chromophores[1])
         # (2) compute angle between two axes
         if "axis_angle" in self.class_info[0]:
             self.output_class.loc[time_idx, "axis_angle"] = geom.getAxisAngle(self.trajectory_u, self.class_info[1]["axis_angle"])
@@ -1220,7 +1220,6 @@ class Trajectory():
 
             for i, molecule in enumerate(self.molecules):
 
-                print('attempted shift: ', molecules_coms[i])
 
                 # TODO : can we unify this if?
                 if self.do_quantum and self.do_mulliken and self.molecule_do_fragments[i]:
