@@ -432,7 +432,11 @@ class Trajectory():
         idealized_distance_range = out["distance_range"] if idealized else None
         idealized_distance_range_num = out["distance_range_num"] if idealized else None
         idealized_data = [idealized, idealized_distance_range, idealized_distance_range_num] if idealized else None
-        print('test idealized: ', idealized_data, flush=True)
+        if verbose:
+            print('Are we perfoming an idealized computation? ', idealized_data is not None, flush=True)
+            if idealized_data is not None:
+                print(f"Distance range: {idealized_distance_range}")
+                print(f"Number of equally spaced points in distance range: {idealized_distance_range_num}")
 
 
         # (1) QM (DFT/TDDFT) outputs (NOTE : only boolean)
