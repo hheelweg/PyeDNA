@@ -1205,7 +1205,7 @@ class Trajectory():
             else:
                 self.trajectory_u.trajectory[snapshot_idx]
                 molecules_coms = [[0,0,0], [0, 5, 0]]
-                molecules_coms = [None, None]
+                #molecules_coms = [None, None]
 
             # (1) get chromophores of interest 
             self.chromophores = []
@@ -1218,6 +1218,8 @@ class Trajectory():
 
 
             for i, molecule in enumerate(self.molecules):
+
+                print('attempted shift: ', molecules_coms[i])
 
                 # TODO : can we unify this if?
                 if self.do_quantum and self.do_mulliken and self.molecule_do_fragments[i]:
