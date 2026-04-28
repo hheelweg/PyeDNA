@@ -1184,7 +1184,7 @@ class Trajectory():
         elif self.idealized_data:
             # loop over different distances of chromophore orientations
             desired_distances = np.linspace(self.idealized_data[-2][0], self.idealized_data[-2][1], self.idealized_data[-1])
-            print('desired distances number: ', len(desired_distances))
+            print('desired distances number: ', desired_distances)
             loop_range = [0, self.idealized_data[-1] - 1]
             snapshot_idx = self.idealized_data[1]
             print(f"*** Conduct idealized loop for {loop_range[+1] + 1 - loop_range[0]} frames!")
@@ -1227,13 +1227,16 @@ class Trajectory():
             # (0) set snapshot
             # (0a) do normal trajectory loop
             if self.idealized_data is None:
+                # set trajectory to appropriate time index
                 self.trajectory_u.trajectory[idx]
                 molecules_coms = [None, None]
                 target_normal_axex = [None, None]
             # (0b) fix snapshot for idealized computation
             else:
+                # have trajectory snapshot constant
                 self.trajectory_u.trajectory[snapshot_idx]
-                molecules_coms = [[0,0,0], [0, 0, 15]]
+                # set com-distance to distance array
+                molecules_coms = [[0,0,0], [0, 0, desired_distances[idx]]]
                 target_normal_axex = [[0.0, 0.0, 1.0], [0.0, 0.0, 1.0]]
 
             # (1) get chromophores of interest 
