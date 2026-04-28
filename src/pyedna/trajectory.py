@@ -1229,10 +1229,12 @@ class Trajectory():
             if self.idealized_data is None:
                 self.trajectory_u.trajectory[idx]
                 molecules_coms = [None, None]
+                target_normal_axex = [None, None]
             # (0b) fix snapshot for idealized computation
             else:
                 self.trajectory_u.trajectory[snapshot_idx]
                 molecules_coms = [[0,0,0], [0, 0, 15]]
+                target_normal_axex = [[0.0, 0.0, 1.0], [0.0, 0.0, 1.0]]
 
             # (1) get chromophores of interest 
             self.chromophores = []
@@ -1256,7 +1258,7 @@ class Trajectory():
                                                                                 enforce_symmetry = False,
                                                                                 conversion = 'pyscf',
                                                                                 com_shift = molecules_coms[i],
-                                                                                target_normal_axis=np.array([0.0, 0.0, 1.0])
+                                                                                target_normal_axis = target_normal_axex[i]
                                                                                 )
                     self.chromophores_fragments.append(fragmentation_info['fragment_indices'])
                     self.chromophores_fragment_names.append(fragmentation_info['fragment_names'])
@@ -1269,7 +1271,7 @@ class Trajectory():
                                                                                 enforce_symmetry = False,
                                                                                 conversion = 'pyscf',
                                                                                 com_shift = molecules_coms[i],
-                                                                                target_normal_axis=np.array([0.0, 0.0, 1.0])
+                                                                                target_normal_axis = target_normal_axex[i]
                                                                                 )
                 
                     # # TODO : this is only for debugging
