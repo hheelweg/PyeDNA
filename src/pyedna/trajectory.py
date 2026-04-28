@@ -933,12 +933,14 @@ class Trajectory():
         
         # shift the chromophore center-of-mass to com_shift position
         if com_shift is not None:
-            print('attempt shift!')
             com_shift = np.asarray(com_shift, dtype=float)
             assert com_shift.shape == (3,), "com_shift must be array-like with shape (3,)"
             current_center = molecule_u.atoms.center_of_geometry()
             shift_vec = com_shift - current_center
             molecule_u.atoms.translate(shift_vec)
+            print("before:", current_center)
+            print("target:", com_shift)     
+            print("after:", molecule_u.atoms.center_of_geometry())
 
         # (6) define instance of Chromophore class 
         chromophore = structure.Chromophore(molecule_u)
