@@ -850,7 +850,8 @@ class Trajectory():
 
     # get MDAnalysis object of specified residues at specified time slice
     def getChromophoreSnapshot(self, molecule, molecule_constituents, 
-                               fragments = None, enforce_symmetry = False, conversion = None, cap = True):
+                               fragments = None, enforce_symmetry = False, conversion = None, cap = True,
+                               com_shift = None):
 
         # (1) (optional) load fragment information
         if fragments is not None:
@@ -929,6 +930,14 @@ class Trajectory():
                 molecule_u = geom.enforceSymmetry(molecule_u, symmetry_info["symmetry_axis"], symmetry_info["support_atom"])
             else:
                 raise NotImplementedError('Only Cs point group symmetry implemented for DFT/TDDFT analysis')
+        
+        # shift the chromophore center-of-mass to com_shift position
+        if com_shift is not None:
+            com_shift = np.asarray(com_shift, dtype=float)
+            assert com_shift.shape == (3,), "com_shift must be array-like with shape (3,)"
+            current_com = molecule_u.atoms.center_of_mass()
+            molecule_u.atoms.positions += com_shift - current_com
+
         # (6) define instance of Chromophore class 
         chromophore = structure.Chromophore(molecule_u)
 
@@ -1187,10 +1196,14 @@ class Trajectory():
             print(f"*** Running Step {idx + 1} ...")
 
             # (0) set snapshot
+            # (0a) do normal trajectory loop
             if self.idealized_data is None:
                 self.trajectory_u.trajectory[idx]
+                 molecules_coms = [None, None]
+            # (0b) fix snapshot for idealized computation
             else:
                 self.trajectory_u.trajectory[snapshot_idx]
+                molecules_coms = [[0,0,0], [0, 5, 0]]
 
             # (1) get chromophores of interest 
             self.chromophores = []
@@ -1211,7 +1224,8 @@ class Trajectory():
                                                                                 molecule_constituents = self.molecule_constituents[i],
                                                                                 fragments = [self.fragment_type, self.fragments],
                                                                                 enforce_symmetry = False,
-                                                                                conversion = 'pyscf'
+                                                                                conversion = 'pyscf',
+                                                                                com_shift = molecules_coms[i]
                                                                                 )
                     self.chromophores_fragments.append(fragmentation_info['fragment_indices'])
                     self.chromophores_fragment_names.append(fragmentation_info['fragment_names'])
@@ -1222,7 +1236,8 @@ class Trajectory():
                                                                                 molecule_constituents = self.molecule_constituents[i],
                                                                                 fragments = None, 
                                                                                 enforce_symmetry = False,
-                                                                                conversion = 'pyscf'
+                                                                                conversion = 'pyscf',
+                                                                                com_shift = molecules_coms[i]
                                                                                 )
                 
                     # # TODO : this is only for debugging
