@@ -429,12 +429,14 @@ class Trajectory():
         # check if we are supposed to conduct a idealized calculation, i.e. use a single snapshot for the nuclear configuration
         # of dye molecules, orient their molecular axis so that they are aligned in parallel
         idealized = out["idealized"]
+        idealized_snapshot = out["idealized_snapshot"]
         idealized_distance_range = out["distance_range"] if idealized else None
         idealized_distance_range_num = out["distance_range_num"] if idealized else None
-        idealized_data = [idealized, idealized_distance_range, idealized_distance_range_num] if idealized else None
+        idealized_data = [idealized, idealized_snapshot, idealized_distance_range, idealized_distance_range_num] if idealized else None
         if verbose:
             print('Are we perfoming an idealized computation? ', idealized_data is not None, flush=True)
             if idealized_data is not None:
+                print(f"Snapshot used is frame: {idealized_snapshot}")
                 print(f"Distance range: {idealized_distance_range}")
                 print(f"Number of equally spaced points in distance range: {idealized_distance_range_num}")
 
@@ -1133,6 +1135,7 @@ class Trajectory():
 
         # (0) determine whether we conduct normal or idealized trajectory analysis
         if self.idealized_data:
+
             print("*** Conduct idealized trajectory loop")
  
         # (1) time range of interest: time_slice = [idx_start, idx_end]
@@ -1141,13 +1144,16 @@ class Trajectory():
         else:                                                                   # study specified time-slice 
             pass
 
+        loop_range = self.time_slice
+
+
         print(f'*** Looping through {self.time_slice[1] + 1 - self.time_slice[0]} frames for the trajectory analysis!')
         # (2) check whether molecules have been defined and initialized
         if not self.defined_molecules:
             raise AttributeError("Molecules to study have not been defined!")
         
         # (3) initialize output DataFrames
-        self.initOutput(self.time_slice[1]  - self.time_slice[0]) 
+        self.initOutput(loop_range[1]  - loop_range[0]) 
 
         # (3a) if you want incremental writing, write only header & empty body once
         if self.do_quantum and not self.output_quant.empty:
@@ -1169,7 +1175,7 @@ class Trajectory():
         print("*** Intialization of output done!")
 
         # (4) analyze trajectory
-        for idx in range(self.time_slice[0], self.time_slice[1] + 1):
+        for idx in range(loop_range[0], loop_range[1] + 1):
 
             start_time = time.time()
 
@@ -1242,8 +1248,8 @@ class Trajectory():
 
                 # (2.3) append to output df (mode = "a")
                 if not self.output_quant.empty:
-                    time_idx = idx - self.time_slice[0]    
-                    row_df = self.output_quant.iloc[[time_idx]] 
+                    idx_shift = idx - loop_range[0]    
+                    row_df = self.output_quant.iloc[[idx_shift]] 
                     self.writeOutputFiles(row_df, self.quant_info[2], dir=output_dir,
                                         write_meta_data=False, mode="a", header=False)
 
@@ -1256,8 +1262,8 @@ class Trajectory():
 
                 # (3.2) append to output df (mode = "a")
                 if not self.output_class.empty:
-                    time_idx = idx - self.time_slice[0]    
-                    row_df = self.output_class.iloc[[time_idx]] 
+                    idx_shift = idx - loop_range[0]    
+                    row_df = self.output_class.iloc[[idx_shift]] 
                     self.writeOutputFiles(row_df, self.class_info[2], dir=output_dir,
                                           write_meta_data=False, mode="a", header=False)
         
