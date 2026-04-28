@@ -793,7 +793,6 @@ class Trajectory():
         self.molecules, self.molecule_names, self.molecule_constituents, self.molecule_charges, self.molecule_do_fragments = self.parseMolecules(file)
         self.defined_molecules = True 
         self.num_molecules = len(self.molecules)
-        print('charges', self.molecule_charges, self.num_molecules, self.molecule_names)
 
         # find information of unique residues in list
         unique_dyes = np.unique(np.concatenate(self.molecule_constituents))
