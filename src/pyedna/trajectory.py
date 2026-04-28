@@ -1144,6 +1144,12 @@ class Trajectory():
             print(f'*** Conduct loop through {loop_range[1] + 1 - loop_range[0]} frames for the trajectory analysis!')
 
         if self.idealized_data:
+            # loop range of interest: time_slice = [idx_start, idx_end]
+            if self.time_slice is None:                                             # study the whole trajectory
+                self.time_slice = [0, self.num_frames - 1]
+            else:                                                                   # study specified time-slice 
+                pass
+            loop_range = self.time_slice
 
             print("*** Conduct idealized trajectory loop")
        
