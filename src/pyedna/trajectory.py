@@ -431,7 +431,7 @@ class Trajectory():
         idealized = out["idealized"]
         idealized_distance_range = out["distance_range"] if idealized else None
         idealized_distance_range_num = out["distance_range_num"] if idealized else None
-        idealized_data = [idealized, idealized_distance_range, idealized_distance_range_num]
+        idealized_data = [idealized, idealized_distance_range, idealized_distance_range_num] if idealized else None
         print('test idealized: ', idealized_data, flush=True)
 
 
