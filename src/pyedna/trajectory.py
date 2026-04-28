@@ -937,9 +937,7 @@ class Trajectory():
             assert com_shift.shape == (3,), "com_shift must be array-like with shape (3,)"
             current_center = molecule_u.atoms.center_of_geometry()
             shift_vec = com_shift - current_center
-            molecule_u.atoms.translate(shift_vec)
-            print("before:", current_center)
-            print("target:", com_shift)     
+            molecule_u.atoms.translate(shift_vec)  
             print("after:", molecule_u.atoms.center_of_geometry())
 
         # (6) define instance of Chromophore class 
@@ -1312,6 +1310,7 @@ class Trajectory():
     # TODO : add various distance measure to compare them
     def getDistance(self, chromophore_1, chromophore_2):
         com_1, com_2 = chromophore_1.com, chromophore_2.com
+        print('com_1, com_2', com_1, com_2)
         distance = np.linalg.norm(com_1 - com_2)
         return distance
 
