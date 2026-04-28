@@ -1184,13 +1184,11 @@ class Trajectory():
         elif self.idealized_data:
             # loop over different distances of chromophore orientations
             desired_distances = np.linspace(self.idealized_data[-2][0], self.idealized_data[-2][1], self.idealized_data[-1])
-            print('desired distances number: ', desired_distances)
             loop_range = [0, self.idealized_data[-1] - 1]
             snapshot_idx = self.idealized_data[1]
             print(f"*** Conduct idealized loop for {loop_range[+1] + 1 - loop_range[0]} frames!")
        
 
-        
         # (2) check whether molecules have been defined and initialized
         if not self.defined_molecules:
             raise AttributeError("Molecules to study have not been defined!")
@@ -1284,10 +1282,10 @@ class Trajectory():
                 self.chromophores.append(chromophore)
                 self.chromophores_conv.append(chromophore_conv)
             
-            if idx == 29:
-                ag_list = [chrom.chromophore_u.atoms for chrom in self.chromophores]
-                merged = mda.Merge(*ag_list)
-                merged.atoms.write("merged.pdb")
+            # if idx == 29:
+            #     ag_list = [chrom.chromophore_u.atoms for chrom in self.chromophores]
+            #     merged = mda.Merge(*ag_list)
+            #     merged.atoms.write("merged.pdb")
 
 
             # (2) analyze with respect to QM quantities of interest
