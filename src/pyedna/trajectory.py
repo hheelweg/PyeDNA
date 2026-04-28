@@ -793,6 +793,7 @@ class Trajectory():
         self.molecules, self.molecule_names, self.molecule_constituents, self.molecule_charges, self.molecule_do_fragments = self.parseMolecules(file)
         self.defined_molecules = True 
         self.num_molecules = len(self.molecules)
+        print('charges', self.molecule_charges, self.num_molecules, self.molecule_names)
 
         # find information of unique residues in list
         unique_dyes = np.unique(np.concatenate(self.molecule_constituents))
@@ -1290,7 +1291,6 @@ class Trajectory():
 
             # (2) analyze with respect to QM quantities of interest
             if self.do_quantum:
-                print('charges', self.molecule_charges)
                 # (2.1) run QM calculation
                 # TODO : can we unify this no matter if self.do_mulliken is turned on or not?
                 if self.do_mulliken:
