@@ -429,10 +429,13 @@ class Trajectory():
         # check if we are supposed to conduct a idealized calculation, i.e. use a single snapshot for the nuclear configuration
         # of dye molecules, orient their molecular axis so that they are aligned in parallel
         idealized = out["idealized"]
-        idealized_snapshot = out["idealized_snapshot"]
-        idealized_distance_range = out["distance_range"] if idealized else None
-        idealized_distance_range_num = out["distance_range_num"] if idealized else None
-        idealized_data = [idealized, idealized_snapshot, idealized_distance_range, idealized_distance_range_num] if idealized else None
+        if idealized:
+            idealized_snapshot = out["idealized_snapshot"]
+            idealized_distance_range = out["distance_range"] 
+            idealized_distance_range_num = out["distance_range_num"] 
+            idealized_data = [idealized, idealized_snapshot, idealized_distance_range, idealized_distance_range_num]
+        else:
+            idealized_data = None
         if verbose:
             print('Are we perfoming an idealized computation? ', idealized_data is not None, flush=True)
             if idealized_data is not None:
