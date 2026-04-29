@@ -1427,12 +1427,12 @@ def getTransitionDipoles(dips, states, molecule_names = ["D", "A"], dipole_momen
     if intermolecular:
         stateA, stateB = states[0], states[1]
         dipA, dipB = dips[0], dips[1]
-        results[f'dip_moment {molecule_names[0]}'] = np.dot(dipA[stateA], dipA[stateA])
-        results[f'dip_moment {molecule_names[1]}'] = np.dot(dipB[stateB], dipB[stateB])
+        results[f'dip_moment {molecule_names[0]}'] = dipA[stateA] if dipole_moment_type == "vector"  else np.dot(dipA[stateA], dipA[stateA])
+        results[f'dip_moment {molecule_names[1]}'] = dipB[stateB] if dipole_moment_type == "vector"  else np.dot(dipB[stateB], dipB[stateB])
     if intramolecular:
         state = states[0]
         dip = dips[0]
-        results[f'dip_moment {molecule_names[0]}'] = np.dot(dip[state], dip[state])
+        results[f'dip_moment {molecule_names[0]}'] = dip[state] if dipole_moment_type == "vector"  else np.dot(dip[state], dip[state])
     return results
 
 # get TDDFT outputs as specified in list which_outs for molecules
