@@ -1074,7 +1074,11 @@ class Trajectory():
                     # get transition dipole moments based on QM (DFT/TDDFT) output
                     dipoles_out = qm.getTransitionDipoles(output_qm['dip'], states, molecule_names=self.molecule_names,dipole_moment_type="vector")
                     # add to output df
-                    self.output_quant.loc[time_idx, [(self.transition_names[i], key) for key in dipoles_out.keys()]] = list(dipoles_out.values())
+                    cols = [(self.transition_names[i], key) for key in dipoles_out.keys()]
+                    vals = [v for v in dipoles_out.values()]
+                    for col, val in zip(cols, vals):
+                        self.output_quant.at[time_idx, col] = val
+                    #self.output_quant.loc[time_idx, [(self.transition_names[i], key) for key in dipoles_out.keys()]] = list(dipoles_out.values())
 
 
         # (2) look at direct output quantities of QM (DFT/TDDFT) (if self.transitions = None)
