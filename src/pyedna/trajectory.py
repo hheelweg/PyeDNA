@@ -592,7 +592,7 @@ class Trajectory():
         elif output_type == 'classical':
             df = pd.read_csv(file, sep='\t', header=0)
             # parse output information contained within data_frame
-            _, _, class_info, _  = Trajectory.parseParameters(output_info, parse_trajectory_out=True, verbose=False)
+            _, _, class_info, _, _  = Trajectory.parseParameters(output_info, parse_trajectory_out=True, verbose=False)
             # store df and output information
             output["df"] = df
             output["class_info"] = class_info
