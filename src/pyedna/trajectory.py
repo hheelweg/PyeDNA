@@ -723,6 +723,9 @@ class Trajectory():
                     which_outs = ['exc', 'osc']
                     columns_per_molecule += [f"{which_out} {state_id}" for which_out in which_outs for state_id in self.settings_tddft["state_ids"]]
 
+                if "dipole_moments" in self.quant_info[0]:
+                    columns_per_molecule += [f'dip_moment {state_id}' for state_id in self.settings_tddft["state_ids"]]
+
                 # initialize columns for orbital energies
                 if "orbit_energies" in self.quant_info[0]:
                     orbital_types = ['occ', 'virt']
@@ -1087,6 +1090,13 @@ class Trajectory():
                     for which_out in which_outs:
                         for state_id in self.settings_tddft["state_ids"]:
                             self.output_quant.loc[time_idx, (molecule_name, f"{which_out} {state_id}")] = tddft_out[f"{molecule_name} {which_out} {state_id}"]
+            
+            if "dipole_moments" in self.quant_info[0]:
+                for molecule_name in self.molecule_names:
+                    for state_id in self.settings_tddft["state_ids"]:
+                        dipoles_out = qm.getTransitionDipoles(output_qm['dip'], [state_id] * len(self.molecule_names),
+                                                              molecule_names=self.molecule_names,dipole_moment_type=self.quant_info[1]['dipole_moments'])
+                        self.output_quant.loc[time_idx, (molecule_name, f'dip_moment {state_id}')] = dipoles_out[f'dip_moment {molecule_name}']
             
             # (b) get orbital energies of occupied and virtual orbitals
             if "orbit_energies" in self.quant_info[0]:
