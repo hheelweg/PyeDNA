@@ -574,7 +574,7 @@ class Trajectory():
             df = pd.read_csv(file, sep='\t', header=[0,1])
             df.columns = [(col[0] if col[0] == "time" else col) for col in df.columns]
             # parse output information contained within data_frame
-            _, qm_info, _, _  = Trajectory.parseParameters(output_info, parse_trajectory_out=True, verbose=False)
+            _, qm_info, _, _, _  = Trajectory.parseParameters(output_info, parse_trajectory_out=True, verbose=False)
             # store df and output information
             output["df"] = df 
             output["qm_info"] = qm_info
