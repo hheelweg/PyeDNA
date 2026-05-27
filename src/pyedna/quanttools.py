@@ -1449,12 +1449,12 @@ def getTransitionQuadrupoles(quads, states, molecule_names = ["D", "A"], quadpol
     if intermolecular:
         stateA, stateB = states[0], states[1]
         quadA, quadB = quads[0], quads[1]
-        results[f'dip_moment {molecule_names[0]}'] = quadA[stateA] if quadpole_moment_type == "vector"  else np.dot(quadA[stateA], quadA[stateA])
-        results[f'dip_moment {molecule_names[1]}'] = quadB[stateB] if quadpole_moment_type == "vector"  else np.dot(quadB[stateB], quadB[stateB])
+        results[f'quad_moment {molecule_names[0]}'] = quadA[stateA] if quadpole_moment_type == "vector"  else np.dot(quadA[stateA], quadA[stateA])
+        results[f'quad_moment {molecule_names[1]}'] = quadB[stateB] if quadpole_moment_type == "vector"  else np.dot(quadB[stateB], quadB[stateB])
     if intramolecular:
         state = states[0]
         quad = quads[0]
-        results[f'dip_moment {molecule_names[0]}'] = quad[state] if quadpole_moment_type == "vector"  else np.dot(quad[state], quad[state])
+        results[f'quad_moment {molecule_names[0]}'] = quad[state] if quadpole_moment_type == "vector"  else np.dot(quad[state], quad[state])
     return results
 
 # get TDDFT outputs as specified in list which_outs for molecules
