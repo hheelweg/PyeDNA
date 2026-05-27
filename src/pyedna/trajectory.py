@@ -639,8 +639,6 @@ class Trajectory():
     # initialize output based on desired output parameters 
     def initOutput(self, output_length):
 
-        print(self.quant_info[0], flush=True)
-
 
         # ##############      (1)   Classical analysis                       ###############
 
