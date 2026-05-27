@@ -1085,7 +1085,7 @@ class Trajectory():
                     self.output_quant.loc[time_idx, [(self.transition_names[i], key) for key in osc_out.keys()]] = list(osc_out.values())
                 
                 # (d) get transition dipoles
-                if self.quant_info[0]["dipole_moments"]:
+                if "dipole_moments" in self.quant_info[0]:
                     # get transition dipole moments based on QM (DFT/TDDFT) output
                     dipoles_out = qm.getTransitionDipoles(output_qm['dip'], states, molecule_names=self.molecule_names,dipole_moment_type="vector")
                     # add to output df
@@ -1096,7 +1096,7 @@ class Trajectory():
                     #self.output_quant.loc[time_idx, [(self.transition_names[i], key) for key in dipoles_out.keys()]] = list(dipoles_out.values())
                 
                 # (d) get transition dipoles
-                if self.quant_info[0]["quadpole_moments"]:
+                if "quadpole_moments" in self.quant_info[0]:
                     # get transition dipole moments based on QM (DFT/TDDFT) output
                     quadpoles_out = qm.getTransitionQuadrupoles(output_qm['quad'], states, molecule_names=self.molecule_names, quadpole_moment_type="vector")
                     # add to output df
