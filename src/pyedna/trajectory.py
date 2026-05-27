@@ -694,14 +694,14 @@ class Trajectory():
                         columns_per_transitions += [f'osc_strength {self.molecule_names[0]}']
 
                 # initialize columns for transition dipole moments
-                if self.quant_info[0]["dipole_moments"]:
+                if "dipole_moments" in self.quant_info[0]:
                     if len(self.molecule_names) == 2:
                         columns_per_transitions += [f'dip_moment {self.molecule_names[0]}', f'dip_moment {self.molecule_names[1]}']
                     elif len(self.molecule_names) == 1:
                         columns_per_transitions += [f'dip_moment {self.molecule_names[0]}']
                 
                 # initialize columns for transition quadrupole moments
-                if self.quant_info[0]["quadpole_moments"]:
+                if "quadpole_moments" in self.quant_info[0]:
                     if len(self.molecule_names) == 2:
                         columns_per_transitions += [f'quad_moment {self.molecule_names[0]}', f'quad_moment {self.molecule_names[1]}']
                     elif len(self.molecule_names) == 1:
