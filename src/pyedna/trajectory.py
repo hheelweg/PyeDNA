@@ -405,7 +405,7 @@ class Trajectory():
                 "mol" :         True,
                 "tdm" :         True,
                 "dip" :         False,
-                "quad" :         False,
+                "quad" :        False,
                 "osc" :         True,
                 "idx" :         True,
                 "mull_pops" :   False,
@@ -1096,10 +1096,10 @@ class Trajectory():
                 # (d) get transition dipoles
                 if self.quant_info[0]["quadpole_moments"]:
                     # get transition dipole moments based on QM (DFT/TDDFT) output
-                    dipoles_out = qm.getTransitionQuadrupoles(output_qm['quad'], states, molecule_names=self.molecule_names, quadpole_moment_type="vector")
+                    quadpoles_out = qm.getTransitionQuadrupoles(output_qm['quad'], states, molecule_names=self.molecule_names, quadpole_moment_type="vector")
                     # add to output df
-                    cols = [(self.transition_names[i], key) for key in dipoles_out.keys()]
-                    vals = [v for v in dipoles_out.values()]
+                    cols = [(self.transition_names[i], key) for key in quadpoles_out.keys()]
+                    vals = [v for v in quadpoles_out.values()]
                     for col, val in zip(cols, vals):
                         self.output_quant.at[time_idx, col] = val
 
@@ -1130,9 +1130,9 @@ class Trajectory():
             if "quadpole_moments" in self.quant_info[0]:
                 for molecule_name in self.molecule_names:
                     for state_id in self.settings_tddft["state_ids"]:
-                        dipoles_out = qm.getTransitionQuadrupoles(output_qm['quad'], [state_id] * len(self.molecule_names),
-                                                                  molecule_names=self.molecule_names, quadpole_moment_type="vector")
-                        self.output_quant.loc[time_idx, (molecule_name, f'quad_moment {state_id}')] = dipoles_out[f'quad_moment {molecule_name}']
+                        quadpoles_out = qm.getTransitionQuadrupoles(output_qm['quad'], [state_id] * len(self.molecule_names),
+                                                                    molecule_names=self.molecule_names, quadpole_moment_type="vector")
+                        self.output_quant.loc[time_idx, (molecule_name, f'quad_moment {state_id}')] = quadpoles_out[f'quad_moment {molecule_name}']
             
             # (b) get orbital energies of occupied and virtual orbitals
             if "orbit_energies" in self.quant_info[0]:
