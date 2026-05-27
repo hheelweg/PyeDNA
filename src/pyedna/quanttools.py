@@ -864,9 +864,10 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
     # (2) run TDDFT with or without TDA (Tamm-Dancoff approximation)
     molecule_td = molecule_mf.TDA().run(nstates = nstates) if TDA else molecule_mf.TDDFT().run(nstates = nstates)
 
-    # (3) extract excitation energies and transition dipole moments
+    # (3) extract excitation energies and transition dipole moments, and transition quadrupole moments
     exc_energies = [molecule_td.e[id] for id in state_ids]
     trans_dipoles = [molecule_td.transition_dipole()[id] for id in state_ids]
+    trans_quadpoles = [molecule_td.transition_quadrupole()[id] for id in state_ids]
 
     # (4) compute oscillator strengths
     # (4.1) for all possible transitions
@@ -888,6 +889,8 @@ def doTDDFT_gpu(molecule_mol, molecule_mf, occ_orbits, virt_orbits, quantum_dict
         tddft_output['tdm'] = np.array([tdm.get() for tdm in tdms])
     if quantum_dict['dip']:
         tddft_output['dip'] = np.array(trans_dipoles)
+    if quantum_dict['quad']:
+        tddft_output['quad'] = np.array(trans_quadpoles)
     if quantum_dict['osc']:
         tddft_output['osc'] = np.array(osc_strengths)
     if quantum_dict['idx']:
@@ -1433,6 +1436,25 @@ def getTransitionDipoles(dips, states, molecule_names = ["D", "A"], dipole_momen
         state = states[0]
         dip = dips[0]
         results[f'dip_moment {molecule_names[0]}'] = dip[state] if dipole_moment_type == "vector"  else np.dot(dip[state], dip[state])
+    return results
+
+def getTransitionQuadrupoles(quads, states, molecule_names = ["D", "A"], quadpole_moment_type = 'default'):
+    assert(len(quads) == len(states) == len(molecule_names))
+    if len(quads) == 2:
+        intermolecular, intramolecular = True, False
+    elif len(quads) == 1:
+        intermolecular, intramolecular = False, True
+
+    results = {}
+    if intermolecular:
+        stateA, stateB = states[0], states[1]
+        quadA, quadB = quads[0], quads[1]
+        results[f'dip_moment {molecule_names[0]}'] = quadA[stateA] if quadpole_moment_type == "vector"  else np.dot(quadA[stateA], quadA[stateA])
+        results[f'dip_moment {molecule_names[1]}'] = quadB[stateB] if quadpole_moment_type == "vector"  else np.dot(quadB[stateB], quadB[stateB])
+    if intramolecular:
+        state = states[0]
+        quad = quads[0]
+        results[f'dip_moment {molecule_names[0]}'] = quad[state] if quadpole_moment_type == "vector"  else np.dot(quad[state], quad[state])
     return results
 
 # get TDDFT outputs as specified in list which_outs for molecules

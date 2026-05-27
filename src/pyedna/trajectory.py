@@ -405,6 +405,7 @@ class Trajectory():
                 "mol" :         True,
                 "tdm" :         True,
                 "dip" :         False,
+                "quad" :         False,
                 "osc" :         True,
                 "idx" :         True,
                 "mull_pops" :   False,
@@ -445,13 +446,14 @@ class Trajectory():
 
 
         # (1) QM (DFT/TDDFT) outputs (NOTE : only boolean)
-        qm_outs = {key: out.get(key) for key in ["exc", "mol", "tdm", "tdm_inter","mf", "occ", "virt", "orbit_enrgs", "dip", "osc", "idx", "mull_pops", "mull_chrgs", "OPA"]}               
+        qm_outs = {key: out.get(key) for key in ["exc", "mol", "tdm", "tdm_inter","mf", "occ", "virt", "orbit_enrgs", "dip", "quad",
+                                                 "osc", "idx", "mull_pops", "mull_chrgs", "OPA"]}               
 
         # (2) trajectory-based outputs per time steps
         qm_options =    [
-                        "transitions",                                                                                          # transitions
-                        "coupling", "coupling_type", "excited_energies", "dipole_moments", "osc_strengths",                     # quantities per transition
-                        "abs_spec", "orbit_energies", "mulliken", "popanalysis"                                                 # quantities per molecule (transitions = None)
+                        "transitions",                                                                                              # transitions
+                        "coupling", "coupling_type", "excited_energies", "dipole_moments", "quadpole_moments", "osc_strengths",     # quantities per transition
+                        "abs_spec", "orbit_energies", "mulliken", "popanalysis"                                                     # quantities per molecule (transitions = None)
                         ]
 
         post_qm = {key: out.get(key) for key in qm_options}           
@@ -471,6 +473,7 @@ class Trajectory():
         qm_outs['mull_chrgs'] = True if post_qm["mulliken"] else qm_outs['mull_chrgs']
         qm_outs['OPA'] = True if post_qm["popanalysis"] else qm_outs['OPA']
         qm_outs['dip'] = True if post_qm["dipole_moments"] else qm_outs['dip']
+        qm_outs['quad'] = True if post_qm["quadpole_moments"] else qm_outs['quad']
         qm_outs['osc'] = True if post_qm["osc_strengths"] else qm_outs['osc']
         qm_outs['mol'] = True if post_qm["coupling"] else qm_outs['mol']
         qm_outs['tdm'] = True if post_qm["coupling"] else qm_outs['tdm']
@@ -695,6 +698,13 @@ class Trajectory():
                         columns_per_transitions += [f'dip_moment {self.molecule_names[0]}', f'dip_moment {self.molecule_names[1]}']
                     elif len(self.molecule_names) == 1:
                         columns_per_transitions += [f'dip_moment {self.molecule_names[0]}']
+                
+                # initialize columns for transition quadrupole moments
+                if self.quant_info[0]["quadpole_moments"]:
+                    if len(self.molecule_names) == 2:
+                        columns_per_transitions += [f'quad_moment {self.molecule_names[0]}', f'quad_moment {self.molecule_names[1]}']
+                    elif len(self.molecule_names) == 1:
+                        columns_per_transitions += [f'quad_moment {self.molecule_names[0]}']
 
                 # TODO : add more as desired
                 
@@ -725,6 +735,9 @@ class Trajectory():
 
                 if "dipole_moments" in self.quant_info[0]:
                     columns_per_molecule += [f'dip_moment {state_id}' for state_id in self.settings_tddft["state_ids"]]
+                
+                if "quadpole_moments" in self.quant_info[0]:
+                    columns_per_molecule += [f'quad_moment {state_id}' for state_id in self.settings_tddft["state_ids"]]
 
                 # initialize columns for orbital energies
                 if "orbit_energies" in self.quant_info[0]:
@@ -1079,6 +1092,16 @@ class Trajectory():
                     for col, val in zip(cols, vals):
                         self.output_quant.at[time_idx, col] = val
                     #self.output_quant.loc[time_idx, [(self.transition_names[i], key) for key in dipoles_out.keys()]] = list(dipoles_out.values())
+                
+                # (d) get transition dipoles
+                if self.quant_info[0]["quadpole_moments"]:
+                    # get transition dipole moments based on QM (DFT/TDDFT) output
+                    dipoles_out = qm.getTransitionQuadrupoles(output_qm['quad'], states, molecule_names=self.molecule_names, quadpole_moment_type="vector")
+                    # add to output df
+                    cols = [(self.transition_names[i], key) for key in dipoles_out.keys()]
+                    vals = [v for v in dipoles_out.values()]
+                    for col, val in zip(cols, vals):
+                        self.output_quant.at[time_idx, col] = val
 
 
         # (2) look at direct output quantities of QM (DFT/TDDFT) (if self.transitions = None)
@@ -1102,6 +1125,14 @@ class Trajectory():
                         dipoles_out = qm.getTransitionDipoles(output_qm['dip'], [state_id] * len(self.molecule_names),
                                                               molecule_names=self.molecule_names,dipole_moment_type="vector")
                         self.output_quant.loc[time_idx, (molecule_name, f'dip_moment {state_id}')] = dipoles_out[f'dip_moment {molecule_name}']
+            
+            # back out dipole moment vectors
+            if "quadpole_moments" in self.quant_info[0]:
+                for molecule_name in self.molecule_names:
+                    for state_id in self.settings_tddft["state_ids"]:
+                        dipoles_out = qm.getTransitionQuadrupoles(output_qm['quad'], [state_id] * len(self.molecule_names),
+                                                                  molecule_names=self.molecule_names, quadpole_moment_type="vector")
+                        self.output_quant.loc[time_idx, (molecule_name, f'quad_moment {state_id}')] = dipoles_out[f'quad_moment {molecule_name}']
             
             # (b) get orbital energies of occupied and virtual orbitals
             if "orbit_energies" in self.quant_info[0]:
