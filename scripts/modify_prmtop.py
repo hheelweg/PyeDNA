@@ -212,9 +212,11 @@ def make_bonded_off(input_prmtop, output_prmtop):
 def main():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("input_prmtop")
-    parser.add_argument("nb_off_prmtop")
-    parser.add_argument("bonded_off_prmtop")
+    # input .prmtop
+    parser.add_argument("input_prmtop", help="Original full-system Amber topology.")
+    # output .prmtop's
+    parser.add_argument("nb_off_prmtop", help="Output topology with dye nonbonded interactions disabled.")
+    parser.add_argument("bonded_off_prmtop", help="Output topology with dye-DNA bonded terms disabled.")
 
     args = parser.parse_args()
 
