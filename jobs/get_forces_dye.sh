@@ -173,10 +173,21 @@ rm -f \
 
 echo "Starting three parallel force evaluations..."
 
+# Remove any temporary sander output left from an earlier attempt.
+rm -f \
+    "$WORKDIR/full.out" \
+    "$WORKDIR/nonbond.out" \
+    "$WORKDIR/bond.out" \
+    "$WORKDIR/full.stdout" \
+    "$WORKDIR/nonbond.stdout" \
+    "$WORKDIR/bond.stdout"
+
+
 srun --exclusive \
     --nodes=1 \
     --ntasks=1 \
     --cpus-per-task=1 \
+    -- \
     sander -O \
         -i "$FORCE_INPUT" \
         -o "$WORKDIR/full.out" \
@@ -193,6 +204,7 @@ srun --exclusive \
     --nodes=1 \
     --ntasks=1 \
     --cpus-per-task=1 \
+    -- \
     sander -O \
         -i "$FORCE_INPUT" \
         -o "$WORKDIR/nonbond.out" \
@@ -209,6 +221,7 @@ srun --exclusive \
     --nodes=1 \
     --ntasks=1 \
     --cpus-per-task=1 \
+    -- \
     sander -O \
         -i "$FORCE_INPUT" \
         -o "$WORKDIR/bond.out" \
