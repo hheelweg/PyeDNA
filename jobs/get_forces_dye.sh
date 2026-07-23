@@ -13,36 +13,10 @@
 #
 # EXAMPLE:
 #   sbatch this_script.sh dna_0nt
-#
-# REQUIRES:
-#   - <name>.nc
-#   - <name>.prmtop
-#   - PYEDNA_HOME set
-#   - cpptraj and sander in PATH
-#   - python with ParmEd installed
-#
-# OUTPUT:
-#   - <name>_forces.nc
-#   - <name>_nonbond_forces.nc
-#   - <name>_bond_forces.nc
-#   - <name>_nonbond.prmtop
-#   - <name>_bond.prmtop
-#
-# For testing, only the first NFRAMES frames are evaluated.
 
-set -euo pipefail
-
-
-# ----------------------------------------------------------------------
-# User settings
-# ----------------------------------------------------------------------
-
-NFRAMES=10
-
-
-# ----------------------------------------------------------------------
-# Read command-line argument
-# ----------------------------------------------------------------------
+# Do not use `set -u` before sourcing config.sh because Conda's shell
+# scripts may temporarily reference variables that have not been defined.
+set -eo pipefail
 
 if [[ $# -ne 1 ]]; then
     echo "Usage: sbatch $0 <name>"
@@ -51,6 +25,7 @@ if [[ $# -ne 1 ]]; then
 fi
 
 NAME="$1"
+NFRAMES=10
 
 PRMTOP="${NAME}.prmtop"
 TRAJECTORY="${NAME}.nc"
@@ -61,21 +36,6 @@ BOND_PRMTOP="${NAME}_bond.prmtop"
 FULL_FORCES="${NAME}_forces.nc"
 NONBOND_FORCES="${NAME}_nonbond_forces.nc"
 BOND_FORCES="${NAME}_bond_forces.nc"
-
-
-# ----------------------------------------------------------------------
-# Check required files and environment
-# ----------------------------------------------------------------------
-
-if [[ ! -f "$PRMTOP" ]]; then
-    echo "Error: topology '$PRMTOP' not found."
-    exit 1
-fi
-
-if [[ ! -f "$TRAJECTORY" ]]; then
-    echo "Error: trajectory '$TRAJECTORY' not found."
-    exit 1
-fi
 
 if [[ -z "${PYEDNA_HOME:-}" ]]; then
     echo "Error: PYEDNA_HOME is not set."
@@ -89,22 +49,11 @@ if [[ ! -f "$CONFIG_FILE" ]]; then
     exit 1
 fi
 
+# Source the environment before enabling nounset.
 source "$CONFIG_FILE"
 
-command -v python  >/dev/null || {
-    echo "Error: python not found."
-    exit 1
-}
-
-command -v cpptraj >/dev/null || {
-    echo "Error: cpptraj not found."
-    exit 1
-}
-
-command -v sander >/dev/null || {
-    echo "Error: sander not found."
-    exit 1
-}
+# Safe to enable stricter unset-variable handling for our own script now.
+set -u
 
 
 # ----------------------------------------------------------------------
