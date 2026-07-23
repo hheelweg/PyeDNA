@@ -9,43 +9,30 @@
 #SBATCH --output=slurm-%j.log
 
 # ============================================================================
-# Force evaluation for:
+# Evaluate forces for an Amber trajectory and construct a dye/DNA force file.
 #
-#   1. original topology
-#   2. nonbonded-off topology
-#   3. bonded-off topology
+# Usage:
+#   sbatch get_forces_dye.sh <name> [nframes]
 #
-# USAGE:
+# Examples:
+#   sbatch get_forces_dye.sh dna_0nt
+#   sbatch get_forces_dye.sh dna_0nt 100
 #
-#   sbatch this_script.sh <name>
+# Inputs:
+#   <name>.prmtop
+#   <name>.nc
 #
-# EXAMPLE:
+# Retained outputs:
+#   <name>_full_forces.nc
+#       Full forces from the unmodified topology.
 #
-#   sbatch this_script.sh dna_0nt
+#   <name>_forces_dye_dna.nc
+#       Full forces on CY3/CY5 atoms, dye-induced bonded and nonbonded forces
+#       on DNA atoms, and zero forces on all remaining atoms.
 #
-# INPUT:
-#
-#   dna_0nt.prmtop
-#   dna_0nt.nc
-#
-# OUTPUT:
-#
-#   dna_0nt_nonbond.prmtop
-#   dna_0nt_bond.prmtop
-#
-#   dna_0nt_forces.nc
-#   dna_0nt_nonbond_forces.nc
-#   dna_0nt_bond_forces.nc
-#
-# The force calculations follow the established get_forces.sh procedure:
-#
-#   1. extract each trajectory frame as an Amber restart;
-#   2. run one sander MD step with dt = 0;
-#   3. write one force NetCDF per frame;
-#   4. merge the per-frame NetCDF files;
-#   5. remove all temporary files and directories.
-#
-# The three topology calculations run concurrently.
+# If nframes is omitted, all trajectory frames are processed. Otherwise, the
+# first nframes are used. Temporary modified topologies and decomposition force
+# trajectories are removed after successful completion.
 # ============================================================================
 
 set -eo pipefail
@@ -55,16 +42,19 @@ set -eo pipefail
 # Read command-line argument
 # ----------------------------------------------------------------------------
 
-if [[ $# -ne 1 ]]; then
-    echo "Usage: sbatch $0 <name>"
-    echo "Example: sbatch $0 dna_0nt"
+if [[ $# -lt 1 || $# -gt 2 ]]; then
+    echo "Usage: sbatch $0 <name> [nframes]"
     exit 1
 fi
 
 NAME="$1"
+NFRAMES_REQUESTED="${2:-}"
 
-# For the current test, only use the first 10 trajectory frames.
-NFRAMES_REQUESTED=10
+if [[ -n "$NFRAMES_REQUESTED" ]] && \
+   [[ ! "$NFRAMES_REQUESTED" =~ ^[1-9][0-9]*$ ]]; then
+    echo "Error: nframes must be a positive integer."
+    exit 1
+fi
 
 
 # ----------------------------------------------------------------------------
@@ -77,12 +67,13 @@ TRAJECTORY="${NAME}.nc"
 NONBOND_PRMTOP="${NAME}_nonbond.prmtop"
 BOND_PRMTOP="${NAME}_bond.prmtop"
 
-# Temporary force trajectories used only for decomposition
-FULL_FORCES="${NAME}_full_aux.nc"
+# Retained full-force trajectory
+FULL_FORCES="${NAME}_full_forces.nc"
+# Temporary decomposition trajectories
 NONBOND_FORCES="${NAME}_nonbond_aux.nc"
 BOND_FORCES="${NAME}_bond_aux.nc"
 
-# The only final force trajectory retained
+# Final dye/DNA force trajectory
 FINAL_FORCES="${NAME}_forces_dye_dna.nc"
 
 
@@ -128,7 +119,7 @@ fi
 # Check required executables
 # ----------------------------------------------------------------------------
 
-for PROGRAM in python cpptraj sander ncdump realpath; do
+for PROGRAM in python cpptraj sander realpath; do
     if ! command -v "$PROGRAM" >/dev/null 2>&1; then
         echo "Error: required program '$PROGRAM' is not available."
         exit 1
@@ -154,8 +145,6 @@ PY
 # ----------------------------------------------------------------------------
 # Generate modified topologies
 # ----------------------------------------------------------------------------
-
-echo "Generating modified topologies..."
 
 python -m modify_prmtop \
     "$PRMTOP" \
@@ -260,14 +249,16 @@ if (( TOTAL_FRAMES < 1 )); then
     exit 1
 fi
 
-if (( TOTAL_FRAMES < NFRAMES_REQUESTED )); then
+if [[ -z "$NFRAMES_REQUESTED" ]]; then
     NFRAMES="$TOTAL_FRAMES"
+elif (( NFRAMES_REQUESTED > TOTAL_FRAMES )); then
+    echo "Error: requested $NFRAMES_REQUESTED frames, but trajectory contains $TOTAL_FRAMES."
+    exit 1
 else
     NFRAMES="$NFRAMES_REQUESTED"
 fi
 
-echo "Trajectory contains $TOTAL_FRAMES frames."
-echo "Using the first $NFRAMES frames."
+echo "Processing $NFRAMES of $TOTAL_FRAMES trajectory frames."
 
 
 # ----------------------------------------------------------------------------
@@ -368,10 +359,6 @@ FORCE_DIR="$TOPOLOGY_ROOT/force_frames"
 mkdir -p "$WORK_DIR"
 mkdir -p "$FORCE_DIR"
 
-echo "[$LABEL] Beginning force evaluation."
-echo "[$LABEL] Topology: $TOPOLOGY"
-echo "[$LABEL] Frames:   $NFRAMES"
-
 
 # --------------------------------------------------------------------------
 # Evaluate one trajectory frame at a time
@@ -389,8 +376,6 @@ for (( i=1; i<=NFRAMES; i++ )); do
     FRAME_INFO="$FORCE_DIR/frame_${FRAME_TAG}.mdinfo"
     FRAME_RESTART="$FORCE_DIR/frame_${FRAME_TAG}.rst7"
     FRAME_FORCE="$FORCE_DIR/frame_${FRAME_TAG}.nc"
-
-    echo "[$LABEL] Processing frame $i / $NFRAMES"
 
     # Extract one coordinate frame as an Amber restart.
     cat > "$FRAME_CPPTRAJ_INPUT" <<EOF
@@ -439,8 +424,6 @@ done
 #
 # This follows the merge logic from get_forces.sh.
 # --------------------------------------------------------------------------
-
-echo "[$LABEL] Merging per-frame force files..."
 
 rm -f "$FINAL_FORCE_FILE"
 
@@ -530,8 +513,6 @@ if [[ ! -s "$FINAL_FORCE_FILE" ]]; then
     exit 1
 fi
 
-echo "[$LABEL] Completed successfully:"
-echo "[$LABEL] $FINAL_FORCE_FILE"
 WORKER_EOF
 
 chmod +x "$WORKER_SCRIPT"
@@ -555,9 +536,6 @@ rm -f \
 # The frame loop within a topology remains sequential, exactly as in the
 # established get_forces.sh. The parallelism is across the three topologies.
 # ----------------------------------------------------------------------------
-
-echo "Starting three parallel force evaluations..."
-
 
 srun --exclusive \
     --nodes=1 \
@@ -697,9 +675,6 @@ done
 FINAL_FORCES_ABS="$SUBMIT_DIR/$FINAL_FORCES"
 
 rm -f "$FINAL_FORCES_ABS"
-
-echo
-echo "Constructing final mixed force trajectory..."
 
 python - \
     "$PRMTOP_ABS" \
@@ -964,15 +939,6 @@ with netCDF4.Dataset(
     )
 
 
-print(f"Wrote final force trajectory: {output_filename}")
-print(f"Frames:     {nframes}")
-print(f"Atoms:      {natoms}")
-print(f"Dye atoms:  {np.count_nonzero(dye_mask)}")
-print(f"DNA atoms:  {np.count_nonzero(dna_mask)}")
-print(
-    "Other atoms set to zero: "
-    f"{natoms - np.count_nonzero(dye_mask) - np.count_nonzero(dna_mask)}"
-)
 PY
 
 
@@ -984,29 +950,16 @@ fi
 
 
 # ----------------------------------------------------------------------------
-# Remove auxiliary topology and force files
-#
-# Only the original topology, original coordinate trajectory, and the final
-# mixed force trajectory are retained.
+# Remove auxiliary modified topologies and decomposition force files.
+# Retain both the full-force and dye/DNA force trajectories.
 # ----------------------------------------------------------------------------
-
-echo
-echo "Removing auxiliary topologies and force trajectories..."
 
 rm -f \
     "$NONBOND_PRMTOP_ABS" \
     "$BOND_PRMTOP_ABS" \
-    "$FULL_FORCES_ABS" \
     "$NONBOND_FORCES_ABS" \
     "$BOND_FORCES_ABS"
 
-echo
-echo "Force evaluation and decomposition completed."
-echo
-echo "Final retained force trajectory:"
-echo "  $FINAL_FORCES"
-echo
-echo "Its contents are:"
-echo "  CY3/CY5 atoms: complete forces from the original topology"
-echo "  DNA atoms:     only dye-imposed bonded and nonbonded forces"
-echo "  Other atoms:   zero force"
+echo "Completed successfully."
+echo "  Full forces:    $FULL_FORCES"
+echo "  Dye/DNA forces: $FINAL_FORCES"
