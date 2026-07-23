@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#SBATCH –nodes=1
-#SBATCH –partition=normal
-#SBATCH –ntasks=1
-#SBATCH –cpus-per-task=8
-#SBATCH –job-name=modify_prmtop
-#SBATCH –output=slurm-%j.log
+#SBATCH --nodes=1
+#SBATCH --partition=normal
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --job-name=forces
+#SBATCH --output=slurm-%j.log
 
 Check if PYEDNA_HOME is set
 
