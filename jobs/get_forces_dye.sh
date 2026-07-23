@@ -23,4 +23,4 @@ else
     exit 1
 fi
 
-python -m modify_prmtop
+python -m modify_prmtop dna_0nt.prmtop dna_0nt_nonbond.prmtop dna_0nt_bond.prmtop

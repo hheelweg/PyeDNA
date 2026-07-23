@@ -1,17 +1,13 @@
 #!/usr/bin/env python3
 
-from __future__ import annotations
-
 import argparse
-from pathlib import Path
+import copy
 
-import numpy as np
 import parmed as pmd
-from netCDF4 import Dataset
+from parmed.tools import addLJType
 
 
-DYE_A_RESNAMES = {"CY3"}
-DYE_B_RESNAMES = {"CY5"}
+DYE_RESNAMES = {"CY3", "CY5"}
 
 DNA_RESNAMES = {
     "DA", "DA3", "DA5",
@@ -21,95 +17,116 @@ DNA_RESNAMES = {
 }
 
 
-def read_forces(filename: Path) -> np.ndarray:
-    with Dataset(filename, "r") as nc:
-        if "forces" not in nc.variables:
-            raise KeyError(
-                f"{filename} does not contain a 'forces' variable. "
-                f"Available variables: {list(nc.variables)}"
-            )
-
-        return np.asarray(nc.variables["forces"][:], dtype=np.float64)
+def is_dye(atom):
+    return atom.residue.name.strip() in DYE_RESNAMES
 
 
-def main() -> None:
+def is_dna(atom):
+    return atom.residue.name.strip() in DNA_RESNAMES
+
+
+def crosses_dye_dna_boundary(atoms):
+    return (
+        any(is_dye(atom) for atom in atoms)
+        and any(is_dna(atom) for atom in atoms)
+    )
+
+
+def make_nb_off(input_prmtop, output_prmtop):
+    parm = pmd.load_file(input_prmtop)
+
+    dye_atoms = [atom for atom in parm.atoms if is_dye(atom)]
+
+    if not dye_atoms:
+        raise ValueError("No CY3 or CY5 atoms were found.")
+
+    # Remove dye electrostatics.
+    for atom in dye_atoms:
+        atom.charge = 0.0
+
+    # Give all dye atoms a new LJ type with zero LJ interaction.
+    action = addLJType(
+        parm,
+        ":CY3,CY5",
+        radius=0.0,
+        epsilon=0.0,
+        radius_14=0.0,
+        epsilon_14=0.0,
+    )
+    action.execute()
+
+    parm.save(output_prmtop, overwrite=True)
+
+    print(f"Wrote {output_prmtop}")
+    print(f"Zeroed charge and LJ parameters for {len(dye_atoms)} dye atoms.")
+
+
+def make_bonded_off(input_prmtop, output_prmtop):
+    parm = pmd.load_file(input_prmtop)
+
+    n_bonds = 0
+    n_angles = 0
+    n_dihedrals = 0
+
+    for bond in parm.bonds:
+        atoms = (bond.atom1, bond.atom2)
+
+        if crosses_dye_dna_boundary(atoms):
+            bond.type = copy.deepcopy(bond.type)
+            bond.type.k = 0.0
+            n_bonds += 1
+
+    for angle in parm.angles:
+        atoms = (
+            angle.atom1,
+            angle.atom2,
+            angle.atom3,
+        )
+
+        if crosses_dye_dna_boundary(atoms):
+            angle.type = copy.deepcopy(angle.type)
+            angle.type.k = 0.0
+            n_angles += 1
+
+    for dihedral in parm.dihedrals:
+        atoms = (
+            dihedral.atom1,
+            dihedral.atom2,
+            dihedral.atom3,
+            dihedral.atom4,
+        )
+
+        if crosses_dye_dna_boundary(atoms):
+            dihedral.type = copy.deepcopy(dihedral.type)
+            dihedral.type.phi_k = 0.0
+            n_dihedrals += 1
+
+    parm.save(output_prmtop, overwrite=True)
+
+    print(f"Wrote {output_prmtop}")
+    print(f"Zeroed cross-boundary bonds:     {n_bonds}")
+    print(f"Zeroed cross-boundary angles:    {n_angles}")
+    print(f"Zeroed cross-boundary dihedrals: {n_dihedrals}")
+
+
+def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("prmtop", type=Path)
-    parser.add_argument("full", type=Path)
-    parser.add_argument("nb_off", type=Path)
-    parser.add_argument("bonded_off", type=Path)
-    parser.add_argument("output", type=Path)
+
+    parser.add_argument("input_prmtop")
+    parser.add_argument("nb_off_prmtop")
+    parser.add_argument("bonded_off_prmtop")
+
     args = parser.parse_args()
 
-    parm = pmd.load_file(str(args.prmtop))
-
-    full = read_forces(args.full)
-    nb_off = read_forces(args.nb_off)
-    bonded_off = read_forces(args.bonded_off)
-
-    if full.shape != nb_off.shape or full.shape != bonded_off.shape:
-        raise ValueError(
-            "The three force arrays do not have identical shapes: "
-            f"{full.shape}, {nb_off.shape}, {bonded_off.shape}"
-        )
-
-    if full.shape[1] != len(parm.atoms):
-        raise ValueError(
-            f"Force files contain {full.shape[1]} atoms, but topology "
-            f"contains {len(parm.atoms)} atoms."
-        )
-
-    dye_a_indices = np.array(
-        [
-            atom.idx
-            for atom in parm.atoms
-            if atom.residue.name.strip() in DYE_A_RESNAMES
-        ],
-        dtype=int,
+    make_nb_off(
+        args.input_prmtop,
+        args.nb_off_prmtop,
     )
 
-    dna_indices = np.array(
-        [
-            atom.idx
-            for atom in parm.atoms
-            if atom.residue.name.strip() in DNA_RESNAMES
-        ],
-        dtype=int,
+    make_bonded_off(
+        args.input_prmtop,
+        args.bonded_off_prmtop,
     )
-
-    dye_nb_on_dna = full[:, dna_indices, :] - nb_off[:, dna_indices, :]
-
-    dye_bonded_on_dna = (
-        full[:, dna_indices, :]
-        - bonded_off[:, dna_indices, :]
-    )
-
-    dye_total_on_dna = dye_nb_on_dna + dye_bonded_on_dna
-
-    # Initialize everything to zero.
-    output = np.zeros_like(full)
-
-    # Dye A receives its complete full-system force.
-    output[:, dye_a_indices, :] = full[:, dye_a_indices, :]
-
-    # DNA receives only forces attributable to dyes A and B.
-    output[:, dna_indices, :] = dye_total_on_dna
-
-    with Dataset(args.output, "w", format="NETCDF4") as nc:
-        nc.createDimension("frame", output.shape[0])
-        nc.createDimension("atom", output.shape[1])
-        nc.createDimension("spatial", 3)
-
-        force_var = nc.createVariable(
-            "forces",
-            "f8",
-            ("frame", "atom", "spatial"),
-        )
-
-        force_var[:] = output
-        force_var.units = "unknown; copied from input force files"
-
-    print(f"Wrote {args.output}")
 
 
 if __name__ == "__main__":
