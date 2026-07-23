@@ -77,7 +77,7 @@ TRAJECTORY="${NAME}.nc"
 NONBOND_PRMTOP="${NAME}_nonbond.prmtop"
 BOND_PRMTOP="${NAME}_bond.prmtop"
 
-FULL_FORCES="${NAME}_forces.nc"
+FULL_FORCES="${NAME}_full_forces.nc"
 NONBOND_FORCES="${NAME}_nonbond_forces.nc"
 BOND_FORCES="${NAME}_bond_forces.nc"
 
@@ -662,6 +662,416 @@ done
 
 
 # ----------------------------------------------------------------------------
+# Construct the final force trajectories
+#
+# We produce:
+#
+#   1. Complete forces on CY3 and CY5 atoms:
+#
+#        F_dye,full = F_full restricted to CY3/CY5 atoms
+#
+#   2. Dye-DNA forces acting on DNA atoms:
+#
+#        F_DNA<-dye
+#          = F_dye-DNA,nonbonded + F_dye-DNA,bonded
+#
+#        F_dye-DNA,nonbonded
+#          = F_full - F_nonbond_off
+#
+#        F_dye-DNA,bonded
+#          = F_full - F_bond_off
+#
+#        Therefore:
+#
+#        F_DNA<-dye
+#          = (F_full - F_nonbond_off)
+#            + (F_full - F_bond_off)
+#
+#          = 2 F_full - F_nonbond_off - F_bond_off
+#
+# The final expression is restricted to DNA atoms. On other atom types,
+# F_full - F_nonbond_off may also contain removed dye-water, dye-ion, or
+# dye-dye interactions.
+# ----------------------------------------------------------------------------
+
+DYE_FULL_FORCES="${NAME}_dye_full_forces.nc"
+DNA_DYE_FORCES="${NAME}_dna_dye_forces.nc"
+
+rm -f \
+    "$DYE_FULL_FORCES" \
+    "$DNA_DYE_FORCES"
+
+echo
+echo "Constructing complete dye forces and dye-DNA forces..."
+
+python - \
+    "$PRMTOP_ABS" \
+    "$FULL_FORCES_ABS" \
+    "$NONBOND_FORCES_ABS" \
+    "$BOND_FORCES_ABS" \
+    "$SUBMIT_DIR/$DYE_FULL_FORCES" \
+    "$SUBMIT_DIR/$DNA_DYE_FORCES" <<'PY'
+import sys
+from pathlib import Path
+
+import netCDF4
+import numpy as np
+import parmed as pmd
+
+
+(
+    topology_filename,
+    full_filename,
+    nonbond_filename,
+    bond_filename,
+    dye_output_filename,
+    dna_output_filename,
+) = map(Path, sys.argv[1:])
+
+
+DYE_RESIDUE_NAMES = {
+    "CY3",
+    "CY5",
+}
+
+DNA_RESIDUE_NAMES = {
+    "DA", "DA3", "DA5",
+    "DC", "DC3", "DC5",
+    "DG", "DG3", "DG5",
+    "DT", "DT3", "DT5",
+    "DU", "DU3", "DU5",
+}
+
+
+def read_forces(filename):
+    with netCDF4.Dataset(filename, "r") as dataset:
+        if "forces" not in dataset.variables:
+            raise RuntimeError(
+                f"{filename} does not contain a 'forces' variable."
+            )
+
+        forces = np.asarray(
+            dataset.variables["forces"][:],
+            dtype=np.float64,
+        )
+
+        time = None
+        if "time" in dataset.variables:
+            time = np.asarray(
+                dataset.variables["time"][:],
+                dtype=np.float64,
+            )
+
+    if forces.ndim != 3 or forces.shape[-1] != 3:
+        raise RuntimeError(
+            f"Unexpected force-array shape in {filename}: "
+            f"{forces.shape}"
+        )
+
+    return forces, time
+
+
+def write_subset(
+    filename,
+    forces,
+    time,
+    topology,
+    atom_indices,
+    title,
+    comment,
+):
+    nframes, natoms, nspatial = forces.shape
+
+    atom_names = [
+        topology.atoms[index].name
+        for index in atom_indices
+    ]
+
+    residue_names = [
+        topology.atoms[index].residue.name
+        for index in atom_indices
+    ]
+
+    original_atom_indices = atom_indices + 1
+
+    original_residue_indices = np.asarray(
+        [
+            topology.atoms[index].residue.idx + 1
+            for index in atom_indices
+        ],
+        dtype=np.int32,
+    )
+
+    max_atom_name_length = max(
+        4,
+        max(len(name) for name in atom_names),
+    )
+
+    max_residue_name_length = max(
+        4,
+        max(len(name) for name in residue_names),
+    )
+
+    with netCDF4.Dataset(
+        filename,
+        "w",
+        format="NETCDF4_CLASSIC",
+    ) as output:
+
+        output.createDimension("frame", None)
+        output.createDimension("atom", natoms)
+        output.createDimension("spatial", nspatial)
+
+        output.createDimension(
+            "atom_name_length",
+            max_atom_name_length,
+        )
+
+        output.createDimension(
+            "residue_name_length",
+            max_residue_name_length,
+        )
+
+        spatial_variable = output.createVariable(
+            "spatial",
+            "S1",
+            ("spatial",),
+        )
+        spatial_variable[:] = np.asarray(
+            [b"x", b"y", b"z"],
+            dtype="S1",
+        )
+
+        force_variable = output.createVariable(
+            "forces",
+            "f8",
+            ("frame", "atom", "spatial"),
+        )
+        force_variable.units = "kilocalorie/mole/angstrom"
+        force_variable[:] = forces
+
+        if time is not None:
+            time_variable = output.createVariable(
+                "time",
+                "f8",
+                ("frame",),
+            )
+            time_variable.units = "picosecond"
+            time_variable[:] = time
+
+        atom_index_variable = output.createVariable(
+            "original_atom_index",
+            "i4",
+            ("atom",),
+        )
+        atom_index_variable.indexing = "one-based"
+        atom_index_variable[:] = original_atom_indices
+
+        residue_index_variable = output.createVariable(
+            "original_residue_index",
+            "i4",
+            ("atom",),
+        )
+        residue_index_variable.indexing = "one-based"
+        residue_index_variable[:] = original_residue_indices
+
+        atom_name_variable = output.createVariable(
+            "atom_name",
+            "S1",
+            ("atom", "atom_name_length"),
+        )
+        atom_name_variable[:] = netCDF4.stringtochar(
+            np.asarray(
+                atom_names,
+                dtype=f"S{max_atom_name_length}",
+            )
+        )
+
+        residue_name_variable = output.createVariable(
+            "residue_name",
+            "S1",
+            ("atom", "residue_name_length"),
+        )
+        residue_name_variable[:] = netCDF4.stringtochar(
+            np.asarray(
+                residue_names,
+                dtype=f"S{max_residue_name_length}",
+            )
+        )
+
+        output.title = title
+        output.application = "AMBER force decomposition"
+        output.program = "force-generation SLURM script"
+        output.Conventions = "AMBER"
+        output.ConventionVersion = "1.0"
+        output.comment = comment
+
+
+topology = pmd.load_file(str(topology_filename))
+
+full_forces, full_time = read_forces(full_filename)
+nonbond_forces, nonbond_time = read_forces(nonbond_filename)
+bond_forces, bond_time = read_forces(bond_filename)
+
+
+if full_forces.shape != nonbond_forces.shape:
+    raise RuntimeError(
+        "Full and nonbonded-off force trajectories have different shapes: "
+        f"{full_forces.shape} versus {nonbond_forces.shape}"
+    )
+
+if full_forces.shape != bond_forces.shape:
+    raise RuntimeError(
+        "Full and bonded-off force trajectories have different shapes: "
+        f"{full_forces.shape} versus {bond_forces.shape}"
+    )
+
+if len(topology.atoms) != full_forces.shape[1]:
+    raise RuntimeError(
+        "Topology and force trajectory atom counts do not agree: "
+        f"{len(topology.atoms)} versus {full_forces.shape[1]}"
+    )
+
+if full_time is not None and nonbond_time is not None:
+    if not np.allclose(full_time, nonbond_time):
+        raise RuntimeError(
+            "Full and nonbonded-off trajectories have different times."
+        )
+
+if full_time is not None and bond_time is not None:
+    if not np.allclose(full_time, bond_time):
+        raise RuntimeError(
+            "Full and bonded-off trajectories have different times."
+        )
+
+
+dye_atom_indices = np.asarray(
+    [
+        atom.idx
+        for atom in topology.atoms
+        if atom.residue.name.upper() in DYE_RESIDUE_NAMES
+    ],
+    dtype=np.int64,
+)
+
+dna_atom_indices = np.asarray(
+    [
+        atom.idx
+        for atom in topology.atoms
+        if atom.residue.name.upper() in DNA_RESIDUE_NAMES
+    ],
+    dtype=np.int64,
+)
+
+
+if dye_atom_indices.size == 0:
+    raise RuntimeError(
+        "No atoms belonging to CY3 or CY5 were found."
+    )
+
+if dna_atom_indices.size == 0:
+    residue_names = sorted(
+        {residue.name for residue in topology.residues}
+    )
+
+    raise RuntimeError(
+        "No recognized DNA residues were found. "
+        f"Residue names present: {residue_names}"
+    )
+
+
+# Complete physical forces on all CY3/CY5 atoms.
+dye_full_forces = full_forces[:, dye_atom_indices, :]
+
+
+# Dye-DNA forces acting on DNA atoms:
+#
+# F_DNA<-dye
+#   = (F_full - F_nonbond_off)
+#     + (F_full - F_bond_off)
+#
+#   = 2 F_full - F_nonbond_off - F_bond_off
+dna_dye_forces_all_atoms = (
+    2.0 * full_forces
+    - nonbond_forces
+    - bond_forces
+)
+
+dna_dye_forces = dna_dye_forces_all_atoms[
+    :,
+    dna_atom_indices,
+    :,
+]
+
+
+dye_comment = (
+    "Complete forces acting on CY3 and CY5 atoms. "
+    "The forces are taken directly from the unmodified force trajectory: "
+    "F_dye_full = F_full restricted to CY3/CY5 atoms. "
+    "These forces contain all force-field contributions acting on the dyes."
+)
+
+dna_comment = (
+    "Dye-DNA interaction forces acting on DNA atoms. "
+    "The nonbonded dye-DNA contribution is "
+    "F_dye-DNA_nonbonded = F_full - F_nonbond_off. "
+    "The cross-boundary bonded contribution is "
+    "F_dye-DNA_bonded = F_full - F_bond_off. "
+    "Therefore F_DNA<-dye = "
+    "(F_full - F_nonbond_off) + (F_full - F_bond_off) = "
+    "2*F_full - F_nonbond_off - F_bond_off. "
+    "This expression is evaluated only for DNA atoms because the "
+    "nonbonded-off topology can also remove dye-water, dye-ion, and "
+    "dye-dye interactions on other atoms."
+)
+
+
+write_subset(
+    filename=dye_output_filename,
+    forces=dye_full_forces,
+    time=full_time,
+    topology=topology,
+    atom_indices=dye_atom_indices,
+    title="Complete forces on CY3 and CY5 atoms",
+    comment=dye_comment,
+)
+
+write_subset(
+    filename=dna_output_filename,
+    forces=dna_dye_forces,
+    time=full_time,
+    topology=topology,
+    atom_indices=dna_atom_indices,
+    title="Dye-DNA forces acting on DNA atoms",
+    comment=dna_comment,
+)
+
+
+print(
+    f"Wrote {dye_output_filename} "
+    f"with {dye_atom_indices.size} dye atoms."
+)
+
+print(
+    f"Wrote {dna_output_filename} "
+    f"with {dna_atom_indices.size} DNA atoms."
+)
+PY
+
+
+# Verify the two derived trajectories.
+for FORCE_FILE in \
+    "$DYE_FULL_FORCES" \
+    "$DNA_DYE_FORCES"
+do
+    if [[ ! -s "$FORCE_FILE" ]]; then
+        echo "Error: derived force file '$FORCE_FILE' was not created."
+        exit 1
+    fi
+done
+
+
+# ----------------------------------------------------------------------------
 # Completion
 #
 # The cleanup trap removes:
@@ -680,7 +1090,9 @@ done
 # ----------------------------------------------------------------------------
 
 echo
-echo "Force evaluation completed for the first $NFRAMES frames:"
-echo "  Full system:       $FULL_FORCES"
-echo "  Nonbonded off:     $NONBOND_FORCES"
-echo "  Bonded off:        $BOND_FORCES"
+echo "Force evaluation and decomposition completed for the first $NFRAMES frames:"
+echo "  Full system:              $FULL_FORCES"
+echo "  Nonbonded off:            $NONBOND_FORCES"
+echo "  Bonded off:               $BOND_FORCES"
+echo "  Complete CY3/CY5 forces:  $DYE_FULL_FORCES"
+echo "  Dye-DNA forces on DNA:    $DNA_DYE_FORCES"
