@@ -68,7 +68,7 @@ NONBOND_PRMTOP="${NAME}_nonbond.prmtop"
 BOND_PRMTOP="${NAME}_bond.prmtop"
 
 # Retained full-force trajectory
-FULL_FORCES="${NAME}_full_forces.nc"
+FULL_FORCES="${NAME}_forces_full.nc"
 # Temporary decomposition trajectories
 NONBOND_FORCES="${NAME}_nonbond_aux.nc"
 BOND_FORCES="${NAME}_bond_aux.nc"
