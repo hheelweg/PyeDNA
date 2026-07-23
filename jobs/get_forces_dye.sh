@@ -234,19 +234,20 @@ trap 'exit 143' TERM
 
 
 # ----------------------------------------------------------------------------
-# Count available trajectory frames
+# Count available trajectory frames using cpptraj
+#
+# This works even when the file is readable by Amber/cpptraj but is not a
+# NetCDF format understood by the installed ncdump executable.
 # ----------------------------------------------------------------------------
 
-TOTAL_FRAMES=$(ncdump -h "$TRAJECTORY_ABS" | awk '
-/frame = UNLIMITED/ {
-    if (match($0, /\(([0-9]+) currently\)/)) {
-        s = substr($0, RSTART + 1, RLENGTH - 11)
-        print s
-    }
-}')
+TOTAL_FRAMES=$(
+    cpptraj -p "$PRMTOP_ABS" -y "$TRAJECTORY_ABS" -tl 2>/dev/null |
+    awk '/Frames:/ {print $2; exit}'
+)
 
-if [[ -z "$TOTAL_FRAMES" ]]; then
-    echo "Error: could not determine frame count in '$TRAJECTORY'."
+if [[ -z "$TOTAL_FRAMES" || ! "$TOTAL_FRAMES" =~ ^[0-9]+$ ]]; then
+    echo "Error: cpptraj could not determine the number of frames in:"
+    echo "  $TRAJECTORY"
     exit 1
 fi
 
