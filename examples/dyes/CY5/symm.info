@@ -1,0 +1,5 @@
+# point group of the dye molecule
+point_group		=	'Cs'
+# specify atom names that are in the 'Cs' plane
+symmetry_axis		=	['C11', 'H7']
+support_atom		=	'N1'

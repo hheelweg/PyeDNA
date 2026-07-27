@@ -1,0 +1,26 @@
+parameters based on DNA.OL15 and parm10.dat to describe the boundary between dye+linker (gaff) and DNA (DNA.OL15)
+MASS
+
+BOND
+c3-OS  320.0    1.410       JCC,7,(1986),230; NUCLEIC ACJDS (OL15)
+
+ANGLE
+h1-c3-OS    50.0      109.50    changed based on NMA nmodes (OL15)
+c3-OS-P    100.0      120.50    (OL15)
+c3-c3-OS    50.0      109.50    (OL15)
+
+
+DIHE
+c3-c3-OS-P    1    0.15259     162.4967         -3.000         eps OL1 (OL15)
+c3-c3-OS-P    1    0.64681     139.8342         -2.000         eps OL1 (OL15)
+c3-c3-OS-P    1    1.77488     205.9192          1.000         eps OL1 (OL15)
+X-c3-OS-X     3    1.15000     0.000000          3.000         JCC,7,(1986),230 (OL15, X -C7-OS-X)
+
+
+IMPROPER
+
+
+NONBON
+
+
+
