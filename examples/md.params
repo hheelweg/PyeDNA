@@ -1,0 +1,25 @@
+# %%%%%%%%%%%%%%%%%% PARAMETER file %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# Restraint Parameters on DNA residues during minimization/MD
+res_fstrong	    =	500
+res_fweaker 	=	10
+res_fweak	    =	5
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# Energy Minimization parameters
+min_maxcyc	    =	2000
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# MD : Thermostat and barostat settings, time step (ps)
+temp		    =	300.0
+pres		    =	1.0
+gamma_ln	    =	5.0
+taup		    =	5.0
+dt		        =	0.002
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# MD : Equilibration
+eq1_nstlim	    =	500000
+eq2_nstlim	    =	500000
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# MD : Production run
+prod_nstlim	    =	100000000
+prod_ntpr	    =	50000
+prod_ntwx	    =	100000
+prod_ntwr	    =	100000

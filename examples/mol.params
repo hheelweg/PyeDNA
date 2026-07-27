@@ -1,0 +1,14 @@
+# %%%%%%%%%%%%%%%%%% PARAMETER file %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# molecule(s) of interest
+# first molecule ===================================================
+molecule_1 	    = 	[13, 14]
+constituents_1	=	['CY3', 'CY3']
+name_1	 	    = 	'CY3CY3'
+# charge of molecule (after capping)
+charge_1	    =	2
+# second molecule ===================================================
+molecule_2	    = 	[11]
+constituents_2	=	['CY5']
+name_2 		    =	'CY5'
+# charge of molecule (after capping)
+charge_2	    =	1
