@@ -26,7 +26,6 @@ dna_1nt.rst7
 
 These files contain the complete solvated DNA–dye system together with all
 force-field information.
-
 The workflow additionally requires a parameter file
 
 ```text
@@ -34,7 +33,6 @@ md.params
 ```
 
 located in the current working directory.
-
 A typical directory is therefore
 
 ```text
@@ -138,7 +136,6 @@ eq2_nstlim
 ```
 
 define their lengths.
-
 During equilibration the solvent density stabilizes while positional restraints
 on the DNA are gradually relaxed.
 
@@ -147,7 +144,6 @@ on the DNA are gradually relaxed.
 #### Production simulation
 
 The production run generates the trajectory used for all subsequent analysis.
-
 Its duration is determined by
 
 ```python
@@ -175,7 +171,6 @@ prod_ntwr
 ```
 
 determines the restart-file interval.
-
 For most users these are the parameters most frequently adjusted.
 
 ---
@@ -188,14 +183,12 @@ PyeDNA automatically performs the following sequence:
 
 The complete solvated system is minimized while strong restraints are applied
 to selected DNA residues.
-
 This removes steric clashes introduced during structure preparation.
 
 #### 2. Heating and restrained equilibration
 
 The system is heated to the target temperature while gradually reducing the DNA
 restraints.
-
 The solvent and dye molecules relax around the DNA without allowing large
 distortions of the duplex.
 
@@ -207,7 +200,6 @@ simulation box stabilize.
 #### 4. Production MD
 
 All production data are generated during this stage.
-
 Coordinates, energies and restart files are written at the user-specified
 intervals.
 
@@ -222,9 +214,7 @@ do_md_gpu.sh
 ```
 
 script, which launches the AMBER GPU engine (`pmemd.cuda`).
-
 The exact GPU resources depend on the local cluster or workstation.
-
 Typical settings that users may wish to modify include
 
 - SLURM partition,
