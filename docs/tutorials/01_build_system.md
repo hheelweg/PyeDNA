@@ -200,18 +200,15 @@ The environment variable
 export DYE_DIR="/path/to/dye_library"
 ```
 
-must point to the root of a prepared dye library.
-
+must point to the root of a prepared dye library, containing (ideally) geometry-optimized dyes.
 For every unique dye listed in
 
 ```python
 dyes = [...]
 ```
-
 PyeDNA searches recursively below `DYE_DIR` for a directory with the same name.
 
 For example,
-
 ```python
 dyes = ["CY3", "CY3", "CY5"]
 ```
@@ -239,15 +236,14 @@ Each dye directory must contain the following files.
 ### `<DYE>.pdb`
 
 Three-dimensional structure of the dye including its phosphate linker groups.
-
 PyeDNA uses this file to determine the attachment geometry and to position the dye on the DNA backbone.
+🚧: *The construction of most of these files can also be handled internally via the ``create_dye.sh`` command.*
 
 ---
 
 ### `attach_<DYE>.info`
 
 Defines the two phosphate linker groups.
-
 The file specifies which linker atoms
 
 - define the attachment geometry,
