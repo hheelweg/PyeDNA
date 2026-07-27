@@ -1,4 +1,4 @@
-# 01 — Build a DNA–dye system
+## 01 — Build a DNA–dye system
 
 PyeDNA constructs an ideal double-stranded DNA structure from a nucleotide sequence, replaces selected nucleotides with prepared dye-linker residues, and generates the corresponding AMBER topology and coordinate files for molecular dynamics.
 
@@ -9,7 +9,7 @@ The system is defined by two inputs:
 
 The DNA structure itself is generated internally from a NAB template distributed with PyeDNA, so no DNA PDB file is required from the user.
 
-## Requirements
+### Requirements
 
 The structure-building workflow requires:
 
@@ -21,7 +21,7 @@ The structure-building workflow requires:
 
 The commands `nab`, `tleap`, and `pdb4amber` must be available in your environment.
 
-## Working directory
+### Working directory
 
 Run the structure builder from a dedicated working directory containing a single configuration file:
 
@@ -41,7 +41,7 @@ cd build_system
 cp "$PYEDNA_HOME/examples/struc.params" .
 ```
 
-## Structure definition (`struc.params`)
+### Structure definition (`struc.params`)
 
 An example `struc.params` is
 
@@ -55,7 +55,7 @@ dye_positions  = [13, 14, 11]
 structure_name = 'dna_1nt'
 ```
 
-### `dna_sequence`
+#### `dna_sequence`
 
 The DNA sequence of the first strand written from 5′→3′.
 
@@ -65,7 +65,7 @@ The sequence determines the length of the duplex and consequently the valid resi
 
 ---
 
-### `dna_type`
+#### `dna_type`
 
 Selects the DNA template used for structure generation.
 
@@ -83,7 +83,7 @@ which generates an ideal B-DNA duplex using NAB. Additional DNA templates may be
 
 ---
 
-### `dna_name`
+#### `dna_name`
 
 Filename prefix of the intermediate DNA-only structure.
 
@@ -103,7 +103,7 @@ which contains the DNA before any dyes have been attached. This structure is use
 
 ---
 
-### `dyes`
+#### `dyes`
 
 Ordered list of dyes to attach.
 
@@ -133,7 +133,7 @@ The dye names should exactly match the directory names and filenames in the dye 
 
 ---
 
-### `dye_positions`
+#### `dye_positions`
 
 Ordered list of DNA residue IDs to be replaced by the dyes.
 
@@ -171,7 +171,7 @@ Avoid terminal residues, since the current attachment procedure requires neighbo
 
 ---
 
-### `structure_name`
+#### `structure_name`
 
 Filename prefix of the final DNA–dye system.
 
@@ -192,7 +192,7 @@ dna_1nt.rst7
 
 ---
 
-# Dye library (`DYE_DIR`)
+## Dye library (`DYE_DIR`)
 
 The environment variable
 
@@ -236,7 +236,7 @@ $DYE_DIR/
 
 Each dye directory must contain the following files.
 
-## `<DYE>.pdb`
+### `<DYE>.pdb`
 
 Three-dimensional structure of the dye including its phosphate linker groups.
 
@@ -244,7 +244,7 @@ PyeDNA uses this file to determine the attachment geometry and to position the d
 
 ---
 
-## `attach_<DYE>.info`
+### `attach_<DYE>.info`
 
 Defines the two phosphate linker groups.
 
@@ -259,7 +259,7 @@ Every atom listed in this file must exist in `<DYE>.pdb`.
 
 ---
 
-## `<DYE>_del.mol2`
+### `<DYE>_del.mol2`
 
 AMBER residue template of the attached dye.
 
@@ -274,28 +274,24 @@ The `_del` suffix indicates that atoms removed during attachment have already be
 
 ---
 
-## `<DYE>_del.frcmod`
+### `<DYE>_del.frcmod`
 
 Additional AMBER force-field parameters required for the dye.
-
 Typical entries include missing bond, angle, dihedral and nonbonded parameters not contained in the standard GAFF force field.
 
 ---
 
-## `connectparms.frcmod`
+### `connectparms.frcmod`
 
 Additional force-field parameters describing the interface between the dye and the DNA backbone.
-
 These parameters complete the bonded interactions between the GAFF-parameterized dye and the OL15 DNA force field.
 
-## Running the structure builder
+### Running the structure builder
 
 From the working directory containing `struc.params`, execute
-
 ```bash
-python $PYEDNA_HOME/scripts/create_structure.py
+bash create_structure.sh
 ```
-
 The principal output files are
 
 ```text
