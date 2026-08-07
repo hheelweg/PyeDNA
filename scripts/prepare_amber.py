@@ -12,7 +12,6 @@ def main():
     setup.prepare_input()
 
     print(f"Input structure : {setup.input_pdb}")
-    print(f"AMBER workspace : {setup.output_dir}")
     print(f"Bond file       : {setup.bond_file}")
     print(f"Dyes            : {', '.join(setup.dye_definitions)}")
     print(f"Bonds           : {len(setup.bonds)}")
