@@ -31,7 +31,31 @@ class DyeDefinition:
             attach=attach,
         )
 
+@dataclass
+class DyeInstance:
+    definition: DyeDefinition
+    residues: list[int]
+    name: str
+    segid: str
+    
+
 def load_dye_definitions(dockings, dye_dir):
     names = dict.fromkeys(docking.dye for docking in dockings)
 
     return {name: DyeDefinition.from_library(name, dye_dir) for name in names}
+
+
+def create_dye_instances(dockings, definitions):
+    counts = {}
+    segids = "BCDEFGHIJKLMNOPQRSTUVWXYZ"
+    instances = []
+
+    if len(dockings) > len(segids):
+        raise ValueError(f"At most {len(segids)} dye instances are supported")
+
+    for i, docking in enumerate(dockings):
+        counts[docking.dye] = counts.get(docking.dye, 0) + 1
+        name = f"{docking.dye}_{counts[docking.dye]}"
+        instances.append(DyeInstance(definition=definitions[docking.dye], residues=docking.residues, name=name, segid=segids[i]))
+
+    return instances

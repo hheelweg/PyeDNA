@@ -3,7 +3,7 @@ import os
 
 from pyedna.structure_config import StructureConfig
 from pyedna.structure import prepare_dna
-from pyedna.dye import load_dye_definitions
+from pyedna.dye import load_dye_definitions, create_dye_instances
 
 
 def main():
@@ -29,6 +29,12 @@ def main():
         print(f"  {dye.name}")
         print(f"    MOL2:   {dye.mol2}")
         print(f"    attach: {dye.attach}")
+
+
+    dye_instances = create_dye_instances(config.dockings, dye_definitions)
+    print("\nDye instances:")
+    for dye in dye_instances:
+        print(f"  {dye.name}: dye={dye.definition.name}, residues={dye.residues}, segid={dye.segid}")
 
 
 if __name__ == "__main__":
