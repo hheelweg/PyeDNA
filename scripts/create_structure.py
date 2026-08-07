@@ -9,7 +9,7 @@ def main():
     
 
     # (0) Read in parameters for DNA strcture creation and dye attachment from .params file
-    config = StructureConfig.from_file("struc.params")
+    config = StructureConfig.from_file("struc_gen.params")
 
     # (1) Prepare / locate DNA structure
     dna_pdb = prepare_dna(config=config,
