@@ -1,6 +1,10 @@
 from pathlib import Path
+import pandas as pd
+import shutil
 
 from . import fileproc as fp
+from .dye import load_dye_definitions
+from .structure_config import StructureConfig
 
 
 class AmberSetup:
@@ -18,7 +22,44 @@ class AmberSetup:
         if not self.input_pdb.exists():
             raise FileNotFoundError(f"Input structure not found: {self.input_pdb}")
 
-        self.output_dir = self.workdir / "amber" / self.output_name
+        self.bond_file = self.workdir / "structures" / "bonds.csv"
+        self.structure_config = None
+        self.dye_definitions = {}
+        self.bonds = None
+
+    def load_structure_data(self):
+        if not self.bond_file.exists():
+            raise FileNotFoundError(f"Bond file not found: {self.bond_file}")
+
+        struc_params = self.workdir / "struc.params"
+        if not struc_params.exists():
+            raise FileNotFoundError(f"Structure parameter file not found: {struc_params}")
+
+        self.structure_config = StructureConfig.from_file(struc_params)
+        self.dye_definitions = load_dye_definitions(
+            self.structure_config.dockings, os.environ["DYE_DIR"])
+        self.bonds = pd.read_csv(self.bond_file)
+
+        return self
+
+    def validate(self):
+        if self.bonds is None:
+            raise RuntimeError("Structure data has not been loaded")
+
+        required = {"resid1", "atom1", "resid2", "atom2"}
+        missing = required - set(self.bonds.columns)
+        if missing:
+            raise ValueError(f"{self.bond_file}: missing columns {sorted(missing)}")
+
+        return self
+
+    def prepare_input(self):
+        output_pdb = self.workdir / f"{self.output_name}.pdb"
+        shutil.copy2(self.input_pdb, output_pdb)
+        self.amber_pdb = output_pdb
+        return self
+
+    
 
     @classmethod
     def from_file(cls, path, workdir="."):
