@@ -18,6 +18,7 @@ class StructureConfig:
     dockings: list[DockingSpec]
     dna_sequence: Optional[str] = None
     dna_type: Optional[str] = None
+    top_models: int = 5
 
     def __post_init__(self):
         if self.dna_source not in {"generate", "library"}:
@@ -53,6 +54,9 @@ class StructureConfig:
 
             occupied.update(residues)
 
+        if self.top_models < 1:
+            raise ValueError("'top_models' must be at least 1")
+
     @classmethod
     def from_file(cls, path):
         params = fp.readParams(path)
@@ -65,6 +69,7 @@ class StructureConfig:
 
         dyes = params.get("dyes", [])
         dye_sites = params.get("dye_sites", [])
+        top_models = params.get("top_models", 5)
 
         if len(dyes) != len(dye_sites):
             raise ValueError(
@@ -77,11 +82,6 @@ class StructureConfig:
             for dye, residues in zip(dyes, dye_sites)
         ]
 
-        return cls(
-            dna_source=dna_source,
-            dna_name=dna_name,
-            structure_name=structure_name,
-            dockings=dockings,
-            dna_sequence=dna_sequence,
-            dna_type=dna_type,
-        )
+        return cls(dna_source=dna_source, dna_name=dna_name, structure_name=structure_name,
+                   dockings=dockings, dna_sequence=dna_sequence, dna_type=dna_type,
+                   top_models=top_models)

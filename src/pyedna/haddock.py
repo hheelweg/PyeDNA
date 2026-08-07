@@ -483,3 +483,40 @@ def write_docking_config(dna_pdb, instances, top_file, par_file, restraint_file,
     print(f"Wrote {output}")
 
     return output
+
+# HADDOCK postprocessing
+
+def select_best_models(run_dir, output_dir, top=5):
+    run_dir, output_dir = Path(run_dir), Path(output_dir)
+    flexref_dir = run_dir / "3_flexref"
+    capri_file = run_dir / "4_caprieval" / "capri_ss.tsv"
+
+    if not capri_file.exists():
+        raise FileNotFoundError(f"Missing CAPRI file: {capri_file}")
+
+    df = pd.read_csv(capri_file, sep="\t")
+    columns = ["vdw", "elec", "bonds", "angles", "dihe", "improper"]
+    missing = [column for column in columns + ["model"] if column not in df.columns]
+    if missing:
+        raise ValueError(f"Missing CAPRI columns: {missing}")
+
+    df["geometry_score"] = df[columns].sum(axis=1)
+    ranked = df.sort_values("geometry_score").reset_index(drop=True)
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    for old in output_dir.glob("*.pdb"):
+        old.unlink()
+
+    nmodels = min(top, len(ranked))
+
+    for i, model in enumerate(ranked["model"].iloc[:nmodels], start=1):
+        src = flexref_dir / model
+        dst = output_dir / f"dna_dyes_{i}.pdb"
+
+        if not src.exists():
+            raise FileNotFoundError(f"Missing flexref model: {src}")
+
+        shutil.copy2(src, dst)
+
+    print(f"Selected {nmodels} models in {output_dir}")
+    return ranked.iloc[:nmodels].copy()

@@ -25,3 +25,8 @@ rm -rf "$RUN_DIR"
 
 echo "Starting HADDOCK..."
 conda run -n haddock haddock3 docking_config.cfg
+
+echo "Selecting and processing HADDOCK structures..."
+python -m postprocess_structure
+
+echo "Structure generation complete."
