@@ -442,10 +442,6 @@ def write_docking_config(dna_pdb, instances, top_file, par_file, restraint_file,
     else:
         template = Path(template)
 
-    print(f"HADDOCK config template: {template}")
-    print(f"Template exists: {template.exists()}")
-    print(f"HADDOCK config output: {output}")
-
     dna_pdb, top_file, par_file, restraint_file = map(Path, (dna_pdb, top_file, par_file, restraint_file))
 
     required = [template, dna_pdb, top_file, par_file, restraint_file]
