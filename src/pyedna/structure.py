@@ -5,6 +5,7 @@ import os
 from collections import defaultdict
 import glob
 from pathlib import Path
+import shutil
 
 # from current package
 from . import fileproc as fp
@@ -14,16 +15,21 @@ from . import config
 
 
 
-def prepare_dna(config, dna_dir):
+
+def prepare_dna(config, dna_dir, workdir="."):
+    workdir = Path(workdir)
+    output_pdb = workdir / f"{config.dna_name}.pdb"
+
     if config.dna_source == "library":
-        dna_pdb = Path(dna_dir) / f"{config.dna_name}.pdb"
+        source_pdb = Path(dna_dir) / f"{config.dna_name}.pdb"
 
-        if not dna_pdb.exists():
-            raise FileNotFoundError(f"DNA template not found: {dna_pdb}")
+        if not source_pdb.exists():
+            raise FileNotFoundError(f"DNA template not found: {source_pdb}")
 
-        return dna_pdb
+        shutil.copy2(source_pdb, output_pdb)
+        print(f"Copied DNA template: {source_pdb} -> {output_pdb}")
 
-    if config.dna_source == "generate":
+    elif config.dna_source == "generate":
         if config.dna_sequence is None:
             raise ValueError("dna_sequence must be specified when dna_source='generate'")
         if config.dna_type is None:
@@ -33,15 +39,23 @@ def prepare_dna(config, dna_dir):
         dna.feedDNAseq(config.dna_sequence)
         dna.createDNA()
 
-        dna_pdb = Path(f"{config.dna_name}.pdb")
+        generated_pdb = Path(f"{config.dna_name}.pdb")
 
-        if not dna_pdb.exists():
-            raise FileNotFoundError(f"Generated DNA PDB not found: {dna_pdb}")
+        if not generated_pdb.exists():
+            raise FileNotFoundError(f"Generated DNA PDB not found: {generated_pdb}")
 
-        return dna_pdb
+        # This will become relevant if workdir != current directory
+        if generated_pdb.resolve() != output_pdb.resolve():
+            shutil.move(generated_pdb, output_pdb)
 
-    raise ValueError(f"Unknown dna_source {config.dna_source!r}; "
-                     "expected 'library' or 'generate'")
+        print(f"Generated DNA structure: {output_pdb}")
+
+    else:
+        raise ValueError(f"Unknown dna_source {config.dna_source!r}; "
+            "expected 'library' or 'generate'")
+
+    return output_pdb
+
 
 
 # class for creating DNA structure (.pdb) from DNA sequence

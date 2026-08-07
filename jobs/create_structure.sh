@@ -14,10 +14,6 @@ CONFIG_FILE="$PYEDNA_HOME/config.sh"
 
 if [[ -f "$CONFIG_FILE" ]]; then
     source "$CONFIG_FILE"
-    echo "PYEDNA_HOME = $PYEDNA_HOME"
-    echo "CONFIG_FILE = $CONFIG_FILE"
-    echo "DNA_DIR     = ${DNA_DIR:-NOT SET}"
-    echo "DYE_DIR     = ${DYE_DIR:-NOT SET}"
 else
     echo "Error: Configuration file ($CONFIG_FILE) not found!"
     exit 1
