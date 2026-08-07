@@ -1,6 +1,12 @@
 from dataclasses import dataclass
 from pathlib import Path
 
+@dataclass(frozen=True)
+class AttachmentAtom:
+    resname: str
+    resid: int
+    atom: str
+
 
 @dataclass(frozen=True)
 class DyeDefinition:
@@ -85,9 +91,5 @@ def create_dye_instances(dockings, definitions):
     return instances
 
 
-@dataclass(frozen=True)
-class AttachmentAtom:
-    resname: str
-    resid: int
-    atom: str
+
 

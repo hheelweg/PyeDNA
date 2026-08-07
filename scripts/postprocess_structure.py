@@ -23,11 +23,11 @@ def main():
         workdir=workdir)
 
     # (3) Restore original DNA/dye formatting in selected structures
-    reformat_docked_models(
-        instances=instances,
-        dna_template=workdir / "haddock" / f"{config.dna_name}_haddock.pdb",
-        bonding_csv=workdir / "haddock" / f"{config.dna_name}_bonding.csv",
-        structure_dir=structure_dir)
+    reformat_docked_models(instances=instances,
+                           dna_template=workdir / "haddock" / f"{config.dna_name}_haddock.pdb",
+                           bonding_csv=workdir / "haddock" / f"{config.dna_name}_bonding.csv",
+                           structure_dir=structure_dir,
+                           bond_file=workdir / "haddock" / "bonds.csv")
 
 
 if __name__ == "__main__":

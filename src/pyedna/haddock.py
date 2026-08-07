@@ -594,10 +594,49 @@ def group_template_residues(dna_template):
 
     return groups
 
-def reformat_docked_models(instances, dna_template, bonding_csv, structure_dir):
-    dna_template, bonding_csv, structure_dir = map(Path, (dna_template, bonding_csv, structure_dir))
 
-    for path in (dna_template, bonding_csv):
+def write_final_bonds(bond_file, output, residue_map):
+    bond_file, output = Path(bond_file), Path(output)
+    bonds = pd.read_csv(bond_file, keep_default_na=False)
+    final = []
+
+    for _, bond in bonds.iterrows():
+        left_key = (
+            bond["left_type"],
+            bond["left_instance"],
+            int(bond["left_resid"]),
+        )
+        right_key = (
+            bond["right_type"],
+            bond["right_instance"],
+            int(bond["right_resid"]),
+        )
+
+        if left_key not in residue_map:
+            raise KeyError(f"Could not map bond residue {left_key}")
+        if right_key not in residue_map:
+            raise KeyError(f"Could not map bond residue {right_key}")
+
+        final.append({
+            "resid1": residue_map[left_key],
+            "atom1": bond["left_atom"],
+            "resid2": residue_map[right_key],
+            "atom2": bond["right_atom"],
+            "source1": bond["left_instance"] or "DNA",
+            "source2": bond["right_instance"] or "DNA",
+        })
+
+    pd.DataFrame(final).to_csv(output, index=False)
+    print(f"Wrote {output}")
+    return output
+
+
+def reformat_docked_models(instances, dna_template, bonding_csv, structure_dir,
+                           bond_file="haddock/bonds.csv"):
+    dna_template, bonding_csv, structure_dir, bond_file = map(
+        Path, (dna_template, bonding_csv, structure_dir, bond_file))
+
+    for path in (dna_template, bonding_csv, bond_file):
         if not path.exists():
             raise FileNotFoundError(f"Missing required file: {path}")
 
@@ -614,12 +653,20 @@ def reformat_docked_models(instances, dna_template, bonding_csv, structure_dir):
             insertion_blocks[-1]["instances"].append(instance)
             insertion_blocks[-1]["end"] = end
         else:
-            insertion_blocks.append({"insert_after": start - 1, "end": end, "instances": [instance]})
+            insertion_blocks.append({
+                "insert_after": start - 1,
+                "end": end,
+                "instances": [instance],
+            })
 
     insertions = {block["insert_after"]: block["instances"] for block in insertion_blocks}
+    final_residue_map = None
 
     for pdb in sorted(structure_dir.glob("*.pdb")):
-        coordinates = [line for line in pdb.read_text().splitlines() if line.startswith(("ATOM  ", "HETATM"))]
+        coordinates = [
+            line for line in pdb.read_text().splitlines()
+            if line.startswith(("ATOM  ", "HETATM"))
+        ]
 
         docked_dna = {
             atom_key(line): line for line in coordinates
@@ -636,13 +683,12 @@ def reformat_docked_models(instances, dna_template, bonding_csv, structure_dir):
             missing = required - set(mapping.columns)
             if missing:
                 raise ValueError(f"{instance.mapping}: missing columns {sorted(missing)}")
-
             if mapping["haddock_name"].duplicated().any():
                 raise ValueError(f"{instance.mapping}: haddock_name must be unique")
-
             if len(raw_dye) != len(mapping):
                 raise ValueError(
-                    f"{pdb.name}: {instance.name} has {len(raw_dye)} atoms; expected {len(mapping)}"
+                    f"{pdb.name}: {instance.name} has {len(raw_dye)} atoms; "
+                    f"expected {len(mapping)}"
                 )
 
             atom_map = mapping.set_index("haddock_name").to_dict("index")
@@ -668,13 +714,15 @@ def reformat_docked_models(instances, dna_template, bonding_csv, structure_dir):
                 reverse=attachment["5'"].resid > attachment["3'"].resid)
 
             restored.sort(key=lambda x: x[1])
-            groups = [
-                [line for resid, _, line in restored if resid == original_resid]
-                for original_resid in residue_ids
-            ]
+            groups = []
 
-            if any(not group for group in groups):
-                raise ValueError(f"{pdb.name}: incomplete residue grouping for {instance.name}")
+            for original_resid in residue_ids:
+                lines = [line for resid, _, line in restored if resid == original_resid]
+                if not lines:
+                    raise ValueError(
+                        f"{pdb.name}: incomplete residue grouping for {instance.name}"
+                    )
+                groups.append((original_resid, lines))
 
             dye_groups[instance.name] = groups
 
@@ -693,20 +741,34 @@ def reformat_docked_models(instances, dna_template, bonding_csv, structure_dir):
                 docked_line = docked_dna[key]
                 rebuilt.append(template_line[:30] + docked_line[30:54] + template_line[54:])
 
-            groups.append({"lines": rebuilt, "ter": original_resid in ter_after})
+            groups.append({
+                "lines": rebuilt,
+                "ter": original_resid in ter_after,
+                "type": "dna",
+                "instance": "",
+                "original_resid": original_resid,
+            })
 
             for instance in insertions.get(original_resid, []):
-                for dye_lines in dye_groups[instance.name]:
-                    groups.append({"lines": dye_lines, "ter": False})
+                for dye_resid, dye_lines in dye_groups[instance.name]:
+                    groups.append({
+                        "lines": dye_lines,
+                        "ter": False,
+                        "type": "dye",
+                        "instance": instance.name,
+                        "original_resid": dye_resid,
+                    })
                 inserted.add(instance.name)
 
         expected = {instance.name for instance in instances}
         if inserted != expected:
             raise RuntimeError(f"{pdb.name}: failed to insert {sorted(expected - inserted)}")
 
-        output, serial = [], 1
+        output, serial, residue_map = [], 1, {}
 
         for new_resid, group in enumerate(groups, start=1):
+            key = (group["type"], group["instance"], group["original_resid"])
+            residue_map[key] = new_resid
             rewritten = []
 
             for line in group["lines"]:
@@ -721,7 +783,14 @@ def reformat_docked_models(instances, dna_template, bonding_csv, structure_dir):
                 output.append(make_ter(rewritten[-1], serial))
                 serial += 1
 
+        if final_residue_map is None:
+            final_residue_map = residue_map
+        elif residue_map != final_residue_map:
+            raise RuntimeError(f"{pdb.name}: residue numbering differs between selected models")
+
         output.append("END")
         pdb.write_text("\n".join(output) + "\n")
         print(f"Reformatted {pdb}")
+
+    write_final_bonds(bond_file, structure_dir / "bonds.csv", final_residue_map)
 
