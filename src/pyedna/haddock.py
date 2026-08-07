@@ -214,28 +214,11 @@ def prepare_dna_for_haddock(dna_pdb, instances, workdir):
     return output_pdb, bonding_csv
 
 
-def read_attachment(instance):
-    data = {}
-
-    for line in Path(instance.attach).read_text().splitlines():
-        if not line.strip() or line.lstrip().startswith("#"):
-            continue
-
-        end, resname, resid, atom = line.split()
-        if end not in {"5'", "3'"}:
-            raise ValueError(f"{instance.attach}: unknown end {end!r}")
-
-        data[end] = {"resname": resname, "resid": int(resid), "atom": atom}
-
-    if set(data) != {"5'", "3'"}:
-        raise ValueError(f"{instance.attach}: must define exactly 5' and 3'")
-
-    return data
-
 
 def write_bond_restraints(instances, dna_pdb, output="haddock/bond_restraint.tbl",
-                          dna_segid="A", target=1.5, lower_tol=0.2, upper_tol=0.2):
-    dna_pdb, output = Path(dna_pdb), Path(output)
+                          bond_output="haddock/bonds.csv", dna_segid="A",
+                          target=1.5, lower_tol=0.2, upper_tol=0.2):
+    dna_pdb, output, bond_output = map(Path, (dna_pdb, output, bond_output))
 
     if not dna_pdb.exists():
         raise FileNotFoundError(f"Missing DNA PDB: {dna_pdb}")
@@ -252,24 +235,22 @@ def write_bond_restraints(instances, dna_pdb, output="haddock/bond_restraint.tbl
     for instance in instances:
         if instance.mapping is None or not Path(instance.mapping).exists():
             raise FileNotFoundError(f"{instance.name}: missing mapping file: {instance.mapping}")
-        if instance.attach is None or not Path(instance.attach).exists():
-            raise FileNotFoundError(f"{instance.name}: missing attachment file: {instance.attach}")
 
-        attachment = read_attachment(instance)
+        attachment = instance.definition.read_attachment()
         mapping = pd.read_csv(instance.mapping)
         haddock_names = {}
 
         for end, atom in attachment.items():
             match = mapping[
-                (mapping["original_resname"].astype(str) == atom["resname"])
-                & (mapping["original_resid"].astype(int) == atom["resid"])
-                & (mapping["original_name"].astype(str) == atom["atom"])
+                (mapping["original_resname"].astype(str) == atom.resname)
+                & (mapping["original_resid"].astype(int) == atom.resid)
+                & (mapping["original_name"].astype(str) == atom.atom)
             ]
 
             if len(match) != 1:
                 raise ValueError(
                     f"{instance.name} {end}: expected one mapping for "
-                    f"{atom['resname']} {atom['resid']} {atom['atom']}, found {len(match)}"
+                    f"{atom.resname} {atom.resid} {atom.atom}, found {len(match)}"
                 )
 
             haddock_names[end] = str(match.iloc[0]["haddock_name"])
@@ -278,74 +259,86 @@ def write_bond_restraints(instances, dna_pdb, output="haddock/bond_restraint.tbl
             "instance": instance,
             "start": min(instance.residues),
             "end": max(instance.residues),
-            "atom5": haddock_names["5'"],
-            "atom3": haddock_names["3'"],
+            "attach5": attachment["5'"],
+            "attach3": attachment["3'"],
+            "haddock5": haddock_names["5'"],
+            "haddock3": haddock_names["3'"],
         })
 
     ordered = sorted(docking_data, key=lambda x: x["start"])
-    blocks = []
+    blocks, bonds = [], []
 
     for i, current in enumerate(ordered):
         instance = current["instance"]
-        current_segid = instance.segid
-        current_atom5 = current["atom5"]
-        current_atom3 = current["atom3"]
-
         previous = ordered[i - 1] if i else None
+        following = ordered[i + 1] if i + 1 < len(ordered) else None
+
         adjacent_previous = previous is not None and previous["end"] + 1 == current["start"]
+        adjacent_following = following is not None and current["end"] + 1 == following["start"]
 
         if adjacent_previous:
             previous_instance = previous["instance"]
-            previous_segid = previous_instance.segid
-            previous_atom3 = previous["atom3"]
 
             blocks.append(
                 f"! {previous_instance.name} 3' to {instance.name} 5'\n"
-                f"assign (segid {previous_segid} and resid 1 and name {previous_atom3})\n"
-                f"       (segid {current_segid} and resid 1 and name {current_atom5})\n"
+                f"assign (segid {previous_instance.segid} and resid 1 and name {previous['haddock3']})\n"
+                f"       (segid {instance.segid} and resid 1 and name {current['haddock5']})\n"
                 f"       {target} {lower_tol} {upper_tol}"
             )
+
+            bonds.append({
+                "left_type": "dye", "left_instance": previous_instance.name,
+                "left_resid": previous["attach3"].resid, "left_atom": previous["attach3"].atom,
+                "right_type": "dye", "right_instance": instance.name,
+                "right_resid": current["attach5"].resid, "right_atom": current["attach5"].atom,
+            })
 
         else:
             left = current["start"] - 1
 
             if (left, "O3'") not in dna_atoms:
-                raise ValueError(
-                    f"{instance.name}: DNA atom resid {left} name \"O3'\" "
-                    f"not found in {dna_pdb}"
-                )
+                raise ValueError(f"{instance.name}: DNA atom resid {left} name \"O3'\" not found in {dna_pdb}")
 
             blocks.append(
                 f"! DNA {left} to {instance.name} 5'\n"
                 f"assign (segid {dna_segid} and resid {left} and name O3')\n"
-                f"       (segid {current_segid} and resid 1 and name {current_atom5})\n"
+                f"       (segid {instance.segid} and resid 1 and name {current['haddock5']})\n"
                 f"       {target} {lower_tol} {upper_tol}"
             )
 
-        following = ordered[i + 1] if i + 1 < len(ordered) else None
-        adjacent_following = following is not None and current["end"] + 1 == following["start"]
+            bonds.append({
+                "left_type": "dna", "left_instance": "", "left_resid": left, "left_atom": "O3'",
+                "right_type": "dye", "right_instance": instance.name,
+                "right_resid": current["attach5"].resid, "right_atom": current["attach5"].atom,
+            })
 
         if not adjacent_following:
             right = current["end"] + 1
 
             if (right, "P") not in dna_atoms:
-                raise ValueError(
-                    f"{instance.name}: DNA atom resid {right} name 'P' "
-                    f"not found in {dna_pdb}"
-                )
+                raise ValueError(f"{instance.name}: DNA atom resid {right} name 'P' not found in {dna_pdb}")
 
             blocks.append(
                 f"! {instance.name} 3' to DNA {right}\n"
-                f"assign (segid {current_segid} and resid 1 and name {current_atom3})\n"
+                f"assign (segid {instance.segid} and resid 1 and name {current['haddock3']})\n"
                 f"       (segid {dna_segid} and resid {right} and name P)\n"
                 f"       {target} {lower_tol} {upper_tol}"
             )
 
+            bonds.append({
+                "left_type": "dye", "left_instance": instance.name,
+                "left_resid": current["attach3"].resid, "left_atom": current["attach3"].atom,
+                "right_type": "dna", "right_instance": "", "right_resid": right, "right_atom": "P",
+            })
+
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text("\n\n".join(blocks) + "\n")
+    pd.DataFrame(bonds).to_csv(bond_output, index=False)
 
     print(f"Wrote {output}")
-    return output
+    print(f"Wrote {bond_output}")
+
+    return output, bond_output
 
 # Haddock3 .cfg file
 
@@ -669,10 +662,10 @@ def reformat_docked_models(instances, dna_template, bonding_csv, structure_dir):
 
                 restored.append((int(entry["original_resid"]), int(entry["map_order"]), line))
 
-            attachment = read_attachment(instance)
+            attachment = instance.definition.read_attachment()
             residue_ids = sorted(
                 mapping["original_resid"].astype(int).unique(),
-                reverse=attachment["5'"]["resid"] > attachment["3'"]["resid"])
+                reverse=attachment["5'"].resid > attachment["3'"].resid)
 
             restored.sort(key=lambda x: x[1])
             groups = [

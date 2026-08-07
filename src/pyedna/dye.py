@@ -35,6 +35,26 @@ class DyeDefinition:
                    frcmod=frcmod,
                    attach=attach,)
 
+
+    def read_attachment(self):
+        data = {}
+
+        for line in self.attach.read_text().splitlines():
+            if not line.strip() or line.lstrip().startswith("#"):
+                continue
+
+            end, resname, resid, atom = line.split()
+
+            if end not in {"5'", "3'"}:
+                raise ValueError(f"{self.attach}: unknown end {end!r}")
+
+            data[end] = AttachmentAtom(resname=resname, resid=int(resid), atom=atom)
+
+        if set(data) != {"5'", "3'"}:
+            raise ValueError(f"{self.attach}: must define exactly 5' and 3'")
+
+        return data
+
 @dataclass
 class DyeInstance:
     definition: DyeDefinition
@@ -63,3 +83,11 @@ def create_dye_instances(dockings, definitions):
         instances.append(DyeInstance(definition=definitions[docking.dye], residues=docking.residues, name=name, segid=segids[i]))
 
     return instances
+
+
+@dataclass(frozen=True)
+class AttachmentAtom:
+    resname: str
+    resid: int
+    atom: str
+
