@@ -16,8 +16,6 @@ def main():
     print(config.dockings)
 
 
-
-
 if __name__ == "__main__":
 
     main()

@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Optional
 
 from . import fileproc as fp
 
@@ -9,14 +10,15 @@ class DockingSpec:
     residues: list[int]
 
 
+
 @dataclass
 class StructureConfig:
     dna_source: str
     dna_name: str
     structure_name: str
     dockings: list[DockingSpec]
-    dna_sequence: str | None = None
-    dna_type: str | None = None
+    dna_sequence: Optional[str] = None
+    dna_type: Optional[str] = None
 
     @classmethod
     def from_file(cls, path):
