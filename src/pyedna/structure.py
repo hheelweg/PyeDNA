@@ -4,12 +4,44 @@ import subprocess
 import os
 from collections import defaultdict
 import glob
+from pathlib import Path
 
 # from current package
 from . import fileproc as fp
 from . import geomtools as geo
 from . import utils
 from . import config
+
+
+
+def prepare_dna(config, dna_dir):
+    if config.dna_source == "library":
+        dna_pdb = Path(dna_dir) / f"{config.dna_name}.pdb"
+
+        if not dna_pdb.exists():
+            raise FileNotFoundError(f"DNA template not found: {dna_pdb}")
+
+        return dna_pdb
+
+    if config.dna_source == "generate":
+        if config.dna_sequence is None:
+            raise ValueError("dna_sequence must be specified when dna_source='generate'")
+        if config.dna_type is None:
+            raise ValueError("dna_type must be specified when dna_source='generate'")
+
+        dna = CreateDNA(name=config.dna_name, type=config.dna_type)
+        dna.feedDNAseq(config.dna_sequence)
+        dna.createDNA()
+
+        dna_pdb = Path(f"{config.dna_name}.pdb")
+
+        if not dna_pdb.exists():
+            raise FileNotFoundError(f"Generated DNA PDB not found: {dna_pdb}")
+
+        return dna_pdb
+
+    raise ValueError(f"Unknown dna_source {config.dna_source!r}; "
+                     "expected 'library' or 'generate'")
 
 
 # class for creating DNA structure (.pdb) from DNA sequence

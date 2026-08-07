@@ -2,18 +2,22 @@ import pyedna
 import os
 
 from pyedna.structure_config import StructureConfig
+from pyedna.structure import prepare_dna
 
-# TODO : make this a function that feeds in information about the molecules (dyes) and 
-# about the DNA sequence and returns a DNA+dye structure (maybe .pdb) and also the necessary
-# inputs for molecular dynamics. make this such that the orientation of dyes to DNA is correctly specified. 
+
 def main():
     
 
     # (0) Read in parameters for DNA strcture creation and dye attachment from .params file
     config = StructureConfig.from_file("struc.params")
 
-    print(config)
-    print(config.dockings)
+    # (1) Prepare / locate DNA structure
+    dna_pdb = prepare_dna(
+        config=config,
+        dna_dir=os.environ["DNA_DIR"],
+    )
+
+    print(f"DNA structure: {dna_pdb}")
 
 
 if __name__ == "__main__":
