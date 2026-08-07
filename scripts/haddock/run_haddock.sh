@@ -13,6 +13,15 @@ if [[ -z "$PYEDNA_HOME" ]]; then
     exit 1
 fi
 
+if [[ ! -f docking_config.cfg ]]; then
+    echo "Error: docking_config.cfg not found."
+    exit 1
+fi
+
 source "$PYEDNA_HOME/config.sh"
 
+RUN_DIR="haddock/run"
+rm -rf "$RUN_DIR"
+
+echo "Starting HADDOCK..."
 conda run -n haddock haddock3 docking_config.cfg
