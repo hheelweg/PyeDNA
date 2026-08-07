@@ -121,3 +121,43 @@ def prepare_dye_topologies(instances, workdir, script):
         prepare_dye_topology(instance, workdir, script)
     return instances
 
+
+def prepare_dna_for_haddock(dna_pdb, instances, workdir):
+    dna_pdb, workdir = Path(dna_pdb), Path(workdir)
+    haddock_dir = workdir / "haddock"
+    output_pdb = haddock_dir / f"{dna_pdb.stem}_haddock.pdb"
+    bonding_csv = haddock_dir / f"{dna_pdb.stem}_bonding.csv"
+
+    if not dna_pdb.exists():
+        raise FileNotFoundError(f"DNA PDB not found: {dna_pdb}")
+
+    remove_resids = {resid for instance in instances for resid in instance.residues}
+    haddock_dir.mkdir(parents=True, exist_ok=True)
+
+    kept, ter_after, last_resid = [], [], None
+
+    for line in dna_pdb.read_text().splitlines():
+        if line.startswith(("ATOM  ", "HETATM")):
+            resid = int(line[22:26])
+            if resid in remove_resids:
+                continue
+            kept.append(line)
+            last_resid = resid
+        elif line.startswith("TER"):
+            if last_resid is not None:
+                kept.append(line)
+                ter_after.append(last_resid)
+        else:
+            kept.append(line)
+
+    output_pdb.write_text("\n".join(kept) + "\n")
+
+    with bonding_csv.open("w", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerow(["ter_after_resid"])
+        writer.writerows([[resid] for resid in ter_after])
+
+    print(f"Wrote {output_pdb}")
+    print(f"Wrote {bonding_csv}")
+
+    return output_pdb, bonding_csv
