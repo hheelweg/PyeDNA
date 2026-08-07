@@ -51,9 +51,9 @@ def main():
     haddock_dna_pdb, bonding_csv = prepare_dna_for_haddock(dna_pdb=dna_pdb, instances=dye_instances, workdir=Path.cwd())
 
     # (6) Generate HADDOCK bond restraints
-    restraint_file = write_bond_restraints(instances=dye_instances,
-                                           dna_pdb=haddock_dna_pdb,
-                                           output=Path.cwd() / "haddock" / "bond_restraint.tbl")
+    restraint_file, bond_file = write_bond_restraints(dye_instances, haddock_dna_pdb,
+                                                      output=Path.cwd() / "haddock" / "bond_restraint.tbl",
+                                                      bond_output=Path.cwd() / "haddock" / "bonds.csv")
 
     # (7) Generate HADDOCK configuration
     user_docking_config = Path.cwd() / "user_docking_config.toml"
