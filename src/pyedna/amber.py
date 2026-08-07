@@ -11,8 +11,8 @@ from .structure_config import StructureConfig
 class AmberSetup:
     def __init__(self, input_pdb, output_name, workdir=".", water_model="TIP3P",
                 solvent_padding=20.0, positive_ion="Na+", negative_ion="Cl-",
-                neutralize=True, dna_forcefield="leaprc.DNA.bsc1",
-                dye_forcefield="leaprc.gaff2"):
+                neutralize=True, dna_forcefield="leaprc.DNA.OL15",
+                dye_forcefield="leaprc.gaff", water_forcefield="leaprc.water.tip3p"):
         self.workdir = Path(workdir)
         self.input_pdb = Path(input_pdb)
         self.output_name = output_name
@@ -23,6 +23,7 @@ class AmberSetup:
         self.neutralize = neutralize
         self.dna_forcefield = dna_forcefield
         self.dye_forcefield = dye_forcefield
+        self.water_forcefield = water_forcefield
 
         if not self.input_pdb.exists():
             raise FileNotFoundError(f"Input structure not found: {self.input_pdb}")
@@ -103,20 +104,32 @@ class AmberSetup:
             raise RuntimeError("AMBER input structure has not been prepared")
 
         tleap_file = self.workdir / f"{self.output_name}_tleap.in"
+
         lines = [
             f"source {self.dna_forcefield}",
             f"source {self.dye_forcefield}",
+            f"source {self.water_forcefield}",
             "",
         ]
 
+        # Load dye templates and parameters
         for dye in self.dye_definitions.values():
             lines += [
                 f"# {dye.name}",
-                f"loadAmberParams {dye.frcmod}",
                 f"{dye.name} = loadMol2 {dye.mol2}",
-                "",
+                f"loadAmberParams {dye.frcmod}",
+                f"loadAmberParams {dye.connect_frcmod}",
             ]
 
+            # Retype/rename attachment-region atoms to DNA force-field conventions
+            for mapping in dye.read_amber_mapping():
+                resid = dye.get_atom_resid(mapping.atom)
+                lines.append(f"set {dye.name}.{resid}.{mapping.atom} type {mapping.type}")
+                lines.append(f"set {dye.name}.{resid}.{mapping.atom} name {mapping.name}")
+
+            lines.append("")
+
+        # Load final cleaned DNA+dye PDB
         lines += [
             f"mol = loadPdb {self.amber_pdb}",
             "",
