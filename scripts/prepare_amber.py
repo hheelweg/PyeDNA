@@ -10,6 +10,7 @@ def main():
     setup.load_structure_data()
     setup.validate()
     setup.prepare_input()
+    setup.write_tleap_input()
 
     print(f"Input structure : {setup.input_pdb}")
     print(f"Bond file       : {setup.bond_file}")
