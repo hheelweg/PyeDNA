@@ -59,10 +59,43 @@ class AmberSetup:
 
         return self
 
+    def amber_atom_name(self, source, atom):
+        if source == "DNA":
+            return atom
+
+        dye_name = source.rsplit("_", 1)[0]
+        dye = self.dye_definitions[dye_name]
+        mappings = {mapping.atom: mapping.name for mapping in dye.read_amber_mapping()}
+
+        return mappings.get(atom, atom)
+
     def prepare_input(self):
         output_pdb = self.workdir / f"{self.output_name}.pdb"
-        shutil.copy2(self.input_pdb, output_pdb)
+        lines = self.input_pdb.read_text().splitlines()
+
+        amber_mappings = {
+            dye.name: {mapping.atom: mapping.name for mapping in dye.read_amber_mapping()}
+            for dye in self.dye_definitions.values()}
+
+        output = []
+        for line in lines:
+            if not line.startswith(("ATOM  ", "HETATM")):
+                output.append(line)
+                continue
+
+            resname = line[17:20].strip()
+            atom_name = line[12:16].strip()
+
+            if resname in amber_mappings and atom_name in amber_mappings[resname]:
+                new_name = amber_mappings[resname][atom_name]
+                line = line[:12] + f"{new_name:>4s}" + line[16:]
+
+            output.append(line)
+
+        output_pdb.write_text("\n".join(output) + "\n")
         self.amber_pdb = output_pdb
+
+        print(f"Prepared AMBER PDB: {output_pdb}")
         return self
 
     
@@ -137,9 +170,12 @@ class AmberSetup:
         ]
 
         for _, bond in self.bonds.iterrows():
+            atom1 = self.amber_atom_name(bond["source1"], bond["atom1"])
+            atom2 = self.amber_atom_name(bond["source2"], bond["atom2"])
+
             lines.append(
-                f"bond mol.{int(bond['resid1'])}.{bond['atom1']} "
-                f"mol.{int(bond['resid2'])}.{bond['atom2']}"
+                f"bond mol.{int(bond['resid1'])}.{atom1} "
+                f"mol.{int(bond['resid2'])}.{atom2}"
             )
 
         water_box = {"TIP3P": "TIP3PBOX"}.get(self.water_model)
