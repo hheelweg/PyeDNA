@@ -1,6 +1,7 @@
 from pathlib import Path
 import pandas as pd
 import shutil
+import os
 
 from . import fileproc as fp
 from .dye import load_dye_definitions
