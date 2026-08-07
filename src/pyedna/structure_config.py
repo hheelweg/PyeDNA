@@ -31,17 +31,17 @@ class StructureConfig:
         dna_type = params.get("dna_type")
 
         dyes = params.get("dyes", [])
-        dye_residues = params.get("dye_residues", [])
+        dye_sites = params.get("dye_sites", [])
 
-        if len(dyes) != len(dye_residues):
+        if len(dyes) != len(dye_sites):
             raise ValueError(
-                f"'dyes' and 'dye_residues' must have the same length "
-                f"({len(dyes)} != {len(dye_residues)})"
+                f"'dyes' and 'dye_sites' must have the same length "
+                f"({len(dyes)} != {len(dye_sites)})"
             )
 
         dockings = [
             DockingSpec(dye=dye, residues=list(residues))
-            for dye, residues in zip(dyes, dye_residues)
+            for dye, residues in zip(dyes, dye_sites)
         ]
 
         return cls(
