@@ -3,6 +3,7 @@ import re
 import shutil
 import subprocess
 import csv
+import pandas as pd
 import numpy as np
 import MDAnalysis as mda
 from scipy.optimize import linear_sum_assignment
@@ -161,3 +162,117 @@ def prepare_dna_for_haddock(dna_pdb, instances, workdir):
     print(f"Wrote {bonding_csv}")
 
     return output_pdb, bonding_csv
+
+
+def read_attachment(instance):
+    data = {}
+
+    for line in Path(instance.attach).read_text().splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+
+        end, resname, resid, atom = line.split()
+        if end not in {"5'", "3'"}:
+            raise ValueError(f"{instance.attach}: unknown end {end!r}")
+
+        data[end] = {"resname": resname, "resid": int(resid), "atom": atom}
+
+    if set(data) != {"5'", "3'"}:
+        raise ValueError(f"{instance.attach}: must define exactly 5' and 3'")
+
+    return data
+
+
+def write_bond_restraints(instances, dna_pdb, output, dna_segid="A", target=1.5, lower_tol=0.2, upper_tol=0.2):
+    dna_pdb, output = Path(dna_pdb), Path(output)
+
+    if not dna_pdb.exists():
+        raise FileNotFoundError(f"DNA PDB not found: {dna_pdb}")
+
+    dna_atoms = {
+        (int(line[22:26]), line[12:16].strip())
+        for line in dna_pdb.read_text().splitlines()
+        if line.startswith(("ATOM  ", "HETATM"))
+    }
+
+    docking_data = []
+
+    for instance in instances:
+        attachment = read_attachment(instance)
+        mapping = pd.read_csv(instance.mapping)
+        haddock_names = {}
+
+        for end, atom in attachment.items():
+            match = mapping[
+                (mapping["original_resname"].astype(str) == atom["resname"])
+                & (mapping["original_resid"].astype(int) == atom["resid"])
+                & (mapping["original_name"].astype(str) == atom["atom"])
+            ]
+
+            if len(match) != 1:
+                raise ValueError(
+                    f"{instance.name} {end}: expected one mapping for "
+                    f"{atom['resname']} {atom['resid']} {atom['atom']}, found {len(match)}"
+                )
+
+            haddock_names[end] = str(match.iloc[0]["haddock_name"])
+
+        docking_data.append({
+            "instance": instance,
+            "start": min(instance.residues),
+            "end": max(instance.residues),
+            "5'": haddock_names["5'"],
+            "3'": haddock_names["3'"],
+        })
+
+    ordered = sorted(docking_data, key=lambda item: item["start"])
+    blocks = []
+
+    for i, current in enumerate(ordered):
+        instance = current["instance"]
+        previous = ordered[i - 1] if i else None
+        following = ordered[i + 1] if i + 1 < len(ordered) else None
+
+        adjacent_previous = previous is not None and previous["end"] + 1 == current["start"]
+        adjacent_following = following is not None and current["end"] + 1 == following["start"]
+
+        if adjacent_previous:
+            previous_instance = previous["instance"]
+
+            blocks.append(
+                f"! {previous_instance.name} 3' to {instance.name} 5'\n"
+                f"assign (segid {previous_instance.segid} and resid 1 and name {previous['3\'']})\n"
+                f"       (segid {instance.segid} and resid 1 and name {current['5\'']})\n"
+                f"       {target} {lower_tol} {upper_tol}"
+            )
+        else:
+            left = current["start"] - 1
+
+            if (left, "O3'") not in dna_atoms:
+                raise ValueError(f"{instance.name}: DNA atom resid {left} name \"O3'\" not found in {dna_pdb}")
+
+            blocks.append(
+                f"! DNA {left} to {instance.name} 5'\n"
+                f"assign (segid {dna_segid} and resid {left} and name O3')\n"
+                f"       (segid {instance.segid} and resid 1 and name {current['5\'']})\n"
+                f"       {target} {lower_tol} {upper_tol}"
+            )
+
+        if not adjacent_following:
+            right = current["end"] + 1
+
+            if (right, "P") not in dna_atoms:
+                raise ValueError(f"{instance.name}: DNA atom resid {right} name 'P' not found in {dna_pdb}")
+
+            blocks.append(
+                f"! {instance.name} 3' to DNA {right}\n"
+                f"assign (segid {instance.segid} and resid 1 and name {current['3\'']})\n"
+                f"       (segid {dna_segid} and resid {right} and name P)\n"
+                f"       {target} {lower_tol} {upper_tol}"
+            )
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text("\n\n".join(blocks) + "\n")
+
+    print(f"Wrote {output}")
+    return output
