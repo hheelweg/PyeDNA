@@ -183,21 +183,28 @@ def read_attachment(instance):
     return data
 
 
-def write_bond_restraints(instances, dna_pdb, output, dna_segid="A", target=1.5, lower_tol=0.2, upper_tol=0.2):
+def write_bond_restraints(instances, dna_pdb, output="haddock/bond_restraint.tbl",
+                          dna_segid="A", target=1.5, lower_tol=0.2, upper_tol=0.2):
     dna_pdb, output = Path(dna_pdb), Path(output)
 
     if not dna_pdb.exists():
-        raise FileNotFoundError(f"DNA PDB not found: {dna_pdb}")
+        raise FileNotFoundError(f"Missing DNA PDB: {dna_pdb}")
 
     dna_atoms = {
         (int(line[22:26]), line[12:16].strip())
         for line in dna_pdb.read_text().splitlines()
         if line.startswith(("ATOM  ", "HETATM"))
+        and (not line[72:76].strip() or line[72:76].strip() == dna_segid)
     }
 
     docking_data = []
 
     for instance in instances:
+        if instance.mapping is None or not Path(instance.mapping).exists():
+            raise FileNotFoundError(f"{instance.name}: missing mapping file: {instance.mapping}")
+        if instance.attach is None or not Path(instance.attach).exists():
+            raise FileNotFoundError(f"{instance.name}: missing attachment file: {instance.attach}")
+
         attachment = read_attachment(instance)
         mapping = pd.read_csv(instance.mapping)
         haddock_names = {}
@@ -221,52 +228,65 @@ def write_bond_restraints(instances, dna_pdb, output, dna_segid="A", target=1.5,
             "instance": instance,
             "start": min(instance.residues),
             "end": max(instance.residues),
-            "5'": haddock_names["5'"],
-            "3'": haddock_names["3'"],
+            "atom5": haddock_names["5'"],
+            "atom3": haddock_names["3'"],
         })
 
-    ordered = sorted(docking_data, key=lambda item: item["start"])
+    ordered = sorted(docking_data, key=lambda x: x["start"])
     blocks = []
 
     for i, current in enumerate(ordered):
         instance = current["instance"]
-        previous = ordered[i - 1] if i else None
-        following = ordered[i + 1] if i + 1 < len(ordered) else None
+        current_segid = instance.segid
+        current_atom5 = current["atom5"]
+        current_atom3 = current["atom3"]
 
+        previous = ordered[i - 1] if i else None
         adjacent_previous = previous is not None and previous["end"] + 1 == current["start"]
-        adjacent_following = following is not None and current["end"] + 1 == following["start"]
 
         if adjacent_previous:
             previous_instance = previous["instance"]
+            previous_segid = previous_instance.segid
+            previous_atom3 = previous["atom3"]
 
             blocks.append(
                 f"! {previous_instance.name} 3' to {instance.name} 5'\n"
-                f"assign (segid {previous_instance.segid} and resid 1 and name {previous['3\'']})\n"
-                f"       (segid {instance.segid} and resid 1 and name {current['5\'']})\n"
+                f"assign (segid {previous_segid} and resid 1 and name {previous_atom3})\n"
+                f"       (segid {current_segid} and resid 1 and name {current_atom5})\n"
                 f"       {target} {lower_tol} {upper_tol}"
             )
+
         else:
             left = current["start"] - 1
 
             if (left, "O3'") not in dna_atoms:
-                raise ValueError(f"{instance.name}: DNA atom resid {left} name \"O3'\" not found in {dna_pdb}")
+                raise ValueError(
+                    f"{instance.name}: DNA atom resid {left} name \"O3'\" "
+                    f"not found in {dna_pdb}"
+                )
 
             blocks.append(
                 f"! DNA {left} to {instance.name} 5'\n"
                 f"assign (segid {dna_segid} and resid {left} and name O3')\n"
-                f"       (segid {instance.segid} and resid 1 and name {current['5\'']})\n"
+                f"       (segid {current_segid} and resid 1 and name {current_atom5})\n"
                 f"       {target} {lower_tol} {upper_tol}"
             )
+
+        following = ordered[i + 1] if i + 1 < len(ordered) else None
+        adjacent_following = following is not None and current["end"] + 1 == following["start"]
 
         if not adjacent_following:
             right = current["end"] + 1
 
             if (right, "P") not in dna_atoms:
-                raise ValueError(f"{instance.name}: DNA atom resid {right} name 'P' not found in {dna_pdb}")
+                raise ValueError(
+                    f"{instance.name}: DNA atom resid {right} name 'P' "
+                    f"not found in {dna_pdb}"
+                )
 
             blocks.append(
                 f"! {instance.name} 3' to DNA {right}\n"
-                f"assign (segid {instance.segid} and resid 1 and name {current['3\'']})\n"
+                f"assign (segid {current_segid} and resid 1 and name {current_atom3})\n"
                 f"       (segid {dna_segid} and resid {right} and name P)\n"
                 f"       {target} {lower_tol} {upper_tol}"
             )
