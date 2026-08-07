@@ -486,6 +486,29 @@ def write_docking_config(dna_pdb, instances, top_file, par_file, restraint_file,
 
 # HADDOCK postprocessing
 
+def load_prepared_dye_instances(dockings, dye_dir, workdir="."):
+    from .dye import create_dye_instances, load_dye_definitions
+
+    workdir = Path(workdir)
+    definitions = load_dye_definitions(dockings, dye_dir)
+    instances = create_dye_instances(dockings, definitions)
+
+    for instance in instances:
+        instance_dir = workdir / "haddock" / instance.name
+        instance.directory = instance_dir
+        instance.pdb = instance_dir / f"{instance.name}_haddock.pdb"
+        instance.top = instance_dir / f"{instance.name}_haddock.top"
+        instance.par = instance_dir / f"{instance.name}_haddock.par"
+        instance.attach = instance_dir / f"{instance.name}.attach"
+        instance.mapping = instance_dir / f"{instance.name}_mapping.csv"
+
+        required = [instance.pdb, instance.top, instance.par, instance.attach, instance.mapping]
+        missing = [str(path) for path in required if not path.exists()]
+        if missing:
+            raise FileNotFoundError(f"{instance.name}: missing prepared HADDOCK files: {missing}")
+
+    return instances
+
 def select_best_models(run_dir, output_dir, top=5):
     run_dir, output_dir = Path(run_dir), Path(output_dir)
     flexref_dir = run_dir / "3_flexref"
@@ -520,3 +543,192 @@ def select_best_models(run_dir, output_dir, top=5):
 
     print(f"Selected {nmodels} models in {output_dir}")
     return ranked.iloc[:nmodels].copy()
+
+
+def atom_key(line):
+    return line[21].strip(), int(line[22:26]), line[17:20].strip(), line[12:16].strip()
+
+
+def set_atom_name(line, name):
+    return line[:12] + f"{name:>4s}" + line[16:]
+
+
+def set_resname(line, name):
+    return line[:17] + f"{name:>3s}" + line[20:]
+
+
+def set_resid(line, resid):
+    return line[:22] + f"{resid:4d}" + line[26:]
+
+
+def set_chain_and_segid(line, chain="A", segid="A"):
+    line = line[:21] + chain + line[22:]
+    return line.ljust(76)[:72] + f"{segid:>4s}" + line.ljust(76)[76:]
+
+
+def set_serial(line, serial):
+    return f"{line[:6]}{serial:5d}{line[11:]}"
+
+
+def make_ter(last_atom, serial):
+    return (
+        f"TER   {serial:5d}      "
+        f"{last_atom[17:20]} "
+        f"{last_atom[21]}"
+        f"{last_atom[22:26]}"
+        f"{last_atom[26]}"
+    )
+
+
+def group_template_residues(dna_template):
+    groups, current_key, current_lines = [], None, []
+
+    for line in Path(dna_template).read_text().splitlines():
+        if not line.startswith(("ATOM  ", "HETATM")):
+            continue
+
+        key = line[21].strip(), int(line[22:26]), line[26], line[17:20].strip()
+
+        if current_key is not None and key != current_key:
+            groups.append((current_key, current_lines))
+            current_lines = []
+
+        current_key = key
+        current_lines.append(line)
+
+    if current_lines:
+        groups.append((current_key, current_lines))
+
+    return groups
+
+def reformat_docked_models(instances, dna_template, bonding_csv, structure_dir):
+    dna_template, bonding_csv, structure_dir = map(Path, (dna_template, bonding_csv, structure_dir))
+
+    for path in (dna_template, bonding_csv):
+        if not path.exists():
+            raise FileNotFoundError(f"Missing required file: {path}")
+
+    ter_after = set(pd.read_csv(bonding_csv)["ter_after_resid"].astype(int))
+    template_groups = group_template_residues(dna_template)
+
+    ordered_instances = sorted(instances, key=lambda x: min(x.residues))
+    insertion_blocks = []
+
+    for instance in ordered_instances:
+        start, end = min(instance.residues), max(instance.residues)
+
+        if insertion_blocks and insertion_blocks[-1]["end"] + 1 == start:
+            insertion_blocks[-1]["instances"].append(instance)
+            insertion_blocks[-1]["end"] = end
+        else:
+            insertion_blocks.append({"insert_after": start - 1, "end": end, "instances": [instance]})
+
+    insertions = {block["insert_after"]: block["instances"] for block in insertion_blocks}
+
+    for pdb in sorted(structure_dir.glob("*.pdb")):
+        coordinates = [line for line in pdb.read_text().splitlines() if line.startswith(("ATOM  ", "HETATM"))]
+
+        docked_dna = {
+            atom_key(line): line for line in coordinates
+            if line[72:76].strip() == "A"
+        }
+
+        dye_groups = {}
+
+        for instance in instances:
+            raw_dye = [line for line in coordinates if line[72:76].strip() == instance.segid]
+            mapping = pd.read_csv(instance.mapping).reset_index(names="map_order")
+
+            required = {"haddock_name", "original_name", "original_resname", "original_resid"}
+            missing = required - set(mapping.columns)
+            if missing:
+                raise ValueError(f"{instance.mapping}: missing columns {sorted(missing)}")
+
+            if mapping["haddock_name"].duplicated().any():
+                raise ValueError(f"{instance.mapping}: haddock_name must be unique")
+
+            if len(raw_dye) != len(mapping):
+                raise ValueError(
+                    f"{pdb.name}: {instance.name} has {len(raw_dye)} atoms; expected {len(mapping)}"
+                )
+
+            atom_map = mapping.set_index("haddock_name").to_dict("index")
+            restored = []
+
+            for line in raw_dye:
+                name = line[12:16].strip()
+
+                if name not in atom_map:
+                    raise KeyError(f"{pdb.name}: no mapping for {instance.name} atom {name!r}")
+
+                entry = atom_map[name]
+                line = set_atom_name(line, str(entry["original_name"]))
+                line = set_resname(line, str(entry["original_resname"]))
+                line = set_resid(line, int(entry["original_resid"]))
+                line = set_chain_and_segid(line)
+
+                restored.append((int(entry["original_resid"]), int(entry["map_order"]), line))
+
+            attachment = read_attachment(instance)
+            residue_ids = sorted(
+                mapping["original_resid"].astype(int).unique(),
+                reverse=attachment["5'"]["resid"] > attachment["3'"]["resid"])
+
+            restored.sort(key=lambda x: x[1])
+            groups = [
+                [line for resid, _, line in restored if resid == original_resid]
+                for original_resid in residue_ids
+            ]
+
+            if any(not group for group in groups):
+                raise ValueError(f"{pdb.name}: incomplete residue grouping for {instance.name}")
+
+            dye_groups[instance.name] = groups
+
+        groups, inserted = [], set()
+
+        for group_key, template_lines in template_groups:
+            _, original_resid, _, _ = group_key
+            rebuilt = []
+
+            for template_line in template_lines:
+                key = atom_key(template_line)
+
+                if key not in docked_dna:
+                    raise KeyError(f"{pdb.name}: missing docked DNA atom {key}")
+
+                docked_line = docked_dna[key]
+                rebuilt.append(template_line[:30] + docked_line[30:54] + template_line[54:])
+
+            groups.append({"lines": rebuilt, "ter": original_resid in ter_after})
+
+            for instance in insertions.get(original_resid, []):
+                for dye_lines in dye_groups[instance.name]:
+                    groups.append({"lines": dye_lines, "ter": False})
+                inserted.add(instance.name)
+
+        expected = {instance.name for instance in instances}
+        if inserted != expected:
+            raise RuntimeError(f"{pdb.name}: failed to insert {sorted(expected - inserted)}")
+
+        output, serial = [], 1
+
+        for new_resid, group in enumerate(groups, start=1):
+            rewritten = []
+
+            for line in group["lines"]:
+                line = set_chain_and_segid(line)
+                line = set_resid(line, new_resid)
+                line = set_serial(line, serial)
+                rewritten.append(line)
+                output.append(line)
+                serial += 1
+
+            if group["ter"]:
+                output.append(make_ter(rewritten[-1], serial))
+                serial += 1
+
+        output.append("END")
+        pdb.write_text("\n".join(output) + "\n")
+        print(f"Reformatted {pdb}")
+
