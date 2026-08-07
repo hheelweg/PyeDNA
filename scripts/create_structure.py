@@ -9,8 +9,8 @@ from pyedna.haddock import prepare_dye_topologies
 
 
 def main():
-    
 
+    
     # (0) Read in parameters for DNA strcture creation and dye attachment from .params file
     config = StructureConfig.from_file("struc.params")
 
