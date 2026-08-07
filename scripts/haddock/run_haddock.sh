@@ -20,6 +20,7 @@ fi
 
 source "$PYEDNA_HOME/config.sh"
 
+# TODO : only skip this while debugging, this definitely cannot be skipped in the actual workflow
 SKIP_HADDOCK=true
 
 RUN_DIR="haddock/run"
