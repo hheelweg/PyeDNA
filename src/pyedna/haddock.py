@@ -11,6 +11,7 @@ try:
     import tomllib
 except ImportError:
     import tomli as tomllib
+import os
 
 
 def get_mol2_charge(mol2, tolerance=0.05):
@@ -437,13 +438,10 @@ def write_docking_config(dna_pdb, instances, top_file, par_file, restraint_file,
     output = workdir / "docking_config.cfg"
 
     if template is None:
-        template = Path(__file__).resolve().parent / "data" / "haddock_templates" / "docking_config.cfg"
+        template = Path(os.environ["PYEDNA_HOME"]).resolve().parent / "data" / "haddock_templates" / "docking_config.cfg"
     else:
         template = Path(template)
 
-    print(f"HADDOCK config template: {template}")
-    print(f"Template exists: {template.exists()}")
-    print(f"HADDOCK config output: {output}")
 
     dna_pdb, top_file, par_file, restraint_file = map(Path, (dna_pdb, top_file, par_file, restraint_file))
 
