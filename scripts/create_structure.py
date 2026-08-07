@@ -6,7 +6,7 @@ import pyedna
 from pyedna.structure_config import StructureConfig
 from pyedna.structure import prepare_dna
 from pyedna.dye import load_dye_definitions, create_dye_instances
-from pyedna.haddock import prepare_dye_topologies, prepare_dna_for_haddock, write_bond_restraints
+from pyedna.haddock import prepare_dye_topologies, combine_ligand_topologies, prepare_dna_for_haddock, write_bond_restraints
 
 
 def main():
@@ -43,10 +43,13 @@ def main():
     topology_script = Path(os.environ["PYEDNA_HOME"]) / "scripts" / "haddock" / "create_topology.sh"
     dye_topologies = prepare_dye_topologies(dye_instances, workdir=Path.cwd(), script=topology_script)
 
-    # (4) Prepare DNA structure for HADDOCK
+    # (4) Combine topology/parameter files for unique dye types
+    top_file, par_file = combine_ligand_topologies(dye_instances, workdir=Path.cwd())
+
+    # (5) Prepare DNA structure for HADDOCK
     haddock_dna_pdb, bonding_csv = prepare_dna_for_haddock(dna_pdb=dna_pdb, instances=dye_instances, workdir=Path.cwd())
 
-    # (5) Generate HADDOCK bond restraints
+    # (6) Generate HADDOCK bond restraints
     restraint_file = write_bond_restraints(instances=dye_instances,
                                            dna_pdb=haddock_dna_pdb,
                                            output=Path.cwd() / "haddock" / "bond_restraint.tbl")

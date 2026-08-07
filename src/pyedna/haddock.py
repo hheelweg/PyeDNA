@@ -7,6 +7,10 @@ import pandas as pd
 import numpy as np
 import MDAnalysis as mda
 from scipy.optimize import linear_sum_assignment
+try:
+    import tomllib
+except ImportError:
+    import tomli as tomllib
 
 
 def get_mol2_charge(mol2, tolerance=0.05):
@@ -122,6 +126,51 @@ def prepare_dye_topologies(instances, workdir, script):
         prepare_dye_topology(instance, workdir, script)
     return instances
 
+def combine_ligand_topologies(instances, workdir):
+    workdir = Path(workdir)
+    haddock_dir = workdir / "haddock"
+    top_out = haddock_dir / "dyes_haddock.top"
+    par_out = haddock_dir / "dyes_haddock.par"
+
+    unique = {}
+    for instance in instances:
+        unique.setdefault(instance.definition.name, instance)
+
+    top_files = [instance.top for instance in unique.values()]
+    par_files = [instance.par for instance in unique.values()]
+
+    missing = [str(path) for path in top_files + par_files if path is None or not Path(path).exists()]
+    if missing:
+        raise FileNotFoundError(f"Missing ligand topology/parameter files: {missing}")
+
+    tops = [Path(path).read_text().strip() for path in top_files]
+    pars = [Path(path).read_text().strip() for path in par_files]
+
+    residues = []
+    for path, text in zip(top_files, tops):
+        found = re.findall(r"(?im)^\s*RESI(?:DUE)?\s+(\S+)", text)
+        if not found:
+            raise ValueError(f"{path}: no CNS residue definition found")
+        residues.extend(found)
+
+    duplicates = sorted({residue for residue in residues if residues.count(residue) > 1})
+    if duplicates:
+        raise ValueError(f"Duplicate CNS residue names: {duplicates}")
+
+    top_out.write_text("\n\n".join(
+        f"! ===== {name} topology =====\n{text}"
+        for name, text in zip(unique, tops)
+    ) + "\n")
+
+    par_out.write_text("\n\n".join(
+        f"! ===== {name} parameters =====\n{text}"
+        for name, text in zip(unique, pars)
+    ) + "\n")
+
+    print(f"Wrote {top_out}")
+    print(f"Wrote {par_out}")
+
+    return top_out, par_out
 
 def prepare_dna_for_haddock(dna_pdb, instances, workdir):
     dna_pdb, workdir = Path(dna_pdb), Path(workdir)
@@ -296,3 +345,90 @@ def write_bond_restraints(instances, dna_pdb, output="haddock/bond_restraint.tbl
 
     print(f"Wrote {output}")
     return output
+
+# Haddock3 .cfg file
+
+DEFAULT_DOCKING_CONFIG = {
+    "run_dir": "haddock/run",
+    "mode": "local",
+    "ncores": 32,
+    "clean": False,
+    "postprocess": False,
+
+    "delenph": True,
+    "autohis": False,
+
+    "rigidbody_sampling": 10,
+    "rigidbody_ntrials": 10,
+    "rigidbody_randremoval": False,
+    "rigidbody_unambig_scale": 800,
+    "rigidbody_inter_rigid": 0.001,
+    "rigidbody_elecflag": True,
+    "rigidbody_w_air": 9999.0,
+    "rigidbody_w_vdw": 1.0,
+    "rigidbody_w_elec": 1.0,
+    "rigidbody_w_desolv": 0.0,
+    "rigidbody_w_bsa": 0.0,
+    "rigidbody_w_dist": 9999.0,
+    "rigidbody_cmrest": False,
+    "rigidbody_surfrest": False,
+    "rigidbody_ranair": False,
+    "rigidbody_rigidtrans": True,
+
+    "seletop_select": 10,
+
+    "flexref_randremoval": False,
+    "flexref_unambig_hot": 1000,
+    "flexref_unambig_cool1": 1000,
+    "flexref_unambig_cool2": 1000,
+    "flexref_unambig_cool3": 1000,
+    "flexref_w_air": 9999.0,
+    "flexref_w_vdw": 1.0,
+    "flexref_w_elec": 1.0,
+    "flexref_w_desolv": 0.0,
+    "flexref_w_bsa": 0.0,
+    "flexref_mdsteps_rigid": 0,
+    "flexref_mdsteps_cool1": 0,
+    "flexref_mdsteps_cool2": 2000,
+    "flexref_mdsteps_cool3": 2000,
+    "flexref_dnarest_on": True,
+    "flexref_tadfactor": 1,
+    "flexref_temp_cool3_init": 300,
+    "flexref_elecflag": True,
+
+    "caprieval_allatoms": True,
+}
+
+def read_user_docking_config(path):
+    path = Path(path)
+
+    if not path.exists():
+        raise FileNotFoundError(f"Missing user docking config: {path}")
+
+    sections = tomllib.loads(path.read_text())
+    prefixes = {
+        "general": "",
+        "topoaa": "",
+        "rigidbody": "rigidbody_",
+        "seletop": "seletop_",
+        "flexref": "flexref_",
+        "caprieval": "caprieval_",
+    }
+
+    values = {}
+
+    for section, params in sections.items():
+        if section not in prefixes:
+            raise ValueError(f"{path}: unknown section [{section}]")
+        if not isinstance(params, dict):
+            raise ValueError(f"{path}: [{section}] must contain key-value pairs")
+
+        prefix = prefixes[section]
+        values.update({f"{prefix}{key}": value for key, value in params.items()})
+
+    unknown = sorted(set(values) - set(DEFAULT_DOCKING_CONFIG))
+    if unknown:
+        raise KeyError(f"{path}: unknown configuration parameters: {unknown}")
+
+    return values
+
