@@ -52,7 +52,7 @@ class DyeDefinition:
                    mol2=mol2,
                    frcmod=frcmod,
                    attach=attach,
-                   frcmod=frcmod)
+                   connect_frcmod=connect_frcmod)
 
 
     def read_attachment(self):
