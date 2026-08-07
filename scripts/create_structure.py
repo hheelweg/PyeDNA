@@ -6,7 +6,7 @@ import pyedna
 from pyedna.structure_config import StructureConfig
 from pyedna.structure import prepare_dna
 from pyedna.dye import load_dye_definitions, create_dye_instances
-from pyedna.haddock import prepare_dye_topologies, combine_ligand_topologies, prepare_dna_for_haddock, write_bond_restraints
+from pyedna.haddock import prepare_dye_topologies, combine_ligand_topologies, prepare_dna_for_haddock, write_bond_restraints, write_docking_config
 
 
 def main():
@@ -53,6 +53,16 @@ def main():
     restraint_file = write_bond_restraints(instances=dye_instances,
                                            dna_pdb=haddock_dna_pdb,
                                            output=Path.cwd() / "haddock" / "bond_restraint.tbl")
+
+    # (7) Generate HADDOCK configuration
+    user_docking_config = Path.cwd() / "user_docking_config.toml"
+    if not user_docking_config.exists():
+        user_docking_config = None
+
+    docking_config = write_docking_config(
+        dna_pdb=haddock_dna_pdb, instances=dye_instances, top_file=top_file,
+        par_file=par_file, restraint_file=restraint_file, workdir=Path.cwd(),
+        user_config=user_docking_config)
 
 
 if __name__ == "__main__":

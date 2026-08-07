@@ -432,3 +432,53 @@ def read_user_docking_config(path):
 
     return values
 
+def write_docking_config(dna_pdb, instances, top_file, par_file, restraint_file, workdir=".", user_config=None, template=None):
+    workdir = Path(workdir)
+    output = workdir / "docking_config.cfg"
+
+    if template is None:
+        template = Path(__file__).resolve().parent / "data" / "haddock_templates" / "docking_config.cfg"
+    else:
+        template = Path(template)
+
+    dna_pdb, top_file, par_file, restraint_file = map(Path, (dna_pdb, top_file, par_file, restraint_file))
+
+    required = [template, dna_pdb, top_file, par_file, restraint_file]
+    required += [instance.pdb for instance in instances]
+    missing = [str(path) for path in required if path is None or not Path(path).exists()]
+    if missing:
+        raise FileNotFoundError(f"Missing required HADDOCK files: {missing}")
+
+    values = dict(DEFAULT_DOCKING_CONFIG)
+
+    if user_config is not None:
+        values.update(read_user_docking_config(user_config))
+
+    molecules = [dna_pdb] + [instance.pdb for instance in instances]
+
+    values.update(
+        topology_file=str(top_file),
+        parameter_file=str(par_file),
+        restraint_file=str(restraint_file),
+        molecule_lines=",\n".join(f'    "{path}"' for path in molecules),
+        flexibility_lines="\n\n".join(
+            f'fle_seg_{i} = "{instance.segid}"\nfle_sta_{i} = 1\nfle_end_{i} = 1'
+            for i, instance in enumerate(instances, start=1)
+        ),
+    )
+
+    def format_value(value):
+        return str(value).lower() if isinstance(value, bool) else str(value)
+
+    text = template.read_text()
+    for key, value in values.items():
+        text = text.replace(f"{{{{ {key} }}}}", format_value(value))
+
+    unresolved = sorted(set(re.findall(r"\{\{\s*(.*?)\s*\}\}", text)))
+    if unresolved:
+        raise KeyError(f"Missing docking template values: {unresolved}")
+
+    output.write_text(text)
+    print(f"Wrote {output}")
+
+    return output
