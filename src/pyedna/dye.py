@@ -7,6 +7,7 @@ class DyeDefinition:
     name: str
     directory: Path
     mol2: Path
+    frcmod: Path
     attach: Path
 
     @classmethod
@@ -14,6 +15,7 @@ class DyeDefinition:
         directory = Path(dye_dir) / name
         mol2 = directory / f"{name}.mol2"
         attach = directory / f"{name}.attach"
+        frcmod = directory / f"{name}.frcmod"
 
         if not directory.is_dir():
             raise FileNotFoundError(f"Dye directory not found: {directory}")
@@ -24,12 +26,14 @@ class DyeDefinition:
         if not attach.exists():
             raise FileNotFoundError(f"Dye attachment file not found: {attach}")
 
-        return cls(
-            name=name,
-            directory=directory,
-            mol2=mol2,
-            attach=attach,
-        )
+        if not frcmod.exists():
+            raise FileNotFoundError(f"Dye frcmod file not found: {frcmod}")
+
+        return cls(name=name,
+                   directory=directory,
+                   mol2=mol2,
+                   frcmod=frcmod,
+                   attach=attach,)
 
 @dataclass
 class DyeInstance:
