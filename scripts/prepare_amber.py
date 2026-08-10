@@ -20,7 +20,8 @@ def main():
     for dye in setup.dye_definitions.values():
         print(f"  {dye.name}:")
         print(f"    MOL2    : {dye.mol2}")
-        print(f"    frcmod  : {dye.frcmod}")
+        for frcmod in dye.frcmods:
+            print(f"    frcmod  : {frcmod}")
 
 
 if __name__ == "__main__":
