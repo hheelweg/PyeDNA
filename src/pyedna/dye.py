@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
+from . import fileproc as fp
 
 @dataclass(frozen=True)
 class AttachmentAtom:
