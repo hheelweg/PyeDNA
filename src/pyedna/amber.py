@@ -145,15 +145,18 @@ class AmberSetup:
 
         # Load dye templates and parameters
         for dye in self.dye_definitions.values():
-            lines += [f"# {dye.name}",
-                      f"{dye.name} = loadMol2 {dye.mol2}",]
+            lines.append(f"# {dye.name}")
+
+            for mol2 in dye.mol2_templates:
+                template_name = mol2.stem
+                lines.append(f"{template_name} = loadMol2 {mol2}")
 
             for frcmod in dye.frcmods:
                 lines.append(f"loadAmberParams {frcmod}")
 
             for mapping in dye.read_amber_mapping():
-                lines.append(f"set {dye.name}.{mapping.resid}.{mapping.atom} type {mapping.type}")
-                lines.append(f"set {dye.name}.{mapping.resid}.{mapping.atom} name {mapping.name}")
+                lines.append(f"set {mapping.resname}.{mapping.resid}.{mapping.atom} type {mapping.type}")
+                lines.append(f"set {mapping.resname}.{mapping.resid}.{mapping.atom} name {mapping.name}")
 
             lines.append("")
 

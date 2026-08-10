@@ -23,6 +23,7 @@ class DyeDefinition:
     name: str
     directory: Path
     mol2: Path
+    mol2_templates: list[Path]
     frcmods: list[Path]
     attach: Path
 
@@ -38,17 +39,20 @@ class DyeDefinition:
                 raise FileNotFoundError(f"Missing dye input: {path}")
 
         params = fp.readParams(params_file)
+        mol2_templates = [directory / filename for filename in params.get("mol2_templates", [])]
         frcmods = [directory / filename for filename in params.get("frcmods", [])]
 
+        if not mol2_templates:
+            raise ValueError(f"{params_file}: no mol2_templates specified")
         if not frcmods:
             raise ValueError(f"{params_file}: no frcmods specified")
 
-        missing = [str(path) for path in frcmods if not path.exists()]
+        missing = [str(path) for path in mol2_templates + frcmods if not path.exists()]
         if missing:
-            raise FileNotFoundError(f"{name}: missing frcmod files: {missing}")
+            raise FileNotFoundError(f"{name}: missing AMBER files: {missing}")
 
         return cls(name=name, directory=directory, mol2=mol2,
-                frcmods=frcmods, attach=attach)
+                mol2_templates=mol2_templates, frcmods=frcmods, attach=attach)
 
 
     def read_attachment(self):
