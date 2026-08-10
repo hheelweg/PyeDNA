@@ -7,7 +7,7 @@ from pyedna.structure_config import StructureConfig
 
 def main():
     workdir = Path.cwd()
-    config = StructureConfig.from_file(workdir / "struc_gen.params")
+    config = StructureConfig.from_file(workdir / "struc.params")
 
     # (1) Select best HADDOCK models
     structure_dir = workdir / "structures"
