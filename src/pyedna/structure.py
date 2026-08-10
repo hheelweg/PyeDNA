@@ -13,6 +13,21 @@ from . import geomtools as geo
 from . import utils
 from . import config
 
+def set_chain_and_segid(line, chain="A", segid="A"):
+    line = line[:21] + chain + line[22:]
+    return line.ljust(76)[:72] + f"{segid:>4s}" + line.ljust(76)[76:]
+
+
+def normalize_dna_pdb(pdb_file, chain="A", segid="A"):
+    pdb_file = Path(pdb_file)
+    lines = []
+
+    for line in pdb_file.read_text().splitlines():
+        if line.startswith(("ATOM  ", "HETATM")):
+            line = set_chain_and_segid(line, chain=chain, segid=segid)
+        lines.append(line)
+
+    pdb_file.write_text("\n".join(lines) + "\n")
 
 
 
@@ -44,16 +59,18 @@ def prepare_dna(config, dna_dir, workdir="."):
         if not generated_pdb.exists():
             raise FileNotFoundError(f"Generated DNA PDB not found: {generated_pdb}")
 
-        # This will become relevant if workdir != current directory
         if generated_pdb.resolve() != output_pdb.resolve():
             shutil.move(generated_pdb, output_pdb)
 
         print(f"Generated DNA structure: {output_pdb}")
 
     else:
-        raise ValueError(f"Unknown dna_source {config.dna_source!r}; "
-            "expected 'library' or 'generate'")
+        raise ValueError(
+            f"Unknown dna_source {config.dna_source!r}; "
+            "expected 'library' or 'generate'"
+        )
 
+    normalize_dna_pdb(output_pdb, chain="A", segid="A")
     return output_pdb
 
 

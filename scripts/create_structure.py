@@ -6,7 +6,7 @@ import pyedna
 from pyedna.structure_config import StructureConfig
 from pyedna.structure import prepare_dna
 from pyedna.dye import load_dye_definitions, create_dye_instances
-from pyedna.haddock import prepare_dye_topologies, combine_ligand_topologies, prepare_dna_for_haddock, write_bond_restraints, write_docking_config
+from pyedna.haddock import prepare_dye_topologies, combine_ligand_topologies, prepare_dna_for_haddock, write_bond_restraints, write_docking_config, prepare_dna_for_haddock
 
 
 def main():
