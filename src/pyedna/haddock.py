@@ -736,10 +736,16 @@ def reformat_docked_models(instances, dna_template, bonding_csv, structure_dir,
                 key = atom_key(template_line)
 
                 if key not in docked_dna:
-                    raise KeyError(f"{pdb.name}: missing docked DNA atom {key}")
+                    element = template_line[76:78].strip()
+                    if element != "H":
+                        raise KeyError(f"{pdb.name}: missing docked DNA heavy atom {key}")
+                    continue
 
                 docked_line = docked_dna[key]
                 rebuilt.append(template_line[:30] + docked_line[30:54] + template_line[54:])
+
+            if not rebuilt:
+                raise ValueError(f"{pdb.name}: no atoms remain for DNA residue {original_resid}")
 
             groups.append({
                 "lines": rebuilt,
