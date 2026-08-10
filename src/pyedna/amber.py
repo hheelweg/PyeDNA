@@ -174,8 +174,8 @@ class AmberSetup:
             atom2 = self.amber_atom_name(bond["source2"], bond["atom2"])
 
             lines.append(
-                f'bond mol.{int(bond["resid1"])}."{atom1}" '
-                f'mol.{int(bond["resid2"])}."{atom2}"'
+                f"bond mol.{int(bond['resid1'])}.{atom1} "
+                f"mol.{int(bond['resid2'])}.{atom2}"
             )
 
         water_box = {"TIP3P": "TIP3PBOX"}.get(self.water_model)
