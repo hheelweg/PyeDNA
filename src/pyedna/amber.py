@@ -155,8 +155,8 @@ class AmberSetup:
                 lines.append(f"loadAmberParams {frcmod}")
 
             for mapping in dye.read_amber_mapping():
-                lines.append(f"set {mapping.resname}.{mapping.resid}.{mapping.atom} type {mapping.type}")
-                lines.append(f"set {mapping.resname}.{mapping.resid}.{mapping.atom} name {mapping.name}")
+                lines.append(f"set {mapping.resname}.1.{mapping.atom} type {mapping.type}")
+                lines.append(f"set {mapping.resname}.1.{mapping.atom} name {mapping.name}")
 
             lines.append("")
 
