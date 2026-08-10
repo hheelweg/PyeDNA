@@ -33,6 +33,31 @@ class AmberSetup:
         self.dye_definitions = {}
         self.bonds = None
 
+    def final_resid_for_mapping(self, source, mapping):
+        matches = set()
+
+        left = self.bonds[
+            (self.bonds["source1"] == source)
+            & (self.bonds["resname1"] == mapping.resname)
+            & (self.bonds["original_resid1"].astype(int) == mapping.resid)
+        ]
+        matches.update(left["resid1"].astype(int))
+
+        right = self.bonds[
+            (self.bonds["source2"] == source)
+            & (self.bonds["resname2"] == mapping.resname)
+            & (self.bonds["original_resid2"].astype(int) == mapping.resid)
+        ]
+        matches.update(right["resid2"].astype(int))
+
+        if len(matches) != 1:
+            raise ValueError(
+                f"{source}: expected one final residue for "
+                f"{mapping.resname} {mapping.resid}, found {sorted(matches)}"
+            )
+
+        return matches.pop()
+
     def load_structure_data(self):
         if not self.bond_file.exists():
             raise FileNotFoundError(f"Bond file not found: {self.bond_file}")
@@ -52,43 +77,64 @@ class AmberSetup:
         if self.bonds is None:
             raise RuntimeError("Structure data has not been loaded")
 
-        required = {"resid1", "atom1", "resid2", "atom2"}
+        required = {
+            "resid1", "resname1", "original_resid1", "atom1", "source1",
+            "resid2", "resname2", "original_resid2", "atom2", "source2",
+        }
+
         missing = required - set(self.bonds.columns)
         if missing:
             raise ValueError(f"{self.bond_file}: missing columns {sorted(missing)}")
 
         return self
 
-    def amber_atom_name(self, source, atom):
+    def amber_atom_name(self, source, resname, original_resid, atom):
         if source == "DNA":
             return atom
 
         dye_name = source.rsplit("_", 1)[0]
         dye = self.dye_definitions[dye_name]
-        mappings = {mapping.atom: mapping.name for mapping in dye.read_amber_mapping()}
 
-        return mappings.get(atom, atom)
+        matches = [
+            mapping for mapping in dye.read_amber_mapping()
+            if mapping.resname == resname
+            and mapping.resid == int(original_resid)
+            and mapping.atom == atom
+        ]
+
+        if len(matches) > 1:
+            raise ValueError(
+                f"{source}: ambiguous AMBER mapping for "
+                f"{resname} {original_resid} {atom}"
+            )
+
+        return matches[0].name if matches else atom
 
     def prepare_input(self):
         output_pdb = self.workdir / f"{self.output_name}.pdb"
-        lines = self.input_pdb.read_text().splitlines()
+        rename = {}
 
-        amber_mappings = {
-            dye.name: {mapping.atom: mapping.name for mapping in dye.read_amber_mapping()}
-            for dye in self.dye_definitions.values()}
+        sources = set(self.bonds["source1"]) | set(self.bonds["source2"])
+        sources.discard("DNA")
+
+        for source in sources:
+            dye_name = source.rsplit("_", 1)[0]
+            dye = self.dye_definitions[dye_name]
+
+            for mapping in dye.read_amber_mapping():
+                final_resid = self.final_resid_for_mapping(source, mapping)
+                rename[(final_resid, mapping.atom)] = mapping.name
 
         output = []
-        for line in lines:
-            if not line.startswith(("ATOM  ", "HETATM")):
-                output.append(line)
-                continue
 
-            resname = line[17:20].strip()
-            atom_name = line[12:16].strip()
+        for line in self.input_pdb.read_text().splitlines():
+            if line.startswith(("ATOM  ", "HETATM")):
+                resid = int(line[22:26])
+                atom = line[12:16].strip()
+                new_name = rename.get((resid, atom))
 
-            if resname in amber_mappings and atom_name in amber_mappings[resname]:
-                new_name = amber_mappings[resname][atom_name]
-                line = line[:12] + f"{new_name:>4s}" + line[16:]
+                if new_name is not None:
+                    line = line[:12] + f"{new_name:>4s}" + line[16:]
 
             output.append(line)
 
@@ -99,7 +145,6 @@ class AmberSetup:
         return self
 
     
-
     @classmethod
     def from_file(cls, path, workdir="."):
         params = fp.readParams(path)
@@ -138,38 +183,50 @@ class AmberSetup:
 
         tleap_file = self.workdir / f"{self.output_name}_tleap.in"
 
-        lines = [f"source {self.dna_forcefield}",
-                 f"source {self.dye_forcefield}",
-                 f"source {self.water_forcefield}",
-                 "",]
+        lines = [
+            f"source {self.dna_forcefield}",
+            f"source {self.dye_forcefield}",
+            f"source {self.water_forcefield}",
+            "",
+        ]
 
-        # Load dye templates and parameters
         for dye in self.dye_definitions.values():
             lines.append(f"# {dye.name}")
+            template_names = {mol2.stem for mol2 in dye.mol2_templates}
 
             for mol2 in dye.mol2_templates:
-                template_name = mol2.stem
-                lines.append(f"{template_name} = loadMol2 {mol2}")
+                lines.append(f"{mol2.stem} = loadMol2 {mol2}")
 
             for frcmod in dye.frcmods:
                 lines.append(f"loadAmberParams {frcmod}")
 
             for mapping in dye.read_amber_mapping():
+                if mapping.resname not in template_names:
+                    raise ValueError(
+                        f"{dye.name}: AMBER mapping refers to template "
+                        f"{mapping.resname!r}, but loaded templates are {sorted(template_names)}"
+                    )
+
+                # Standalone residue templates currently contain residue 1
                 lines.append(f"set {mapping.resname}.1.{mapping.atom} type {mapping.type}")
                 lines.append(f"set {mapping.resname}.1.{mapping.atom} name {mapping.name}")
 
             lines.append("")
 
-        # Load final cleaned DNA+dye PDB
         lines += [
             f"mol = loadPdb {self.amber_pdb}",
             "",
-            "# DNA-dye and dye-dye bonds",
+            "# DNA-dye, dye-dye and internal composite-dye bonds",
         ]
 
         for _, bond in self.bonds.iterrows():
-            atom1 = self.amber_atom_name(bond["source1"], bond["atom1"])
-            atom2 = self.amber_atom_name(bond["source2"], bond["atom2"])
+            atom1 = self.amber_atom_name(
+                bond["source1"], bond["resname1"],
+                bond["original_resid1"], bond["atom1"])
+
+            atom2 = self.amber_atom_name(
+                bond["source2"], bond["resname2"],
+                bond["original_resid2"], bond["atom2"])
 
             lines.append(
                 f"bond mol.{int(bond['resid1'])}.{atom1} "
@@ -181,6 +238,8 @@ class AmberSetup:
             raise ValueError(f"Unsupported water model: {self.water_model!r}")
 
         lines += [
+            "",
+            "check mol",
             "",
             f"solvateBox mol {water_box} {self.solvent_padding}",
         ]
@@ -202,4 +261,4 @@ class AmberSetup:
         self.tleap_file = tleap_file
 
         print(f"Wrote {tleap_file}")
-        return tleap_file
+        return tleap_file   

@@ -214,7 +214,6 @@ def prepare_dna_for_haddock(dna_pdb, instances, workdir):
     return output_pdb, bonding_csv
 
 
-
 def write_bond_restraints(instances, dna_pdb, output="haddock/bond_restraint.tbl",
                           bond_output="haddock/bonds.csv", dna_segid="A",
                           target=1.5, lower_tol=0.2, upper_tol=0.2):
@@ -288,16 +287,22 @@ def write_bond_restraints(instances, dna_pdb, output="haddock/bond_restraint.tbl
 
             bonds.append({
                 "left_type": "dye", "left_instance": previous_instance.name,
-                "left_resid": previous["attach3"].resid, "left_atom": previous["attach3"].atom,
+                "left_resname": previous["attach3"].resname,
+                "left_resid": previous["attach3"].resid,
+                "left_atom": previous["attach3"].atom,
                 "right_type": "dye", "right_instance": instance.name,
-                "right_resid": current["attach5"].resid, "right_atom": current["attach5"].atom,
+                "right_resname": current["attach5"].resname,
+                "right_resid": current["attach5"].resid,
+                "right_atom": current["attach5"].atom,
             })
 
         else:
             left = current["start"] - 1
 
             if (left, "O3'") not in dna_atoms:
-                raise ValueError(f"{instance.name}: DNA atom resid {left} name \"O3'\" not found in {dna_pdb}")
+                raise ValueError(
+                    f"{instance.name}: DNA atom resid {left} name \"O3'\" not found in {dna_pdb}"
+                )
 
             blocks.append(
                 f"! DNA {left} to {instance.name} 5'\n"
@@ -307,16 +312,21 @@ def write_bond_restraints(instances, dna_pdb, output="haddock/bond_restraint.tbl
             )
 
             bonds.append({
-                "left_type": "dna", "left_instance": "", "left_resid": left, "left_atom": "O3'",
+                "left_type": "dna", "left_instance": "", "left_resname": "",
+                "left_resid": left, "left_atom": "O3'",
                 "right_type": "dye", "right_instance": instance.name,
-                "right_resid": current["attach5"].resid, "right_atom": current["attach5"].atom,
+                "right_resname": current["attach5"].resname,
+                "right_resid": current["attach5"].resid,
+                "right_atom": current["attach5"].atom,
             })
 
         if not adjacent_following:
             right = current["end"] + 1
 
             if (right, "P") not in dna_atoms:
-                raise ValueError(f"{instance.name}: DNA atom resid {right} name 'P' not found in {dna_pdb}")
+                raise ValueError(
+                    f"{instance.name}: DNA atom resid {right} name 'P' not found in {dna_pdb}"
+                )
 
             blocks.append(
                 f"! {instance.name} 3' to DNA {right}\n"
@@ -327,8 +337,11 @@ def write_bond_restraints(instances, dna_pdb, output="haddock/bond_restraint.tbl
 
             bonds.append({
                 "left_type": "dye", "left_instance": instance.name,
-                "left_resid": current["attach3"].resid, "left_atom": current["attach3"].atom,
-                "right_type": "dna", "right_instance": "", "right_resid": right, "right_atom": "P",
+                "left_resname": current["attach3"].resname,
+                "left_resid": current["attach3"].resid,
+                "left_atom": current["attach3"].atom,
+                "right_type": "dna", "right_instance": "", "right_resname": "",
+                "right_resid": right, "right_atom": "P",
             })
 
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -595,22 +608,14 @@ def group_template_residues(dna_template):
     return groups
 
 
-def write_final_bonds(bond_file, output, residue_map):
+def write_final_bonds(bond_file, output, residue_map, instances):
     bond_file, output = Path(bond_file), Path(output)
     bonds = pd.read_csv(bond_file, keep_default_na=False)
     final = []
 
     for _, bond in bonds.iterrows():
-        left_key = (
-            bond["left_type"],
-            bond["left_instance"],
-            int(bond["left_resid"]),
-        )
-        right_key = (
-            bond["right_type"],
-            bond["right_instance"],
-            int(bond["right_resid"]),
-        )
+        left_key = (bond["left_type"], bond["left_instance"], int(bond["left_resid"]))
+        right_key = (bond["right_type"], bond["right_instance"], int(bond["right_resid"]))
 
         if left_key not in residue_map:
             raise KeyError(f"Could not map bond residue {left_key}")
@@ -619,14 +624,46 @@ def write_final_bonds(bond_file, output, residue_map):
 
         final.append({
             "resid1": residue_map[left_key],
+            "resname1": bond["left_resname"],
+            "original_resid1": int(bond["left_resid"]),
             "atom1": bond["left_atom"],
             "resid2": residue_map[right_key],
+            "resname2": bond["right_resname"],
+            "original_resid2": int(bond["right_resid"]),
             "atom2": bond["right_atom"],
             "source1": bond["left_instance"] or "DNA",
             "source2": bond["right_instance"] or "DNA",
         })
 
-    pd.DataFrame(final).to_csv(output, index=False)
+    # Add bonds between different residues within composite dyes
+    for instance in instances:
+        for bond in instance.definition.read_inter_residue_bonds():
+            left_key = ("dye", instance.name, bond["resid1"])
+            right_key = ("dye", instance.name, bond["resid2"])
+
+            if left_key not in residue_map or right_key not in residue_map:
+                raise KeyError(
+                    f"{instance.name}: could not map internal bond "
+                    f"{bond['resid1']}:{bond['atom1']} - {bond['resid2']}:{bond['atom2']}"
+                )
+
+            final.append({
+                "resid1": residue_map[left_key],
+                "resname1": bond["resname1"],
+                "original_resid1": bond["resid1"],
+                "atom1": bond["atom1"],
+                "resid2": residue_map[right_key],
+                "resname2": bond["resname2"],
+                "original_resid2": bond["resid2"],
+                "atom2": bond["atom2"],
+                "source1": instance.name,
+                "source2": instance.name,
+            })
+
+    pd.DataFrame(final).drop_duplicates(
+        subset=["resid1", "atom1", "resid2", "atom2"]
+    ).to_csv(output, index=False)
+
     print(f"Wrote {output}")
     return output
 
@@ -798,5 +835,5 @@ def reformat_docked_models(instances, dna_template, bonding_csv, structure_dir,
         pdb.write_text("\n".join(output) + "\n")
         print(f"Reformatted {pdb}")
 
-    write_final_bonds(bond_file, structure_dir / "bonds.csv", final_residue_map)
+    write_final_bonds(bond_file, structure_dir / "bonds.csv", final_residue_map, instances)
 
