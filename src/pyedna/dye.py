@@ -95,6 +95,48 @@ class DyeDefinition:
 
         return mappings
 
+    def read_inter_residue_bonds(self):
+        atoms, bonds = {}, []
+        section = None
+
+        for line in self.mol2.read_text().splitlines():
+            if line.startswith("@<TRIPOS>ATOM"):
+                section = "atoms"
+                continue
+            if line.startswith("@<TRIPOS>BOND"):
+                section = "bonds"
+                continue
+            if line.startswith("@<TRIPOS>"):
+                section = None
+                continue
+            if not line.strip():
+                continue
+
+            fields = line.split()
+
+            if section == "atoms":
+                atoms[int(fields[0])] = {
+                    "atom": fields[1],
+                    "resid": int(fields[6]),
+                    "resname": fields[7],
+                }
+
+            elif section == "bonds":
+                atom1 = atoms[int(fields[1])]
+                atom2 = atoms[int(fields[2])]
+
+                if atom1["resid"] != atom2["resid"]:
+                    bonds.append({
+                        "resname1": atom1["resname"],
+                        "resid1": atom1["resid"],
+                        "atom1": atom1["atom"],
+                        "resname2": atom2["resname"],
+                        "resid2": atom2["resid"],
+                        "atom2": atom2["atom"],
+                    })
+
+        return bonds
+
 
 @dataclass
 class DyeInstance:
