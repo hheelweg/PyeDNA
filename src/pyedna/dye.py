@@ -10,6 +10,8 @@ class AttachmentAtom:
 
 @dataclass(frozen=True)
 class AmberAtomMapping:
+    resname: str
+    resid: int
     atom: str
     name: str
     type: str
@@ -20,39 +22,32 @@ class DyeDefinition:
     name: str
     directory: Path
     mol2: Path
-    frcmod: Path
+    frcmods: list[Path]
     attach: Path
-    connect_frcmod: Path
 
     @classmethod
     def from_library(cls, name, dye_dir):
         directory = Path(dye_dir) / name
         mol2 = directory / f"{name}.mol2"
         attach = directory / f"{name}.attach"
-        frcmod = directory / f"{name}.frcmod"
-        connect_frcmod = directory / "connectparms.frcmod"
+        params_file = directory / "dye.params"
 
-        if not directory.is_dir():
-            raise FileNotFoundError(f"Dye directory not found: {directory}")
+        for path in (mol2, attach, params_file):
+            if not path.exists():
+                raise FileNotFoundError(f"Missing dye input: {path}")
 
-        if not mol2.exists():
-            raise FileNotFoundError(f"Dye MOL2 file not found: {mol2}")
+        params = fp.readParams(params_file)
+        frcmods = [directory / filename for filename in params.get("frcmods", [])]
 
-        if not attach.exists():
-            raise FileNotFoundError(f"Dye attachment file not found: {attach}")
+        if not frcmods:
+            raise ValueError(f"{params_file}: no frcmods specified")
 
-        if not frcmod.exists():
-            raise FileNotFoundError(f"Dye frcmod file not found: {frcmod}")
+        missing = [str(path) for path in frcmods if not path.exists()]
+        if missing:
+            raise FileNotFoundError(f"{name}: missing frcmod files: {missing}")
 
-        if not connect_frcmod.exists():
-            raise FileNotFoundError(f"Dye connection frcmod file not found: {connect_frcmod}")
-
-        return cls(name=name,
-                   directory=directory,
-                   mol2=mol2,
-                   frcmod=frcmod,
-                   attach=attach,
-                   connect_frcmod=connect_frcmod)
+        return cls(name=name, directory=directory, mol2=mol2,
+                frcmods=frcmods, attach=attach)
 
 
     def read_attachment(self):
@@ -85,30 +80,16 @@ class DyeDefinition:
             fields = line.split()
             if fields[0] != "AMBER":
                 continue
-
-            if len(fields) != 4:
+            if len(fields) != 6:
                 raise ValueError(f"{self.attach}: invalid AMBER mapping line: {line}")
 
-            _, atom, name, atom_type = fields
-            mappings.append(AmberAtomMapping(atom=atom, name=name, type=atom_type))
+            _, resname, resid, atom, name, atom_type = fields
+            mappings.append(AmberAtomMapping(
+                resname=resname, resid=int(resid), atom=atom,
+                name=name, type=atom_type))
 
         return mappings
 
-
-    def get_atom_resid(self, atom_name):
-        matches = []
-
-        for line in self.mol2.read_text().splitlines():
-            fields = line.split()
-            if len(fields) >= 8 and fields[1] == atom_name:
-                matches.append(int(fields[6]))
-
-        if len(matches) != 1:
-            raise ValueError(
-                f"{self.name}: expected atom {atom_name!r} to occur exactly once in MOL2, found {len(matches)}"
-            )
-
-        return matches[0]
 
 @dataclass
 class DyeInstance:

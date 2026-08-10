@@ -138,27 +138,22 @@ class AmberSetup:
 
         tleap_file = self.workdir / f"{self.output_name}_tleap.in"
 
-        lines = [
-            f"source {self.dna_forcefield}",
-            f"source {self.dye_forcefield}",
-            f"source {self.water_forcefield}",
-            "",
-        ]
+        lines = [f"source {self.dna_forcefield}",
+                 f"source {self.dye_forcefield}",
+                 f"source {self.water_forcefield}",
+                 "",]
 
         # Load dye templates and parameters
         for dye in self.dye_definitions.values():
-            lines += [
-                f"# {dye.name}",
-                f"{dye.name} = loadMol2 {dye.mol2}",
-                f"loadAmberParams {dye.frcmod}",
-                f"loadAmberParams {dye.connect_frcmod}",
-            ]
+            lines += [f"# {dye.name}",
+                      f"{dye.name} = loadMol2 {dye.mol2}",]
 
-            # Retype/rename attachment-region atoms to DNA force-field conventions
+            for frcmod in dye.frcmods:
+                lines.append(f"loadAmberParams {frcmod}")
+
             for mapping in dye.read_amber_mapping():
-                resid = dye.get_atom_resid(mapping.atom)
-                lines.append(f"set {dye.name}.{resid}.{mapping.atom} type {mapping.type}")
-                lines.append(f"set {dye.name}.{resid}.{mapping.atom} name {mapping.name}")
+                lines.append(f"set {dye.name}.{mapping.resid}.{mapping.atom} type {mapping.type}")
+                lines.append(f"set {dye.name}.{mapping.resid}.{mapping.atom} name {mapping.name}")
 
             lines.append("")
 
