@@ -6,14 +6,12 @@ from . import fileproc as fp
 
 @dataclass
 class DockingSpec:
-    """Pair a dye name with the consecutive DNA residues it replaces."""
     dye: str
     residues: list[int]
 
 
 @dataclass
 class StructureConfig:
-    """Store and validate structure-generation inputs."""
     dna_source: str
     dna_name: str
     structure_name: str
@@ -23,7 +21,6 @@ class StructureConfig:
     top_models: int = 5
 
     def __post_init__(self):
-        """Validate DNA settings and non-overlapping docking ranges."""
         if self.dna_source not in {"generate", "library"}:
             raise ValueError(f"Unknown dna_source {self.dna_source!r}; "
                              "expected 'generate' or 'library'")
@@ -62,7 +59,6 @@ class StructureConfig:
 
     @classmethod
     def from_file(cls, path):
-        """Build a validated configuration from a PyeDNA parameter file."""
         params = fp.readParams(path)
 
         dna_source = params.get("dna_source", "generate")

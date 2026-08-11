@@ -13,11 +13,8 @@ except ImportError:
     import tomli as tomllib
 import os
 
-from .structure import set_chain_and_segid
-
 
 def get_mol2_charge(mol2, tolerance=0.05):
-    """Return the integral charge represented by MOL2 partial charges."""
     in_atoms, charge = False, 0.0
 
     for line in Path(mol2).read_text().splitlines():
@@ -37,7 +34,6 @@ def get_mol2_charge(mol2, tolerance=0.05):
 
 
 def get_elements(universe):
-    """Return atom elements, inferring them from names when necessary."""
     try:
         return np.asarray(universe.atoms.elements)
     except (AttributeError, mda.exceptions.NoDataError):
@@ -46,7 +42,6 @@ def get_elements(universe):
 
 
 def write_mapping(original_mol2, haddock_pdb, output_csv, max_distance=0.1):
-    """Map HADDOCK-renamed atoms back to the assembled dye by geometry."""
     original = mda.Universe(original_mol2)
     haddock = mda.Universe(haddock_pdb)
 
@@ -77,7 +72,6 @@ def write_mapping(original_mol2, haddock_pdb, output_csv, max_distance=0.1):
 
 
 def prepare_dye_topology(instance, workdir, script):
-    """Generate and validate HADDOCK topology files for one dye instance."""
     workdir, script = Path(workdir), Path(script)
     haddock_dir = workdir / "haddock"
     instance_dir = haddock_dir / instance.name
@@ -129,13 +123,11 @@ def prepare_dye_topology(instance, workdir, script):
 
 
 def prepare_dye_topologies(instances, workdir, script):
-    """Prepare HADDOCK topology files for every dye instance."""
     for instance in instances:
         prepare_dye_topology(instance, workdir, script)
     return instances
 
 def combine_ligand_topologies(instances, workdir):
-    """Combine distinct dye topology and parameter files for HADDOCK."""
     workdir = Path(workdir)
     haddock_dir = workdir / "haddock"
     top_out = haddock_dir / "dyes_haddock.top"
@@ -182,7 +174,6 @@ def combine_ligand_topologies(instances, workdir):
     return top_out, par_out
 
 def prepare_dna_for_haddock(dna_pdb, instances, workdir):
-    """Remove replaced DNA residues and record original chain breaks."""
     dna_pdb, workdir = Path(dna_pdb), Path(workdir)
     haddock_dir = workdir / "haddock"
     output_pdb = haddock_dir / f"{dna_pdb.stem}_haddock.pdb"
@@ -226,7 +217,6 @@ def prepare_dna_for_haddock(dna_pdb, instances, workdir):
 def write_bond_restraints(instances, dna_pdb, output="haddock/bond_restraint.tbl",
                           bond_output="haddock/bonds.csv", dna_segid="A",
                           target=1.5, lower_tol=0.2, upper_tol=0.2):
-    """Write HADDOCK interface restraints and machine-readable bonds."""
     dna_pdb, output, bond_output = map(Path, (dna_pdb, output, bond_output))
 
     if not dna_pdb.exists():
@@ -417,7 +407,6 @@ DEFAULT_DOCKING_CONFIG = {
 }
 
 def read_user_docking_config(path):
-    """Read and validate supported HADDOCK configuration overrides."""
     path = Path(path)
 
     if not path.exists():
@@ -451,7 +440,6 @@ def read_user_docking_config(path):
     return values
 
 def write_docking_config(dna_pdb, instances, top_file, par_file, restraint_file, workdir=".", user_config=None, template=None):
-    """Render a HADDOCK configuration for the prepared DNA and dyes."""
     workdir = Path(workdir)
     output = workdir / "docking_config.cfg"
 
@@ -487,7 +475,6 @@ def write_docking_config(dna_pdb, instances, top_file, par_file, restraint_file,
     )
 
     def format_value(value):
-        """Format values using HADDOCK/TOML-compatible spelling."""
         return str(value).lower() if isinstance(value, bool) else str(value)
 
     text = template.read_text()
@@ -506,7 +493,6 @@ def write_docking_config(dna_pdb, instances, top_file, par_file, restraint_file,
 # HADDOCK postprocessing
 
 def load_prepared_dye_instances(dockings, dye_dir, workdir="."):
-    """Reconstruct dye instances from previously generated HADDOCK files."""
     from .dye import create_dye_instances, load_dye_definitions
 
     workdir = Path(workdir)
@@ -530,7 +516,6 @@ def load_prepared_dye_instances(dockings, dye_dir, workdir="."):
     return instances
 
 def select_best_models(run_dir, output_dir, top=5):
-    """Rank HADDOCK models by bonded geometry and copy the best models."""
     run_dir, output_dir = Path(run_dir), Path(output_dir)
     flexref_dir = run_dir / "3_flexref"
     capri_file = run_dir / "4_caprieval" / "capri_ss.tsv"
@@ -567,32 +552,31 @@ def select_best_models(run_dir, output_dir, top=5):
 
 
 def atom_key(line):
-    """Return the stable residue-and-atom identity for a PDB record."""
     return line[21].strip(), int(line[22:26]), line[17:20].strip(), line[12:16].strip()
 
 
 def set_atom_name(line, name):
-    """Return a PDB record with a replaced atom name."""
     return line[:12] + f"{name:>4s}" + line[16:]
 
 
 def set_resname(line, name):
-    """Return a PDB record with a replaced residue name."""
     return line[:17] + f"{name:>3s}" + line[20:]
 
 
 def set_resid(line, resid):
-    """Return a PDB record with a replaced residue number."""
     return line[:22] + f"{resid:4d}" + line[26:]
 
 
+def set_chain_and_segid(line, chain="A", segid="A"):
+    line = line[:21] + chain + line[22:]
+    return line.ljust(76)[:72] + f"{segid:>4s}" + line.ljust(76)[76:]
+
+
 def set_serial(line, serial):
-    """Return a PDB record with a replaced atom serial number."""
     return f"{line[:6]}{serial:5d}{line[11:]}"
 
 
 def make_ter(last_atom, serial):
-    """Create a TER record following the supplied final atom record."""
     return (
         f"TER   {serial:5d}      "
         f"{last_atom[17:20]} "
@@ -603,7 +587,6 @@ def make_ter(last_atom, serial):
 
 
 def group_template_residues(dna_template):
-    """Group coordinate records in a DNA template by residue identity."""
     groups, current_key, current_lines = [], None, []
 
     for line in Path(dna_template).read_text().splitlines():
@@ -626,7 +609,6 @@ def group_template_residues(dna_template):
 
 
 def write_final_bonds(bond_file, output, residue_map, instances):
-    """Resolve interface and internal dye bonds to final residue numbers."""
     bond_file, output = Path(bond_file), Path(output)
     bonds = pd.read_csv(bond_file, keep_default_na=False)
     final = []
@@ -688,7 +670,6 @@ def write_final_bonds(bond_file, output, residue_map, instances):
 
 def reformat_docked_models(instances, dna_template, bonding_csv, structure_dir,
                            bond_file="haddock/bonds.csv"):
-    """Restore names, insert dyes, and consistently renumber docked models."""
     dna_template, bonding_csv, structure_dir, bond_file = map(
         Path, (dna_template, bonding_csv, structure_dir, bond_file))
 
@@ -855,3 +836,4 @@ def reformat_docked_models(instances, dna_template, bonding_csv, structure_dir,
         print(f"Reformatted {pdb}")
 
     write_final_bonds(bond_file, structure_dir / "bonds.csv", final_residue_map, instances)
+

@@ -4,7 +4,6 @@ from . import fileproc as fp
 
 @dataclass(frozen=True)
 class AttachmentAtom:
-    """Identify one attachment atom in the assembled dye definition."""
     resname: str
     resid: int
     atom: str
@@ -12,7 +11,6 @@ class AttachmentAtom:
 
 @dataclass(frozen=True)
 class AmberAtomMapping:
-    """Describe an optional LEaP atom name and type conversion."""
     resname: str
     resid: int
     atom: str
@@ -22,7 +20,6 @@ class AmberAtomMapping:
 
 @dataclass(frozen=True)
 class DyeDefinition:
-    """Represent the files and metadata for one reusable dye."""
     name: str
     directory: Path
     mol2: Path
@@ -32,7 +29,6 @@ class DyeDefinition:
 
     @classmethod
     def from_library(cls, name, dye_dir):
-        """Load and validate a dye definition from the dye library."""
         directory = Path(dye_dir) / name
         mol2 = directory / f"{name}.mol2"
         attach = directory / f"{name}.attach"
@@ -60,7 +56,6 @@ class DyeDefinition:
 
 
     def read_attachment(self):
-        """Read the required 5' and 3' external attachment atoms."""
         data = {}
 
         for line in self.attach.read_text().splitlines():
@@ -83,7 +78,6 @@ class DyeDefinition:
 
 
     def read_amber_mapping(self):
-        """Read optional AMBER name/type mappings from the attachment file."""
         mappings = []
 
         for line in self.attach.read_text().splitlines():
@@ -104,7 +98,6 @@ class DyeDefinition:
         return mappings
 
     def read_inter_residue_bonds(self):
-        """Extract bonds crossing residue boundaries in the assembled MOL2."""
         atoms, bonds = {}, []
         section = None
 
@@ -144,7 +137,6 @@ class DyeDefinition:
 
 @dataclass
 class DyeInstance:
-    """Track one placed occurrence of a dye during structure generation."""
     definition: DyeDefinition
     residues: list[int]
     name: str
@@ -152,14 +144,12 @@ class DyeInstance:
     
 
 def load_dye_definitions(dockings, dye_dir):
-    """Load each distinct dye referenced by the docking specifications."""
     names = dict.fromkeys(docking.dye for docking in dockings)
 
     return {name: DyeDefinition.from_library(name, dye_dir) for name in names}
 
 
 def create_dye_instances(dockings, definitions):
-    """Create uniquely named and segmented dye instances in docking order."""
     counts = {}
     segids = "BCDEFGHIJKLMNOPQRSTUVWXYZ"
     instances = []
@@ -173,6 +163,7 @@ def create_dye_instances(dockings, definitions):
         instances.append(DyeInstance(definition=definitions[docking.dye], residues=docking.residues, name=name, segid=segids[i]))
 
     return instances
+
 
 
 
