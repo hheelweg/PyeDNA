@@ -9,10 +9,12 @@ from .structure_config import StructureConfig
 
 
 class AmberSetup:
+    """Prepare a docked DNA-dye model for AMBER topology generation."""
     def __init__(self, input_pdb, output_name, workdir=".", water_model="TIP3P",
                 solvent_padding=20.0, positive_ion="Na+", negative_ion="Cl-",
                 neutralize=True, dna_forcefield="leaprc.DNA.OL15",
                 dye_forcefield="leaprc.gaff", water_forcefield="leaprc.water.tip3p"):
+        """Store AMBER preparation settings and validate the input structure."""
         self.workdir = Path(workdir)
         self.input_pdb = Path(input_pdb)
         self.output_name = output_name
@@ -34,6 +36,7 @@ class AmberSetup:
         self.bonds = None
 
     def final_resid_for_mapping(self, source, mapping):
+        """Resolve a dye-library residue to its residue ID in the final PDB."""
         matches = set()
 
         left = self.bonds[
@@ -59,6 +62,7 @@ class AmberSetup:
         return matches.pop()
 
     def load_structure_data(self):
+        """Load structure metadata, dye definitions, and explicit bonds."""
         if not self.bond_file.exists():
             raise FileNotFoundError(f"Bond file not found: {self.bond_file}")
 
@@ -74,6 +78,7 @@ class AmberSetup:
         return self
 
     def validate(self):
+        """Validate that the bond table contains all columns AMBER needs."""
         if self.bonds is None:
             raise RuntimeError("Structure data has not been loaded")
 
@@ -89,6 +94,7 @@ class AmberSetup:
         return self
 
     def amber_atom_name(self, source, resname, original_resid, atom):
+        """Return the post-mapping atom name used by LEaP."""
         if source == "DNA":
             return atom
 
@@ -111,6 +117,7 @@ class AmberSetup:
         return matches[0].name if matches else atom
 
     def prepare_input(self):
+        """Apply configured AMBER atom renames to a copy of the docked PDB."""
         output_pdb = self.workdir / f"{self.output_name}.pdb"
         rename = {}
 
@@ -147,6 +154,7 @@ class AmberSetup:
     
     @classmethod
     def from_file(cls, path, workdir="."):
+        """Create an AMBER setup from an ``amber.params`` file."""
         params = fp.readParams(path)
         workdir = Path(workdir)
 
@@ -176,6 +184,7 @@ class AmberSetup:
 
 
     def write_tleap_input(self):
+        """Write a complete LEaP input using dye metadata and explicit bonds."""
         if self.bonds is None:
             raise RuntimeError("Structure data has not been loaded")
         if not hasattr(self, "amber_pdb"):
@@ -253,4 +262,4 @@ class AmberSetup:
         self.tleap_file = tleap_file
 
         print(f"Wrote {tleap_file}")
-        return tleap_file   
+        return tleap_file
