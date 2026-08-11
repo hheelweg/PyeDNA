@@ -65,6 +65,8 @@ class DyeDefinition:
             fields = line.split()
             if fields[0] not in {"5'", "3'"}:
                 continue
+            if len(fields) != 4:
+                raise ValueError(f"{self.attach}: invalid attachment line: {line}")
 
             end, resname, resid, atom = fields
             data[end] = AttachmentAtom(resname=resname, resid=int(resid), atom=atom)
@@ -122,17 +124,12 @@ class DyeDefinition:
                 }
 
             elif section == "bonds":
-                atom1 = atoms[int(fields[1])]
-                atom2 = atoms[int(fields[2])]
+                atom1, atom2 = atoms[int(fields[1])], atoms[int(fields[2])]
 
                 if atom1["resid"] != atom2["resid"]:
                     bonds.append({
-                        "resname1": atom1["resname"],
-                        "resid1": atom1["resid"],
-                        "atom1": atom1["atom"],
-                        "resname2": atom2["resname"],
-                        "resid2": atom2["resid"],
-                        "atom2": atom2["atom"],
+                        "resname1": atom1["resname"], "resid1": atom1["resid"], "atom1": atom1["atom"],
+                        "resname2": atom2["resname"], "resid2": atom2["resid"], "atom2": atom2["atom"],
                     })
 
         return bonds

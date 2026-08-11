@@ -192,7 +192,6 @@ class AmberSetup:
 
         for dye in self.dye_definitions.values():
             lines.append(f"# {dye.name}")
-            template_names = {mol2.stem for mol2 in dye.mol2_templates}
 
             for mol2 in dye.mol2_templates:
                 lines.append(f"{mol2.stem} = loadMol2 {mol2}")
@@ -201,13 +200,6 @@ class AmberSetup:
                 lines.append(f"loadAmberParams {frcmod}")
 
             for mapping in dye.read_amber_mapping():
-                if mapping.resname not in template_names:
-                    raise ValueError(
-                        f"{dye.name}: AMBER mapping refers to template "
-                        f"{mapping.resname!r}, but loaded templates are {sorted(template_names)}"
-                    )
-
-                # Standalone residue templates currently contain residue 1
                 lines.append(f"set {mapping.resname}.1.{mapping.atom} type {mapping.type}")
                 lines.append(f"set {mapping.resname}.1.{mapping.atom} name {mapping.name}")
 
