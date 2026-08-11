@@ -6,3 +6,6 @@ config.sh
 .DS_Store
 *.egg-info/
 AGENTS.md
+# Python bytecode and cache directories
+__pycache__/
+*.py[cod]
