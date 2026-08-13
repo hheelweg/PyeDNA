@@ -1,0 +1,52 @@
+name: Codex read-only test
+
+on:
+  push:
+    branches:
+      - refactor-structure
+    paths:
+      - ".github/workflows/codex-readonly.yml"
+
+jobs:
+  codex:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    outputs:
+      final_message: ${{ steps.codex.outputs.final-message }}
+
+    steps:
+      - name: Check out refactor-structure
+        uses: actions/checkout@v5
+        with:
+          ref: refactor-structure
+          persist-credentials: false
+
+      - name: Ask Codex to inspect PyeDNA
+        id: codex
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          safety-strategy: read-only
+          prompt: |
+            Follow the repository AGENTS.md.
+
+            This is a read-only connectivity test. Do not modify any files.
+
+            Inspect the repository and report:
+            1. the purpose of PyeDNA;
+            2. the main top-level source-code structure;
+            3. the current Git branch;
+            4. three Python source files you inspected.
+
+            Do not run scientific software or calculations.
+
+  report:
+    needs: codex
+    runs-on: ubuntu-latest
+    steps:
+      - name: Show Codex response
+        env:
+          CODEX_RESPONSE: ${{ needs.codex.outputs.final_message }}
+        run: printf '%s\n' "$CODEX_RESPONSE"
