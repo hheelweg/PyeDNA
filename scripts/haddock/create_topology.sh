@@ -40,7 +40,7 @@ rm -rf "$ACPYPE_DIR" "$TMP_DIR" "$OUT_DIR"
 
 # Run ACPYPE in the dedicated HADDOCK environment
 conda run --no-capture-output -n haddock \
-    acpype -i "$MOL2_SINGLE" -o cns -a gaff2 -c user -n "$CHARGE"
+    acpype -i "$MOL2_SINGLE" -o cns -a gaff -c user -n "$CHARGE"
 
 TOP=$(find "$ACPYPE_DIR" -maxdepth 1 -name '*_CNS.top' -print -quit)
 PAR=$(find "$ACPYPE_DIR" -maxdepth 1 -name '*_CNS.par' -print -quit)

@@ -1,18 +1,22 @@
+"""Prepare assembled DNA–dye structures for Amber with tleap."""
+
 from pathlib import Path
 import pandas as pd
-import shutil
 import os
+import subprocess
 
-from . import fileproc as fp
 from .dye import load_dye_definitions
-from .structure_config import StructureConfig
 
 
 class AmberSetup:
+    """Prepare a finalized DNA–dye structure and tleap input for Amber."""
+
     def __init__(self, input_pdb, output_name, workdir=".", water_model="TIP3P",
                 solvent_padding=20.0, positive_ion="Na+", negative_ion="Cl-",
                 neutralize=True, dna_forcefield="leaprc.DNA.OL15",
-                dye_forcefield="leaprc.gaff", water_forcefield="leaprc.water.tip3p"):
+                dye_forcefield="leaprc.gaff", water_forcefield="leaprc.water.tip3p",
+                structure_config=None, dye_dir=None):
+
         self.workdir = Path(workdir)
         self.input_pdb = Path(input_pdb)
         self.output_name = output_name
@@ -29,11 +33,12 @@ class AmberSetup:
             raise FileNotFoundError(f"Input structure not found: {self.input_pdb}")
 
         self.bond_file = self.workdir / "structures" / "bonds.csv"
-        self.structure_config = None
+        self.structure_config = structure_config
+        self.dye_dir = Path(dye_dir) if dye_dir is not None else None
         self.dye_definitions = {}
         self.bonds = None
 
-    def final_resid_for_mapping(self, source, mapping):
+    def _final_resid_for_mapping(self, source, mapping):
         matches = set()
 
         left = self.bonds[
@@ -58,22 +63,26 @@ class AmberSetup:
 
         return matches.pop()
 
-    def load_structure_data(self):
+    def _load_structure_data(self):
         if not self.bond_file.exists():
             raise FileNotFoundError(f"Bond file not found: {self.bond_file}")
 
-        struc_params = self.workdir / "struc.params"
-        if not struc_params.exists():
-            raise FileNotFoundError(f"Structure parameter file not found: {struc_params}")
+        if self.structure_config is None:
+            raise ValueError("A StructureConfig is required to prepare Amber inputs")
 
-        self.structure_config = StructureConfig.from_file(struc_params)
+        if self.dye_dir is None:
+            dye_root = os.environ.get("DYE_DIR")
+            if not dye_root:
+                raise EnvironmentError("DYE_DIR is not set")
+            self.dye_dir = Path(dye_root)
+
         self.dye_definitions = load_dye_definitions(
-            self.structure_config.dockings, os.environ["DYE_DIR"])
+            self.structure_config.dyes, self.dye_dir)
         self.bonds = pd.read_csv(self.bond_file)
 
         return self
 
-    def validate(self):
+    def _validate(self):
         if self.bonds is None:
             raise RuntimeError("Structure data has not been loaded")
 
@@ -88,7 +97,7 @@ class AmberSetup:
 
         return self
 
-    def amber_atom_name(self, source, resname, original_resid, atom):
+    def _amber_atom_name(self, source, resname, original_resid, atom):
         if source == "DNA":
             return atom
 
@@ -110,7 +119,7 @@ class AmberSetup:
 
         return matches[0].name if matches else atom
 
-    def prepare_input(self):
+    def _prepare_input(self):
         output_pdb = self.workdir / f"{self.output_name}.pdb"
         rename = {}
 
@@ -122,7 +131,7 @@ class AmberSetup:
             dye = self.dye_definitions[dye_name]
 
             for mapping in dye.read_amber_mapping():
-                final_resid = self.final_resid_for_mapping(source, mapping)
+                final_resid = self._final_resid_for_mapping(source, mapping)
                 rename[(final_resid, mapping.atom)] = mapping.name
 
         output = []
@@ -144,38 +153,45 @@ class AmberSetup:
         print(f"Prepared AMBER PDB: {output_pdb}")
         return self
 
-    
     @classmethod
-    def from_file(cls, path, workdir="."):
-        params = fp.readParams(path)
+    def from_config(cls, structure_config, workdir=".", dye_dir=None):
+        """Create an Amber setup from the Amber section of a StructureConfig."""
+
         workdir = Path(workdir)
-
-        structure = params.get("structure")
-        output_name = params.get("output_name")
-
-        if not structure:
-            raise ValueError("'structure' must be specified in amber.params")
-
-        if not output_name:
-            output_name = Path(structure).stem
-
-        input_pdb = workdir / "structures" / structure
+        amber = structure_config.amber
+        input_pdb = (
+            workdir / "structures" /
+            f"{structure_config.name}_{amber.model}.pdb"
+        )
 
         return cls(
             input_pdb=input_pdb,
-            output_name=output_name,
+            output_name=amber.output_name or structure_config.name,
             workdir=workdir,
-            water_model=params.get("water_model", "TIP3P"),
-            solvent_padding=params.get("solvent_padding", 20.0),
-            positive_ion=params.get("positive_ion", "Na+"),
-            negative_ion=params.get("negative_ion", "Cl-"),
-            neutralize=params.get("neutralize", True),
-            dna_forcefield=params.get("dna_forcefield", "leaprc.DNA.bsc1"),
-            dye_forcefield=params.get("dye_forcefield", "leaprc.gaff2"),
+            water_model=amber.water_model,
+            solvent_padding=amber.solvent_padding,
+            positive_ion=amber.positive_ion,
+            negative_ion=amber.negative_ion,
+            neutralize=amber.neutralize,
+            dna_forcefield=amber.dna_forcefield,
+            dye_forcefield=amber.dye_forcefield,
+            water_forcefield=amber.water_forcefield,
+            structure_config=structure_config,
+            dye_dir=dye_dir,
         )
 
+    def prepare(self, run_tleap=True):
+        """Prepare Amber inputs and run tleap by default to create MD input files."""
 
-    def write_tleap_input(self):
+        self._load_structure_data()
+        self._validate()
+        self._prepare_input()
+        self._write_tleap_input()
+        if run_tleap:
+            self.run_tleap()
+        return self
+
+    def _write_tleap_input(self):
         if self.bonds is None:
             raise RuntimeError("Structure data has not been loaded")
         if not hasattr(self, "amber_pdb"):
@@ -212,11 +228,11 @@ class AmberSetup:
         ]
 
         for _, bond in self.bonds.iterrows():
-            atom1 = self.amber_atom_name(
+            atom1 = self._amber_atom_name(
                 bond["source1"], bond["resname1"],
                 bond["original_resid1"], bond["atom1"])
 
-            atom2 = self.amber_atom_name(
+            atom2 = self._amber_atom_name(
                 bond["source2"], bond["resname2"],
                 bond["original_resid2"], bond["atom2"])
 
@@ -253,4 +269,29 @@ class AmberSetup:
         self.tleap_file = tleap_file
 
         print(f"Wrote {tleap_file}")
-        return tleap_file   
+        return tleap_file
+
+    def run_tleap(self):
+        """Execute tleap and verify that topology and coordinate files were created."""
+
+        if not hasattr(self, "tleap_file"):
+            raise RuntimeError("tleap input has not been prepared")
+
+        subprocess.run(
+            ["tleap", "-f", str(self.tleap_file.resolve())],
+            cwd=self.workdir,
+            check=True,
+        )
+
+        self.prmtop_file = self.workdir / f"{self.output_name}.prmtop"
+        self.rst7_file = self.workdir / f"{self.output_name}.rst7"
+        self.solvated_pdb = self.workdir / f"{self.output_name}_solvated.pdb"
+
+        missing = [
+            path for path in (self.prmtop_file, self.rst7_file, self.solvated_pdb)
+            if not path.exists()
+        ]
+        if missing:
+            raise RuntimeError(f"tleap did not create expected files: {missing}")
+
+        return self

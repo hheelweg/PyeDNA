@@ -1,6 +1,11 @@
+"""Represent dye-library definitions and prepared docking instances."""
+
 from dataclasses import dataclass
 from pathlib import Path
-from . import fileproc as fp
+from typing import Optional
+
+from .. import fileproc as fp
+
 
 @dataclass(frozen=True)
 class AttachmentAtom:
@@ -137,33 +142,59 @@ class DyeDefinition:
 
 @dataclass
 class DyeInstance:
+    """Represent one physical dye and its prepared HADDOCK artifacts."""
+
     definition: DyeDefinition
     residues: list[int]
     name: str
     segid: str
-    
+    charge: Optional[int] = None
+    resname: Optional[str] = None
+    directory: Optional[Path] = None
+    pdb: Optional[Path] = None
+    top: Optional[Path] = None
+    par: Optional[Path] = None
+    attach: Optional[Path] = None
+    mapping: Optional[Path] = None
 
-def load_dye_definitions(dockings, dye_dir):
-    names = dict.fromkeys(docking.dye for docking in dockings)
+    def set_prepared_paths(self, workdir):
+        """Populate the predictable artifact paths for this dye instance."""
+
+        self.directory = Path(workdir) / "haddock" / self.name
+        self.pdb = self.directory / f"{self.name}_haddock.pdb"
+        self.top = self.directory / f"{self.name}_haddock.top"
+        self.par = self.directory / f"{self.name}_haddock.par"
+        self.attach = self.directory / f"{self.name}.attach"
+        self.mapping = self.directory / f"{self.name}_mapping.csv"
+        return self
+
+
+def load_dye_definitions(placements, dye_dir):
+    """Load each unique dye definition requested by the docking configuration."""
+
+    names = dict.fromkeys(placement.name for placement in placements)
 
     return {name: DyeDefinition.from_library(name, dye_dir) for name in names}
 
 
-def create_dye_instances(dockings, definitions):
+def create_dye_instances(placements, definitions):
+    """Create ordered, uniquely named dye instances for the requested docking sites."""
+
     counts = {}
     segids = "BCDEFGHIJKLMNOPQRSTUVWXYZ"
     instances = []
 
-    if len(dockings) > len(segids):
+    if len(placements) > len(segids):
         raise ValueError(f"At most {len(segids)} dye instances are supported")
 
-    for i, docking in enumerate(dockings):
-        counts[docking.dye] = counts.get(docking.dye, 0) + 1
-        name = f"{docking.dye}_{counts[docking.dye]}"
-        instances.append(DyeInstance(definition=definitions[docking.dye], residues=docking.residues, name=name, segid=segids[i]))
+    for i, placement in enumerate(placements):
+        counts[placement.name] = counts.get(placement.name, 0) + 1
+        name = f"{placement.name}_{counts[placement.name]}"
+        instances.append(DyeInstance(
+            definition=definitions[placement.name],
+            residues=placement.sites,
+            name=name,
+            segid=segids[i],
+        ))
 
     return instances
-
-
-
-

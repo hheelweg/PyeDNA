@@ -11,7 +11,8 @@ import json
 from pathlib import Path
 
 # from current package
-from . import structure
+# TODO: Replace Chromophore with direct MDAnalysis objects during analysis cleanup.
+from .structure import Chromophore
 from . import quanttools as qm
 from . import geomtools as geom
 from . import fileproc as fp
@@ -861,7 +862,7 @@ class Trajectory():
         #molecule_u = self.capResiduesH(molecule_u) if cap else molecule_u
         molecule_u = self.capResiduesHNew(molecule_u) if cap else molecule_u
         # (4) define instance of Chromophore class 
-        chromophore = structure.Chromophore(molecule_u)
+        chromophore = Chromophore(molecule_u)
         # (5) convert to other input format for processing of trajectory
         chromophore_conv = self.convertChromophore(chromophore, conversion) if conversion else None
 
@@ -988,7 +989,7 @@ class Trajectory():
             molecule_u.atoms.translate(com_shift - current_center)
 
         # (6) define instance of Chromophore class 
-        chromophore = structure.Chromophore(molecule_u)
+        chromophore = Chromophore(molecule_u)
 
         # (7) convert to other input format for processing of trajectory
         chromophore_conv = self.convertChromophore(chromophore, conversion) if conversion else None
@@ -1547,4 +1548,3 @@ class Trajectory():
             plt.show()
     
     
-

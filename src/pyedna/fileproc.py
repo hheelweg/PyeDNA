@@ -1,10 +1,13 @@
 import numpy as np
 import pandas as pd
-import os
-import subprocess
 
-# from current package
-from . import trajectory as traj
+
+def set_chain_and_segid(line, chain="A", segid="A"):
+    """Set fixed-width PDB chain and segment identifiers on one record."""
+
+    line = line[:21] + chain + line[22:]
+    return line.ljust(76)[:72] + f"{segid:>4s}" + line.ljust(76)[76:]
+
 
 # class that us handling .pdb files
 class PDB_DF():
@@ -140,85 +143,6 @@ def deleteAtomsPDB(in_pdb, out_pdb, atoms_to_delete):
 
 
 
-# write leap file for AMBER input
-def writeLeap(pdb_file, leap_file, 
-              bonds, chromophore_list, charge,
-              add_ions = ['NA', 'O'], save_pdb = True, water_box = 10.0):
-    '''
-    chromophore_list = list of instances of Chromophore class
-    '''
-
-    loaded_dyes = dict()                                    # store which chromophore templates have already been imported
-
-    #with open(os.path.join(path, leap_file), 'w') as f:
-    with open(leap_file, 'w') as f:
-
-        # (1) load force fields
-        f.write("source leaprc.DNA.OL15\n")                 # load DNA forcefield 
-        f.write("source leaprc.gaff\n")                     # load other forcefield for custom dyes
-        f.write("source leaprc.water.tip3p\n")              # load water forcefield
-
-        # (2) load information about parameters and connectivity for each attached chromophore
-        for chromophore in chromophore_list:
-            # avoid double loading of chromophores
-            if chromophore.dye_name in loaded_dyes:
-                continue
-            else:
-                loaded_dyes[chromophore.dye_name] = True       
-                # (a) load molecule and AMBER ff parameters from 
-                #(a.1)  NOTE : load .mol2 and .frcmod created for the dye with deleted residues for attachment. If we don't use the structure with 
-                # deleted atoms, then tleap has problems processing the produced charges by antechamber for .frcmod. 
-                f.write(f"{chromophore.dye_name} = loadmol2 {os.path.join(chromophore.path, f'{chromophore.dye_name}_del.mol2')}\n")
-                f.write(f"loadAmberParams {os.path.join(chromophore.path, f'{chromophore.dye_name}_del.frcmod')}\n")
-                # (a.2) load forcefield for connecting region (TODO : this is the same for CY3/CY5 but might be different if we add more dyes in the future)
-                f.write(f"loadAmberParams {os.path.join(chromophore.path, 'connectparms.frcmod')}\n")
-
-                # (b) change atom types in mol2 template to OL15 nomenclature and also adjust atom names
-                for atom in chromophore.rename_atoms:
-                    f.write(f"set {chromophore.dye_name}.1.{atom} type {chromophore.rename_types[atom]}\n")     # types
-                    f.write(f"set {chromophore.dye_name}.1.{atom} name {chromophore.rename_atoms[atom]}\n")     # names
-
-                # (d) define connect0 and connect1 atoms to specify connectivity wih neighboring residues
-                # NOTE : the P and O3' of each chromophore are typically the connecting atoms for residues
-                f.write(f"set {chromophore.dye_name}.1 connect0 {chromophore.dye_name}.1.P\n")
-                f.write(f"set {chromophore.dye_name}.1 connect1 {chromophore.dye_name}.1.O3'\n")
-        
-        # (3) load structure.pdb file
-        #f.write(f"mol = loadpdb {os.path.join(path, pdb_file + '.pdb')} \n")
-        f.write(f"mol = loadpdb {pdb_file + '.pdb'} \n")
-
-
-        # NOTE : SANITY CHECK(S)   
-        # f.write(f"desc mol\n")                            # prints all residue names to log file
-        # f.write(f"desc mol.6\n")                          # prints all atoms and also connect0 connect1 for residue 6      
-        # f.write(f"charge mol\n")                          # prints total charge of the molecule (should be integer)
-        # f.write(f"charge mol.8\n")                        # prints charge of residue 8 
-
-
-        # (4) make bonds
-        if len(bonds) > 0:
-            for bond in bonds:
-                bond0 = ".".join(str(el) for el in bond[0])
-                bond1 = ".".join(str(el) for el in bond[1])
-                f.write(f"bond mol.{bond0} mol.{bond1} \n")
-
-        # (5) # add ions to make cell neutral
-        if add_ions is not None:
-             f.write(f"addIons mol {add_ions[0]} {-charge}\n")
-
-        # (6) add water
-        f.write(f"solvatebox mol TIP3PBOX {water_box}\n")
-
-        # (7) optional: save .pdb file
-        if save_pdb:
-            f.write(f"savepdb mol {pdb_file}.pdb\n")
-
-        # (8) export AMBER input
-        f.write(f"saveAmberParm mol {pdb_file}.prmtop {pdb_file}.rst7\n")
-        f.write(f"quit")
-
-
-
 def clean_numbers(thearray):
     def check_st(string):
         only_alpha = ""
@@ -273,4 +197,3 @@ def readParams(filename):
                 user_params[key] = value
 
         return user_params
-

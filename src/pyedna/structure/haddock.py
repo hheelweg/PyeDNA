@@ -1,3 +1,5 @@
+"""Prepare HADDOCK inputs and post-process docked DNA–dye structures."""
+
 from pathlib import Path
 import re
 import shutil
@@ -7,14 +9,94 @@ import pandas as pd
 import numpy as np
 import MDAnalysis as mda
 from scipy.optimize import linear_sum_assignment
-try:
-    import tomllib
-except ImportError:
-    import tomli as tomllib
 import os
 
+from .. import fileproc as fp
 
-def get_mol2_charge(mol2, tolerance=0.05):
+__all__ = ["HaddockSetup"]
+
+
+class HaddockSetup:
+    """Prepare HADDOCK inputs and convert completed docking output into final structures."""
+
+    def __init__(self, config, dna_pdb, instances, workdir=".", pyedna_home=None):
+        self.config = config
+        self.dna_pdb = Path(dna_pdb)
+        self.instances = instances
+        self.workdir = Path(workdir)
+        home = pyedna_home or os.environ.get("PYEDNA_HOME")
+        self.pyedna_home = Path(home) if home else None
+        self.haddock_dir = self.workdir / "haddock"
+        self.structure_dir = self.workdir / "structures"
+        self.docking_overrides = _flatten_docking_overrides(
+            self.config.haddock.overrides
+        )
+
+    def prepare_inputs(self):
+        """Write dye topologies, DNA inputs, restraints, and the HADDOCK configuration."""
+
+        if self.pyedna_home is None:
+            raise EnvironmentError("PYEDNA_HOME is not set")
+
+        topology_script = self.pyedna_home / "scripts" / "haddock" / "create_topology.sh"
+        _prepare_dye_topologies(self.instances, self.workdir, topology_script)
+        self.top_file, self.par_file = _combine_ligand_topologies(
+            self.instances, self.workdir
+        )
+        self.haddock_dna_pdb, self.bonding_csv = _prepare_dna_for_haddock(
+            self.dna_pdb, self.instances, self.workdir
+        )
+        self.restraint_file, self.bond_file = _write_bond_restraints(
+            self.instances,
+            self.haddock_dna_pdb,
+            output=self.haddock_dir / "bond_restraint.tbl",
+            bond_output=self.haddock_dir / "bonds.csv",
+        )
+        self.docking_config = _write_docking_config(
+            dna_pdb=self.haddock_dna_pdb,
+            instances=self.instances,
+            top_file=self.top_file,
+            par_file=self.par_file,
+            restraint_file=self.restraint_file,
+            workdir=self.workdir,
+            override_values=self.docking_overrides,
+            template=self.pyedna_home / "data" / "haddock_templates" / "docking_config.cfg",
+        )
+        return self
+
+    def process_results(self):
+        """Select, reconstruct, and annotate the requested top HADDOCK models."""
+
+        for instance in self.instances:
+            instance.set_prepared_paths(self.workdir)
+            required = [
+                instance.pdb, instance.top, instance.par,
+                instance.attach, instance.mapping,
+            ]
+            missing = [str(path) for path in required if not path.exists()]
+            if missing:
+                raise FileNotFoundError(
+                    f"{instance.name}: missing prepared HADDOCK files: {missing}"
+                )
+
+        _select_best_models(
+            run_dir=self.haddock_dir / "run",
+            output_dir=self.structure_dir,
+            top=self.config.haddock.top_models,
+            structure_name=self.config.name,
+        )
+        _reformat_docked_models(
+            instances=self.instances,
+            dna_template=self.haddock_dir / f"{self.config.dna.name}_haddock.pdb",
+            bonding_csv=self.haddock_dir / f"{self.config.dna.name}_bonding.csv",
+            structure_dir=self.structure_dir,
+            bond_file=self.haddock_dir / "bonds.csv",
+            model_pattern=f"{self.config.name}_*.pdb",
+        )
+        return self
+
+
+def _get_mol2_charge(mol2, tolerance=0.05):
     in_atoms, charge = False, 0.0
 
     for line in Path(mol2).read_text().splitlines():
@@ -33,7 +115,7 @@ def get_mol2_charge(mol2, tolerance=0.05):
     return integer_charge
 
 
-def get_elements(universe):
+def _get_elements(universe):
     try:
         return np.asarray(universe.atoms.elements)
     except (AttributeError, mda.exceptions.NoDataError):
@@ -41,7 +123,7 @@ def get_elements(universe):
         return np.asarray(guess_types(universe.atoms.names))
 
 
-def write_mapping(original_mol2, haddock_pdb, output_csv, max_distance=0.1):
+def _write_mapping(original_mol2, haddock_pdb, output_csv, max_distance=0.1):
     original = mda.Universe(original_mol2)
     haddock = mda.Universe(haddock_pdb)
 
@@ -49,7 +131,7 @@ def write_mapping(original_mol2, haddock_pdb, output_csv, max_distance=0.1):
         raise ValueError(f"{haddock_pdb}: atom counts differ ({len(original.atoms)} vs {len(haddock.atoms)})")
 
     cost = np.linalg.norm(original.atoms.positions[:, None] - haddock.atoms.positions[None], axis=2)
-    original_elements, haddock_elements = get_elements(original), get_elements(haddock)
+    original_elements, haddock_elements = _get_elements(original), _get_elements(haddock)
     cost[original_elements[:, None] != haddock_elements[None]] = 1e6
 
     original_idx, haddock_idx = linear_sum_assignment(cost)
@@ -71,16 +153,16 @@ def write_mapping(original_mol2, haddock_pdb, output_csv, max_distance=0.1):
     print(f"Wrote {output_csv} (max displacement {distances.max():.6f} Å)")
 
 
-def prepare_dye_topology(instance, workdir, script):
+def _prepare_dye_topology(instance, workdir, script):
     workdir, script = Path(workdir), Path(script)
     haddock_dir = workdir / "haddock"
-    instance_dir = haddock_dir / instance.name
+    instance.set_prepared_paths(workdir)
     working_mol2 = haddock_dir / f"{instance.name}.mol2"
 
     if not script.exists():
         raise FileNotFoundError(f"Missing topology script: {script}")
 
-    charge = get_mol2_charge(instance.definition.mol2)
+    charge = _get_mol2_charge(instance.definition.mol2)
     resname = instance.definition.name[:3].upper()
 
     if not re.fullmatch(r"[A-Za-z0-9]{1,3}", resname):
@@ -95,11 +177,8 @@ def prepare_dye_topology(instance, workdir, script):
     finally:
         working_mol2.unlink(missing_ok=True)
 
-    pdb = instance_dir / f"{instance.name}_haddock.pdb"
-    top = instance_dir / f"{instance.name}_haddock.top"
-    par = instance_dir / f"{instance.name}_haddock.par"
-    attach = instance_dir / f"{instance.name}.attach"
-    mapping = instance_dir / f"{instance.name}_mapping.csv"
+    pdb, top, par = instance.pdb, instance.top, instance.par
+    attach = instance.attach
 
     missing = [str(path) for path in (pdb, top, par) if not path.exists()]
     if missing:
@@ -109,25 +188,19 @@ def prepare_dye_topology(instance, workdir, script):
 
     instance.charge = charge
     instance.resname = resname
-    instance.directory = instance_dir
-    instance.pdb = pdb
-    instance.top = top
-    instance.par = par
-    instance.attach = attach
-    instance.mapping = mapping
 
-    write_mapping(instance.definition.mol2, instance.pdb, instance.mapping)
+    _write_mapping(instance.definition.mol2, instance.pdb, instance.mapping)
 
     print(f"{instance.name}: charge={charge:+d}, resname={resname}, segid={instance.segid}")
     return instance
 
 
-def prepare_dye_topologies(instances, workdir, script):
+def _prepare_dye_topologies(instances, workdir, script):
     for instance in instances:
-        prepare_dye_topology(instance, workdir, script)
+        _prepare_dye_topology(instance, workdir, script)
     return instances
 
-def combine_ligand_topologies(instances, workdir):
+def _combine_ligand_topologies(instances, workdir):
     workdir = Path(workdir)
     haddock_dir = workdir / "haddock"
     top_out = haddock_dir / "dyes_haddock.top"
@@ -174,7 +247,7 @@ def combine_ligand_topologies(instances, workdir):
     return top_out, par_out
 
 
-def prepare_dna_for_haddock(dna_pdb, instances, workdir):
+def _prepare_dna_for_haddock(dna_pdb, instances, workdir):
     dna_pdb, workdir = Path(dna_pdb), Path(workdir)
     haddock_dir = workdir / "haddock"
     output_pdb = haddock_dir / f"{dna_pdb.stem}_haddock.pdb"
@@ -215,7 +288,7 @@ def prepare_dna_for_haddock(dna_pdb, instances, workdir):
     return output_pdb, bonding_csv
 
 
-def write_bond_restraints(instances, dna_pdb, output="haddock/bond_restraint.tbl",
+def _write_bond_restraints(instances, dna_pdb, output="haddock/bond_restraint.tbl",
                           bond_output="haddock/bonds.csv", dna_segid="A",
                           target=1.5, lower_tol=0.2, upper_tol=0.2):
     dna_pdb, output, bond_output = map(Path, (dna_pdb, output, bond_output))
@@ -407,13 +480,10 @@ DEFAULT_DOCKING_CONFIG = {
     "caprieval_allatoms": True,
 }
 
-def read_user_docking_config(path):
-    path = Path(path)
 
-    if not path.exists():
-        raise FileNotFoundError(f"Missing user docking config: {path}")
+def _flatten_docking_overrides(sections):
+    """Validate and flatten sectioned HADDOCK overrides for template rendering."""
 
-    sections = tomllib.loads(path.read_text())
     prefixes = {
         "general": "",
         "topoaa": "",
@@ -427,20 +497,26 @@ def read_user_docking_config(path):
 
     for section, params in sections.items():
         if section not in prefixes:
-            raise ValueError(f"{path}: unknown section [{section}]")
+            raise ValueError(
+                f"Unknown HADDOCK override section [haddock.overrides.{section}]"
+            )
         if not isinstance(params, dict):
-            raise ValueError(f"{path}: [{section}] must contain key-value pairs")
+            raise ValueError(
+                f"[haddock.overrides.{section}] must contain key-value pairs"
+            )
 
         prefix = prefixes[section]
         values.update({f"{prefix}{key}": value for key, value in params.items()})
 
     unknown = sorted(set(values) - set(DEFAULT_DOCKING_CONFIG))
     if unknown:
-        raise KeyError(f"{path}: unknown configuration parameters: {unknown}")
+        raise KeyError(f"Unknown HADDOCK configuration parameters: {unknown}")
 
     return values
 
-def write_docking_config(dna_pdb, instances, top_file, par_file, restraint_file, workdir=".", user_config=None, template=None):
+
+def _write_docking_config(dna_pdb, instances, top_file, par_file, restraint_file,
+                          workdir=".", override_values=None, template=None):
     workdir = Path(workdir)
     output = workdir / "docking_config.cfg"
 
@@ -458,9 +534,7 @@ def write_docking_config(dna_pdb, instances, top_file, par_file, restraint_file,
         raise FileNotFoundError(f"Missing required HADDOCK files: {missing}")
 
     values = dict(DEFAULT_DOCKING_CONFIG)
-
-    if user_config is not None:
-        values.update(read_user_docking_config(user_config))
+    values.update(override_values or {})
 
     molecules = [dna_pdb] + [instance.pdb for instance in instances]
 
@@ -493,30 +567,7 @@ def write_docking_config(dna_pdb, instances, top_file, par_file, restraint_file,
 
 # HADDOCK postprocessing
 
-def load_prepared_dye_instances(dockings, dye_dir, workdir="."):
-    from .dye import create_dye_instances, load_dye_definitions
-
-    workdir = Path(workdir)
-    definitions = load_dye_definitions(dockings, dye_dir)
-    instances = create_dye_instances(dockings, definitions)
-
-    for instance in instances:
-        instance_dir = workdir / "haddock" / instance.name
-        instance.directory = instance_dir
-        instance.pdb = instance_dir / f"{instance.name}_haddock.pdb"
-        instance.top = instance_dir / f"{instance.name}_haddock.top"
-        instance.par = instance_dir / f"{instance.name}_haddock.par"
-        instance.attach = instance_dir / f"{instance.name}.attach"
-        instance.mapping = instance_dir / f"{instance.name}_mapping.csv"
-
-        required = [instance.pdb, instance.top, instance.par, instance.attach, instance.mapping]
-        missing = [str(path) for path in required if not path.exists()]
-        if missing:
-            raise FileNotFoundError(f"{instance.name}: missing prepared HADDOCK files: {missing}")
-
-    return instances
-
-def select_best_models(run_dir, output_dir, top=5):
+def _select_best_models(run_dir, output_dir, top=5, structure_name="dna_dyes"):
     run_dir, output_dir = Path(run_dir), Path(output_dir)
     flexref_dir = run_dir / "3_flexref"
     capri_file = run_dir / "4_caprieval" / "capri_ss.tsv"
@@ -534,14 +585,14 @@ def select_best_models(run_dir, output_dir, top=5):
     ranked = df.sort_values("geometry_score").reset_index(drop=True)
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    for old in output_dir.glob("*.pdb"):
+    for old in output_dir.glob(f"{structure_name}_*.pdb"):
         old.unlink()
 
     nmodels = min(top, len(ranked))
 
     for i, model in enumerate(ranked["model"].iloc[:nmodels], start=1):
         src = flexref_dir / model
-        dst = output_dir / f"dna_dyes_{i}.pdb"
+        dst = output_dir / f"{structure_name}_{i}.pdb"
 
         if not src.exists():
             raise FileNotFoundError(f"Missing flexref model: {src}")
@@ -552,32 +603,27 @@ def select_best_models(run_dir, output_dir, top=5):
     return ranked.iloc[:nmodels].copy()
 
 
-def atom_key(line):
+def _atom_key(line):
     return line[21].strip(), int(line[22:26]), line[17:20].strip(), line[12:16].strip()
 
 
-def set_atom_name(line, name):
+def _set_atom_name(line, name):
     return line[:12] + f"{name:>4s}" + line[16:]
 
 
-def set_resname(line, name):
+def _set_resname(line, name):
     return line[:17] + f"{name:>3s}" + line[20:]
 
 
-def set_resid(line, resid):
+def _set_resid(line, resid):
     return line[:22] + f"{resid:4d}" + line[26:]
 
 
-def set_chain_and_segid(line, chain="A", segid="A"):
-    line = line[:21] + chain + line[22:]
-    return line.ljust(76)[:72] + f"{segid:>4s}" + line.ljust(76)[76:]
-
-
-def set_serial(line, serial):
+def _set_serial(line, serial):
     return f"{line[:6]}{serial:5d}{line[11:]}"
 
 
-def make_ter(last_atom, serial):
+def _make_ter(last_atom, serial):
     return (
         f"TER   {serial:5d}      "
         f"{last_atom[17:20]} "
@@ -587,7 +633,7 @@ def make_ter(last_atom, serial):
     )
 
 
-def group_template_residues(dna_template):
+def _group_template_residues(dna_template):
     groups, current_key, current_lines = [], None, []
 
     for line in Path(dna_template).read_text().splitlines():
@@ -609,7 +655,7 @@ def group_template_residues(dna_template):
     return groups
 
 
-def write_final_bonds(bond_file, output, residue_map, instances):
+def _write_final_bonds(bond_file, output, residue_map, instances):
     bond_file, output = Path(bond_file), Path(output)
     bonds = pd.read_csv(bond_file, keep_default_na=False)
     final = []
@@ -669,8 +715,8 @@ def write_final_bonds(bond_file, output, residue_map, instances):
     return output
 
 
-def reformat_docked_models(instances, dna_template, bonding_csv, structure_dir,
-                           bond_file="haddock/bonds.csv"):
+def _reformat_docked_models(instances, dna_template, bonding_csv, structure_dir,
+                           bond_file="haddock/bonds.csv", model_pattern="*.pdb"):
     dna_template, bonding_csv, structure_dir, bond_file = map(
         Path, (dna_template, bonding_csv, structure_dir, bond_file))
 
@@ -679,7 +725,7 @@ def reformat_docked_models(instances, dna_template, bonding_csv, structure_dir,
             raise FileNotFoundError(f"Missing required file: {path}")
 
     ter_after = set(pd.read_csv(bonding_csv)["ter_after_resid"].astype(int))
-    template_groups = group_template_residues(dna_template)
+    template_groups = _group_template_residues(dna_template)
 
     ordered_instances = sorted(instances, key=lambda x: min(x.residues))
     insertion_blocks = []
@@ -700,14 +746,20 @@ def reformat_docked_models(instances, dna_template, bonding_csv, structure_dir,
     insertions = {block["insert_after"]: block["instances"] for block in insertion_blocks}
     final_residue_map = None
 
-    for pdb in sorted(structure_dir.glob("*.pdb")):
+    model_files = sorted(structure_dir.glob(model_pattern))
+    if not model_files:
+        raise FileNotFoundError(
+            f"No selected HADDOCK models matching {model_pattern!r} in {structure_dir}"
+        )
+
+    for pdb in model_files:
         coordinates = [
             line for line in pdb.read_text().splitlines()
             if line.startswith(("ATOM  ", "HETATM"))
         ]
 
         docked_dna = {
-            atom_key(line): line for line in coordinates
+            _atom_key(line): line for line in coordinates
             if line[72:76].strip() == "A"
         }
 
@@ -739,10 +791,10 @@ def reformat_docked_models(instances, dna_template, bonding_csv, structure_dir,
                     raise KeyError(f"{pdb.name}: no mapping for {instance.name} atom {name!r}")
 
                 entry = atom_map[name]
-                line = set_atom_name(line, str(entry["original_name"]))
-                line = set_resname(line, str(entry["original_resname"]))
-                line = set_resid(line, int(entry["original_resid"]))
-                line = set_chain_and_segid(line)
+                line = _set_atom_name(line, str(entry["original_name"]))
+                line = _set_resname(line, str(entry["original_resname"]))
+                line = _set_resid(line, int(entry["original_resid"]))
+                line = fp.set_chain_and_segid(line)
 
                 restored.append((int(entry["original_resid"]), int(entry["map_order"]), line))
 
@@ -771,7 +823,7 @@ def reformat_docked_models(instances, dna_template, bonding_csv, structure_dir,
             rebuilt = []
 
             for template_line in template_lines:
-                key = atom_key(template_line)
+                key = _atom_key(template_line)
 
                 if key not in docked_dna:
                     element = template_line[76:78].strip()
@@ -816,15 +868,15 @@ def reformat_docked_models(instances, dna_template, bonding_csv, structure_dir,
             rewritten = []
 
             for line in group["lines"]:
-                line = set_chain_and_segid(line)
-                line = set_resid(line, new_resid)
-                line = set_serial(line, serial)
+                line = fp.set_chain_and_segid(line)
+                line = _set_resid(line, new_resid)
+                line = _set_serial(line, serial)
                 rewritten.append(line)
                 output.append(line)
                 serial += 1
 
             if group["ter"]:
-                output.append(make_ter(rewritten[-1], serial))
+                output.append(_make_ter(rewritten[-1], serial))
                 serial += 1
 
         if final_residue_map is None:
@@ -836,5 +888,4 @@ def reformat_docked_models(instances, dna_template, bonding_csv, structure_dir,
         pdb.write_text("\n".join(output) + "\n")
         print(f"Reformatted {pdb}")
 
-    write_final_bonds(bond_file, structure_dir / "bonds.csv", final_residue_map, instances)
-
+    _write_final_bonds(bond_file, structure_dir / "bonds.csv", final_residue_map, instances)

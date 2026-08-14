@@ -11,7 +11,9 @@ import os
 from . import utils
 from . import fileproc as fp
 from . import const
-from . import structure
+# TODO: Remove these compatibility imports when dye construction and molecular
+# conversion no longer depend on Chromophore.
+from .structure import Chromophore, cleanPDB
 from . import trajectory
 from . import pyscf_utils
 
@@ -495,7 +497,7 @@ def geometryOptimizationDFT_gpu(in_pdb_file, dye_name, constraint = None, point_
     
 
     # (0) define instance of Chromophore class based on .pdb file
-    dye = structure.Chromophore(mda.Universe(in_pdb_file, format = "PDB"))
+    dye = Chromophore(mda.Universe(in_pdb_file, format = "PDB"))
     # (0) write constraint if specified
     # find atoms to constrain with specific name
     if constraint is not None:
@@ -577,7 +579,7 @@ def writePySCF2PDB(pyscf_mol, dye_name):
                 outfile.write(line)  
 
     # "Clean" .pdb file
-    structure.cleanPDB(f"tmp1.pdb", f"{dye_name}.pdb", res_code = dye_name)
+    cleanPDB(f"tmp1.pdb", f"{dye_name}.pdb", res_code = dye_name)
 
     # Remove temporary .pdb files
     subprocess.run("rm -f tmp0.pdb", shell = True)

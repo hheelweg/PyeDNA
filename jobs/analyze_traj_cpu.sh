@@ -28,4 +28,4 @@ fi
 export PYTHONUNBUFFERED=1
 
 # Run trajectory analysis calculation with GPU acceleration
-python -m analyze_traj
+python -m analyze_traj "$@"
