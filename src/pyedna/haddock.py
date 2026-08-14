@@ -173,6 +173,7 @@ def combine_ligand_topologies(instances, workdir):
 
     return top_out, par_out
 
+
 def prepare_dna_for_haddock(dna_pdb, instances, workdir):
     dna_pdb, workdir = Path(dna_pdb), Path(workdir)
     haddock_dir = workdir / "haddock"
