@@ -14,6 +14,7 @@ from .parameterization import (
     generate_resp_inputs,
     generate_resp_mol2,
     mol2_charge,
+    optimize_classical_geometry,
     optimize_rdkit_geometry,
     read_ac_atom_names,
     run_two_stage_resp,
@@ -331,13 +332,14 @@ class LinkerDefinition:
         if self.mol is None or self.mol.GetNumConformers() == 0:
             raise RuntimeError("Generate a 3D conformer before geometry optimization.")
 
+        self.mol = optimize_classical_geometry(self.mol)
         optimized_file, self.mol = optimize_rdkit_geometry(
             self.mol,
             self.name,
             self.formal_charge,
             self.qm,
             output_dir,
-            "RDKit/MMFF starting geometry",
+            "RDKit/MMFF-UFF relaxed starting geometry",
         )
         return optimized_file
 

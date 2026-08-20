@@ -58,18 +58,75 @@ class QMSettings:
 
 
 def embed_rdkit_conformer(mol, error_message):
-    """Add hydrogens and generate a force-field-relaxed RDKit conformer."""
+    """Add hydrogens and generate an RDKit 3D conformer."""
     from rdkit import Chem
     from rdkit.Chem import AllChem
 
     mol = Chem.AddHs(mol)
-    if AllChem.EmbedMolecule(mol, randomSeed=42) != 0:
+
+    params = AllChem.ETKDGv3()
+    params.useExpTorsionAnglePrefs = True
+    params.useBasicKnowledge = True
+    params.randomSeed = 42
+
+    if AllChem.EmbedMolecule(mol, params) != 0:
         raise RuntimeError(error_message)
 
+    return mol
+
+
+def optimize_classical_geometry(mol, num_confs=20):
+    """Generate and optimize multiple RDKit conformers, returning the lowest-energy one."""
+    from rdkit import Chem
+    from rdkit.Chem import AllChem
+
+    if mol is None:
+        raise RuntimeError("No molecule provided.")
+
+    params = AllChem.ETKDGv3()
+    params.useExpTorsionAnglePrefs = True
+    params.useBasicKnowledge = True
+    params.randomSeed = 42
+
+    mol.RemoveAllConformers()
+
+    conf_ids = list(
+        AllChem.EmbedMultipleConfs(
+            mol,
+            numConfs=num_confs,
+            params=params,
+        )
+    )
+
+    if not conf_ids:
+        raise RuntimeError("Could not generate conformers.")
+
     if AllChem.MMFFHasAllMoleculeParams(mol):
-        AllChem.MMFFOptimizeMolecule(mol)
+        results = AllChem.MMFFOptimizeMoleculeConfs(
+            mol,
+            maxIters=500,
+        )
     else:
-        AllChem.UFFOptimizeMolecule(mol)
+        results = AllChem.UFFOptimizeMoleculeConfs(
+            mol,
+            maxIters=500,
+        )
+
+    energies = [energy for _, energy in results]
+    best_id = conf_ids[energies.index(min(energies))]
+
+    best_conf = mol.GetConformer(best_id)
+
+    new_conf = Chem.Conformer(mol.GetNumAtoms())
+
+    for i in range(mol.GetNumAtoms()):
+        new_conf.SetAtomPosition(
+            i,
+            best_conf.GetAtomPosition(i),
+        )
+
+    mol.RemoveAllConformers()
+    mol.AddConformer(new_conf)
 
     return mol
 

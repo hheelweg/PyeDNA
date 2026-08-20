@@ -15,8 +15,9 @@ def main(config_file="dyelnk.toml"):
     dyelnk = DyeLinkerConfig.from_file(config_path)
 
     assembled_pdb = dyelnk.assemble(
-        workdir / f"{dyelnk.dye}_{dyelnk.linker}_assembled.pdb"
-    )
+        workdir / f"{dyelnk.dye}_{dyelnk.linker}_assembled.pdb",
+        n_conformers=20,
+    )   
 
     tleap_input = workdir / "tleap_dyelnk.in"
     mol2_output = workdir / f"{dyelnk.dye}_{dyelnk.linker}_linked.mol2"

@@ -1,13 +1,15 @@
 """Load, validate and assemble dye/linker templates."""
 
 import os
+import subprocess
 import warnings
 from dataclasses import dataclass
 from pathlib import Path
-import subprocess
 
 import MDAnalysis as mda
 import numpy as np
+from rdkit import Chem
+from rdkit.Chem import AllChem
 from scipy.spatial.distance import cdist
 from scipy.spatial.transform import Rotation
 
@@ -23,12 +25,10 @@ def _read_attach(path):
 
     for line in Path(path).read_text().splitlines():
         line = line.strip()
-
         if not line or line.startswith("#"):
             continue
 
         fields = line.split()
-
         if len(fields) != 2:
             raise ValueError(f"{path}: invalid attachment line: {line}")
 
@@ -51,13 +51,22 @@ def _mol2_resname(path):
     return next(iter(names))
 
 
+def _mol2_frcmod(path):
+    """Return corresponding frcmod file."""
+    frcmod = Path(path).with_suffix(".frcmod")
+
+    if not frcmod.exists():
+        raise FileNotFoundError(f"Missing frcmod parameter file: {frcmod}")
+
+    return frcmod
+
+
 def _element_from_gaff(atom_type):
     """Infer chemical element from an Amber/GAFF atom type."""
     atom_type = atom_type.lower()
 
     if atom_type.startswith("cl"):
         return "Cl"
-
     if atom_type.startswith("br"):
         return "Br"
 
@@ -74,26 +83,13 @@ def _element_from_gaff(atom_type):
 
 
 def _load_mol2(path):
-    """Load a MOL2 template and normalize its element metadata."""
+    """Load a MOL2 template and normalize element metadata."""
     with warnings.catch_warnings():
-        warnings.filterwarnings(
-            "ignore",
-            message="Unknown elements found for some atoms.*",
-        )
-        warnings.filterwarnings(
-            "ignore",
-            message="Failed to guess the mass.*",
-        )
-
+        warnings.filterwarnings("ignore", message="Unknown elements found for some atoms.*")
+        warnings.filterwarnings("ignore", message="Failed to guess the mass.*")
         u = mda.Universe(str(path))
 
-    elements = [
-        _element_from_gaff(atom_type)
-        for atom_type in u.atoms.types
-    ]
-
-    # Topology attributes must be added through the Universe rather than
-    # assigned directly to u.atoms.
+    elements = [_element_from_gaff(atom_type) for atom_type in u.atoms.types]
     u.add_TopologyAttr("elements", elements)
 
     return u
@@ -122,7 +118,6 @@ def _validate_attach(mol2, attach, expected):
             )
 
     names = _mol2_atom_names(mol2)
-
     missing = [
         atom
         for atoms in data.values()
@@ -152,7 +147,7 @@ def _atom(universe, name):
 
 
 def _unit(vector):
-    """Return a normalized vector."""
+    """Return normalized vector."""
     norm = np.linalg.norm(vector)
 
     if norm < 1e-10:
@@ -161,114 +156,276 @@ def _unit(vector):
     return vector / norm
 
 
-def _attachment_direction(atom):
-    """Estimate outward attachment direction from bonded neighbors."""
-    neighbors = atom.bonded_atoms
+def _attachment_direction(universe, atom_name, coords=None):
+    """Estimate outward direction from an attachment atom and its neighbors."""
+    atom = _atom(universe, atom_name)
+    coords = universe.atoms.positions if coords is None else coords
+    neighbors = atom.bonded_atoms.indices
 
     if len(neighbors) == 0:
-        raise ValueError(
-            f"Attachment atom {atom.name} has no bonded neighbors"
-        )
+        raise ValueError(f"Attachment atom {atom.name} has no bonded neighbors")
 
-    return _unit(
-        atom.position - neighbors.positions.mean(axis=0)
-    )
+    return _unit(coords[atom.index] - coords[neighbors].mean(axis=0))
 
 
 def _rotate_about_axis(coords, origin, axis, angle_deg):
-    """Rotate coordinates about an arbitrary axis."""
-    rotation = Rotation.from_rotvec(
-        np.deg2rad(angle_deg) * _unit(axis)
-    )
-
+    """Rotate coordinates around an arbitrary axis."""
+    rotation = Rotation.from_rotvec(np.deg2rad(angle_deg) * _unit(axis))
     return rotation.apply(coords - origin) + origin
 
 
-def _heavy_positions(atoms):
-    """Return positions of non-hydrogen atoms."""
-    mask = np.asarray([
-        element != "H"
-        for element in atoms.elements
-    ])
-
-    return atoms.positions[mask]
-
-
-def _clash_score(moving, fixed, cutoff=2.0):
-    """Return a simple heavy-atom steric overlap penalty."""
-    moving_coords = _heavy_positions(moving)
-    fixed_coords = _heavy_positions(fixed)
+def _clash_score(moving, fixed, moving_coords=None, fixed_coords=None,
+                 exclude_pair=None, cutoff=2.0):
+    """Return heavy-atom intermolecular overlap penalty."""
+    moving_coords = (
+        moving.positions if moving_coords is None else np.asarray(moving_coords)
+    )
+    fixed_coords = (
+        fixed.positions if fixed_coords is None else np.asarray(fixed_coords)
+    )
 
     distances = cdist(moving_coords, fixed_coords)
+
+    moving_heavy = np.asarray(moving.elements) != "H"
+    fixed_heavy = np.asarray(fixed.elements) != "H"
+    mask = moving_heavy[:, None] & fixed_heavy[None, :]
+
+    # The intended new covalent bond is ~1.5 Å and must not count as a clash.
+    if exclude_pair is not None:
+        moving_idx, fixed_idx = exclude_pair
+        mask[moving_idx, fixed_idx] = False
+
     overlap = np.clip(cutoff - distances, 0.0, None)
+    return float(np.sum((overlap[mask]) ** 2))
 
-    return np.sum(overlap**2)
 
 
-def _place_linker(
-    linker,
-    linker_atom_name,
-    dye,
-    dye_atom_name,
-    fixed,
-    bond_length=1.50,
-    angle_step=10.0,
-):
-    """Rigidly place one linker and minimize clashes around the new bond."""
+def _generate_linker_conformers(linker, n_conformers=20, seed=7):
+    """
+    Generate linker conformers using RDKit.
+
+    RDKit is only used for geometry generation.
+    The Amber/GAFF template remains the source of truth.
+
+    Only coordinates of the original Amber atoms are returned.
+    """
+
+    rw = Chem.RWMol()
+
+    # Store the number of Amber atoms before adding temporary H
+    n_atoms = len(linker.atoms)
+
+    # Preserve original Amber atom ordering
+    for atom in linker.atoms:
+        rw.AddAtom(
+            Chem.Atom(atom.element)
+        )
+
+    # Preserve connectivity
+    for bond in linker.bonds:
+        rw.AddBond(
+            int(bond.indices[0]),
+            int(bond.indices[1]),
+            Chem.BondType.SINGLE,
+        )
+
+    mol = rw.GetMol()
+    Chem.SanitizeMol(mol)
+
+    # Add temporary hydrogens for MMFF
+    mol_h = Chem.AddHs(mol)
+
+    params = AllChem.ETKDGv3()
+    params.randomSeed = seed
+    params.pruneRmsThresh = 0.5
+
+    conf_ids = AllChem.EmbedMultipleConfs(
+        mol_h,
+        numConfs=n_conformers,
+        params=params,
+    )
+
+    if not conf_ids:
+        raise RuntimeError(
+            "RDKit failed to generate linker conformers"
+        )
+
+    try:
+        energies = AllChem.MMFFOptimizeMoleculeConfs(
+            mol_h,
+            maxIters=200,
+        )
+    except Exception:
+        energies = [(0, 0)] * len(conf_ids)
+
+    conformers = []
+
+    for conf_id, (_, energy) in zip(conf_ids, energies):
+
+        conf = mol_h.GetConformer(conf_id)
+
+        # Only keep coordinates belonging to original Amber atoms.
+        # RDKit appends added hydrogens after these atoms.
+        coords = np.array(
+            [
+                [
+                    conf.GetAtomPosition(i).x,
+                    conf.GetAtomPosition(i).y,
+                    conf.GetAtomPosition(i).z,
+                ]
+                for i in range(n_atoms)
+            ]
+        )
+
+        if coords.shape != (n_atoms, 3):
+            raise RuntimeError(
+                "RDKit coordinate mapping failed"
+            )
+
+        conformers.append(
+            (
+                coords,
+                float(energy),
+            )
+        )
+
+    return conformers
+
+
+def _place_conformer(linker, coords, linker_atom_name, dye, dye_atom_name,
+                     fixed, bond_length=1.50, angle_step=10.0):
+    """Place one linker conformer and find its best axial orientation."""
     linker_atom = _atom(linker, linker_atom_name)
     dye_atom = _atom(dye, dye_atom_name)
 
-    dye_direction = _attachment_direction(dye_atom)
-    linker_direction = _attachment_direction(linker_atom)
+    linker_idx = linker_atom.index
+    dye_idx = dye_atom.index
 
-    # Align the linker outward direction opposite to that of the dye.
+    dye_direction = _attachment_direction(dye, dye_atom_name)
+    linker_direction = _attachment_direction(
+        linker, linker_atom_name, coords=coords
+    )
+
+    # Outward directions must oppose one another across the new bond.
     rotation, _ = Rotation.align_vectors(
         np.array([-dye_direction]),
         np.array([linker_direction]),
     )
 
-    coords = rotation.apply(
-        linker.atoms.positions - linker_atom.position
-    )
+    placed = rotation.apply(coords - coords[linker_idx])
 
-    # Position the linker attachment atom at the desired bond distance.
-    target = (
-        dye_atom.position
-        + bond_length * dye_direction
-    )
+    target = dye_atom.position + bond_length * dye_direction
+    placed += target
 
-    coords += target
-    linker.atoms.positions = coords
-
-    best_coords = coords.copy()
+    best_coords = None
     best_score = np.inf
 
-    # Remaining rigid-body freedom is rotation around the prospective bond.
     for angle in np.arange(0.0, 360.0, angle_step):
         candidate = _rotate_about_axis(
-            coords,
+            placed,
             target,
             dye_direction,
             angle,
         )
 
-        linker.atoms.positions = candidate
-        score = _clash_score(linker.atoms, fixed)
+        score = _clash_score(
+            linker.atoms,
+            fixed,
+            moving_coords=candidate,
+            exclude_pair=(linker_idx, dye_idx),
+        )
 
         if score < best_score:
             best_score = score
             best_coords = candidate.copy()
 
-    linker.atoms.positions = best_coords
+    return best_coords, best_score
 
-    return linker
+
+def _select_linker_pair(
+    dye,
+    linker3,
+    linker5,
+    dye3_atom,
+    dye5_atom,
+    linker3_atom,
+    linker5_atom,
+    n_conformers=20,
+    bond_length=1.50,
+    angle_step=10.0,
+):
+    """Select the globally lowest-clash DE3/DE5 conformer combination."""
+    conformers3 = _generate_linker_conformers(
+        linker3,
+        n_conformers=n_conformers,
+        seed=7,
+    )
+    conformers5 = _generate_linker_conformers(
+        linker5,
+        n_conformers=n_conformers,
+        seed=17,
+    )
+
+    best = None
+    best_key = (np.inf, np.inf)
+
+    for coords3, energy3 in conformers3:
+        placed3, clash3 = _place_conformer(
+            linker3,
+            coords3,
+            linker3_atom,
+            dye,
+            dye3_atom,
+            dye.atoms,
+            bond_length=bond_length,
+            angle_step=angle_step,
+        )
+
+        linker3.atoms.positions = placed3
+
+        # Dye is deliberately first so its atom indices remain unchanged.
+        fixed = mda.Merge(dye.atoms, linker3.atoms)
+
+        for coords5, energy5 in conformers5:
+            placed5, clash5 = _place_conformer(
+                linker5,
+                coords5,
+                linker5_atom,
+                dye,
+                dye5_atom,
+                fixed.atoms,
+                bond_length=bond_length,
+                angle_step=angle_step,
+            )
+
+            # clash5 contains both:
+            #   DE5 <-> dye
+            #   DE5 <-> DE3
+            # while clash3 contains DE3 <-> dye.
+            total_clash = clash3 + clash5
+            total_energy = energy3 + energy5
+
+            # Sterics dominate. Conformer MMFF/UFF energy only breaks ties.
+            key = (total_clash, total_energy)
+
+            if key < best_key:
+                best_key = key
+                best = (placed3.copy(), placed5.copy())
+
+    if best is None:
+        raise RuntimeError("Could not find a valid linker conformer pair")
+
+    linker3.atoms.positions = best[0]
+    linker5.atoms.positions = best[1]
+
+    return linker3, linker5
 
 
 def _write_combined_pdb(dye, linker3, linker5, output_file):
     """Write assembled structure in the PDB format expected by tleap."""
     output_file = Path(output_file)
 
-    # Match the desired molecular order:
+    # Molecular order in the finished construct:
     # 5' linker -> dye -> 3' linker
     components = [
         (linker5, 1),
@@ -285,7 +442,11 @@ def _write_combined_pdb(dye, linker3, linker5, output_file):
 
         for atom in atoms:
             x, y, z = atom.position
-            element = atom.element if atom.element else _element_from_gaff(atom.type)
+            element = (
+                atom.element
+                if atom.element
+                else _element_from_gaff(atom.type)
+            )
 
             lines.append(
                 f"HETATM{serial:5d} {atom.name:>4s} "
@@ -436,37 +597,26 @@ class DyeLinkerConfig:
     def assemble(
         self,
         output_file=None,
+        n_conformers=20,
         bond_length=1.50,
         angle_step=10.0,
     ):
-        """Place both linkers around the dye and write a combined PDB."""
+        """Generate linker conformers, place both around dye, and write PDB."""
         dye = _load_mol2(self.dye_mol2)
         linker3 = _load_mol2(self.linker3_mol2)
         linker5 = _load_mol2(self.linker5_mol2)
 
         dye3_atom, dye5_atom = self.dye_linker_atoms
 
-        linker3 = _place_linker(
-            linker3,
-            self.linker3_5connect,
-            dye,
-            dye3_atom,
-            dye.atoms,
-            bond_length=bond_length,
-            angle_step=angle_step,
-        )
-
-        fixed = mda.Merge(
-            dye.atoms,
-            linker3.atoms,
-        )
-
-        linker5 = _place_linker(
-            linker5,
-            self.linker5_3connect,
-            dye,
-            dye5_atom,
-            fixed.atoms,
+        linker3, linker5 = _select_linker_pair(
+            dye=dye,
+            linker3=linker3,
+            linker5=linker5,
+            dye3_atom=dye3_atom,
+            dye5_atom=dye5_atom,
+            linker3_atom=self.linker3_5connect,
+            linker5_atom=self.linker5_3connect,
+            n_conformers=n_conformers,
             bond_length=bond_length,
             angle_step=angle_step,
         )
@@ -488,16 +638,12 @@ class DyeLinkerConfig:
         assembled_pdb,
         output_file=None,
         mol2_output=None,
-        pdb_output=None,
     ):
-        """Write tleap input for bonding the assembled dye/linker residues."""
+        """Write tleap input for bonding assembled dye/linker residues."""
         assembled_pdb = Path(assembled_pdb).resolve()
         output_file = Path(output_file or "tleap_dyelnk.in")
         mol2_output = Path(
             mol2_output or f"{self.dye}_{self.linker}_linked.mol2"
-        )
-        pdb_output = Path(
-            pdb_output or f"{self.dye}_{self.linker}_linked.pdb"
         )
 
         if not assembled_pdb.exists():
@@ -509,40 +655,54 @@ class DyeLinkerConfig:
         res5 = _mol2_resname(self.linker5_mol2)
         resd = _mol2_resname(self.dye_mol2)
 
+        frc3 = _mol2_frcmod(self.linker3_mol2)
+        frc5 = _mol2_frcmod(self.linker5_mol2)
+        frcd = _mol2_frcmod(self.dye_mol2)
+
         dye3_atom, dye5_atom = self.dye_linker_atoms
 
         text = f"""source leaprc.gaff2
 
-    {res3} = loadMol2 "{self.linker3_mol2}"
-    {res5} = loadMol2 "{self.linker5_mol2}"
-    {resd} = loadMol2 "{self.dye_mol2}"
+loadAmberParams "{frc3}"
+loadAmberParams "{frc5}"
+loadAmberParams "{frcd}"
 
-    dyelnk = loadPdb "{assembled_pdb}"
+{res3} = loadMol2 "{self.linker3_mol2}"
+{res5} = loadMol2 "{self.linker5_mol2}"
+{resd} = loadMol2 "{self.dye_mol2}"
 
-    bond dyelnk.1.{self.linker5_3connect} dyelnk.2.{dye5_atom}
-    bond dyelnk.2.{dye3_atom} dyelnk.3.{self.linker3_5connect}
+dyelnk = loadPdb "{assembled_pdb}"
 
-    check dyelnk
-    charge dyelnk
+bond dyelnk.1.{self.linker5_3connect} dyelnk.2.{dye5_atom}
+bond dyelnk.2.{dye3_atom} dyelnk.3.{self.linker3_5connect}
 
-    saveMol2 dyelnk "{mol2_output}" 1
+check dyelnk
+charge dyelnk
 
-    quit
-    """
+saveMol2 dyelnk "{mol2_output}" 1
+
+quit
+"""
 
         output_file.write_text(text)
-
         return output_file
 
-
-    def run_tleap(self, tleap_input, mol2_output, assembled_pdb=None, workdir=None):
+    def run_tleap(
+        self,
+        tleap_input,
+        mol2_output,
+        assembled_pdb=None,
+        workdir=None,
+    ):
         """Run tleap, validate success, and remove temporary assembly files."""
         tleap_input = Path(tleap_input).resolve()
         mol2_output = Path(mol2_output).resolve()
         workdir = Path(workdir or tleap_input.parent)
 
         if not tleap_input.exists():
-            raise FileNotFoundError(f"tleap input not found: {tleap_input}")
+            raise FileNotFoundError(
+                f"tleap input not found: {tleap_input}"
+            )
 
         result = subprocess.run(
             ["tleap", "-f", str(tleap_input)],
@@ -555,8 +715,6 @@ class DyeLinkerConfig:
         log_file = workdir / "tleap_dyelnk.log"
         log_file.write_text(output)
 
-        # tleap can occasionally return shell status 0 despite LEaP errors,
-        # so inspect both the return code and LEaP's own summary.
         leap_failed = (
             result.returncode != 0
             or "FATAL:" in output
@@ -571,12 +729,10 @@ class DyeLinkerConfig:
                 f"  log:   {log_file}"
             )
 
-        # Successful run: keep only the final linked MOL2.
         temporary_files = [
             tleap_input,
             log_file,
             Path(assembled_pdb) if assembled_pdb else None,
-            workdir / f"{self.dye}_{self.linker}_linked.pdb",
             workdir / "leap.log",
         ]
 
