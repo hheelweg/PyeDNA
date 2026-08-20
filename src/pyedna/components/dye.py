@@ -45,6 +45,23 @@ class OutputSettings:
         )
 
 
+@dataclass(frozen=True)
+class QMSettings:
+    """QM settings for dye geometry optimization."""
+
+    basis: str = "6-31g(d)"
+    maxsteps: int = 100
+
+    @classmethod
+    def from_config(cls, config):
+        """Create QM settings from an optional TOML table."""
+        geometry = config.get("geometry", {})
+        return cls(
+            basis=geometry.get("basis", "6-31g(d)"),
+            maxsteps=geometry.get("maxsteps", 100),
+        )
+
+
 class DyeDefinition:
     """Represent and parameterize a capped dye definition."""
 
@@ -58,6 +75,7 @@ class DyeDefinition:
         formal_charge=None,
         amber=None,
         output=None,
+        qm=None,
         config=None,
     ):
         """Store dye core, cap attachment targets, and workflow settings."""
@@ -69,6 +87,7 @@ class DyeDefinition:
         self.formal_charge = formal_charge
         self.amber = amber or AmberSettings()
         self.output = output or OutputSettings()
+        self.qm = qm or QMSettings()
         self.config = config or {}
         self.mol = None
         self.core_map_ids = set()
@@ -111,6 +130,7 @@ class DyeDefinition:
             formal_charge=core.get("formal_charge"),
             amber=AmberSettings.from_config(config.get("amber", {})),
             output=OutputSettings.from_config(config.get("output", {})),
+            qm=QMSettings.from_config(config.get("qm", {})),
             config=config,
         )
 
@@ -226,15 +246,14 @@ class DyeDefinition:
                 f.write(f"{atom:2s} {x:16.10f} {y:16.10f} {z:16.10f}\n")
 
     def optimize_geometry(self, output_dir=None):
-        """Optimize capped dye geometry with a temporary debug QM setup."""
+        """Optimize capped dye geometry with PySCF and write XYZ/SDF outputs."""
         from pyscf import gto, scf
         from pyscf.geomopt.geometric_solver import optimize
 
         if self.mol is None or self.mol.GetNumConformers() == 0:
             raise RuntimeError("Generate a 3D conformer before geometry optimization.")
 
-        # Temporary/debug QM setup: STO-3G is deliberately cheap and not
-        # production-quality for final dye parameterization.
+        # Use [qm.geometry] in dye.toml to lower the basis for debug runs.
         output_dir = Path(output_dir or Path.cwd() / "qm_opt")
         output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -249,7 +268,7 @@ class DyeDefinition:
 
         mol = gto.M(
             atom=list(zip(symbols, coords)),
-            basis="sto-3g",
+            basis=self.qm.basis,
             charge=self.capped_formal_charge,
             spin=0,
             unit="Angstrom",
@@ -269,7 +288,7 @@ class DyeDefinition:
         except (ImportError, RuntimeError):
             print("QM backend: PySCF CPU")
 
-        mol_opt = optimize(mf, maxsteps=50)
+        mol_opt = optimize(mf, maxsteps=self.qm.maxsteps)
         optimized_file = output_dir / f"{self.name}_opt.xyz"
         opt_coords = mol_opt.atom_coords(unit="Angstrom")
 
@@ -277,7 +296,7 @@ class DyeDefinition:
             [mol_opt.atom_symbol(i) for i in range(mol_opt.natm)],
             opt_coords,
             optimized_file,
-            "RHF/STO-3G debug optimized geometry",
+            f"RHF/{self.qm.basis} optimized geometry",
         )
 
         from rdkit import Chem

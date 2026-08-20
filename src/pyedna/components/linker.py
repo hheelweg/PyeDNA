@@ -57,6 +57,23 @@ class OutputSettings:
         )
 
 
+@dataclass(frozen=True)
+class QMSettings:
+    """QM settings for linker geometry optimization."""
+
+    basis: str = "6-31g(d)"
+    maxsteps: int = 100
+
+    @classmethod
+    def from_config(cls, config):
+        """Create QM settings from an optional TOML table."""
+        geometry = config.get("geometry", {})
+        return cls(
+            basis=geometry.get("basis", "6-31g(d)"),
+            maxsteps=geometry.get("maxsteps", 100),
+        )
+
+
 class LinkerDefinition:
     """Represent and parameterize a capped linker definition."""
 
@@ -73,6 +90,7 @@ class LinkerDefinition:
         amber=None,
         charge_restraints=None,
         output=None,
+        qm=None,
         config=None,
     ):
         """Store linker fragments, partition boundaries, and workflow settings."""
@@ -85,6 +103,7 @@ class LinkerDefinition:
         self.amber = amber or AmberSettings()
         self.charge_restraints = charge_restraints
         self.output = output or OutputSettings()
+        self.qm = qm or QMSettings()
         self.config = config or {}
         self.mol = None
 
@@ -125,6 +144,7 @@ class LinkerDefinition:
             amber=AmberSettings.from_config(config.get("amber", {})),
             charge_restraints=ChargeRestraints.from_config(charges["restraints"]),
             output=OutputSettings.from_config(config.get("output", {})),
+            qm=QMSettings.from_config(config.get("qm", {})),
             config=config,
         )
 
@@ -407,7 +427,7 @@ class LinkerDefinition:
 
         return output_file
 
-    def _geometroptimizey(self, output_dir=None):
+    def optimize_geometry(self, output_dir=None):
         """Optimize the linker geometry with PySCF and write XYZ/SDF outputs."""
         from pyscf import gto, scf
         from pyscf.geomopt.geometric_solver import optimize
@@ -436,7 +456,7 @@ class LinkerDefinition:
         # (2) Run the RHF geometry optimization.
         mol = gto.M(
             atom=list(zip(symbols, coords)),
-            basis="6-31g(d)",
+            basis=self.qm.basis,
             charge=self.formal_charge,
             spin=0,
             unit="Angstrom",
@@ -457,7 +477,7 @@ class LinkerDefinition:
         except (ImportError, RuntimeError):
             print("QM backend: PySCF CPU")
 
-        mol_opt = optimize(mf, maxsteps=100)
+        mol_opt = optimize(mf, maxsteps=self.qm.maxsteps)
 
         # (3) Write optimized XYZ coordinates.
         optimized_file = output_dir / f"{self.name}_opt.xyz"
@@ -467,7 +487,7 @@ class LinkerDefinition:
             [mol_opt.atom_symbol(i) for i in range(mol_opt.natm)],
             opt_coords,
             optimized_file,
-            "RHF/6-31G(d) optimized geometry",
+            f"RHF/{self.qm.basis} optimized geometry",
         )
 
         # (4) Write optimized coordinates back into an RDKit SDF.
