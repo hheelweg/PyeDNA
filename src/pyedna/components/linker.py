@@ -17,6 +17,7 @@ from .parameterization import (
     optimize_rdkit_geometry,
     read_ac_atom_names,
     run_two_stage_resp,
+    write_attach_file,
     write_qin,
     write_xyz,
 )
@@ -599,6 +600,34 @@ class LinkerDefinition:
         residue_name = self.residue_names[variant]
         return extract_mol2_subset(mol2_file, output_file, keep_atoms, residue_name)
 
+    def connection_indices(self, variant):
+        """Return linker 3'/5' connection atom indices for one residue variant."""
+        partition = self.partition(variant)
+        residue = set(partition["residue"])
+        boundaries = self.boundaries[variant]
+
+        def residue_atom(boundary):
+            atoms = [idx for idx in boundary if idx in residue]
+            if len(atoms) != 1:
+                raise ValueError(
+                    f"{variant} boundary {boundary} does not identify one residue atom."
+                )
+            return atoms[0]
+
+        dye_atom = residue_atom(boundaries["dye"])
+        dna_atom = residue_atom(boundaries["dna"])
+
+        if variant == "three_prime":
+            return {"3CONNECT": dna_atom, "5CONNECT": dye_atom}
+        if variant == "five_prime":
+            return {"3CONNECT": dye_atom, "5CONNECT": dna_atom}
+
+        raise ValueError(f"Unsupported linker residue variant: {variant}")
+
+    def write_attach_file(self, mol2_file, records, output_file):
+        """Write linker attachment metadata for the final residue mol2."""
+        return write_attach_file(output_file, records, mol2_file)
+
     def mol2_charge(self, mol2_file):
         """Return the sum of partial charges in a mol2 ATOM section."""
         return mol2_charge(mol2_file)
@@ -609,18 +638,32 @@ class LinkerDefinition:
         templates = {}
 
         for variant, residue_name in self.residue_names.items():
-            mol2 = self.extract_residue_mol2(
+            partition = self.partition(variant)
+            mol2, name_map = extract_mol2_subset(
                 mol2_file,
-                variant,
                 output_dir / f"{residue_name}.mol2",
+                set(partition["residue"]),
+                residue_name,
+                return_mapping=True,
             )
             frcmod = self.generate_frcmod(
                 mol2,
                 output_dir / f"{residue_name}.frcmod",
             )
+            records = []
+            for label, idx in self.connection_indices(variant).items():
+                if idx not in name_map:
+                    raise ValueError(f"{label} atom index {idx} is absent from {mol2}")
+                records.append((label, name_map[idx]))
+            attach = self.write_attach_file(
+                mol2,
+                records,
+                output_dir / f"{residue_name}.attach",
+            )
             templates[residue_name] = {
                 "mol2": mol2,
                 "frcmod": frcmod,
+                "attach": attach,
                 "charge": self.mol2_charge(mol2),
             }
 

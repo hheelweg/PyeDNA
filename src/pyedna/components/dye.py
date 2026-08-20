@@ -16,6 +16,7 @@ from .parameterization import (
     optimize_rdkit_geometry,
     read_ac_atom_names,
     run_two_stage_resp,
+    write_attach_file,
     write_xyz,
 )
 
@@ -239,6 +240,26 @@ class DyeDefinition:
 
         return sorted(indices)
 
+    def attachment_indices(self):
+        """Return RESP atom indices for mapped dye-linker attachment atoms."""
+        if self.mol is None:
+            self.attach_caps()
+
+        indices = {}
+        for atom in self.mol.GetAtoms():
+            map_id = atom.GetAtomMapNum()
+            if map_id in self.core_targets:
+                indices[map_id] = atom.GetIdx() + 1
+
+        missing = set(self.core_targets) - set(indices)
+        if missing:
+            raise ValueError(
+                "Could not resolve dye attachment atom maps: "
+                f"{sorted(missing)}"
+            )
+
+        return [indices[map_id] for map_id in self.core_targets]
+
     def _read_ac_atom_names(self, ac_file):
         """Return RESP atom index -> atom name from an Amber .ac file."""
         return read_ac_atom_names(ac_file)
@@ -311,6 +332,11 @@ class DyeDefinition:
         residue_name = self.residue_name
         return extract_mol2_subset(mol2_file, output_file, keep_atoms, residue_name)
 
+    def write_attach_file(self, mol2_file, atom_names, output_file):
+        """Write dye-linker attachment metadata for the final dye mol2."""
+        records = [("LINKER", atom_name) for atom_name in atom_names]
+        return write_attach_file(output_file, records, mol2_file)
+
     def mol2_charge(self, mol2_file):
         """Return the sum of partial charges in a mol2 ATOM section."""
         return mol2_charge(mol2_file)
@@ -318,12 +344,25 @@ class DyeDefinition:
     def generate_residue_template(self, mol2_file, output_dir):
         """Generate final uncapped dye mol2/frcmod files."""
         output_dir = Path(output_dir)
-        mol2 = self.extract_residue_mol2(
+        mol2, name_map = extract_mol2_subset(
             mol2_file,
             output_dir / f"{self.residue_name}.mol2",
+            set(self.core_resp_indices()),
+            self.residue_name,
+            return_mapping=True,
         )
         frcmod = self.generate_frcmod(mol2, output_dir / f"{self.residue_name}.frcmod")
         charge = self.mol2_charge(mol2)
+        attach_names = []
+        for idx in self.attachment_indices():
+            if idx not in name_map:
+                raise ValueError(f"Attachment atom index {idx} is absent from {mol2}")
+            attach_names.append(name_map[idx])
+        attach = self.write_attach_file(
+            mol2,
+            attach_names,
+            output_dir / f"{self.residue_name}.attach",
+        )
 
         if abs(charge - self.formal_charge) > 0.05:
             raise ValueError(
@@ -331,7 +370,7 @@ class DyeDefinition:
                 f"{self.formal_charge:.6f}"
             )
 
-        return {"mol2": mol2, "frcmod": frcmod, "charge": charge}
+        return {"mol2": mol2, "frcmod": frcmod, "attach": attach, "charge": charge}
 
     def generate_frcmod(self, mol2_file, output_file):
         """Generate a frcmod file for an uncapped dye mol2."""

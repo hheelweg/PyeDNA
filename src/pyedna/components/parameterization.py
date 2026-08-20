@@ -347,7 +347,13 @@ def generate_resp_mol2(name, ac_file, output_dir, amber):
     return mol2
 
 
-def extract_mol2_subset(mol2_file, output_file, keep_atoms, residue_name):
+def extract_mol2_subset(
+    mol2_file,
+    output_file,
+    keep_atoms,
+    residue_name,
+    return_mapping=False,
+):
     """Write a single-residue mol2 subset with clean atom and bond numbering."""
     lines = Path(mol2_file).read_text().splitlines()
     keep_atoms = set(keep_atoms)
@@ -371,6 +377,7 @@ def extract_mol2_subset(mol2_file, output_file, keep_atoms, residue_name):
             bonds.append(line)
 
     old_to_new = {}
+    old_to_name = {}
     new_atoms = []
     for line in atoms:
         fields = line.split()
@@ -378,6 +385,7 @@ def extract_mol2_subset(mol2_file, output_file, keep_atoms, residue_name):
         if idx in keep_atoms:
             new_idx = len(new_atoms) + 1
             old_to_new[idx] = new_idx
+            old_to_name[idx] = fields[1]
             new_atoms.append(
                 {
                     "id": new_idx,
@@ -444,7 +452,54 @@ def extract_mol2_subset(mol2_file, output_file, keep_atoms, residue_name):
             f" TEMP              0 ****  ****    0 ROOT\n"
         )
 
-    return Path(output_file)
+    output_file = Path(output_file)
+    if return_mapping:
+        return output_file, old_to_name
+
+    return output_file
+
+
+def mol2_atom_names(mol2_file):
+    """Return atom names present in a mol2 ATOM section."""
+    names = set()
+    in_atoms = False
+
+    for line in Path(mol2_file).read_text().splitlines():
+        if line.startswith("@<TRIPOS>ATOM"):
+            in_atoms = True
+            continue
+        if line.startswith("@<TRIPOS>"):
+            if in_atoms:
+                break
+            continue
+        if not in_atoms:
+            continue
+
+        fields = line.split()
+        if len(fields) >= 2:
+            names.add(fields[1])
+
+    return names
+
+
+def write_attach_file(output_file, records, mol2_file=None):
+    """Write attachment metadata and validate names against a final mol2."""
+    output_file = Path(output_file)
+    records = [(label, atom_name) for label, atom_name in records]
+
+    if mol2_file is not None:
+        names = mol2_atom_names(mol2_file)
+        for _, atom_name in records:
+            if atom_name not in names:
+                raise ValueError(
+                    f"{output_file}: atom '{atom_name}' is not present in {mol2_file}"
+                )
+
+    with output_file.open("w") as f:
+        for label, atom_name in records:
+            f.write(f"{label} {atom_name}\n")
+
+    return output_file
 
 
 def mol2_charge(mol2_file):
