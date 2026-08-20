@@ -1,35 +1,24 @@
 #!/bin/bash
-#SBATCH --partition=gpu             # GPU partition
-#SBATCH --nodelist=gpu001           # Run on GPU node gpu001
-#SBATCH --gres=gpu:2                # Request 2 GPU
-#SBATCH --cpus-per-task=48          # Request 48 CPU cores
-#SBATCH --job-name=create_dye       # Job name
-#SBATCH --output=create_dye.log     # Output file
+#SBATCH --partition=gpu
+#SBATCH --nodelist=gpu001
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=48
+#SBATCH --job-name=create_dye
+#SBATCH --output=create_dye.log
 
-# USAGE:
-# sbatch this_script.sh
+# USAGE
+# -----
+# sbatch "$PYEDNA_HOME/jobs/create_dye.sh" [DYE_CONFIG]
+#
+# DYE_CONFIG defaults to dye.toml in the current directory.
 
-# Check if PYEDNA_HOME is set
-if [[ -z "$PYEDNA_HOME" ]]; then
-    echo "Error: PYEDNA_HOME is not set. Please set it in shell."
+if [[ $# -gt 1 ]]; then
+    echo "Usage: sbatch $0 [DYE_CONFIG]"
     exit 1
 fi
 
-# Load config.sh from the root of PyeDNA to set user-specific environment variables
-CONFIG_FILE="$PYEDNA_HOME/config.sh"
+DYE_CONFIG="${1:-dye.toml}"
 
-if [[ -f "$CONFIG_FILE" ]]; then
-    source "$CONFIG_FILE"
-else
-    echo "Error: Configuration file ($CONFIG_FILE) not found!"
-    exit 1
-fi
+source "$PYEDNA_HOME/config.sh"
 
-# Print allocated GPUs
-echo "Allocated GPUs: $CUDA_VISIBLE_DEVICES"
-
-# Force unbuffered output
-export PYTHONUNBUFFERED=1
-
-# Run trajectory analysis calculation with GPU acceleration
-python -m create_dye
+python "$PYEDNA_HOME/scripts/create_dye.py" --config "$DYE_CONFIG"
