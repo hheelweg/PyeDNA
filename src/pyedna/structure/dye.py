@@ -133,6 +133,17 @@ class DyeDefinition:
         Path(output_file).write_text(text)
         return output_file
 
+    def linked_intermediates(self):
+        """Return generated linked files safe to remove after Amber setup."""
+        if self.attach is not None:
+            return []
+
+        return [
+            self.directory / f"{self.name}_linked.mol2",
+            self.directory / f"{self.name}_linked.frcmod",
+            self.directory / f"{self.name}_linked.parmchk2.log",
+        ]
+
     def read_amber_mapping(self):
         if self.attach is None:
             return []

@@ -40,13 +40,14 @@ fi
 
 # Prepare all structure/HADDOCK input files
 python "$PYEDNA_HOME/scripts/create_structure.py" prepare \
-    --config "$PYEDNA_STRUCTURE_CONFIG" > structure_prepare.log 2>&1
+    --config "$PYEDNA_STRUCTURE_CONFIG" > create_structure.log 2>&1
 
 if [[ $? -ne 0 ]]; then
-    echo "Error: structure preparation failed. See structure_prepare.log."
+    echo "Error: structure preparation failed. See create_structure.log."
     exit 1
 fi
 
 # Submit HADDOCK job
+mkdir -p haddock
 sbatch --export=ALL,PYEDNA_STRUCTURE_CONFIG="$PYEDNA_STRUCTURE_CONFIG" \
     "$PYEDNA_HOME/jobs/run_haddock.sh"

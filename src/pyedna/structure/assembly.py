@@ -237,6 +237,15 @@ def _prepare_dna(config, dna_dir, workdir="."):
     return output_pdb
 
 
+def _cleanup_file(path, label):
+    """Remove a temporary workflow file if it exists."""
+    path = Path(path)
+
+    if path.exists():
+        path.unlink()
+        print(f"Removed {label}: {path}")
+
+
 class StructureBuilder:
     """Coordinate DNA preparation, HADDOCK docking, and Amber input preparation."""
 
@@ -345,6 +354,7 @@ class StructureBuilder:
             pyedna_home=self.pyedna_home,
         )
         setup.prepare_inputs()
+        _cleanup_file(self.dna_pdb, "temporary DNA PDB")
         return setup
 
     def finalize(self):

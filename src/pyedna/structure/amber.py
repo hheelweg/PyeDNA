@@ -201,7 +201,28 @@ class AmberSetup:
         self._write_tleap_input()
         if run_tleap:
             self.run_tleap()
+            self.cleanup_intermediates()
         return self
+
+    def cleanup_intermediates(self):
+        """Remove generated intermediates after successful tleap."""
+        removed = []
+
+        for dye in self.dye_definitions.values():
+            for path in dye.linked_intermediates():
+                if path.exists():
+                    path.unlink()
+                    removed.append(path)
+
+        for path in (self.tleap_file, self.workdir / "leap.log"):
+            if path.exists():
+                path.unlink()
+                removed.append(path)
+
+        for path in removed:
+            print(f"Removed intermediate: {path}")
+
+        return removed
 
     def _write_tleap_input(self):
         if self.bonds is None:

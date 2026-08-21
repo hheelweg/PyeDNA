@@ -23,9 +23,9 @@ if [[ ! -f "$PYEDNA_STRUCTURE_CONFIG" ]]; then
 fi
 
 python "$PYEDNA_HOME/scripts/prepare_amber.py" \
-    --config "$PYEDNA_STRUCTURE_CONFIG" > amber_setup.log 2>&1
+    --config "$PYEDNA_STRUCTURE_CONFIG" > prepare_amber.log 2>&1
 
 if [[ $? -ne 0 ]]; then
-    echo "Error: AMBER setup failed. See amber_setup.log."
+    echo "Error: AMBER setup failed. See prepare_amber.log."
     exit 1
 fi

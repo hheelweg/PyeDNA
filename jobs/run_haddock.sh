@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=haddock
 #SBATCH --cpus-per-task=32
-#SBATCH --output=haddock_slurm.out
-#SBATCH --error=haddock_slurm.err
+#SBATCH --output=haddock/haddock_slurm.out
+#SBATCH --error=haddock/haddock_slurm.err
 
 set -e
 
@@ -36,3 +36,5 @@ conda run -n haddock haddock3 docking_config.cfg
 echo "Selecting and processing HADDOCK structures..."
 python "$PYEDNA_HOME/scripts/create_structure.py" finalize \
     --config "$PYEDNA_STRUCTURE_CONFIG"
+
+rm -f docking_config.cfg
