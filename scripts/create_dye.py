@@ -5,15 +5,17 @@ from pyedna.components import DyeDefinition
 
 
 def main(config_file="dye.toml"):
-    workdir = Path.cwd()
+    cwd = Path.cwd()
     config_path = Path(config_file)
 
     if not config_path.is_absolute():
-        config_path = workdir / config_path
+        config_path = cwd / config_path
 
     print(f"Dye configuration: {config_path}")
 
     dye = DyeDefinition.from_file(config_path)
+    workdir = dye.output_directory(cwd)
+    print(f"Dye output directory: {workdir}")
     dye.validate()
 
     dye.generate_conformer(workdir / f"{dye.name}.sdf")

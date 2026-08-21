@@ -6,7 +6,7 @@ import os
 import subprocess
 
 from .dye import load_dye_definitions
-from .dyelnk import DyeLinkerConfig
+from .dyelnk import DyeLinkerConfig, tleap_source
 
 
 class AmberSetup:
@@ -14,9 +14,9 @@ class AmberSetup:
 
     def __init__(self, input_pdb, output_name, workdir=".", water_model="TIP3P",
                 solvent_padding=20.0, positive_ion="Na+", negative_ion="Cl-",
-                neutralize=True, dna_forcefield="leaprc.DNA.OL15",
-                dye_forcefield="leaprc.gaff", water_forcefield="leaprc.water.tip3p",
-                structure_config=None, dye_dir=None):
+                neutralize=True, dna_forcefield="OL15",
+                dye_forcefield="gaff2", water_forcefield="leaprc.water.tip3p",
+                structure_config=None, dye_dir=None, lnk_dir=None):
 
         self.workdir = Path(workdir)
         self.input_pdb = Path(input_pdb)
@@ -36,6 +36,7 @@ class AmberSetup:
         self.bond_file = self.workdir / "structures" / "bonds.csv"
         self.structure_config = structure_config
         self.dye_dir = Path(dye_dir) if dye_dir is not None else None
+        self.lnk_dir = Path(lnk_dir) if lnk_dir is not None else None
         self.dye_definitions = {}
         self.bonds = None
 
@@ -81,6 +82,10 @@ class AmberSetup:
             attachment.name: DyeLinkerConfig.from_names(
                 attachment.dye,
                 attachment.linker,
+                dye_forcefield=self.dye_forcefield,
+                dna_forcefield=self.dna_forcefield,
+                dye_dir=self.dye_dir,
+                lnk_dir=self.lnk_dir,
             )
             for attachment in self.structure_config.attachments
         }
@@ -89,6 +94,7 @@ class AmberSetup:
             self.dye_dir,
             generated=generated,
             workdir=self.workdir,
+            dye_forcefield=self.dye_forcefield,
         )
         self.bonds = pd.read_csv(self.bond_file)
 
@@ -166,7 +172,7 @@ class AmberSetup:
         return self
 
     @classmethod
-    def from_config(cls, structure_config, workdir=".", dye_dir=None):
+    def from_config(cls, structure_config, workdir=".", dye_dir=None, lnk_dir=None):
         """Create an Amber setup from the Amber section of a StructureConfig."""
 
         workdir = Path(workdir)
@@ -190,6 +196,7 @@ class AmberSetup:
             water_forcefield=amber.water_forcefield,
             structure_config=structure_config,
             dye_dir=dye_dir,
+            lnk_dir=lnk_dir,
         )
 
     def prepare(self, run_tleap=True):
@@ -233,9 +240,9 @@ class AmberSetup:
         tleap_file = self.workdir / f"{self.output_name}_tleap.in"
 
         lines = [
-            f"source {self.dna_forcefield}",
-            f"source {self.dye_forcefield}",
-            f"source {self.water_forcefield}",
+            f"source {tleap_source(self.dna_forcefield, 'dna')}",
+            f"source {tleap_source(self.dye_forcefield, 'small')}",
+            f"source {tleap_source(self.water_forcefield, 'water')}",
             "",
         ]
 

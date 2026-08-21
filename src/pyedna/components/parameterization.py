@@ -1,5 +1,7 @@
 from dataclasses import dataclass
+import os
 from pathlib import Path
+import shutil
 import subprocess
 
 
@@ -19,25 +21,72 @@ class AmberSettings:
 class OutputSettings:
     """Output directory and cleanup settings for parameterization workflows."""
 
+    directory: str = "cwd"
     work_subdir: str = "resp_fit"
-    cleanup: str = "none"
+    cleanup: str = "scratch"
 
     @classmethod
     def from_config(cls, config):
         """Create output settings from an optional TOML table."""
-        cleanup = config.get("cleanup", "none")
+        directory = config.get("directory", "cwd")
+        cleanup = config.get("cleanup", "scratch")
 
+        if directory not in {"cwd", "library"}:
+            raise ValueError(f"Unsupported output directory mode: {directory}")
         # Cleanup modes:
         # none: keep all generated files for maximum debugging/reproducibility.
         # scratch: remove known transient AmberTools files and initial structures.
         # minimal: remove scratch files plus regenerable RESP setup intermediates.
-        if cleanup not in {"none", "scratch", "minimal"}:
+        # library: keep only final mol2/frcmod/attach files in a library output.
+        if cleanup not in {"none", "scratch", "minimal", "library"}:
             raise ValueError(f"Unsupported output cleanup mode: {cleanup}")
+        if cleanup == "library" and directory != "library":
+            raise ValueError("cleanup='library' requires output.directory='library'")
 
         return cls(
+            directory=directory,
             work_subdir=config.get("work_subdir", "resp_fit"),
             cleanup=cleanup,
         )
+
+
+def resolve_output_directory(
+    output,
+    component,
+    code,
+    amber_forcefield,
+    dna_forcefield=None,
+    cwd=None,
+):
+    """Return the working output directory for cwd or library generation."""
+    cwd = Path(cwd or Path.cwd())
+    if output.directory == "cwd":
+        return cwd
+
+    if not code:
+        raise ValueError(f"{component}: code is required for library output")
+
+    if component == "dye":
+        root_name = "DYE_DIR"
+        parts = [code, amber_forcefield]
+    elif component == "linker":
+        root_name = "LNK_DIR"
+        if not dna_forcefield:
+            raise ValueError("linker: DNA restraint forcefield is required")
+        parts = [code, amber_forcefield, dna_forcefield]
+    else:
+        raise ValueError(f"Unsupported library component: {component}")
+
+    root = os.environ.get(root_name)
+    if not root:
+        raise EnvironmentError(f"{root_name} is not set")
+
+    output_dir = Path(root).joinpath(*parts)
+    if output_dir.exists():
+        raise FileExistsError(f"Library output already exists: {output_dir}")
+
+    output_dir.mkdir(parents=True)
+    return output_dir
 
 
 @dataclass(frozen=True)
@@ -46,14 +95,21 @@ class QMSettings:
 
     basis: str = "6-31g(d)"
     maxsteps: int = 100
+    classical_preopt: bool = False
+    classical_conformers: int = 20
 
     @classmethod
     def from_config(cls, config):
         """Create QM settings from an optional TOML table."""
         geometry = config.get("geometry", {})
+        classical_conformers = geometry.get("classical_conformers", 20)
+        if classical_conformers < 1:
+            raise ValueError("qm.geometry.classical_conformers must be at least 1")
         return cls(
             basis=geometry.get("basis", "6-31g(d)"),
             maxsteps=geometry.get("maxsteps", 100),
+            classical_preopt=geometry.get("classical_preopt", False),
+            classical_conformers=classical_conformers,
         )
 
 
@@ -273,7 +329,9 @@ def compute_resp_esp_from_xyz(xyz_file, output_file=None, charge=0):
 
 def generate_ac(name, sdf_file, output_dir, amber, charge):
     """Generate an Amber AC file from an optimized SDF structure."""
-    ac_file = Path(output_dir) / f"{name}.ac"
+    output_dir = Path(output_dir).resolve()
+    sdf_file = Path(sdf_file).resolve()
+    ac_file = output_dir / f"{name}.ac"
 
     cmd = [
         "antechamber",
@@ -284,7 +342,7 @@ def generate_ac(name, sdf_file, output_dir, amber, charge):
         "-at", amber.forcefield,
         "-nc", str(charge),
     ]
-    subprocess.run(cmd, check=True)
+    subprocess.run(cmd, check=True, cwd=output_dir)
 
     return ac_file
 
@@ -305,19 +363,21 @@ def read_ac_atom_names(ac_file):
 
 def generate_resp_inputs(ac_file, output_dir, restraint_file=None):
     """Generate stage-one and stage-two RESP input files."""
-    output_dir = Path(output_dir)
+    output_dir = Path(output_dir).resolve()
+    ac_file = Path(ac_file).resolve()
+    restraint_file = Path(restraint_file).resolve() if restraint_file else None
     resp1 = output_dir / "resp1.in"
     resp2 = output_dir / "resp2.in"
 
     cmd1 = ["respgen", "-i", str(ac_file), "-o", str(resp1), "-f", "resp1"]
     if restraint_file:
         cmd1 += ["-a", str(restraint_file)]
-    subprocess.run(cmd1, check=True)
+    subprocess.run(cmd1, check=True, cwd=output_dir)
 
     cmd2 = ["respgen", "-i", str(ac_file), "-o", str(resp2), "-f", "resp2"]
     if restraint_file:
         cmd2 += ["-a", str(restraint_file)]
-    subprocess.run(cmd2, check=True)
+    subprocess.run(cmd2, check=True, cwd=output_dir)
 
     return resp1, resp2
 
@@ -386,7 +446,8 @@ def run_two_stage_resp(resp1_in, resp2_in, esp_file, output_dir, qin_file=None):
 
 def generate_resp_mol2(name, ac_file, output_dir, amber):
     """Generate a charged mol2 file from RESP output."""
-    output_dir = Path(output_dir)
+    output_dir = Path(output_dir).resolve()
+    ac_file = Path(ac_file).resolve()
     mol2 = output_dir / f"{name}.mol2"
 
     cmd = [
@@ -399,7 +460,7 @@ def generate_resp_mol2(name, ac_file, output_dir, amber):
         "-cf", str(output_dir / "resp2_charges"),
         "-at", amber.forcefield,
     ]
-    subprocess.run(cmd, check=True)
+    subprocess.run(cmd, check=True, cwd=output_dir)
 
     return mol2
 
@@ -584,6 +645,8 @@ def mol2_charge(mol2_file):
 
 def generate_frcmod(mol2_file, output_file, amber):
     """Generate a frcmod file for a mol2 residue template."""
+    mol2_file = Path(mol2_file).resolve()
+    output_file = Path(output_file).resolve()
     cmd = [
         "parmchk2",
         "-i", str(mol2_file),
@@ -591,7 +654,7 @@ def generate_frcmod(mol2_file, output_file, amber):
         "-o", str(output_file),
         "-s", amber.forcefield,
     ]
-    subprocess.run(cmd, check=True)
+    subprocess.run(cmd, check=True, cwd=output_file.parent)
 
     return output_file
 
@@ -603,6 +666,23 @@ def cleanup_outputs(name, output, workdir=None, extra_scratch=()):
 
     if mode == "none":
         return []
+    if mode == "library" and output.directory != "library":
+        raise ValueError("cleanup='library' is only supported for library output")
+    if mode == "library":
+        keep_suffixes = {".mol2", ".frcmod", ".attach"}
+        removed = []
+
+        for path in workdir.iterdir():
+            if path.is_file() and path.suffix in keep_suffixes:
+                continue
+            if path.is_dir():
+                shutil.rmtree(path)
+                removed.append(path)
+            elif path.is_file():
+                path.unlink()
+                removed.append(path)
+
+        return removed
 
     scratch_patterns = [
         "ANTECHAMBER_*",

@@ -61,6 +61,28 @@ def _mol2_frcmod(path):
     return frcmod
 
 
+def forcefield_id(forcefield):
+    """Return the library-directory identifier for an Amber forcefield."""
+    value = str(forcefield)
+    if value.startswith("leaprc.DNA."):
+        return value.removeprefix("leaprc.DNA.")
+    if value.startswith("leaprc."):
+        return value.removeprefix("leaprc.")
+    return value
+
+
+def tleap_source(forcefield, family):
+    """Return the tleap source file for a compact forcefield identifier."""
+    value = str(forcefield)
+    if value.startswith("leaprc."):
+        return value
+    if family == "dna":
+        return f"leaprc.DNA.{value}"
+    if family == "water":
+        return f"leaprc.water.{value}"
+    return f"leaprc.{value}"
+
+
 def _element_from_gaff(atom_type):
     """Infer chemical element from an Amber/GAFF atom type."""
     atom_type = atom_type.lower()
@@ -467,6 +489,8 @@ def _write_combined_pdb(dye, linker3, linker5, output_file):
 class DyeLinkerConfig:
     dye: str
     linker: str
+    dye_forcefield: str
+    dna_forcefield: str
 
     dye_mol2: Path
     linker3_mol2: Path
@@ -494,20 +518,43 @@ class DyeLinkerConfig:
             config = tomllib.load(handle)
 
         try:
-            dye = config["dyelnk"]["dye"]
-            linker = config["dyelnk"]["linker"]
+            dyelnk = config["dyelnk"]
+            dye = dyelnk["dye"]
+            linker = dyelnk["linker"]
         except KeyError as exc:
             raise ValueError(
                 f"{path}: missing configuration field {exc}"
             ) from exc
 
-        return cls.from_names(dye, linker)
+        return cls.from_names(
+            dye,
+            linker,
+            dye_forcefield=dyelnk.get("dye_forcefield", "gaff2"),
+            dna_forcefield=dyelnk.get("dna_forcefield", "OL15"),
+        )
 
     @classmethod
-    def from_names(cls, dye, linker, dye_dir=None, lnk_dir=None):
+    def from_names(
+        cls,
+        dye,
+        linker,
+        dye_forcefield="gaff2",
+        dna_forcefield="OL15",
+        dye_dir=None,
+        lnk_dir=None,
+    ):
         """Load dye/linker templates by name from DYE_DIR and LNK_DIR."""
-        dye_dir = Path(dye_dir or os.environ["DYE_DIR"]) / dye
-        lnk_dir = Path(lnk_dir or os.environ["LNK_DIR"]) / linker
+        dye_ff = forcefield_id(dye_forcefield)
+        dna_ff = forcefield_id(dna_forcefield)
+        dye_root = dye_dir or os.environ.get("DYE_DIR")
+        lnk_root = lnk_dir or os.environ.get("LNK_DIR")
+        if not dye_root:
+            raise EnvironmentError("DYE_DIR is not set")
+        if not lnk_root:
+            raise EnvironmentError("LNK_DIR is not set")
+
+        dye_dir = Path(dye_root) / dye / dye_ff
+        lnk_dir = Path(lnk_root) / linker / dye_ff / dna_ff
 
         dye_mol2 = dye_dir / f"{dye}.mol2"
         linker3_mol2 = lnk_dir / f"{linker}3.mol2"
@@ -528,11 +575,11 @@ class DyeLinkerConfig:
             linker5_attach,
         )
 
-        for file in files:
-            if not file.exists():
-                raise FileNotFoundError(
-                    f"Missing dye-linker input: {file}"
-                )
+        missing = [str(file) for file in files if not file.exists()]
+        if missing:
+            raise FileNotFoundError(
+                "Missing dye-linker inputs:\n  " + "\n  ".join(missing)
+            )
 
         dye_data = _validate_attach(
             dye_mol2,
@@ -555,6 +602,8 @@ class DyeLinkerConfig:
         return cls(
             dye=dye,
             linker=linker,
+            dye_forcefield=dye_ff,
+            dna_forcefield=dna_ff,
             dye_mol2=dye_mol2,
             linker3_mol2=linker3_mol2,
             linker5_mol2=linker5_mol2,
@@ -660,7 +709,7 @@ class DyeLinkerConfig:
                 "-i", str(mol2_file),
                 "-f", "mol2",
                 "-o", str(output_file),
-                "-s", "gaff2",
+                "-s", self.dye_forcefield,
             ],
             cwd=workdir,
             text=True,
@@ -748,7 +797,7 @@ class DyeLinkerConfig:
 
         dye3_atom, dye5_atom = self.dye_linker_atoms
 
-        text = f"""source leaprc.gaff2
+        text = f"""source {tleap_source(self.dye_forcefield, "small")}
 
 loadAmberParams "{frc3}"
 loadAmberParams "{frc5}"

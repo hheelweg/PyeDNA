@@ -95,6 +95,45 @@ class HaddockSetup:
         )
         return self
 
+def _make_cns_resname(name):
+    """
+    Generate a unique 3-character CNS residue name.
+
+    Format:
+        first two characters encode dye identity
+        final character encodes linker identity
+    """
+
+    stem = Path(name).stem.upper()
+    stem = stem.replace("_LINKED", "")
+
+    parts = stem.split("_")
+
+    if len(parts) < 2:
+        raise ValueError(
+            f"Cannot generate CNS residue name from {name}"
+        )
+
+    dye = parts[0]
+    linker = parts[1]
+
+    # preserve CY3 vs CY5 vs PDI
+    if dye.startswith("CY") and len(dye) >= 3:
+        dye_code = "C" + dye[2]
+    else:
+        dye_code = dye[:2]
+
+    linker_code = linker[0]
+
+    resname = f"{dye_code}{linker_code}"
+
+    if len(resname) != 3:
+        raise ValueError(
+            f"Generated invalid CNS residue name {resname}"
+        )
+
+    return resname
+
 
 def _get_mol2_charge(mol2, tolerance=0.05):
     in_atoms, charge = False, 0.0
@@ -153,7 +192,7 @@ def _write_mapping(original_mol2, haddock_pdb, output_csv, max_distance=0.1):
     print(f"Wrote {output_csv} (max displacement {distances.max():.6f} Å)")
 
 
-def _prepare_dye_topology(instance, workdir, script):
+def _prepare_dye_topology(instance, workdir, script, resname=None):
     workdir, script = Path(workdir), Path(script)
     haddock_dir = workdir / "haddock"
     instance.set_prepared_paths(workdir)
@@ -163,9 +202,11 @@ def _prepare_dye_topology(instance, workdir, script):
         raise FileNotFoundError(f"Missing topology script: {script}")
 
     charge = _get_mol2_charge(instance.definition.mol2)
-    resname = instance.definition.name[:3].upper()
+    #resname = instance.definition.name[:3].upper()
+    if resname is None:
+        resname = _make_cns_resname(instance.definition.name)
 
-    if not re.fullmatch(r"[A-Za-z0-9]{1,3}", resname):
+    if not re.fullmatch(r"[A-Za-z0-9]{1,4}", resname):
         raise ValueError(f"{instance.definition.name}: invalid RESNAME {resname!r}")
 
     haddock_dir.mkdir(parents=True, exist_ok=True)
@@ -199,8 +240,28 @@ def _prepare_dye_topology(instance, workdir, script):
 
 
 def _prepare_dye_topologies(instances, workdir, script):
+    used = {}
+
     for instance in instances:
-        _prepare_dye_topology(instance, workdir, script)
+        resname = _make_cns_resname(instance.definition.name)
+
+        if resname in used:
+            raise ValueError(
+                "CNS residue name collision:\n"
+                f"  {instance.definition.name}\n"
+                f"  {used[resname]}\n"
+                f"both generate {resname}"
+            )
+
+        used[resname] = instance.definition.name
+
+        _prepare_dye_topology(
+            instance,
+            workdir,
+            script,
+            resname=resname,
+        )
+
     return instances
 
 def _combine_ligand_topologies(instances, workdir):

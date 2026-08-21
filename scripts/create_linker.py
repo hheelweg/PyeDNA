@@ -6,15 +6,17 @@ from pyedna.components import LinkerDefinition
 
 def main(config_file="linker.toml"):
 
-    workdir = Path.cwd()
+    cwd = Path.cwd()
     config_path = Path(config_file)
 
     if not config_path.is_absolute():
-        config_path = workdir / config_path
+        config_path = cwd / config_path
 
     print(f"Linker configuration: {config_path}")
 
     linker = LinkerDefinition.from_file(config_path)
+    workdir = linker.output_directory(cwd)
+    print(f"Linker output directory: {workdir}")
     linker.validate()
 
     linker.generate_conformer(workdir / f"{linker.name}.sdf")

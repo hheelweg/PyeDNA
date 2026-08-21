@@ -98,8 +98,8 @@ class AmberConfig:
 
     model: int = 1
     output_name: Optional[str] = None
-    dna_forcefield: str = "leaprc.DNA.OL15"
-    dye_forcefield: str = "leaprc.gaff"
+    dna_forcefield: str = "OL15"
+    dye_forcefield: str = "gaff2"
     water_forcefield: str = "leaprc.water.tip3p"
     water_model: str = "TIP3P"
     solvent_padding: float = 20.0
@@ -250,14 +250,16 @@ class StructureBuilder:
     """Coordinate DNA preparation, HADDOCK docking, and Amber input preparation."""
 
     def __init__(self, structure_config, workdir=".", dna_dir=None, dye_dir=None,
-                 pyedna_home=None):
+                 lnk_dir=None, pyedna_home=None):
         self.config = structure_config
         self.workdir = Path(workdir)
         dna_root = dna_dir or os.environ.get("DNA_DIR")
         dye_root = dye_dir or os.environ.get("DYE_DIR")
+        lnk_root = lnk_dir or os.environ.get("LNK_DIR")
         home_root = pyedna_home or os.environ.get("PYEDNA_HOME")
         self.dna_dir = Path(dna_root) if dna_root else None
         self.dye_dir = Path(dye_root) if dye_root else None
+        self.lnk_dir = Path(lnk_root) if lnk_root else None
         self.pyedna_home = Path(home_root) if home_root else None
         self.dna_pdb = self.workdir / f"{self.config.dna.name}.pdb"
         self.dye_definitions = {}
@@ -286,6 +288,7 @@ class StructureBuilder:
             self.dye_dir,
             generated=self.generated_dyelnks,
             workdir=self.workdir,
+            dye_forcefield=self.config.amber.dye_forcefield,
         )
         self.dye_instances = create_dye_instances(
             self.config.dyes, self.dye_definitions
@@ -303,6 +306,10 @@ class StructureBuilder:
             attachment.name: DyeLinkerConfig.from_names(
                 attachment.dye,
                 attachment.linker,
+                dye_forcefield=self.config.amber.dye_forcefield,
+                dna_forcefield=self.config.amber.dna_forcefield,
+                dye_dir=self.dye_dir,
+                lnk_dir=self.lnk_dir,
             )
             for attachment in self.config.attachments
         }
@@ -382,6 +389,7 @@ class StructureBuilder:
             self.config,
             workdir=self.workdir,
             dye_dir=self.dye_dir,
+            lnk_dir=self.lnk_dir,
         )
         setup.prepare(run_tleap=run_tleap)
         return setup

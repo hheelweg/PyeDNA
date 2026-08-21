@@ -16,6 +16,7 @@ from .parameterization import (
     optimize_classical_geometry,
     optimize_rdkit_geometry,
     read_ac_atom_names,
+    resolve_output_directory,
     run_two_stage_resp,
     write_attach_file,
     write_xyz,
@@ -64,6 +65,16 @@ class DyeDefinition:
         """Return the final uncapped dye residue name."""
         return self.code or self.name
 
+    def output_directory(self, cwd=None):
+        """Return the workflow output directory for this dye."""
+        return resolve_output_directory(
+            self.output,
+            "dye",
+            self.residue_name,
+            self.amber.forcefield,
+            cwd=cwd,
+        )
+
     @property
     def capped_formal_charge(self):
         """Return the formal charge of the full capped dye molecule."""
@@ -85,6 +96,9 @@ class DyeDefinition:
         dye = config["dye"]
         core = config["core"]
         caps = config["caps"]
+        charge = config.get("charge", {})
+        if charge.get("method", "resp") != "resp":
+            raise ValueError("Only RESP charge fitting is supported.")
 
         return cls(
             name=dye["name"],
@@ -200,15 +214,21 @@ class DyeDefinition:
         if self.mol is None or self.mol.GetNumConformers() == 0:
             raise RuntimeError("Generate a 3D conformer before geometry optimization.")
 
-        # Use [qm.geometry] in dye.toml to lower the basis for debug runs.
-        self.mol = optimize_classical_geometry(self.mol)
+        initial_comment = "RDKit starting geometry"
+        if self.qm.classical_preopt:
+            self.mol = optimize_classical_geometry(
+                self.mol,
+                num_confs=self.qm.classical_conformers,
+            )
+            initial_comment = "RDKit/MMFF-UFF relaxed starting geometry"
+
         optimized_file, self.mol = optimize_rdkit_geometry(
             self.mol,
             self.name,
             self.capped_formal_charge,
             self.qm,
             output_dir,
-            "RDKit/MMFF-UFF relaxed starting geometry",
+            initial_comment,
         )
         return optimized_file
 

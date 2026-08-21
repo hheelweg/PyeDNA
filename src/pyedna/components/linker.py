@@ -17,6 +17,7 @@ from .parameterization import (
     optimize_classical_geometry,
     optimize_rdkit_geometry,
     read_ac_atom_names,
+    resolve_output_directory,
     run_two_stage_resp,
     write_attach_file,
     write_qin,
@@ -86,6 +87,17 @@ class LinkerDefinition:
             return {"three_prime": f"{self.code}3", "five_prime": f"{self.code}5"}
 
         return self.DEFAULT_RESIDUE_NAMES
+
+    def output_directory(self, cwd=None):
+        """Return the workflow output directory for this linker."""
+        return resolve_output_directory(
+            self.output,
+            "linker",
+            self.code,
+            self.amber.forcefield,
+            self.charge_restraints.forcefield,
+            cwd=cwd,
+        )
 
     @classmethod
     def from_file(cls, filename):
@@ -332,14 +344,21 @@ class LinkerDefinition:
         if self.mol is None or self.mol.GetNumConformers() == 0:
             raise RuntimeError("Generate a 3D conformer before geometry optimization.")
 
-        self.mol = optimize_classical_geometry(self.mol)
+        initial_comment = "RDKit starting geometry"
+        if self.qm.classical_preopt:
+            self.mol = optimize_classical_geometry(
+                self.mol,
+                num_confs=self.qm.classical_conformers,
+            )
+            initial_comment = "RDKit/MMFF-UFF relaxed starting geometry"
+
         optimized_file, self.mol = optimize_rdkit_geometry(
             self.mol,
             self.name,
             self.formal_charge,
             self.qm,
             output_dir,
-            "RDKit/MMFF-UFF relaxed starting geometry",
+            initial_comment,
         )
         return optimized_file
 

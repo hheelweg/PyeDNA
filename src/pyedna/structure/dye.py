@@ -4,9 +4,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-from .. import fileproc as fp
-
-
 @dataclass(frozen=True)
 class AttachmentAtom:
     resname: str
@@ -34,24 +31,17 @@ class DyeDefinition:
     attachment: Optional[dict[str, AttachmentAtom]] = None
 
     @classmethod
-    def from_library(cls, name, dye_dir):
-        directory = Path(dye_dir) / name
+    def from_library(cls, name, dye_dir, dye_forcefield="gaff2"):
+        directory = Path(dye_dir) / name / dye_forcefield
         mol2 = directory / f"{name}.mol2"
         attach = directory / f"{name}.attach"
-        params_file = directory / "dye.params"
 
-        for path in (mol2, attach, params_file):
+        for path in (mol2, attach):
             if not path.exists():
                 raise FileNotFoundError(f"Missing dye input: {path}")
 
-        params = fp.readParams(params_file)
-        mol2_templates = [directory / filename for filename in params.get("mol2_templates", [])]
-        frcmods = [directory / filename for filename in params.get("frcmods", [])]
-
-        if not mol2_templates:
-            raise ValueError(f"{params_file}: no mol2_templates specified")
-        if not frcmods:
-            raise ValueError(f"{params_file}: no frcmods specified")
+        mol2_templates = [mol2]
+        frcmods = [directory / f"{name}.frcmod"]
 
         missing = [str(path) for path in mol2_templates + frcmods if not path.exists()]
         if missing:
@@ -234,7 +224,13 @@ class DyeInstance:
         return self
 
 
-def load_dye_definitions(placements, dye_dir, generated=None, workdir="."):
+def load_dye_definitions(
+    placements,
+    dye_dir,
+    generated=None,
+    workdir=".",
+    dye_forcefield="gaff2",
+):
     """Load each unique dye definition requested by the docking configuration."""
 
     names = dict.fromkeys(placement.name for placement in placements)
@@ -243,7 +239,8 @@ def load_dye_definitions(placements, dye_dir, generated=None, workdir="."):
     return {
         name: (
             DyeDefinition.from_generated(name, generated[name], workdir)
-            if name in generated else DyeDefinition.from_library(name, dye_dir)
+            if name in generated
+            else DyeDefinition.from_library(name, dye_dir, dye_forcefield)
         )
         for name in names
     }
