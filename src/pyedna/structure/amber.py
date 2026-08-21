@@ -3,10 +3,11 @@
 from pathlib import Path
 import pandas as pd
 import os
+import re
 import subprocess
 
 from .dye import load_dye_definitions
-from .dyelnk import DyeLinkerConfig, tleap_source
+from .dyelnk import DyeLinkerConfig, forcefield_id, tleap_source
 
 
 class AmberSetup:
@@ -311,17 +312,57 @@ class AmberSetup:
         print(f"Wrote {tleap_file}")
         return tleap_file
 
+    def _connect_frcmod_path(self):
+        """Return expected shared DNA-linker compatibility frcmod path."""
+        if self.lnk_dir is None or not self.structure_config.attachments:
+            return None
+        dye_ff = forcefield_id(self.dye_forcefield)
+        dna_ff = forcefield_id(self.dna_forcefield)
+        return self.lnk_dir / "connect" / dye_ff / dna_ff / "connectparams.frcmod"
+
+    def _tleap_failure_reasons(self, output, missing):
+        """Return fatal tleap issues detected in stdout/stderr/log text."""
+        reasons = []
+        match = re.search(r"Exiting LEaP:\s*Errors\s*=\s*(\d+)", output)
+        if match and int(match.group(1)):
+            reasons.append(f"LEaP reported {match.group(1)} errors")
+
+        checks = {
+            "FATAL:": "LEaP reported a fatal error",
+            "Parameter file was not saved.": "LEaP did not save the parameter file",
+            "No torsion terms for atom types": "missing torsion parameters",
+            "No angle terms for atom types": "missing angle parameters",
+            "No bond terms for atom types": "missing bond parameters",
+            "Could not find": "LEaP could not find required data",
+            "Unknown atom type": "unknown atom type",
+        }
+        reasons.extend(reason for text, reason in checks.items() if text in output)
+        if missing:
+            reasons.append(f"missing expected output files: {missing}")
+        return sorted(set(reasons))
+
     def run_tleap(self):
         """Execute tleap and verify that topology and coordinate files were created."""
 
         if not hasattr(self, "tleap_file"):
             raise RuntimeError("tleap input has not been prepared")
 
-        subprocess.run(
+        leap_log = self.workdir / "leap.log"
+        if leap_log.exists():
+            leap_log.unlink()
+
+        result = subprocess.run(
             ["tleap", "-f", str(self.tleap_file.resolve())],
             cwd=self.workdir,
-            check=True,
+            text=True,
+            capture_output=True,
         )
+        output = result.stdout + result.stderr
+        if leap_log.exists():
+            output += "\n\n# leap.log\n" + leap_log.read_text()
+
+        self.tleap_log = self.workdir / "tleap_amber.log"
+        self.tleap_log.write_text(output)
 
         self.prmtop_file = self.workdir / f"{self.output_name}.prmtop"
         self.rst7_file = self.workdir / f"{self.output_name}.rst7"
@@ -331,7 +372,27 @@ class AmberSetup:
             path for path in (self.prmtop_file, self.rst7_file, self.solvated_pdb)
             if not path.exists()
         ]
-        if missing:
-            raise RuntimeError(f"tleap did not create expected files: {missing}")
+        reasons = self._tleap_failure_reasons(output, missing)
+        if result.returncode != 0:
+            reasons.append(f"tleap exited with status {result.returncode}")
+        if reasons:
+            message = [
+                "tleap failed during final Amber preparation.",
+                "",
+                "Detected issues:",
+                *[f"  - {reason}" for reason in sorted(set(reasons))],
+                "",
+                f"tleap input: {self.tleap_file}",
+                f"tleap log:   {self.tleap_log}",
+            ]
+            connect_frcmod = self._connect_frcmod_path()
+            if connect_frcmod is not None:
+                message += [
+                    "",
+                    "If the failure reports missing DNA-linker bond/angle/dihedral "
+                    "terms, add them to the manually curated compatibility file:",
+                    f"  {connect_frcmod}",
+                ]
+            raise RuntimeError("\n".join(message))
 
         return self

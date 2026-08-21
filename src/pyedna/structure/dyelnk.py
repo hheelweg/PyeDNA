@@ -83,6 +83,30 @@ def tleap_source(forcefield, family):
     return f"leaprc.{value}"
 
 
+def resolve_connect_frcmod(lnk_root, linker_forcefield, dna_forcefield):
+    """Return shared DNA-linker compatibility parameters for a forcefield pair."""
+    connect_dir = Path(lnk_root) / "connect" / linker_forcefield / dna_forcefield
+    canonical = connect_dir / "connectparams.frcmod"
+    legacy = connect_dir / "connectparms.frcmod"
+
+    if canonical.exists():
+        return canonical
+    if legacy.exists():
+        return legacy
+
+    raise FileNotFoundError(
+        "Missing DNA-linker compatibility parameters.\n\n"
+        "The requested structure requires:\n"
+        f"linker forcefield: {linker_forcefield}\n"
+        f"DNA forcefield: {dna_forcefield}\n\n"
+        f"Expected compatibility file:\n{canonical}\n\n"
+        "This file contains manually curated Amber parameters connecting "
+        f"DNA {dna_forcefield} residues with {linker_forcefield} linker residues.\n\n"
+        "Please add the required bond/angle/dihedral terms manually to this "
+        "connectparams.frcmod file before proceeding."
+    )
+
+
 def _element_from_gaff(atom_type):
     """Infer chemical element from an Amber/GAFF atom type."""
     atom_type = atom_type.lower()
@@ -559,7 +583,7 @@ class DyeLinkerConfig:
         dye_mol2 = dye_dir / f"{dye}.mol2"
         linker3_mol2 = lnk_dir / f"{linker}3.mol2"
         linker5_mol2 = lnk_dir / f"{linker}5.mol2"
-        linker_connect_frcmod = lnk_dir / "connectparms.frcmod"
+        linker_connect_frcmod = resolve_connect_frcmod(lnk_root, dye_ff, dna_ff)
 
         dye_attach = dye_dir / f"{dye}.attach"
         linker3_attach = lnk_dir / f"{linker}3.attach"
