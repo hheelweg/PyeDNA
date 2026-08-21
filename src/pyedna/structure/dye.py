@@ -30,7 +30,8 @@ class DyeDefinition:
     mol2: Path
     mol2_templates: list[Path]
     frcmods: list[Path]
-    attach: Path
+    attach: Optional[Path]
+    attachment: Optional[dict[str, AttachmentAtom]] = None
 
     @classmethod
     def from_library(cls, name, dye_dir):
@@ -59,8 +60,48 @@ class DyeDefinition:
         return cls(name=name, directory=directory, mol2=mol2,
                 mol2_templates=mol2_templates, frcmods=frcmods, attach=attach)
 
+    @classmethod
+    def from_generated(cls, name, dyelnk, workdir):
+        """Load a dye-linker definition generated in the structure workdir."""
+        workdir = Path(workdir)
+        mol2 = workdir / f"{name}_linked.mol2"
+        linked_frcmod = workdir / f"{name}_linked.frcmod"
+        mol2_templates = [
+            dyelnk.linker5_mol2,
+            dyelnk.dye_mol2,
+            dyelnk.linker3_mol2,
+        ]
+        frcmods = [path.with_suffix(".frcmod") for path in mol2_templates]
+        frcmods.append(dyelnk.linker_connect_frcmod)
+        frcmods.append(linked_frcmod)
+        attachment = {
+            end: AttachmentAtom(resname=resname, resid=resid, atom=atom)
+            for end, (resname, resid, atom)
+            in dyelnk.structure_attachment_records().items()
+        }
+
+        missing = [str(path) for path in [mol2] + mol2_templates + frcmods
+                   if not path.exists()]
+        if missing:
+            raise FileNotFoundError(f"{name}: missing generated dye files: {missing}")
+
+        return cls(
+            name=name,
+            directory=workdir,
+            mol2=mol2,
+            mol2_templates=mol2_templates,
+            frcmods=frcmods,
+            attach=None,
+            attachment=attachment,
+        )
+
 
     def read_attachment(self):
+        if self.attachment is not None:
+            return self.attachment
+        if self.attach is None:
+            raise FileNotFoundError(f"{self.name}: no attachment metadata available")
+
         data = {}
 
         for line in self.attach.read_text().splitlines():
@@ -82,7 +123,20 @@ class DyeDefinition:
         return data
 
 
+    def write_attachment(self, output_file):
+        """Write DNA-facing attachment metadata for this definition."""
+        data = self.read_attachment()
+        text = "".join(
+            f"{end} {atom.resname} {atom.resid} {atom.atom}\n"
+            for end, atom in data.items()
+        )
+        Path(output_file).write_text(text)
+        return output_file
+
     def read_amber_mapping(self):
+        if self.attach is None:
+            return []
+
         mappings = []
 
         for line in self.attach.read_text().splitlines():
@@ -169,12 +223,19 @@ class DyeInstance:
         return self
 
 
-def load_dye_definitions(placements, dye_dir):
+def load_dye_definitions(placements, dye_dir, generated=None, workdir="."):
     """Load each unique dye definition requested by the docking configuration."""
 
     names = dict.fromkeys(placement.name for placement in placements)
+    generated = generated or {}
 
-    return {name: DyeDefinition.from_library(name, dye_dir) for name in names}
+    return {
+        name: (
+            DyeDefinition.from_generated(name, generated[name], workdir)
+            if name in generated else DyeDefinition.from_library(name, dye_dir)
+        )
+        for name in names
+    }
 
 
 def create_dye_instances(placements, definitions):

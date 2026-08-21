@@ -25,7 +25,7 @@ if [ ! -f "$NAB_FILE" ]; then
 fi
 
 # define the path to the AmberClassic installation directory
-AMBERCLASSIC_DIR="/home/hheelweg/opt/AmberClassic"
+AMBERCLASSIC_DIR="${AMBERCLASSIC:-${AMBERCLASSICHOME:-/home/hheelweg/opt/AmberClassic}}"
 
 # source the AmberClassic environment setup script without changing directories
 if [ -f "$AMBERCLASSIC_DIR/AmberClassic.sh" ]; then
@@ -34,6 +34,18 @@ else
     echo "Error: AmberClassic.sh not found in $AMBERCLASSIC_DIR."
     exit 1
 fi
+
+for lib_dir in \
+    "${CONDA_PREFIX:-}/lib" \
+    "${CONDA_PREFIX:-}/x86_64-conda-linux-gnu/lib" \
+    "${AMBERHOME:-}/lib" \
+    "$AMBERCLASSIC_DIR/lib"
+do
+    if [ -d "$lib_dir" ]; then
+        export LIBRARY_PATH="$lib_dir${LIBRARY_PATH:+:$LIBRARY_PATH}"
+        export LD_LIBRARY_PATH="$lib_dir${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+    fi
+done
 
 # compile the NAB source file
 nab "$NAB_FILE"

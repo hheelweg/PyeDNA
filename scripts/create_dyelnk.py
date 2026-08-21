@@ -14,28 +14,10 @@ def main(config_file="dyelnk.toml"):
 
     dyelnk = DyeLinkerConfig.from_file(config_path)
 
-    assembled_pdb = dyelnk.assemble(
-        workdir / f"{dyelnk.dye}_{dyelnk.linker}_assembled.pdb",
-        n_conformers=20,
-    )   
-
-    tleap_input = workdir / "tleap_dyelnk.in"
-    mol2_output = workdir / f"{dyelnk.dye}_{dyelnk.linker}_linked.mol2"
-
-    dyelnk.write_tleap_input(
-        assembled_pdb,
-        output_file=tleap_input,
-        mol2_output=mol2_output,
-    )
-
-    output = dyelnk.run_tleap(
-        tleap_input,
-        mol2_output,
-        assembled_pdb=assembled_pdb,
-        workdir=workdir,
-    )
+    output = dyelnk.build_linked_mol2(workdir)
 
     print(f"Generated dye-linker MOL2: {output}")
+    print(f"Generated dye-linker FRCMOD: {output.with_suffix('.frcmod')}")
 
 
 if __name__ == "__main__":

@@ -20,6 +20,7 @@ from .. import geomtools as geo
 from .. import utils
 from .. import config
 from .dye import create_dye_instances, load_dye_definitions
+from .dyelnk import DyeLinkerConfig
 
 
 @dataclass(frozen=True)
@@ -57,6 +58,22 @@ class DyePlacement:
 
     name: str
     sites: list[int]
+
+
+@dataclass(frozen=True)
+class AttachmentConfig:
+    """Describe one dye/linker attachment requested by structure TOML."""
+
+    dye: str
+    linker: str
+    residue: int
+
+    @property
+    def name(self):
+        return f"{self.dye}_{self.linker}"
+
+    def as_placement(self):
+        return DyePlacement(name=self.name, sites=[self.residue])
 
 
 @dataclass(frozen=True)
@@ -102,6 +119,7 @@ class StructureConfig:
     name: str
     dna: DNAConfig
     dyes: list[DyePlacement]
+    attachments: list[AttachmentConfig] = field(default_factory=list)
     haddock: HaddockConfig = field(default_factory=HaddockConfig)
     amber: AmberConfig = field(default_factory=AmberConfig)
 
@@ -110,6 +128,8 @@ class StructureConfig:
             raise ValueError("'structure.name' must be specified")
         if self.amber.model > self.haddock.top_models:
             raise ValueError("'amber.model' cannot exceed 'haddock.top_models'")
+        if self.attachments and self.dyes != [a.as_placement() for a in self.attachments]:
+            raise ValueError("Do not mix legacy [[dyes]] with [[attachments]]")
 
         occupied = set()
         for dye in self.dyes:
@@ -140,10 +160,23 @@ class StructureConfig:
             raise ValueError(f"{path}: missing [{exc.args[0]}] section") from exc
 
         try:
+            legacy_dyes = data.get("dyes", [])
+            attachments = [AttachmentConfig(**entry)
+                           for entry in data.get("attachments", [])]
+
+            if legacy_dyes and attachments:
+                raise ValueError(f"{path}: do not mix [[dyes]] and [[attachments]]")
+
+            dyes = (
+                [attachment.as_placement() for attachment in attachments]
+                if attachments else [DyePlacement(**dye) for dye in legacy_dyes]
+            )
+
             return cls(
                 name=structure["name"],
                 dna=DNAConfig(**dna),
-                dyes=[DyePlacement(**dye) for dye in data.get("dyes", [])],
+                dyes=dyes,
+                attachments=attachments,
                 haddock=HaddockConfig(**data.get("haddock", {})),
                 amber=AmberConfig(**data.get("amber", {})),
             )
@@ -220,6 +253,7 @@ class StructureBuilder:
         self.dna_pdb = self.workdir / f"{self.config.dna.name}.pdb"
         self.dye_definitions = {}
         self.dye_instances = []
+        self.generated_dyelnks = {}
 
     @classmethod
     def from_file(cls, path, workdir=None, **kwargs):
@@ -235,15 +269,55 @@ class StructureBuilder:
     def _load_dyes(self):
         """Resolve dye definitions and instantiate the configured dye copies."""
 
-        if self.dye_dir is None:
+        if self.dye_dir is None and not self.config.attachments:
             raise EnvironmentError("DYE_DIR is not set")
+        self._load_generated_dyelnks()
         self.dye_definitions = load_dye_definitions(
-            self.config.dyes, self.dye_dir
+            self.config.dyes,
+            self.dye_dir,
+            generated=self.generated_dyelnks,
+            workdir=self.workdir,
         )
         self.dye_instances = create_dye_instances(
             self.config.dyes, self.dye_definitions
         )
         return self.dye_instances
+
+    def _load_generated_dyelnks(self):
+        """Resolve unique dye-linker template definitions requested by attachments."""
+
+        if not self.config.attachments:
+            self.generated_dyelnks = {}
+            return self.generated_dyelnks
+
+        self.generated_dyelnks = {
+            attachment.name: DyeLinkerConfig.from_names(
+                attachment.dye,
+                attachment.linker,
+            )
+            for attachment in self.config.attachments
+        }
+        return self.generated_dyelnks
+
+    def _prepare_linked_dyes(self):
+        """Generate linked dye MOL2 files used as explicit intermediates."""
+
+        for name, dyelnk in self._load_generated_dyelnks().items():
+            mol2_output = self.workdir / f"{name}_linked.mol2"
+            frcmod_output = self.workdir / f"{name}_linked.frcmod"
+
+            if not mol2_output.exists():
+                mol2_output = dyelnk.build_linked_mol2(self.workdir, name=name)
+                print(f"Generated dye-linker MOL2: {mol2_output}")
+            elif not frcmod_output.exists():
+                frcmod_output = dyelnk.build_linked_frcmod(
+                    mol2_output,
+                    output_file=frcmod_output,
+                    workdir=self.workdir,
+                )
+                print(f"Generated dye-linker FRCMOD: {frcmod_output}")
+
+        return self.generated_dyelnks
 
     def prepare_dna(self):
         """Generate DNA with NAB or copy it from the configured DNA library."""
@@ -261,6 +335,7 @@ class StructureBuilder:
         from .haddock import HaddockSetup
 
         self.prepare_dna()
+        self._prepare_linked_dyes()
         self._load_dyes()
         setup = HaddockSetup(
             config=self.config,

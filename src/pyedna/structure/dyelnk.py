@@ -471,6 +471,7 @@ class DyeLinkerConfig:
     dye_mol2: Path
     linker3_mol2: Path
     linker5_mol2: Path
+    linker_connect_frcmod: Path
 
     dye_attach: Path
     linker3_attach: Path
@@ -500,12 +501,18 @@ class DyeLinkerConfig:
                 f"{path}: missing configuration field {exc}"
             ) from exc
 
-        dye_dir = Path(os.environ["DYE_DIR"]) / dye
-        lnk_dir = Path(os.environ["LNK_DIR"]) / linker
+        return cls.from_names(dye, linker)
+
+    @classmethod
+    def from_names(cls, dye, linker, dye_dir=None, lnk_dir=None):
+        """Load dye/linker templates by name from DYE_DIR and LNK_DIR."""
+        dye_dir = Path(dye_dir or os.environ["DYE_DIR"]) / dye
+        lnk_dir = Path(lnk_dir or os.environ["LNK_DIR"]) / linker
 
         dye_mol2 = dye_dir / f"{dye}.mol2"
         linker3_mol2 = lnk_dir / f"{linker}3.mol2"
         linker5_mol2 = lnk_dir / f"{linker}5.mol2"
+        linker_connect_frcmod = lnk_dir / "connectparms.frcmod"
 
         dye_attach = dye_dir / f"{dye}.attach"
         linker3_attach = lnk_dir / f"{linker}3.attach"
@@ -515,6 +522,7 @@ class DyeLinkerConfig:
             dye_mol2,
             linker3_mol2,
             linker5_mol2,
+            linker_connect_frcmod,
             dye_attach,
             linker3_attach,
             linker5_attach,
@@ -550,6 +558,7 @@ class DyeLinkerConfig:
             dye_mol2=dye_mol2,
             linker3_mol2=linker3_mol2,
             linker5_mol2=linker5_mol2,
+            linker_connect_frcmod=linker_connect_frcmod,
             dye_attach=dye_attach,
             linker3_attach=linker3_attach,
             linker5_attach=linker5_attach,
@@ -593,6 +602,83 @@ class DyeLinkerConfig:
                 self.linker5_5connect,
             ),
         }
+
+    def structure_attachment_records(self):
+        """Return DNA-facing attachment atoms from linker metadata."""
+        res5 = _mol2_resname(self.linker5_mol2)
+        res3 = _mol2_resname(self.linker3_mol2)
+
+        # The 5'/3' keys here follow the legacy structure workflow convention:
+        # 5' connects to the previous DNA O3', and 3' connects to the next DNA P.
+        # They are not the same as the linker's XCONNECT labels.
+        return {
+            "5'": (res3, 3, self.linker3_3connect),
+            "3'": (res5, 1, self.linker5_5connect),
+        }
+
+    def build_linked_mol2(self, workdir=".", name=None, n_conformers=20):
+        """Run the existing assembly and tleap workflow for one dye-linker."""
+        workdir = Path(workdir)
+        default_name = f"{self.dye}_{self.linker}"
+        tleap_input = workdir / (
+            f"tleap_{name}.in" if name is not None else "tleap_dyelnk.in"
+        )
+        name = name or default_name
+
+        assembled_pdb = self.assemble(
+            workdir / f"{name}_assembled.pdb",
+            n_conformers=n_conformers,
+        )
+        mol2_output = workdir / f"{name}_linked.mol2"
+
+        self.write_tleap_input(
+            assembled_pdb,
+            output_file=tleap_input,
+            mol2_output=mol2_output,
+        )
+        mol2_output = self.run_tleap(
+            tleap_input,
+            mol2_output,
+            assembled_pdb=assembled_pdb,
+            workdir=workdir,
+        )
+        self.build_linked_frcmod(mol2_output, workdir=workdir)
+        return mol2_output
+
+    def build_linked_frcmod(self, mol2_file, output_file=None, workdir=None):
+        """Generate missing GAFF2 parameters for the combined dye-linker MOL2."""
+        mol2_file = Path(mol2_file).resolve()
+        output_file = Path(output_file or mol2_file.with_suffix(".frcmod")).resolve()
+        workdir = Path(workdir or output_file.parent)
+
+        if not mol2_file.exists():
+            raise FileNotFoundError(f"Linked dye-linker MOL2 not found: {mol2_file}")
+
+        result = subprocess.run(
+            [
+                "parmchk2",
+                "-i", str(mol2_file),
+                "-f", "mol2",
+                "-o", str(output_file),
+                "-s", "gaff2",
+            ],
+            cwd=workdir,
+            text=True,
+            capture_output=True,
+        )
+
+        output = result.stdout + result.stderr
+        log_file = output_file.with_suffix(".parmchk2.log")
+        log_file.write_text(output)
+
+        if result.returncode != 0 or not output_file.exists():
+            raise RuntimeError(
+                f"parmchk2 failed. See:\n"
+                f"  input: {mol2_file}\n"
+                f"  log:   {log_file}"
+            )
+
+        return output_file
 
     def assemble(
         self,
@@ -658,6 +744,7 @@ class DyeLinkerConfig:
         frc3 = _mol2_frcmod(self.linker3_mol2)
         frc5 = _mol2_frcmod(self.linker5_mol2)
         frcd = _mol2_frcmod(self.dye_mol2)
+        frc_connect = self.linker_connect_frcmod
 
         dye3_atom, dye5_atom = self.dye_linker_atoms
 
@@ -666,6 +753,7 @@ class DyeLinkerConfig:
 loadAmberParams "{frc3}"
 loadAmberParams "{frc5}"
 loadAmberParams "{frcd}"
+loadAmberParams "{frc_connect}"
 
 {res3} = loadMol2 "{self.linker3_mol2}"
 {res5} = loadMol2 "{self.linker5_mol2}"

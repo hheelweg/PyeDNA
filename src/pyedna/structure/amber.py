@@ -6,6 +6,7 @@ import os
 import subprocess
 
 from .dye import load_dye_definitions
+from .dyelnk import DyeLinkerConfig
 
 
 class AmberSetup:
@@ -70,14 +71,25 @@ class AmberSetup:
         if self.structure_config is None:
             raise ValueError("A StructureConfig is required to prepare Amber inputs")
 
-        if self.dye_dir is None:
+        if self.dye_dir is None and not self.structure_config.attachments:
             dye_root = os.environ.get("DYE_DIR")
             if not dye_root:
                 raise EnvironmentError("DYE_DIR is not set")
             self.dye_dir = Path(dye_root)
 
+        generated = {
+            attachment.name: DyeLinkerConfig.from_names(
+                attachment.dye,
+                attachment.linker,
+            )
+            for attachment in self.structure_config.attachments
+        }
         self.dye_definitions = load_dye_definitions(
-            self.structure_config.dyes, self.dye_dir)
+            self.structure_config.dyes,
+            self.dye_dir,
+            generated=generated,
+            workdir=self.workdir,
+        )
         self.bonds = pd.read_csv(self.bond_file)
 
         return self

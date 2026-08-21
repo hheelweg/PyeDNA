@@ -184,7 +184,10 @@ def _prepare_dye_topology(instance, workdir, script):
     if missing:
         raise FileNotFoundError(f"{instance.name}: missing generated files: {missing}")
 
-    shutil.copy2(instance.definition.attach, attach)
+    if instance.definition.attach is not None:
+        shutil.copy2(instance.definition.attach, attach)
+    else:
+        instance.definition.write_attachment(attach)
 
     instance.charge = charge
     instance.resname = resname
