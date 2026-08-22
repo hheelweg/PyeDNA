@@ -6,8 +6,12 @@ import os
 import re
 import subprocess
 
-from .dye import load_dye_definitions
-from .dyelnk import DyeLinkerConfig, forcefield_id, tleap_source
+from .attachments import (
+    DyeLinkerConfig,
+    forcefield_id,
+    load_dye_definitions,
+    tleap_source,
+)
 
 
 class AmberSetup:

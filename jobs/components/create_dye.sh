@@ -8,7 +8,7 @@
 
 # USAGE
 # -----
-# sbatch "$PYEDNA_HOME/jobs/create_dye.sh" [DYE_CONFIG]
+# sbatch "$PYEDNA_HOME/jobs/components/create_dye.sh" [DYE_CONFIG]
 #
 # DYE_CONFIG defaults to dye.toml in the current directory.
 

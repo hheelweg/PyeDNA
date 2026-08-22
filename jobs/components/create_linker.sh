@@ -8,7 +8,7 @@
 
 # USAGE
 # -----
-# sbatch "$PYEDNA_HOME/jobs/create_linker.sh" [LINKER_CONFIG]
+# sbatch "$PYEDNA_HOME/jobs/components/create_linker.sh" [LINKER_CONFIG]
 #
 # LINKER_CONFIG defaults to linker.toml in the current directory.
 

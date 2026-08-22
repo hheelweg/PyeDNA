@@ -1,7 +1,7 @@
 import argparse
 from pathlib import Path
 
-from pyedna.structure.dyelnk import DyeLinkerConfig
+from pyedna.structure.attachments import DyeLinkerConfig
 
 
 def main(config_file="dyelnk.toml"):

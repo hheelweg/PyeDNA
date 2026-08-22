@@ -2,7 +2,7 @@
 
 # USAGE
 # -----
-# bash "$PYEDNA_HOME/jobs/create_dyelnk.sh" [DYELNK_CONFIG]
+# bash "$PYEDNA_HOME/jobs/components/create_dyelnk.sh" [DYELNK_CONFIG]
 #
 # DYELNK_CONFIG defaults to dyelnk.toml in the current directory.
 

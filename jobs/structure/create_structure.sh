@@ -2,15 +2,15 @@
 
 # USAGE
 # -----
-# bash "$PYEDNA_HOME/jobs/create_structure.sh" [STRUCTURE_CONFIG]
+# bash "$PYEDNA_HOME/jobs/structure/create_structure.sh" [STRUCTURE_CONFIG]
 #
 # STRUCTURE_CONFIG is optional and defaults to "structure.toml" in the current
 # working directory. The selected file is used for both HADDOCK preparation and
 # finalization, including when finalization runs later in the submitted job.
 #
 # Examples:
-#   bash "$PYEDNA_HOME/jobs/create_structure.sh"
-#   bash "$PYEDNA_HOME/jobs/create_structure.sh" my_structure.toml
+#   bash "$PYEDNA_HOME/jobs/structure/create_structure.sh"
+#   bash "$PYEDNA_HOME/jobs/structure/create_structure.sh" my_structure.toml
 
 if [[ $# -gt 1 ]]; then
     echo "Usage: $0 [STRUCTURE_CONFIG]"
@@ -50,4 +50,4 @@ fi
 # Submit HADDOCK job
 mkdir -p haddock
 sbatch --export=ALL,PYEDNA_STRUCTURE_CONFIG="$PYEDNA_STRUCTURE_CONFIG" \
-    "$PYEDNA_HOME/jobs/run_haddock.sh"
+    "$PYEDNA_HOME/jobs/structure/run_haddock.sh"

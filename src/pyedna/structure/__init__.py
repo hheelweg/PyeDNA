@@ -1,25 +1,29 @@
 """Build dye-labeled DNA structures and prepare them for simulation."""
 
 from .amber import AmberSetup
-from .assembly import (
+from . import attachments as _attachments_module
+from .builder import StructureBuilder
+from .attachments import AmberAtomMapping, AttachmentAtom, DyeDefinition, DyeInstance
+from .config import (
     AmberConfig,
-    Chromophore,
-    CreateDNA,
     DNAConfig,
     DyePlacement,
     HaddockConfig,
-    StructureBuilder,
     StructureConfig,
-    cleanPDB,
+    WorkflowConfig,
 )
-from .dye import AmberAtomMapping, AttachmentAtom, DyeDefinition, DyeInstance
+from .dna import CreateDNA
 from .haddock import HaddockSetup
+from .legacy import Chromophore, cleanPDB
+
+attachments = _attachments_module
 
 __all__ = [
     "AmberAtomMapping",
     "AmberConfig",
     "AmberSetup",
     "AttachmentAtom",
+    "attachments",
     "Chromophore",
     "CreateDNA",
     "DNAConfig",
@@ -30,5 +34,6 @@ __all__ = [
     "HaddockSetup",
     "StructureBuilder",
     "StructureConfig",
+    "WorkflowConfig",
     "cleanPDB",
 ]

@@ -1,4 +1,4 @@
-"""Represent dye-library definitions and prepared docking instances."""
+"""Represent structure component definitions and prepared docking instances."""
 
 from dataclasses import dataclass
 from pathlib import Path
