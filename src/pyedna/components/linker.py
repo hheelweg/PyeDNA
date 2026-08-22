@@ -107,21 +107,43 @@ class LinkerDefinition:
         with path.open("rb") as f:
             config = tomllib.load(f)
 
-        linker = config["linker"]
-        smiles = config["smiles"]
-        # Boundary definitions remain explicit: they define residue partitioning.
-        boundaries = config["boundaries"]
-        charges = config.get("charges", {})
+        component = config.get("component", config.get("linker"))
+        if component is None:
+            raise ValueError(f"{path}: missing [component] section")
+        if component.get("type", "linker") != "linker":
+            raise ValueError(f"{path}: component.type must be 'linker'")
+
+        structure = config.get("structure")
+        if structure is not None:
+            smiles = structure
+            # Boundary definitions remain explicit: they define residue partitioning.
+            boundaries = structure["boundaries"]
+        else:
+            smiles = config["smiles"]
+            boundaries = config["boundaries"]
+
+        parameterization = config.get("parameterization", {})
+        amber_config = dict(config.get("amber", {}))
+        amber_config.update(parameterization)
+        charge_method = parameterization.get("charge_method", "resp")
+        if charge_method != "resp":
+            raise ValueError("Only RESP charge fitting is supported.")
+        restraints = parameterization.get(
+            "restraints",
+            config.get("charges", {}).get("restraints", {}),
+        )
+        if not restraints:
+            raise ValueError(f"{path}: parameterization.restraints must be specified")
 
         return cls(
-            name=linker["name"],
-            code=linker.get("code"),
+            name=component["name"],
+            code=component.get("code"),
             dye_cap=smiles["dye_cap"],
             core=smiles["core"],
             dna_cap=smiles["dna_cap"],
             boundaries=boundaries,
-            amber=AmberSettings.from_config(config.get("amber", {})),
-            charge_restraints=ChargeRestraints.from_config(charges["restraints"]),
+            amber=AmberSettings.from_config(amber_config),
+            charge_restraints=ChargeRestraints.from_config(restraints),
             output=OutputSettings.from_config(config.get("output", {})),
             qm=QMSettings.from_config(config.get("qm", {})),
             config=config,

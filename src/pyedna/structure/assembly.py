@@ -80,16 +80,19 @@ class AttachmentConfig:
 class HaddockConfig:
     """Store HADDOCK model selection and optional parameter overrides."""
 
+    engine: str = "haddock3"
     top_models: int = 5
     overrides: dict[str, dict[str, object]] = field(default_factory=dict)
 
     def __post_init__(self):
+        if self.engine != "haddock3":
+            raise ValueError("'docking.engine' must be 'haddock3'")
         if self.top_models < 1:
-            raise ValueError("'haddock.top_models' must be at least 1")
+            raise ValueError("'docking.top_models' must be at least 1")
         if not isinstance(self.overrides, dict):
-            raise ValueError("'haddock.overrides' must contain TOML sections")
+            raise ValueError("'docking.overrides' must contain TOML sections")
         if any(not isinstance(values, dict) for values in self.overrides.values()):
-            raise ValueError("Each 'haddock.overrides' section must contain key-value pairs")
+            raise ValueError("Each 'docking.overrides' section must contain key-value pairs")
 
 
 @dataclass(frozen=True)
@@ -125,9 +128,9 @@ class StructureConfig:
 
     def __post_init__(self):
         if not self.name:
-            raise ValueError("'structure.name' must be specified")
+            raise ValueError("'system.name' must be specified")
         if self.amber.model > self.haddock.top_models:
-            raise ValueError("'amber.model' cannot exceed 'haddock.top_models'")
+            raise ValueError("'amber.model' cannot exceed 'docking.top_models'")
         if self.attachments and self.dyes != [a.as_placement() for a in self.attachments]:
             raise ValueError("Do not mix legacy [[dyes]] with [[attachments]]")
 
@@ -153,32 +156,51 @@ class StructureConfig:
         with path.open("rb") as handle:
             data = tomllib.load(handle)
 
-        try:
-            structure = data["structure"]
-            dna = data["dna"]
-        except KeyError as exc:
-            raise ValueError(f"{path}: missing [{exc.args[0]}] section") from exc
+        system = data.get("system", data.get("structure"))
+        dna = data.get("dna")
+        if system is None:
+            raise ValueError(f"{path}: missing [system] section")
+        if dna is None:
+            raise ValueError(f"{path}: missing [dna] section")
 
         try:
             legacy_dyes = data.get("dyes", [])
-            attachments = [AttachmentConfig(**entry)
-                           for entry in data.get("attachments", [])]
+            components = data.get("components", [])
+            attachments_data = data.get("attachments", [])
 
-            if legacy_dyes and attachments:
-                raise ValueError(f"{path}: do not mix [[dyes]] and [[attachments]]")
+            if sum(bool(values) for values in (legacy_dyes, components, attachments_data)) > 1:
+                raise ValueError(
+                    f"{path}: do not mix [[components]], [[attachments]], and [[dyes]]"
+                )
+
+            attachments = [
+                AttachmentConfig(**entry)
+                for entry in (components or attachments_data)
+            ]
 
             dyes = (
                 [attachment.as_placement() for attachment in attachments]
                 if attachments else [DyePlacement(**dye) for dye in legacy_dyes]
             )
+            docking = dict(data.get("haddock", {}))
+            docking.update(data.get("docking", {}))
+
+            amber = dict(data.get("amber", {}))
+            forcefield = data.get("forcefield", {})
+            if "dna" in forcefield:
+                amber["dna_forcefield"] = forcefield["dna"]
+            if "components" in forcefield:
+                amber["dye_forcefield"] = forcefield["components"]
+            if "water" in forcefield:
+                amber["water_forcefield"] = forcefield["water"]
 
             return cls(
-                name=structure["name"],
+                name=system["name"],
                 dna=DNAConfig(**dna),
                 dyes=dyes,
                 attachments=attachments,
-                haddock=HaddockConfig(**data.get("haddock", {})),
-                amber=AmberConfig(**data.get("amber", {})),
+                haddock=HaddockConfig(**docking),
+                amber=AmberConfig(**amber),
             )
         except (KeyError, TypeError) as exc:
             raise ValueError(f"{path}: invalid configuration field: {exc}") from exc

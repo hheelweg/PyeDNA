@@ -14,7 +14,9 @@ class AmberSettings:
     @classmethod
     def from_config(cls, config):
         """Create Amber settings from an optional TOML table."""
-        return cls(forcefield=config.get("forcefield", "gaff2"))
+        return cls(
+            forcefield=config.get("amber_forcefield", config.get("forcefield", "gaff2"))
+        )
 
 
 @dataclass(frozen=True)
@@ -101,10 +103,10 @@ class QMSettings:
     @classmethod
     def from_config(cls, config):
         """Create QM settings from an optional TOML table."""
-        geometry = config.get("geometry", {})
+        geometry = config.get("geometry", config)
         classical_conformers = geometry.get("classical_conformers", 20)
         if classical_conformers < 1:
-            raise ValueError("qm.geometry.classical_conformers must be at least 1")
+            raise ValueError("qm.classical_conformers must be at least 1")
         return cls(
             basis=geometry.get("basis", "6-31g(d)"),
             maxsteps=geometry.get("maxsteps", 100),

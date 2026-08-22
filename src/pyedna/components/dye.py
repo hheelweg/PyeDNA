@@ -60,6 +60,7 @@ class DyeDefinition:
         self.core_atom_indices = set()
         self.cap_map_ids = set()
 
+
     @property
     def residue_name(self):
         """Return the final uncapped dye residue name."""
@@ -93,21 +94,46 @@ class DyeDefinition:
         with path.open("rb") as f:
             config = tomllib.load(f)
 
-        dye = config["dye"]
-        core = config["core"]
-        caps = config["caps"]
-        charge = config.get("charge", {})
-        if charge.get("method", "resp") != "resp":
+        component = config.get("component", config.get("dye"))
+        if component is None:
+            raise ValueError(f"{path}: missing [component] section")
+        if component.get("type", "dye") != "dye":
+            raise ValueError(f"{path}: component.type must be 'dye'")
+
+        structure = config.get("structure")
+        if structure is not None:
+            core_smiles = structure["core_smiles"]
+            cap_smiles = structure["cap_smiles"]
+            core_targets = structure.get("cap_targets", structure.get("core_targets"))
+            formal_charge = structure.get("formal_charge")
+        else:
+            core = config["core"]
+            caps = config["caps"]
+            core_smiles = core["smiles"]
+            cap_smiles = caps["smiles"]
+            core_targets = caps["core_targets"]
+            formal_charge = core.get("formal_charge")
+
+        parameterization = config.get("parameterization", {})
+        amber_config = dict(config.get("amber", {}))
+        amber_config.update(parameterization)
+        charge_method = parameterization.get(
+            "charge_method",
+            config.get("charge", {}).get("method", "resp"),
+        )
+        if charge_method != "resp":
             raise ValueError("Only RESP charge fitting is supported.")
+        if core_targets is None:
+            raise ValueError(f"{path}: structure.cap_targets must be specified")
 
         return cls(
-            name=dye["name"],
-            code=dye.get("code"),
-            core_smiles=core["smiles"],
-            cap_smiles=caps["smiles"],
-            core_targets=caps["core_targets"],
-            formal_charge=core.get("formal_charge"),
-            amber=AmberSettings.from_config(config.get("amber", {})),
+            name=component["name"],
+            code=component.get("code"),
+            core_smiles=core_smiles,
+            cap_smiles=cap_smiles,
+            core_targets=core_targets,
+            formal_charge=formal_charge,
+            amber=AmberSettings.from_config(amber_config),
             output=OutputSettings.from_config(config.get("output", {})),
             qm=QMSettings.from_config(config.get("qm", {})),
             config=config,
