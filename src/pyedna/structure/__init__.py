@@ -12,7 +12,6 @@ from .config import (
     StructureConfig,
     WorkflowConfig,
 )
-from .dna import CreateDNA
 from .haddock import HaddockSetup
 from .legacy import Chromophore, cleanPDB
 
@@ -25,7 +24,6 @@ __all__ = [
     "AttachmentAtom",
     "attachments",
     "Chromophore",
-    "CreateDNA",
     "DNAConfig",
     "DyeDefinition",
     "DyeInstance",

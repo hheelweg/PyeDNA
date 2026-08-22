@@ -1,6 +1,5 @@
 """Prepare DNA structures for structure-generation workflows."""
 
-import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -8,6 +7,80 @@ from pathlib import Path
 from .. import config
 from .. import fileproc as fp
 from .. import utils
+
+
+def _copy_library_dna(dna_config, dna_dir, workdir):
+    """Copy a configured DNA PDB from the DNA template library."""
+
+    source_pdb = Path(dna_dir) / f"{dna_config.name}.pdb"
+    output_pdb = Path(workdir) / f"{dna_config.name}.pdb"
+
+    if not source_pdb.exists():
+        raise FileNotFoundError(f"DNA template not found: {source_pdb}")
+
+    shutil.copy2(source_pdb, output_pdb)
+    print(f"Copied DNA template: {source_pdb} -> {output_pdb}")
+    return output_pdb
+
+
+def _load_nab_template(dna_type):
+    """Load the NAB template for the requested DNA type."""
+
+    if dna_type != "double_helix":
+        raise NotImplementedError("Other DNA structures not implemented yet!")
+
+    template_dir = Path(config.PROJECT_HOME) / "data" / "dna_templates"
+    template_file = utils.findFileWithName(f"{dna_type}.nab", dir=str(template_dir))
+    return Path(template_file).read_text()
+
+
+def _write_nab_script(dna_config, workdir):
+    """Render and write the NAB script for generated DNA."""
+
+    template = _load_nab_template(dna_config.type)
+    nab_script = template.replace("{DNA_SEQUENCE}", dna_config.sequence.lower())
+    nab_script = nab_script.replace("{PDB_NAME}", f"{dna_config.name}.pdb")
+
+    workdir = Path(workdir)
+    workdir.mkdir(parents=True, exist_ok=True)
+    nab_file = workdir / f"{dna_config.name}.nab"
+    nab_file.write_text(nab_script)
+    return nab_file
+
+
+def _run_nab(nab_file, workdir):
+    """Run NAB through the project shell wrapper."""
+
+    run_nab_script = Path(config.PROJECT_HOME) / "bin" / "create_dna.sh"
+    subprocess.run(
+        ["bash", str(run_nab_script), Path(nab_file).name],
+        cwd=workdir,
+        check=True,
+        stdout=subprocess.DEVNULL,
+    )
+
+
+def _generate_dna_with_nab(dna_config, workdir, remove_nab=True):
+    """Generate a DNA PDB from sequence using a NAB template."""
+
+    workdir = Path(workdir)
+    output_pdb = workdir / f"{dna_config.name}.pdb"
+    nab_file = _write_nab_script(dna_config, workdir)
+
+    _run_nab(nab_file, workdir)
+    print(
+        f"*** Creation of {dna_config.name}.pdb completed: "
+        f"DNA type = {dna_config.type}, DNA sequence = {dna_config.sequence}"
+    )
+
+    if not output_pdb.exists():
+        raise FileNotFoundError(f"Generated DNA PDB not found: {output_pdb}")
+
+    if remove_nab:
+        nab_file.unlink(missing_ok=True)
+
+    print(f"Generated DNA structure: {output_pdb}")
+    return output_pdb
 
 
 def _normalize_dna_pdb(pdb_file, chain="A", segid="A"):
@@ -24,114 +97,21 @@ def _normalize_dna_pdb(pdb_file, chain="A", segid="A"):
     pdb_file.write_text("\n".join(lines) + "\n")
 
 
-def prepare_dna(config, dna_dir, workdir="."):
+def prepare_dna(structure_config, dna_dir, workdir="."):
     """Create the configured DNA PDB from NAB or a DNA library template."""
 
     workdir = Path(workdir)
-    output_pdb = workdir / f"{config.dna.name}.pdb"
+    dna_config = structure_config.dna
 
-    if config.dna.source == "library":
-        source_pdb = Path(dna_dir) / f"{config.dna.name}.pdb"
-
-        if not source_pdb.exists():
-            raise FileNotFoundError(f"DNA template not found: {source_pdb}")
-
-        shutil.copy2(source_pdb, output_pdb)
-        print(f"Copied DNA template: {source_pdb} -> {output_pdb}")
-
-    elif config.dna.source == "generate":
-        dna = CreateDNA(name=config.dna.name, type=config.dna.type, workdir=workdir)
-        dna.feedDNAseq(config.dna.sequence)
-        dna.createDNA()
-
-        generated_pdb = workdir / f"{config.dna.name}.pdb"
-
-        if not generated_pdb.exists():
-            raise FileNotFoundError(f"Generated DNA PDB not found: {generated_pdb}")
-
-        if generated_pdb.resolve() != output_pdb.resolve():
-            shutil.move(generated_pdb, output_pdb)
-
-        print(f"Generated DNA structure: {output_pdb}")
-
+    if dna_config.source == "library":
+        output_pdb = _copy_library_dna(dna_config, dna_dir, workdir)
+    elif dna_config.source == "generate":
+        output_pdb = _generate_dna_with_nab(dna_config, workdir)
     else:
         raise ValueError(
-            f"Unknown dna_source {config.dna.source!r}; "
+            f"Unknown dna_source {dna_config.source!r}; "
             "expected 'library' or 'generate'"
         )
 
     _normalize_dna_pdb(output_pdb, chain="A", segid="A")
     return output_pdb
-
-
-# class for creating DNA structure (.pdb) from DNA sequence
-class CreateDNA():
-
-    def __init__(self, name = 'dna', type = 'double_helix', workdir='.'):
-
-        self.type = type                                        # type of DNA strcuture we want to create
-        if type != 'double_helix':
-            raise NotImplementedError("Other DNA structures not implemented yet!")
-
-        self.name = name                                        # name of DNA structure
-        self.workdir = Path(workdir)
-        self.is_sequence = False                                # flag to indicate whether DNA sequence has been specified
-
-
-    # feed desired DNA sequence
-    def feedDNAseq(self, DNA_sequence):
-        self.sequence = DNA_sequence
-        self.is_sequence = True
-
-    # load DNA template for self.type from DNA data library
-    def loadTemplate(self):
-        # get directory for DNA templates
-        dna_template_dir = os.path.join(config.PROJECT_HOME, 'data', 'dna_templates')
-        # find template
-        template_file = utils.findFileWithName(f"{self.type}.nab", dir=dna_template_dir)
-        # load template
-        with open(template_file, "r") as file:
-            template = file.read()
-        return template
-
-    # writes NAB .nad input file
-    def writeNAB(self):
-
-        # (1) load DNA template
-        self.template = self.loadTemplate()
-
-        # (2) check if sequence is fed
-        if not self.is_sequence:
-            raise ValueError("Specify a DNA sequence first before proceeding!")
-
-        # (3) replace sequence placeholder in template and set pdb name
-        self.nab_script = self.template.replace("{DNA_SEQUENCE}", self.sequence.lower())
-        self.nab_script = self.nab_script.replace("{PDB_NAME}", f"{self.name}.pdb")
-
-        # (4) write .nab file
-        self.workdir.mkdir(parents=True, exist_ok=True)
-        with (self.workdir / f"{self.name}.nab").open("w") as file:
-            file.write(self.nab_script)
-
-
-    # run NAB to produce .pdb file of DNA strcture
-    def createDNA(self, remove_nab = True):
-
-        # (0) write .nab file
-        self.writeNAB()
-
-        # (1) locate shell script for running NAB and creating DNA pdb
-        run_nab_script = os.path.join(config.PROJECT_HOME, 'bin', 'create_dna.sh')
-
-        # (2) run NAB
-        subprocess.run(
-            ["bash", run_nab_script, f"{self.name}.nab"],
-            cwd=self.workdir,
-            check=True,
-            stdout=subprocess.DEVNULL,
-        )
-        print(f"*** Creation of {self.name}.pdb completed: DNA type = {self.type}, DNA sequence = {self.sequence}")
-
-        # (3) clean directory (auxiliary .nab file)
-        if remove_nab:
-            (self.workdir / f"{self.name}.nab").unlink(missing_ok=True)
