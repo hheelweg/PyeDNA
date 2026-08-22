@@ -95,44 +95,27 @@ class HaddockSetup:
         )
         return self
 
-def _make_cns_resname(name):
+def _make_cns_resname(definition, registry):
     """
-    Generate a unique 3-character CNS residue name.
-
-    Format:
-        first two characters encode dye identity
-        final character encodes linker identity
+    Generate deterministic unique CNS residue names.
     """
 
-    stem = Path(name).stem.upper()
-    stem = stem.replace("_LINKED", "")
+    if definition in registry:
+        return registry[definition]
 
-    parts = stem.split("_")
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    value = abs(hash(definition))
 
-    if len(parts) < 2:
-        raise ValueError(
-            f"Cannot generate CNS residue name from {name}"
-        )
+    code = (alphabet[(value // 26**3) % 26]
+            + alphabet[(value // 26**2) % 26]
+            + alphabet[(value // 26) % 26]
+            + alphabet[value % 26])
 
-    dye = parts[0]
-    linker = parts[1]
+    if code in registry.values():
+        raise ValueError(f"CNS residue hash collision: {definition} -> {code}")
 
-    # preserve CY3 vs CY5 vs PDI
-    if dye.startswith("CY") and len(dye) >= 3:
-        dye_code = "C" + dye[2]
-    else:
-        dye_code = dye[:2]
-
-    linker_code = linker[0]
-
-    resname = f"{dye_code}{linker_code}"
-
-    if len(resname) != 3:
-        raise ValueError(
-            f"Generated invalid CNS residue name {resname}"
-        )
-
-    return resname
+    registry[definition] = code
+    return code
 
 
 def _get_mol2_charge(mol2, tolerance=0.05):
@@ -240,20 +223,13 @@ def _prepare_dye_topology(instance, workdir, script, resname=None):
 
 
 def _prepare_dye_topologies(instances, workdir, script):
-    used = {}
+    resname_registry = {}
 
     for instance in instances:
-        resname = _make_cns_resname(instance.definition.name)
-
-        if resname in used:
-            raise ValueError(
-                "CNS residue name collision:\n"
-                f"  {instance.definition.name}\n"
-                f"  {used[resname]}\n"
-                f"both generate {resname}"
-            )
-
-        used[resname] = instance.definition.name
+        resname = _make_cns_resname(
+            instance.definition.name,
+            resname_registry,
+        )
 
         _prepare_dye_topology(
             instance,
@@ -261,6 +237,18 @@ def _prepare_dye_topologies(instances, workdir, script):
             script,
             resname=resname,
         )
+
+    # optional: write mapping file
+    mapping_file = Path(workdir) / "haddock" / "resname_mapping.csv"
+
+    with mapping_file.open("w", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerow(["definition", "cns_resname"])
+
+        for definition, resname in resname_registry.items():
+            writer.writerow([definition, resname])
+
+    print(f"Wrote {mapping_file}")
 
     return instances
 

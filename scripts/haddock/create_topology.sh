@@ -20,8 +20,8 @@ TMP_DIR=".acpype_tmp_${NAME}_${RESNAME}"
 OUT_DIR="${NAME}"
 
 [[ -f "$MOL2" ]] || { echo "Error: $MOL2 not found."; exit 1; }
-[[ "$RESNAME" =~ ^[A-Za-z0-9]{1,3}$ ]] || {
-    echo "Error: RESNAME must contain 1–3 letters or numbers."
+[[ "$RESNAME" =~ ^[A-Za-z0-9]{1,4}$ ]] || {
+    echo "Error: RESNAME must contain 1–4 letters or numbers."
     exit 1
 }
 [[ "$SEGID" =~ ^[A-Za-z0-9]$ ]] || {
