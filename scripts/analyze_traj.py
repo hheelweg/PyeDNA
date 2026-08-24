@@ -11,12 +11,12 @@ import pyedna
 #                        allocation and adjust accordingly.")
 
 
-def main(config_file="structure.toml"):
+def main(config_file="md.toml"):
     """
     Execute the trajectory analysis workflow.
 
     This function performs the following steps:
-    1. Initializes the molecular dynamics (MD) simulation with parameters.
+    1. Loads the molecular dynamics (MD) configuration for timing metadata.
     2. Identifies and loads necessary trajectory data files:
        - Parameter/topology file (`.prmtop`)
        - Trajectory file (`.nc`)
@@ -33,22 +33,16 @@ def main(config_file="structure.toml"):
       'traj.params' and 'mols.params'.
     - The `findFileWithExtension` and `findFileWithName` utility functions are
       used to locate files in the current directory.
-    - The time step (`dt`) is currently set to a default value of 10 ps; consider
-      updating this to reflect the actual simulation parameters.
+    - The trajectory time step (`dt`) is read from the MD TOML file.
 
     Raises:
     - FileNotFoundError: If any of the required files are not found in the current directory.
     - ValueError: If multiple files with the expected extension are found, indicating ambiguity.
 
-    TODO:
-    - Implement the `MDSimulation` class to handle MD simulation initialization.
-    - Modify the time step (`dt`) to be retrieved from the `MDSimulation` object
-      once it's implemented.
     """
 
-    # (1) load structure parameters and define instance of MDSimulation class
-    dna_params = pyedna.StructureConfig.from_file(config_file).dna.as_parameters()
-    MDsim = pyedna.MDSimulation(dna_params, 'md.params')
+    # (1) load MD metadata used for trajectory timing
+    MDsim = pyedna.MDConfig.from_file(config_file)
 
     # (2) trajectory raw data from AMBER MD
     # searches for files with specific ending in cwd (needs to be unique)
@@ -81,6 +75,6 @@ def main(config_file="structure.toml"):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Analyze an MD trajectory")
-    parser.add_argument("--config", default="structure.toml", help="Structure TOML file")
+    parser.add_argument("--config", default="md.toml", help="MD TOML file")
     args = parser.parse_args()
     main(config_file=args.config)

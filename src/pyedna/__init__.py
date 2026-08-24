@@ -3,9 +3,10 @@ import sys as _sys
 from .const import *
 from .fileproc import *
 from .geomtools import *
+from .md import MDConfig, MDSimulation
 from .quanttools import *
 from .structure import Chromophore, StructureBuilder, StructureConfig
-from .trajectory import MDSimulation, Trajectory
+from .trajectory import Trajectory
 from .utils import *
 from .pyscf_utils import *
 from .plot_utils import *

@@ -3,11 +3,10 @@ import argparse
 from joblib import dump, load
 import pyedna
 
-def main(config_file="structure.toml"):
+def main(config_file="md.toml"):
 
-    # (1) load structure parameters and define instance of MDSimulation class
-    dna_params = pyedna.StructureConfig.from_file(config_file).dna.as_parameters()
-    MDsim = pyedna.MDSimulation(dna_params, 'md.params')
+    # (1) load MD metadata used for trajectory timing
+    MDsim = pyedna.MDConfig.from_file(config_file)
 
     # (2) trajectory raw data from AMBER MD
     # searches for files with specific ending in cwd (needs to be unique)
@@ -40,6 +39,6 @@ def main(config_file="structure.toml"):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run vibrational analysis")
-    parser.add_argument("--config", default="structure.toml", help="Structure TOML file")
+    parser.add_argument("--config", default="md.toml", help="MD TOML file")
     args = parser.parse_args()
     main(config_file=args.config)

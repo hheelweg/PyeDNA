@@ -10,7 +10,10 @@
 #SBATCH --output=slurm-%j.log                   # Name output log file
 
 # USAGE:
-# sbatch this_script.sh [my_job_name] --sim [sim_program] --clean [clean_level]
+# sbatch "$PYEDNA_HOME/jobs/md/do_md_gpu.sh" [MD_CONFIG]
+#
+# MD_CONFIG is optional and defaults to "md.toml" in the current working
+# directory.
 
 
 # Check if PYEDNA_HOME is set
@@ -30,21 +33,26 @@ else
 fi
 
 
-# Default job name
-JOB_NAME="dna_md"
-
-# Check if first argument is not an option (i.e., doesn't start with "--")
-if [[ $# -gt 0 && "$1" != --* ]]; then
-    JOB_NAME=$1
-    shift  
+if [[ $# -gt 1 ]]; then
+    echo "Usage: $0 [MD_CONFIG]"
+    exit 1
 fi
+
+MD_CONFIG="${1:-md.toml}"
+
+if [[ ! -f "$MD_CONFIG" ]]; then
+    echo "Error: MD configuration not found: $MD_CONFIG"
+    exit 1
+fi
+
+JOB_NAME="$(basename "$MD_CONFIG" .toml)_md"
 
 # Update SLURM job name
 scontrol update JobID=$SLURM_JOB_ID Name=$JOB_NAME
 
 
 # Run python module for MD simulation
-python -m do_md "$@"
+python -m do_md "$MD_CONFIG"
 
 # Rename output file dynamically
 NEW_OUTPUT="${JOB_NAME}.log"
