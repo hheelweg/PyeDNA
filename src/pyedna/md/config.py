@@ -18,6 +18,7 @@ except ImportError:
 
 STAGE_GROUPS = ("minimize", "equilibrate", "production")
 CLEANUP_LEVELS = ("minimal", "standard", "restart", "all")
+RESTRAINT_TARGETS = ("none", "terminal", "structure", "custom")
 
 
 @dataclass(frozen=True)
@@ -73,33 +74,110 @@ class SimulationConfig:
 
 
 @dataclass(frozen=True)
+class StageRestraintConfig:
+    """Store restraint settings for one Amber MD stage."""
+
+    target: str = "none"
+    strength: Optional[float] = None
+
+    def __post_init__(self):
+        if self.target not in RESTRAINT_TARGETS:
+            raise ValueError(f"'target' must be one of {RESTRAINT_TARGETS}")
+        if self.target != "none" and self.strength is None:
+            raise ValueError("'strength' is required when restraint target is not 'none'")
+
+
+@dataclass(frozen=True)
+class MinimizationRestraintConfig:
+    """Store restraint settings for the two minimization substages."""
+
+    stage1: StageRestraintConfig = field(default_factory=StageRestraintConfig)
+    stage2: StageRestraintConfig = field(default_factory=StageRestraintConfig)
+
+    @classmethod
+    def from_mapping(cls, data):
+        return cls(
+            stage1=StageRestraintConfig(**data.get("stage1", {})),
+            stage2=StageRestraintConfig(**data.get("stage2", {})),
+        )
+
+
+@dataclass(frozen=True)
+class EquilibrationRestraintConfig:
+    """Store restraint settings for the two equilibration substages."""
+
+    stage1: StageRestraintConfig = field(default_factory=StageRestraintConfig)
+    stage2: StageRestraintConfig = field(default_factory=StageRestraintConfig)
+
+    @classmethod
+    def from_mapping(cls, data):
+        return cls(
+            stage1=StageRestraintConfig(**data.get("stage1", {})),
+            stage2=StageRestraintConfig(**data.get("stage2", {})),
+        )
+
+
+@dataclass(frozen=True)
 class MinimizationConfig:
-    """Store minimization step counts."""
+    """Store minimization step counts and restraint settings."""
 
     max_steps: int = 1000
     steepest_descent_steps: int = 500
+    restraints: MinimizationRestraintConfig = field(
+        default_factory=MinimizationRestraintConfig
+    )
+
+    @classmethod
+    def from_mapping(cls, data):
+        data = dict(data)
+        restraints = MinimizationRestraintConfig.from_mapping(
+            data.pop("restraints", {})
+        )
+        return cls(restraints=restraints, **data)
 
 
 @dataclass(frozen=True)
 class EquilibrationConfig:
-    """Store equilibration step counts and output intervals."""
+    """Store equilibration step counts, output intervals, and restraints."""
 
     heating_steps: int = 10000
     npt_steps: int = 50000
     ntpr: int = 5000
     ntwx: int = 5000
     ntwr: int = 5000
+    restraints: EquilibrationRestraintConfig = field(
+        default_factory=EquilibrationRestraintConfig
+    )
+
+    @classmethod
+    def from_mapping(cls, data):
+        data = dict(data)
+        restraints = EquilibrationRestraintConfig.from_mapping(
+            data.pop("restraints", {})
+        )
+        return cls(restraints=restraints, **data)
 
 
 @dataclass(frozen=True)
 class ProductionConfig:
-    """Store production MD length and output intervals."""
+    """Store production MD length, output intervals, and restraints."""
 
     steps: int = 1000000
-    ntpr: int = 5000
-    ntwx: int = 5000
-    ntwr: int = 50000
-    ntwf: int = 0
+    log_interval: int = 5000
+    trajectory_interval: int = 5000
+    restart_interval: int = 50000
+    force_interval: int = 0
+    restraints: StageRestraintConfig = field(default_factory=StageRestraintConfig)
+
+    @classmethod
+    def from_mapping(cls, data):
+        data = dict(data)
+        restraints = StageRestraintConfig(**data.pop("restraints", {}))
+        _rename_legacy_field(data, "ntpr", "log_interval")
+        _rename_legacy_field(data, "ntwx", "trajectory_interval")
+        _rename_legacy_field(data, "ntwr", "restart_interval")
+        _rename_legacy_field(data, "ntwf", "force_interval")
+        return cls(restraints=restraints, **data)
 
 
 @dataclass(frozen=True)
@@ -122,47 +200,6 @@ class BarostatConfig:
     """Store barostat settings."""
 
     tau: float = 2.0
-
-
-@dataclass(frozen=True)
-class RestraintForceConfig:
-    """Store stage-specific restraint force constants."""
-
-    min1: float = 500.0
-    min2: float = 5.0
-    eq1: float = 10.0
-    eq2: float = 10.0
-    production: float = 5.0
-
-
-@dataclass(frozen=True)
-class RestraintConfig:
-    """Store Amber restraint settings independent from structure.toml."""
-
-    mode: str = "none"
-    start: int = 1
-    end: Optional[int] = None
-    mask: Optional[str] = None
-    force: RestraintForceConfig = field(default_factory=RestraintForceConfig)
-
-    def __post_init__(self):
-        if self.mode not in {"terminal", "none"}:
-            raise ValueError("'restraints.mode' must be 'terminal' or 'none'")
-        if self.start < 1:
-            raise ValueError("'restraints.start' must be at least 1")
-        if self.end is not None and self.end < self.start:
-            raise ValueError("'restraints.end' must be greater than or equal to start")
-        if self.mode == "terminal" and (self.end is None or not self.mask):
-            raise ValueError(
-                "'restraints.end' and 'restraints.mask' are required for "
-                "terminal restraints until restraint inference is implemented"
-            )
-
-    @classmethod
-    def from_mapping(cls, data):
-        data = dict(data)
-        force = RestraintForceConfig(**data.pop("force", {}))
-        return cls(force=force, **data)
 
 
 @dataclass(frozen=True)
@@ -189,7 +226,6 @@ class MDConfig:
     production: ProductionConfig = field(default_factory=ProductionConfig)
     thermostat: ThermostatConfig = field(default_factory=ThermostatConfig)
     barostat: BarostatConfig = field(default_factory=BarostatConfig)
-    restraints: RestraintConfig = field(default_factory=RestraintConfig)
     output: OutputConfig = field(default_factory=OutputConfig)
 
     @classmethod
@@ -202,18 +238,26 @@ class MDConfig:
         system = data.get("system")
         if system is None:
             raise ValueError(f"{path}: missing [system] section")
+        if "restraints" in data:
+            raise ValueError(
+                f"{path}: move [restraints.*] sections under their stages, "
+                "for example [minimization.restraints.stage1]"
+            )
 
         try:
             return cls(
                 system=SystemConfig(**system),
                 workflow=WorkflowConfig(**data.get("workflow", {})),
                 simulation=SimulationConfig(**data.get("simulation", {})),
-                minimization=MinimizationConfig(**data.get("minimization", {})),
-                equilibration=EquilibrationConfig(**data.get("equilibration", {})),
-                production=ProductionConfig(**data.get("production", {})),
+                minimization=MinimizationConfig.from_mapping(
+                    data.get("minimization", {})
+                ),
+                equilibration=EquilibrationConfig.from_mapping(
+                    data.get("equilibration", {})
+                ),
+                production=ProductionConfig.from_mapping(data.get("production", {})),
                 thermostat=ThermostatConfig(**data.get("thermostat", {})),
                 barostat=BarostatConfig(**data.get("barostat", {})),
-                restraints=RestraintConfig.from_mapping(data.get("restraints", {})),
                 output=OutputConfig(**data.get("output", {})),
             )
         except TypeError as exc:
@@ -221,7 +265,7 @@ class MDConfig:
 
     @property
     def traj_dt(self):
-        return self.production.ntwx * self.simulation.timestep
+        return self.production.trajectory_interval * self.simulation.timestep
 
     @property
     def total_time(self):
@@ -229,7 +273,7 @@ class MDConfig:
 
     @property
     def traj_steps(self):
-        return self.production.steps // self.production.ntwx
+        return self.production.steps // self.production.trajectory_interval
 
 
 def _load_toml(path):
@@ -265,3 +309,13 @@ def _parse_toml_value(value):
         return ast.literal_eval(value)
     except (ValueError, SyntaxError):
         return value.strip('"').strip("'")
+
+
+def _rename_legacy_field(data, old_name, new_name):
+    if old_name not in data:
+        return
+    if new_name in data:
+        raise ValueError(
+            f"Use either '{new_name}' or legacy '{old_name}', not both"
+        )
+    data[new_name] = data.pop(old_name)

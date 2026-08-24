@@ -8,6 +8,7 @@ import shutil
 import subprocess
 
 from .config import MDConfig
+from .restraints import AmberRestraintResolver
 
 
 class MDSimulation:
@@ -32,6 +33,7 @@ class MDSimulation:
 
         self.prmtop = self._resolve_input(self.config.system.prmtop_path)
         self.rst7 = self._resolve_input(self.config.system.rst7_path)
+        self.restraints = AmberRestraintResolver(self.prmtop, self.config)
 
     @classmethod
     def from_file(cls, path, workdir="."):
@@ -54,6 +56,7 @@ class MDSimulation:
         self.output_dir.mkdir(parents=True, exist_ok=False)
         self._copy_config()
         self._link_or_copy_inputs()
+        print(self.restraints.analysis_text(), flush=True)
 
         for stage in self.config.workflow.stages:
             if stage == "minimize":
@@ -146,6 +149,7 @@ class MDSimulation:
         return path
 
     def _stage_input(self, stage):
+        restraint = self.restraints.for_stage(stage)
         titles = {
             "min1": "dna_dye: Initial minimization (solvent + ions)",
             "min2": "dna_dye: Initial minimization (entire system)",
@@ -153,23 +157,21 @@ class MDSimulation:
             "eq2": "dna_dye: NPT equilibration and slowly remove DNA restraint",
             "prod": "dna_dye: production run (NPT)",
         }
-        lines = [titles[stage], self._namelist(self._stage_controls(stage))]
-        lines.extend(self._restraint_block(stage))
+        lines = [titles[stage], self._namelist(self._stage_controls(stage, restraint))]
         return "\n".join(lines) + "\n"
 
-    def _stage_controls(self, stage):
+    def _stage_controls(self, stage, restraint):
         sim = self.config.simulation
         min_cfg = self.config.minimization
         eq = self.config.equilibration
         prod = self.config.production
         thermo = self.config.thermostat
         baro = self.config.barostat
-        restraints = self.config.restraints
 
         common = {
             "iwrap": sim.iwrap,
             "cut": sim.cutoff,
-            "ntr": int(restraints.mode != "none"),
+            "ntr": int(restraint.active),
         }
         minimization = {
             "imin": 1,
@@ -193,17 +195,17 @@ class MDSimulation:
             "pres0": sim.pressure,
             "taup": baro.tau,
         }
+        restraint_controls = self._mask_restraint_controls(restraint)
 
         if stage == "min1":
-            return {**minimization, **common}
+            return {**minimization, **common, **restraint_controls}
         if stage == "min2":
-            controls = {**minimization, **common}
-            controls.update(self._mask_restraint_controls(restraints.force.min2))
-            return controls
+            return {**minimization, **common, **restraint_controls}
         if stage == "eq1":
             return {
                 **md,
                 **common,
+                **restraint_controls,
                 "nstlim": eq.heating_steps,
                 "irest": 0,
                 "ntx": 1,
@@ -218,6 +220,7 @@ class MDSimulation:
                 **md,
                 **npt,
                 **common,
+                **restraint_controls,
                 "nstlim": eq.npt_steps,
                 "irest": 1,
                 "ntx": 5,
@@ -235,40 +238,21 @@ class MDSimulation:
             "irest": 1,
             "ntx": 5,
             "tempi": sim.temperature,
-            "ntpr": prod.ntpr,
-            "ntwx": prod.ntwx,
-            "ntwr": prod.ntwr,
-            "ntwf": prod.ntwf,
+            "ntpr": prod.log_interval,
+            "ntwx": prod.trajectory_interval,
+            "ntwr": prod.restart_interval,
+            "ntwf": prod.force_interval,
         }
-        controls.update(self._mask_restraint_controls(restraints.force.production))
+        controls.update(restraint_controls)
         return controls
 
-    def _mask_restraint_controls(self, force):
-        restraints = self.config.restraints
-        if restraints.mode == "none":
+    def _mask_restraint_controls(self, restraint):
+        if not restraint.active:
             return {}
         return {
-            "restraint_wt": force,
-            "restraintmask": self._amber_quote(restraints.mask),
+            "restraint_wt": restraint.strength,
+            "restraintmask": self._amber_quote(restraint.mask),
         }
-
-    def _restraint_block(self, stage):
-        restraints = self.config.restraints
-        if restraints.mode == "none" or stage not in {"min1", "eq1", "eq2"}:
-            return []
-
-        force = {
-            "min1": restraints.force.min1,
-            "eq1": restraints.force.eq1,
-            "eq2": restraints.force.eq2,
-        }[stage]
-        return [
-            "Hold the DNA fixed with positional restraints",
-            str(force),
-            f"RES {restraints.start} {restraints.end}",
-            "END",
-            "END",
-        ]
 
     @staticmethod
     def _namelist(values):
