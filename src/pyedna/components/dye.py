@@ -392,6 +392,11 @@ class DyeDefinition:
     def generate_residue_template(self, mol2_file, output_dir):
         """Generate final uncapped dye mol2/frcmod files."""
         output_dir = Path(output_dir)
+        attach_dir = (
+            output_dir.parent
+            if self.output.directory == "library"
+            else output_dir
+        )
         mol2, name_map = extract_mol2_subset(
             mol2_file,
             output_dir / f"{self.residue_name}.mol2",
@@ -409,7 +414,7 @@ class DyeDefinition:
         attach = self.write_attach_file(
             mol2,
             attach_names,
-            output_dir / f"{self.residue_name}.attach",
+            attach_dir / f"{self.residue_name}.attach",
         )
 
         if abs(charge - self.formal_charge) > 0.05:

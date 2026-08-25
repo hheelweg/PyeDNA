@@ -33,8 +33,9 @@ class DyeDefinition:
     @classmethod
     def from_library(cls, name, dye_dir, dye_forcefield="gaff2"):
         directory = Path(dye_dir) / name / dye_forcefield
+        dye_directory = Path(dye_dir) / name
         mol2 = directory / f"{name}.mol2"
-        attach = directory / f"{name}.attach"
+        attach = dye_directory / f"{name}.attach"
 
         for path in (mol2, attach):
             if not path.exists():

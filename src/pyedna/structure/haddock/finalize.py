@@ -1,5 +1,6 @@
 """Post-process HADDOCK docking output into final structure files."""
 
+import json
 from pathlib import Path
 import shutil
 
@@ -156,8 +157,45 @@ def _write_final_bonds(bond_file, output, residue_map, instances):
     return output
 
 
+def _write_resid_mapping(output, attachments, residue_map, instances):
+    """Write minimal structure-to-Amber residue mapping for attachments."""
+
+    output = Path(output)
+    attachments = attachments or []
+
+    if not attachments:
+        data = {"attachments": []}
+    else:
+        if len(attachments) != len(instances):
+            raise ValueError(
+                "Cannot write residue mapping: number of attachments "
+                "does not match prepared dye instances"
+            )
+
+        records = []
+
+        for attachment, instance in zip(attachments, instances):
+            dye_key = ("dye", instance.name, 2)
+
+            if dye_key not in residue_map:
+                raise KeyError(f"Could not map dye residue {dye_key}")
+
+            records.append({
+                "dye": attachment.dye,
+                "dna_residue": int(attachment.residue),
+                "amber_residue": int(residue_map[dye_key]),
+            })
+
+        data = {"attachments": records}
+
+    output.write_text(json.dumps(data, indent=4) + "\n")
+    print(f"Wrote {output}")
+    return output
+
+
 def _reformat_docked_models(instances, dna_template, bonding_csv, structure_dir,
-                           bond_file="haddock/bonds.csv", model_pattern="*.pdb"):
+                           bond_file="haddock/bonds.csv", model_pattern="*.pdb",
+                           attachments=None):
     dna_template, bonding_csv, structure_dir, bond_file = map(
         Path, (dna_template, bonding_csv, structure_dir, bond_file))
 
@@ -330,3 +368,9 @@ def _reformat_docked_models(instances, dna_template, bonding_csv, structure_dir,
         print(f"Reformatted {pdb}")
 
     _write_final_bonds(bond_file, structure_dir / "bonds.csv", final_residue_map, instances)
+    _write_resid_mapping(
+        structure_dir.parent / "resid_mapping.json",
+        attachments,
+        final_residue_map,
+        instances,
+    )

@@ -87,5 +87,6 @@ class HaddockSetup:
             structure_dir=self.structure_dir,
             bond_file=self.haddock_dir / "bonds.csv",
             model_pattern=f"{self.config.name}_*.pdb",
+            attachments=self.config.attachments,
         )
         return self

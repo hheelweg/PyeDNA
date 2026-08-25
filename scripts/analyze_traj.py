@@ -1,80 +1,44 @@
-import torch
-import numpy as np
 import argparse
-from joblib import dump, load
-import pyedna
-
-# # detect available GPUs 
-# num_gpus = torch.cuda.device_count()
-# if num_gpus < 2:
-#     raise RuntimeError("Error: Less than 2 GPUs detected! Check SLURM \
-#                        allocation and adjust accordingly.")
+from pyedna.trajectory import analyze_trajectory, validate_frame_interval, build_groups
 
 
-def main(config_file="md.toml"):
-    """
-    Execute the trajectory analysis workflow.
+def main(config_file):
+    traj, cfg = analyze_trajectory(config_file)
+    traj_cfg = cfg["trajectory"]
+    start, stop = validate_frame_interval(traj_cfg["frame_interval"], traj.num_frames)
 
-    This function performs the following steps:
-    1. Loads the molecular dynamics (MD) configuration for timing metadata.
-    2. Identifies and loads necessary trajectory data files:
-       - Parameter/topology file (`.prmtop`)
-       - Trajectory file (`.nc`)
-       - Output file (`.out`)
-    3. Loads analysis parameters from 'traj.params'.
-    4. Loads molecular parameters from 'mols.params'.
-    5. Sets the simulation time step (`dt`).
-    6. Creates a `Trajectory` object with the loaded data and parameters.
-    7. Initializes molecules of interest for analysis.
-    8. Iterates over trajectory snapshots to perform analysis as specified in 'traj.params'.
+    attachments = cfg.get("attachments", [])
+    optimize_caps = traj_cfg.get("optimize_caps", False)
+    basis = traj_cfg.get("basis", "6-31g")
 
-    Note:
-    - Ensure that the current working directory contains the required files:
-      'traj.params' and 'mols.params'.
-    - The `findFileWithExtension` and `findFileWithName` utility functions are
-      used to locate files in the current directory.
-    - The trajectory time step (`dt`) is read from the MD TOML file.
+    for frame in range(start, stop + 1):
+        attachment_mols = {}
 
-    Raises:
-    - FileNotFoundError: If any of the required files are not found in the current directory.
-    - ValueError: If multiple files with the expected extension are found, indicating ambiguity.
+        for attachment in attachments:
+            residue = attachment["residue"]
+            attachment_mols[residue] = traj.get_capped_snapshot(
+                frame=frame,
+                initial_residue=residue,
+                dye=attachment["dye"],
+                cap_type=attachment.get("cap", "H"),
+                optimize_caps=optimize_caps,
+                basis=basis
+            )
 
-    """
+        groups = build_groups(cfg, attachment_mols, basis=basis)
 
-    # (1) load MD metadata used for trajectory timing
-    MDsim = pyedna.MDConfig.from_file(config_file)
+        for name, mol in groups.items():
+            print(
+                f"Frame {frame}: group {name}, "
+                f"{mol.natm} atoms, charge {mol.charge}"
+            )
 
-    # (2) trajectory raw data from AMBER MD
-    # searches for files with specific ending in cwd (needs to be unique)
-    name_prmtop = pyedna.utils.findFileWithExtension('.prmtop')
-    name_nc = pyedna.utils.findFileWithExtension('.nc')
-    name_out = pyedna.utils.findFileWithExtension('.out')
-    traj_data = [name_prmtop, name_nc, name_out]
+            # Eventually:
+            # result = run_tddft(mol)
 
-    # (3) parameter file for trajectory analysis
-    traj_params = pyedna.utils.findFileWithName('traj.params')
-
-    # (4) parameter file for molecules (dyes)
-    mols_params = pyedna.utils.findFileWithName('mols.params')
-
-
-    # (5) define Trajectory object
-    trajectory = pyedna.Trajectory(
-                                    MDsim, traj_data,
-                                    traj_params_file = traj_params
-                                  )
-
-
-    # (6) initialize (dye) molecules of interest
-    trajectory.initMolecules(mols_params)
-
-    # (7) loop through trajectory snapshots and analyze based on traj.params
-    trajectory.loopTrajectory()
-    
-    
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Analyze an MD trajectory")
-    parser.add_argument("--config", default="md.toml", help="MD TOML file")
+    parser = argparse.ArgumentParser(description="Analyze MD trajectory")
+    parser.add_argument("--config", default="traj.toml")
     args = parser.parse_args()
-    main(config_file=args.config)
+    main(args.config)
