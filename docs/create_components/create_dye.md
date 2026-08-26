@@ -36,7 +36,7 @@ CC1(C)C2=CC=CC=C2[N:1]/C1=C\C=C\C(C3(C)C)=[N+:2]C4=C3C=CC=C4
 
 
 
-## Minimal Configuration Example
+## Minimal Configuration Example For `.toml`
 
 ```toml
 [component]
