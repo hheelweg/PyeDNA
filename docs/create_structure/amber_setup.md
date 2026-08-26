@@ -50,12 +50,14 @@ tleap    -> establishes the Amber topology/force-field representation
 ## Minimal Configuration Example
 
 ```toml
+[forcefield]
+dna = "OL15"
+attachments = "gaff2"
+water = "tip3p"
+
 [amber]
 model = 1
 output_name = "example_system"
-dna_forcefield = "OL15"
-dye_forcefield = "gaff2"
-water_forcefield = "leaprc.water.tip3p"
 water_model = "TIP3P"
 solvent_padding = 20.0
 positive_ion = "Na+"
@@ -65,7 +67,7 @@ neutralize = true
 
 ## Configuration Reference
 
-See the `[amber]` table in [create_structure](create_structure.md). Amber setup uses those fields directly.
+See the `[forcefield]` and `[amber]` tables in [create_structure](create_structure.md). User-facing force-field choices belong in `[forcefield]`; Amber setup maps those choices onto the internal `tleap` settings.
 
 ## Generated Outputs
 
@@ -90,7 +92,7 @@ If `[workflow].prepare_amber = true`, the `finalize` stage also runs Amber setup
 
 ## Common Modifications Or Advanced Options
 
-Adjust `amber.model` to select a different finalized HADDOCK model. Adjust `solvent_padding`, ions, and neutralization according to the intended MD system.
+Adjust `amber.model` to select a different finalized HADDOCK model. Adjust `[forcefield]` for DNA, attachment, or water force-field choices. Adjust `solvent_padding`, ions, and neutralization according to the intended MD system.
 
 ## Limitations / Troubleshooting
 

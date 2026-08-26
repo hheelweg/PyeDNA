@@ -31,7 +31,7 @@ For the current main workflow, use `[[attachments]]` with an existing dye, exist
 >
 > Each `[[attachment]]` contains one `dye`, loaded as a template from `DYE_DIR`, and one `linker` specification, loaded as templates from `LNK_DIR`. 
 > Note that each linker comes with a 3' and 5' end, i.e. when respcifying in `[[attachment]]` the `residue` to replace in the DNA structure is effectively getting replaced by *three* formal residues (one dye, two linkers), which will affect the residue indexing in the final `.pdb` structure we generate here.
-> **Important**: We can only load dyes and linkers whose name is existent in `DYE_DIR` or `LNK_DIR`, repsectively. Also be careful adjusting the `dye_forcefield` and `dna_forcefield` accordingly. 
+> **Important**: We can only load dyes and linkers whose name is existent in `DYE_DIR` or `LNK_DIR`, repsectively. Also be careful adjusting `[forcefield].attachments` and `[forcefield].dna` accordingly.
 
 The DNA can currently be loaded as a template from the `DNA_DIR` OR actually be generated with the a simple run of the Nucleid Acid Builder ([NAB](https://github.com/Amber-MD/AmberClassic.git)).  
 
@@ -53,23 +53,28 @@ The DNA can currently be loaded as a template from the `DNA_DIR` OR actually be 
 
 ```toml
 [system]
-name = "example_system"
+name = "dna_CY3_CY5"
 
 [dna]
 source = "generate"
-name = "example_dna"
-sequence = "ATCGATCG"
+name = "dna"
+sequence = "TGCACTCTCGATTTATGACCGAGCT"
 type = "double_helix"
 
 [[attachments]]
-dye = "PDI"
-linker = "DE"
-residue = 4
+dye = "CY3"
+linker = "PP"
+residue = 10
 
 [[attachments]]
-dye = "CY3"
+dye = "CY5"
 linker = "DE"
-residue = 6
+residue = 11
+
+[forcefield]
+dna = "OL15"
+attachments = "gaff2"
+water = "tip3p"
 
 [docking]
 engine = "haddock3"
@@ -77,12 +82,9 @@ top_models = 5
 
 [amber]
 model = 1
-output_name = "example_system"
-dna_forcefield = "OL15"
-dye_forcefield = "gaff2"
-water_forcefield = "leaprc.water.tip3p"
-water_model = "TIP3P"
 solvent_padding = 20.0
+positive_ion = "Na+"
+negative_ion = "Cl-"
 neutralize = true
 ```
 
@@ -135,22 +137,31 @@ This shape remains accepted for existing workflows, but `[[attachments]]` is the
 
 `[haddock]` and `[docking]` are merged, with `[docking]` values overriding `[haddock]` values.
 
+### `[forcefield]`
+
+This is the preferred user-facing place to select force fields for `create_structure`.
+
+| Field | Required | Default | Meaning and constraints |
+| --- | --- | --- | --- |
+| `dna` | optional | `"OL15"` | DNA force-field identifier. Compact values such as `"OL15"` are expanded internally to the corresponding `tleap` source. |
+| `attachments` | optional | `"gaff2"` | Dye/linker force-field identifier. This must match the library layout under `DYE_DIR` and `LNK_DIR`. |
+| `water` | optional | `"leaprc.water.tip3p"` | Water force-field source or compact water identifier. `"tip3p"` is expanded internally to `leaprc.water.tip3p`. |
+
+Do not use `forcefield.components`; the parser will reject it and ask for `forcefield.attachments`.
+
 ### `[amber]`
 
 | Field | Required | Default | Meaning and constraints |
 | --- | --- | --- | --- |
 | `model` | optional | `1` | Selected model number from `structures/<system.name>_<model>.pdb`; must be at least 1 and cannot exceed `docking.top_models`. |
 | `output_name` | optional | `system.name` | Basename for final Amber files. |
-| `dna_forcefield` | optional | `"OL15"` | DNA force-field identifier. |
-| `dye_forcefield` | optional | `"gaff2"` | Dye/linker force-field identifier. |
-| `water_forcefield` | optional | `"leaprc.water.tip3p"` | `tleap` water force-field source. |
 | `water_model` | optional | `"TIP3P"` | Solvent box model. Current implementation supports `"TIP3P"`. |
 | `solvent_padding` | optional | `20.0` | Padding passed to `solvateBox`. |
 | `positive_ion` | optional | `"Na+"` | Positive ion name passed to `addIons`. |
 | `negative_ion` | optional | `"Cl-"` | Negative ion name passed to `addIons`. |
 | `neutralize` | optional | `true` | If true, `addIons mol <ion> 0` is called for both positive and negative ions. |
 
-Legacy `[forcefield]` accepts `dna`, `attachments`, and `water`, which are mapped onto the corresponding Amber fields.
+Advanced/internal aliases `amber.dna_forcefield`, `amber.dye_forcefield`, and `amber.water_forcefield` are also accepted by the current parser because `[forcefield]` values are mapped onto those internal settings. Prefer `[forcefield]` in user-written `structure.toml` files.
 
 ### `[workflow]`
 
