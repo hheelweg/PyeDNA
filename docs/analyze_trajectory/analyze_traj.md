@@ -13,24 +13,45 @@ PyeDNA loads the topology and trajectory, validates the requested frame interval
 - Amber topology file.
 - Amber NetCDF trajectory file.
 - `DYE_DIR` set so analysis can read dye MOL2 charge data and `.attach` metadata.
-- `resid_mapping.json` available in the working directory when attachment residues need to map back to Amber dye residues. This file is produced by the `finalize` stage of `create_structure` as `structures/resid_mapping.json`.
+- `resid_mapping.json` available in the working directory when attachment residues need to map back to Amber dye residues. This file is produced by the `finalize` stage of `create_structure` as `./resid_mapping.json`.
 - PySCF/GPU4PySCF or ORCA backend resources when quantum jobs are requested.
 
 ## User Input Required
 
 **Required:** trajectory files, frame interval, dye attachments, group definitions, and requested calculations.
 
-> **AUTHOR INPUT REQUIRED**
->
-> Explain how users should choose `[[attachments]]` residues, especially how `dna_residue` values from `structures/resid_mapping.json` relate to trajectory residue numbering.
+We first need to make sure `analyze_traj` reads in the `[[attachments]]` properly that have been done initially when creating the DNA/dye structure from some `structure.toml`.
 
-> **AUTHOR INPUT REQUIRED**
+> **Loading Attachment Information**
 >
-> Explain how users should group attachments into donors, acceptors, dimers, or other scientifically meaningful units for classical and quantum calculations.
+> In order to load information about dyes attached to the DNA structure, one needs to mirror the same structure of `[[attachments]]` as used for `structure.toml` in the `create_structure` workflow, i.e. chose the `DYE_DIR` codename for the `dye` and **importantly**, as `residue` the DNA residue from the `structure.toml` that we have used to attach the dye in the original (raw) DNA `.pdb` file (e.g. from `DNA_DIR`).
+> **Note**: The residue IDs of the initial (raw) DNA `.pdb` and the Amber MD input `.pdb` differ by the simple reason that one nucleotide is replaces by one dye and two linker residues, i.e. each `[[attachment]]` in `structure.toml` increases the number of total residues by 2. 
+> The mapping file that handles this confidently is `./resid_mapping.json`, so the user should **not delete** this file.
 
-> **AUTHOR INPUT REQUIRED**
+In order to perform analysis and computation on multiple dyes at once (most prominently if we want to do computations on a dye-dimer of neighboring dye molecules that are very close in space) one can group different residues, again specified by their residue IDs in `[[attachments]]`, to `[[groups]]`
+
+> **Defining Groups**
 >
-> Explain how users should choose quantum method, backend, charge, spin, states, outputs, and coupling state pairs for their scientific question.
+> If one wants to perform computations on individual dyes molecules, one can define a group with `attachements = [resid]`.
+> If one wants the group to include multiple dye molecules, one can specify e.g. `attachements = [resid1, resid2]`.
+> The group `name` is important to reference with computation/analysis is supposed to be performed on the groups
+
+Calculations are typically being performed **only** on pre-defined `[[groups]]`. Once such groups have been computed, one can decide which types of analyses one wants to perform on this group.
+
+> **Specifying Computations**
+>
+> Analyses on `[[groups]]` can be either of classical (see blocks `[[classical]]`) or quantum (see blocks `[[quantum]]`) nature.
+> Refer to the below specified keywords in order to see what exactly this can entail. Importantly, one needs to specify the correct group `name`. 
+
+If one wants to back out quantities that emerge from computation outcomes between different `[[groups]]` one can use `[[interactions]]`.
+The term interaction does *not* refer to some actual physcial interaction between groups but more to quantities that only make sense between different groups, e.g. electronic coupling and/or center-of-mass/geometry distance. 
+
+> **Getting Group-to-Group Quantities (`[[interactions]]`)**
+>
+> There are both group-to-group computations for classical (see blocks `[[classical_interactions]]`) and quantum quantities (see blocks `[[quantum_interactions]]`) implemented. See documentation in table below for more details.
+> One needs to specify `groups = [group_name1, group_name2]` in order to define which groups to consider. 
+
+
 
 ## Minimal Configuration Example For `traj.toml`:
 
@@ -63,6 +84,18 @@ attachments = [11]
 [[classical]]
 group = "donor"
 outputs = ["center_of_geometry"]
+
+[[quantum_interactions]]
+type = "coupling"
+groups = ["donor", "acceptor"]
+method = "tdm"
+coupling_type = "electronic"
+state_pairs = [["strongest", "strongest"], [0, 0]]
+
+[[classical_interactions]]
+type = "distance"
+groups = ["donor", "acceptor"]
+method = "center_of_geometry"
 
 [analysis]
 output_root = "analysis"
