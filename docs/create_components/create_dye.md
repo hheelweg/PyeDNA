@@ -1,4 +1,4 @@
-# create_dye
+# Creating Dye Molecules (`create_dye`)
 
 ## Purpose
 
