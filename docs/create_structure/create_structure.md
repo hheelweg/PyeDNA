@@ -41,7 +41,7 @@ The DNA can currently be loaded as a template from the `DNA_DIR` OR actually be 
 > Therefore, we also supply access to a manually constructed `DNA_DIR` with raw DNA `.pdb` files that can be used. 
 > - [ ] TODO : We want to streamline and automatize this workflow in the future.
 
-The core engine for building reasonable input structures for the DNA/dye attachements, we use [HADDOCK](https://github.com/haddocking). 
+The core engine for building reasonable input structures for the DNA/dye attachements, we use [HADDOCK](https://github.com/haddocking/haddock3). 
 More information on the precise implementation if Haddock into PyeDNA and HADDOCK-specific parameters can be found [here](../concepts/haddock3.md). 
 
 > **Haddock3**
