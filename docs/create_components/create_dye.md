@@ -19,18 +19,21 @@ PyeDNA attaches temporary cap atoms to the mapped dye core, embeds a 3D conforme
 
 **Required:** dye name, dye code or residue name, mapped dye core SMILES, cap SMILES, and cap target atom-map IDs.
 
-> **AUTHOR INPUT REQUIRED**
+> **Important Input: `core_smiles` and `cap_targets`**
 >
-> Explain how users should choose chemically meaningful dye `core_smiles`, how atom-map IDs should be assigned, and how the mapped atoms in `cap_targets` correspond to the intended dye-linker attachment sites.
+> Note that `PyeDNA` requires feeding a `core_smiles` string that descibes the chemical structure of the *uncapped* dye molecule that is getting atatched to the DNA, even if that means the structure is not chemically sound, i.e. at the attachment points of the linker molecule a bond is missing, see in the attached example structure, where the attachment points are the two `N` atoms.
+> **Important**: Note that we index these atoms with `1` and `2` in `core_smiles`, which is important because these indices appear in `cap_targets`, giving the required information which atoms need to be capped for the geometry optimization and charge fitting procedure.
 
-> **AUTHOR INPUT REQUIRED**
+
+> **Important Input: `cap_smiles`**
 >
-> Explain the supported cap chemistry for `cap_smiles` and when the temporary cap atom should represent the electronic environment of the final dye-linker bond.
+> The `cap_smiles` strings (e.g. `[H]` or `C` as SMILES strings) are required to chemically saturate `core_smiles` dye structure and actually mimic the electronic environment if attached linker chain. 
 
-Example
+**Example (`core_smiles`)**
 ```smiles
 CC1(C)C2=CC=CC=C2[N:1]/C1=C\C=C\C(C3(C)C)=[N+:2]C4=C3C=CC=C4
 ```
+
 
 
 ## Minimal Configuration Example
