@@ -1,26 +1,45 @@
-import sys as _sys
+"""PyeDNA public package interface.
 
-from .const import *
-from .fileproc import *
-from .geomtools import *
-from .md import MDConfig, MDSimulation
-from .quanttools import *
-from .structure import Chromophore, StructureBuilder, StructureConfig
-from .trajectory import Trajectory
-from .utils import *
-from .pyscf_utils import *
-from .plot_utils import *
+Package import is intentionally lightweight. Workflow objects are resolved
+lazily so analysis, structure, and component entry points can import cleanly.
+"""
 
-# TODO: Remove these module aliases after callers have migrated to
-# pyedna.structure.amber, pyedna.structure.attachments, and pyedna.structure.haddock.
-from .structure import amber as _amber_module
-from .structure import attachments as _attachments_module
-from .structure import haddock as _haddock_module
+import importlib
 
-_sys.modules[f"{__name__}.amber"] = _amber_module
-_sys.modules[f"{__name__}.dye"] = _attachments_module
-_sys.modules[f"{__name__}.haddock"] = _haddock_module
+_MODULE_ALIASES = {
+    "amber": "pyedna.structure.amber",
+    "dye": "pyedna.structure.attachments",
+    "haddock": "pyedna.structure.haddock",
+}
 
-amber = _amber_module
-dye = _attachments_module
-haddock = _haddock_module
+_LAZY_MODULES = {
+    "analysis": "pyedna.analysis",
+    "md": "pyedna.md",
+    "postproc": "pyedna.postproc",
+    "structure": "pyedna.structure",
+    "trajectory": "pyedna.trajectory",
+    **_MODULE_ALIASES,
+}
+
+_LAZY_ATTRS = {
+    "MDConfig": "pyedna.md",
+    "MDSimulation": "pyedna.md",
+    "StructureBuilder": "pyedna.structure",
+    "StructureConfig": "pyedna.structure",
+    "Trajectory": "pyedna.trajectory",
+}
+
+
+def __getattr__(name):
+    if name in _LAZY_MODULES:
+        module = importlib.import_module(_LAZY_MODULES[name])
+        globals()[name] = module
+        return module
+
+    if name in _LAZY_ATTRS:
+        module = importlib.import_module(_LAZY_ATTRS[name])
+        value = getattr(module, name)
+        globals()[name] = value
+        return value
+
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")

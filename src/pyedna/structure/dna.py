@@ -5,8 +5,7 @@ import subprocess
 from pathlib import Path
 
 from .. import config
-from .. import fileproc as fp
-from .. import utils
+from .pdb import set_chain_and_segid
 
 
 def _copy_library_dna(dna_config, dna_dir, workdir):
@@ -30,8 +29,10 @@ def _load_nab_template(dna_type):
         raise NotImplementedError("Other DNA structures not implemented yet!")
 
     template_dir = Path(config.PROJECT_HOME) / "data" / "dna_templates"
-    template_file = utils.findFileWithName(f"{dna_type}.nab", dir=str(template_dir))
-    return Path(template_file).read_text()
+    template_file = template_dir / f"{dna_type}.nab"
+    if not template_file.exists():
+        raise FileNotFoundError(f"NAB template not found: {template_file}")
+    return template_file.read_text()
 
 
 def _write_nab_script(dna_config, workdir):
@@ -91,7 +92,7 @@ def _normalize_dna_pdb(pdb_file, chain="A", segid="A"):
 
     for line in pdb_file.read_text().splitlines():
         if line.startswith(("ATOM  ", "HETATM")):
-            line = fp.set_chain_and_segid(line, chain=chain, segid=segid)
+            line = set_chain_and_segid(line, chain=chain, segid=segid)
         lines.append(line)
 
     pdb_file.write_text("\n".join(lines) + "\n")

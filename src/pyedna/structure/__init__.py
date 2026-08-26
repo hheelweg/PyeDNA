@@ -13,7 +13,6 @@ from .config import (
     WorkflowConfig,
 )
 from .haddock import HaddockSetup
-from .legacy import Chromophore, cleanPDB
 
 attachments = _attachments_module
 
@@ -23,7 +22,6 @@ __all__ = [
     "AmberSetup",
     "AttachmentAtom",
     "attachments",
-    "Chromophore",
     "DNAConfig",
     "DyeDefinition",
     "DyeInstance",
@@ -33,5 +31,4 @@ __all__ = [
     "StructureBuilder",
     "StructureConfig",
     "WorkflowConfig",
-    "cleanPDB",
 ]

@@ -6,7 +6,7 @@ import shutil
 
 import pandas as pd
 
-from ... import fileproc as fp
+from ..pdb import set_chain_and_segid
 
 
 def _select_best_models(run_dir, output_dir, top=5, structure_name="dna_dyes"):
@@ -273,7 +273,7 @@ def _reformat_docked_models(instances, dna_template, bonding_csv, structure_dir,
                 line = _set_atom_name(line, str(entry["original_name"]))
                 line = _set_resname(line, str(entry["original_resname"]))
                 line = _set_resid(line, int(entry["original_resid"]))
-                line = fp.set_chain_and_segid(line)
+                line = set_chain_and_segid(line)
 
                 restored.append((int(entry["original_resid"]), int(entry["map_order"]), line))
 
@@ -347,7 +347,7 @@ def _reformat_docked_models(instances, dna_template, bonding_csv, structure_dir,
             rewritten = []
 
             for line in group["lines"]:
-                line = fp.set_chain_and_segid(line)
+                line = set_chain_and_segid(line)
                 line = _set_resid(line, new_resid)
                 line = _set_serial(line, serial)
                 rewritten.append(line)

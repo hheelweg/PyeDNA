@@ -577,7 +577,8 @@ class DyeLinkerConfig:
         if not lnk_root:
             raise EnvironmentError("LNK_DIR is not set")
 
-        dye_dir = Path(dye_root) / dye / dye_ff
+        dye_directory = Path(dye_root) / dye
+        dye_dir = dye_directory / dye_ff
         lnk_dir = Path(lnk_root) / linker / dye_ff / dna_ff
 
         dye_mol2 = dye_dir / f"{dye}.mol2"
@@ -585,7 +586,7 @@ class DyeLinkerConfig:
         linker5_mol2 = lnk_dir / f"{linker}5.mol2"
         linker_connect_frcmod = resolve_connect_frcmod(lnk_root, dye_ff, dna_ff)
 
-        dye_attach = dye_dir / f"{dye}.attach"
+        dye_attach = dye_directory / f"{dye}.attach"
         linker3_attach = lnk_dir / f"{linker}3.attach"
         linker5_attach = lnk_dir / f"{linker}5.attach"
 
