@@ -1,18 +1,22 @@
-# do_md
+# Run Amber MD Simulations (`do_md`)
 
 ## Purpose
 
-`do_md` runs Amber molecular dynamics for a prepared PyeDNA system. The workflow is:
-
-```text
-minimization
-    -> equilibration / heating
-    -> production
-```
+`do_md` runs Amber molecular dynamics for a prepared DNA/dye system.
 
 ## What the Workflow Does
 
 PyeDNA creates a timestamped directory under `output.directory`, copies the input `md.toml`, symlinks or copies `prmtop` and `rst7`, writes Amber input files for each internal stage, runs `sander` for minimization, runs `pmemd.cuda` for equilibration and production, verifies expected files, and cleans intermediate files according to `output.cleanup`.
+
+### Stage Summary
+
+| User stage | Internal stage | What happens |
+| --- | --- | --- |
+| `minimize` | `min1` | The first minimization typically relaxes solvent and ions around the prepared DNA-dye structure while keeping the DNA/dye coordinates fixed. This removes unfavorable solvent contacts before the molecular structure itself is allowed to move. |
+|  | `min2` | The second minimization continues from the `min1` coordinates and also relaxes the DNA/dye structure, giving the full system a lower-energy starting point before heating. |
+| `equilibrate` | `eq1` | The heating stage starts from the minimized structure, initializes MD from the configured initial temperature, and raises the system toward the target simulation temperature. |
+|  | `eq2` | The NPT equilibration stage continues from the heated structure, turns on pressure coupling, and lets the solvated system settle at the configured temperature and pressure before production. |
+| `production` | `prod` | The production stage continues from the equilibrated structure and writes the trajectory used for downstream analysis. |
 
 ## Prerequisites
 
@@ -24,11 +28,18 @@ PyeDNA creates a timestamped directory under `output.directory`, copies the inpu
 
 **Required:** system name and the prepared Amber input files.
 
-> **AUTHOR INPUT REQUIRED**
+> **MD Setup Files**
 >
-> Explain how users should choose MD length, timestep, output intervals, restraints, and cleanup level for different scientific goals.
+> The `do_md` workflow most seamlessly works for structures created with the `create_structure` workflow, provided that the `prepare_amber` step has not thrown an issue. 
 
-## Minimal Configuration Example
+Minimization and Equilibration happen in two steps and under specific restraints one can specify.
+
+> **Restraint Usage**
+>
+> The default for every stage is `target = "none"`, meaning no positional restraints are applied. `target = "structure"` applies restraints to all non-solvent, non-ion residues, i.e. the DNA and dye/linker structure. `target = "terminal"` applies restraints only to terminal DNA residues; fixing terminal nucleotides can improve simulation stability by reducing end fraying or large terminal motions during MD.
+
+
+## Minimal Configuration Example For `md.toml`
 
 ```toml
 [system]

@@ -1,4 +1,4 @@
-# create_structure
+# Creating MD Input Structure (`create_structure`)
 
 ## Purpose
 
