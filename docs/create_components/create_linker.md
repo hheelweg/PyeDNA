@@ -45,6 +45,9 @@ This gives the full (chemically saturated) linker molecule, which will be used f
  [CH3:1][C:2](=[O:3])[CH2:4][CH2:5][O:6][CH2:7][CH2:8][O:9][P:10](=[O:11])([O-:12])[O:13][CH3:14]
  ```
 
+ For the RESP charge fitting the charges for `dna_cap` will be constrained to match the DNA `forcefield` in `[parameterization.restraints]`, e.g. OL15. 
+ This is designed so as to match the physics of the DNA forcefield around the DNA-like atoms of the linker molecules in close porximity to the DNA. 
+
  Note the each dye has **two** attachment via a linker to the DNA, so even though both linkers have identical core chemistry, they differ in the way we need to handle the attachment to DNA because of the differences in 3' and 5' residue atoms in typical DNA `.pdb` files, i.e. their individual dna_cap will differ
 This will technically give rise to two different sets of linker files (one with suffix `3` and the other one with suffix `5`) that need to be handled separately. 
 

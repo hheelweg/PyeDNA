@@ -27,23 +27,27 @@
 
 For the current main workflow, use `[[attachments]]` with an existing dye, existing linker, and the DNA residue to replace.
 
-> **AUTHOR INPUT REQUIRED**
+> **Attachment and DNA Residue Replacment**
 >
-> Explain how users should choose DNA attachment residues, including residue numbering assumptions and how many DNA residues a dye-linker component replaces.
+> Each `[[attachment]]` contains one `dye`, loaded as a template from `DYE_DIR`, and one `linker` specification, loaded as templates from `LNK_DIR`. 
+> Note that each linker comes with a 3' and 5' end, i.e. when respcifying in `[[attachment]]` the `residue` to replace in the DNA structure is effectively getting replaced by *three* formal residues (one dye, two linkers), which will affect the residue indexing in the final `.pdb` structure we generate here.
+> **Important**: We can only load dyes and linkers whose name is existent in `DYE_DIR` or `LNK_DIR`, repsectively. Also be careful adjusting the `dye_forcefield` and `dna_forcefield` accordingly. 
 
-> **AUTHOR INPUT REQUIRED**
+The DNA can currently be loaded as a template from the `DNA_DIR` OR actually be generated with the a simple run of the Nucleid Acid Builder ([NAB](https://github.com/Amber-MD/AmberClassic.git)).  
+
+> **Generating DNA structures and `DNA_DIR`**
 >
-> Explain when users should generate a simple NAB DNA structure versus provide an existing PDB from `DNA_DIR`, and what preparation is expected for library DNA structures.
+> PyeDNA currently can only generate very simple DNA structures directly via NAB.
+> Therefore, we also supply access to a manually constructed `DNA_DIR` with raw DNA `.pdb` files that can be used. 
+> - [ ] TODO : We want to streamline and automatize this workflow in the future.
 
-> **AUTHOR INPUT REQUIRED**
+> **Haddock3**
 >
-> Explain the scientific assumptions behind HADDOCK attachment restraints and how users should judge whether the generated restraints match the intended covalent connectivity.
+> - [ ] TODO : Explain the scientific assumptions behind HADDOCK attachment restraints and how users should judge whether the generated restraints match the intended covalent connectivity.
+> - [ ] TODO : Explain how users should choose among HADDOCK models beyond the current implementation's geometry-score ranking.
 
-> **AUTHOR INPUT REQUIRED**
->
-> Explain how users should choose among HADDOCK models beyond the current implementation's geometry-score ranking.
 
-## Minimal Configuration Example
+## Minimal Configuration Example For `structure.toml`
 
 ```toml
 [system]
@@ -56,9 +60,14 @@ sequence = "ATCGATCG"
 type = "double_helix"
 
 [[attachments]]
-dye = "EXD"
-linker = "EL"
+dye = "PDI"
+linker = "DE"
 residue = 4
+
+[[attachments]]
+dye = "CY3"
+linker = "DE"
+residue = 6
 
 [docking]
 engine = "haddock3"
@@ -102,7 +111,8 @@ The DNA-input portion is functional but may be streamlined further in the future
 | `linker` | required | none | Existing linker code/name in `LNK_DIR`. |
 | `residue` | required | none | DNA residue index to replace with the dye-linker component. |
 
-PyeDNA converts each attachment into an internal dye placement named `<dye>_<linker>` with one site. Do not mix `[[attachments]]` with legacy `[[dyes]]`.
+PyeDNA converts each attachment into an internal dye placement named `<dye>_<linker>` with one site.
+
 
 ### Legacy `[[dyes]]`
 
