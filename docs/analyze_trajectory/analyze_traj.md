@@ -99,7 +99,6 @@ method = "center_of_geometry"
 
 [analysis]
 output_root = "analysis"
-name = "example_analysis"
 
 [analysis.units]
 energy = "eV"
@@ -222,12 +221,25 @@ analysis/analysis_YYYY_MM_DD_HH_MM/
 
 Outputs include:
 
-- `traj.toml`
-- `manifest.json`
-- `quantum.jsonl`
-- `classical.jsonl`
-- `quantum_interactions.jsonl`
-- `classical_interactions.jsonl`
+- `traj.toml`: copy of the analysis configuration used for the run.
+- `manifest.json`: run metadata, trajectory input paths, units, output file paths, requested interactions, and quantum job summaries.
+- `classical.jsonl`: one JSON object per classical result, with `frame`, `group`, and a `values` object containing requested quantities such as `center_of_geometry`, `center_of_mass`, or `radius_of_gyration`.
+- `quantum.jsonl`: one JSON object per quantum result, with `frame`, `group`, `method`, `atom_count`, `charge`, `spin`, and, for TDDFT jobs, a nested `tddft` object containing requested outputs such as excited-state energies, oscillator strengths, transition dipoles, transition density matrices, or strongest-state information.
+- `classical_interactions.jsonl`: one JSON object per classical group-to-group interaction result, with `frame`, `type`, `method`, `groups`, and a `values` object such as `distance`.
+- `quantum_interactions.jsonl`: one JSON object per quantum group-to-group interaction result, with `frame`, `type`, `method`, `groups`, `state_pair`, and a `values` object containing coupling quantities.
+
+The `.jsonl` files use JSON Lines format: each line is an independent JSON object. This makes the files easy to append during long analyses and straightforward to load into tabular tools later.
+
+As a rough shape check, the number of records is normally:
+
+| File | Expected number of records |
+| --- | --- |
+| `classical.jsonl` | number of analyzed frames x number of `[[classical]]` jobs |
+| `quantum.jsonl` | number of analyzed frames x number of `[[quantum]]` jobs |
+| `classical_interactions.jsonl` | number of analyzed frames x number of `[[classical_interactions]]` jobs |
+| `quantum_interactions.jsonl` | number of analyzed frames x number of `[[quantum_interactions]]` jobs x number of requested `state_pairs`; one `[0, 0]` pair is used when `state_pairs` is omitted |
+
+Nested arrays and dictionaries are kept as JSON values in the raw files. When loaded through PyeDNA's helper functions, scalar lists are flattened into numbered dataframe columns. See [Loading Analysis Results](loading_results.md).
 
 ## How To Run The Workflow
 
