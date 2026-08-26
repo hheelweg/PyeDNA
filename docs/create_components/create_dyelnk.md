@@ -1,8 +1,14 @@
-# create_dyelnk
+# Create Dye-Linker Composite (`create_dyelnk`)
 
 ## Purpose
 
 `create_dyelnk` combines an existing dye definition with existing linker definitions into a reusable dye-linker attachment component. It does not parameterize a dye or linker from scratch; it loads component-library outputs and assembles them.
+
+## What the Workflow Does
+
+PyeDNA loads the dye MOL2 and attachment metadata, loads both linker variants and their `3CONNECT`/`5CONNECT` metadata, validates all referenced atom names, generates a low-clash assembled PDB using RDKit conformers for the linkers, writes a `tleap` input file, runs `tleap` to create a linked MOL2, and runs `parmchk2` to create a linked FRCMOD.
+
+The molecular order in the assembled component is 5' linker, dye, then 3' linker.
 
 ## Prerequisites
 
@@ -19,15 +25,17 @@
 >
 > Explain how users should choose compatible dye/linker combinations and how to recognize whether a linker was parameterized for the intended dye and DNA force fields.
 
-## Minimal Configuration Example
+## Minimal Configuration Example for `dyelnk.toml`
 
 ```toml
 [dyelnk]
-dye = "EXD"
-linker = "EL"
+dye = "CY3"
+linker = "DE"
 dye_forcefield = "gaff2"
 dna_forcefield = "OL15"
 ```
+
+This example uses the `CY3` dye and `DE` linker names from the sample `create_dye` and `create_linker` configurations. The corresponding component files must already exist in `DYE_DIR` and `LNK_DIR`.
 
 ## Configuration Reference
 
@@ -38,11 +46,6 @@ dna_forcefield = "OL15"
 | `[dyelnk].dye_forcefield` | optional | `"gaff2"` | Library subdirectory identifier for the dye/linker force field. `leaprc.*` prefixes are normalized. |
 | `[dyelnk].dna_forcefield` | optional | `"OL15"` | Library subdirectory identifier for the DNA force field. |
 
-## What the Workflow Does
-
-PyeDNA loads the dye MOL2 and attachment metadata, loads both linker variants and their `3CONNECT`/`5CONNECT` metadata, validates all referenced atom names, generates a low-clash assembled PDB using RDKit conformers for the linkers, writes a `tleap` input file, runs `tleap` to create a linked MOL2, and runs `parmchk2` to create a linked FRCMOD.
-
-The molecular order in the assembled component is 5' linker, dye, then 3' linker.
 
 ## Generated Outputs
 

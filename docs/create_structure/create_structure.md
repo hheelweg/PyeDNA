@@ -4,6 +4,14 @@
 
 `create_structure` prepares dye-labeled DNA structures. It can generate or copy DNA, assemble dye-linker components from libraries, prepare HADDOCK3 docking inputs, process completed HADDOCK output, and prepare a selected model for Amber.
 
+## What the Workflow Does
+
+`prepare` prepares DNA, assembles requested dye-linker intermediates, creates HADDOCK dye instances with unique segment IDs, writes ligand topology/parameter files, removes DNA residues occupied by dyes from the HADDOCK DNA input, writes distance restraints for intended covalent connections, and renders `docking_config.cfg`.
+
+`finalize` reads completed HADDOCK output, ranks models using the sum of selected CAPRI geometry columns (`vdw`, `elec`, `bonds`, `angles`, `dihe`, and `improper`), copies the top models into `structures/`, restores original atom/residue names, reinserts dye residues into the DNA template order, and writes final bond and residue-mapping metadata.
+
+`amber` prepares one selected finalized structure for Amber using `tleap`; see [Amber setup](amber_setup.md).
+
 ## Prerequisites
 
 - `PYEDNA_HOME` set, because PyeDNA reads HADDOCK templates and helper scripts from the repository.
@@ -137,14 +145,6 @@ Legacy `[forcefield]` accepts `dna`, `attachments`, and `water`, which are mappe
 | Field | Required | Default | Meaning and constraints |
 | --- | --- | --- | --- |
 | `prepare_amber` | optional | `false` | If true, `finalize` immediately runs Amber preparation after processing HADDOCK results. Must be boolean. |
-
-## What the Workflow Does
-
-`prepare` prepares DNA, assembles requested dye-linker intermediates, creates HADDOCK dye instances with unique segment IDs, writes ligand topology/parameter files, removes DNA residues occupied by dyes from the HADDOCK DNA input, writes distance restraints for intended covalent connections, and renders `docking_config.cfg`.
-
-`finalize` reads completed HADDOCK output, ranks models using the sum of selected CAPRI geometry columns (`vdw`, `elec`, `bonds`, `angles`, `dihe`, and `improper`), copies the top models into `structures/`, restores original atom/residue names, reinserts dye residues into the DNA template order, and writes final bond and residue-mapping metadata.
-
-`amber` prepares one selected finalized structure for Amber using `tleap`; see [Amber setup](amber_setup.md).
 
 ## Generated Outputs
 

@@ -10,6 +10,10 @@ minimization
     -> production
 ```
 
+## What the Workflow Does
+
+PyeDNA creates a timestamped directory under `output.directory`, copies the input `md.toml`, symlinks or copies `prmtop` and `rst7`, writes Amber input files for each internal stage, runs `sander` for minimization, runs `pmemd.cuda` for equilibration and production, verifies expected files, and cleans intermediate files according to `output.cleanup`.
+
 ## Prerequisites
 
 - Amber `prmtop` and `rst7` files from structure Amber setup.
@@ -157,10 +161,6 @@ Each restraint table has:
 | `[barostat].tau` | optional | `2.0` | Pressure relaxation time. |
 | `[output].directory` | optional | `"md"` | Root output directory. |
 | `[output].cleanup` | optional | `"standard"` | One of `"minimal"`, `"standard"`, `"restart"`, or `"all"`. |
-
-## What The Workflow Does
-
-PyeDNA creates a timestamped directory under `output.directory`, copies the input `md.toml`, symlinks or copies `prmtop` and `rst7`, writes Amber input files for each internal stage, runs `sander` for minimization, runs `pmemd.cuda` for equilibration and production, verifies expected files, and cleans intermediate files according to `output.cleanup`.
 
 ## Generated Outputs
 

@@ -1,5 +1,5 @@
 [dyelnk]
-dye = "EXD"
-linker = "EL"
+dye = "CY3"
+linker = "DE"
 dye_forcefield = "gaff2"
 dna_forcefield = "OL15"

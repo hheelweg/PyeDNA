@@ -4,6 +4,30 @@
 
 Amber setup converts a selected finalized DNA-dye PDB structure into Amber MD inputs: `prmtop`, `rst7`, and a solvated PDB.
 
+## What the Workflow Does
+
+PyeDNA starts from `structures/<system.name>_<amber.model>.pdb`. It reads `structures/bonds.csv`, loads dye/linker residue templates and FRCMOD files, prepares an Amber-facing PDB with atom-name changes required by component metadata, writes a `tleap` input file, and optionally runs `tleap`.
+
+The generated `tleap` input:
+
+1. sources the DNA force field, dye/linker force field, and water force field;
+2. loads each dye/linker MOL2 template;
+3. loads dye/linker FRCMOD files and compatibility FRCMOD files;
+4. applies any Amber atom-name/type mappings found in dye `.attach` metadata;
+5. loads the prepared PDB;
+6. adds covalent bonds from `structures/bonds.csv`, including DNA-dye, dye-dye, and internal composite-dye bonds;
+7. checks the molecule;
+8. solvates with `solvateBox`;
+9. neutralizes with configured ions when `neutralize = true`;
+10. writes `prmtop`, `rst7`, and a solvated PDB.
+
+Conceptually:
+
+```text
+HADDOCK3 -> determines candidate 3D arrangements
+tleap    -> establishes the Amber topology/force-field representation
+```
+
 ## Prerequisites
 
 - A finalized structure at `structures/<system.name>_<amber.model>.pdb`.
@@ -42,30 +66,6 @@ neutralize = true
 ## Configuration Reference
 
 See the `[amber]` table in [create_structure](create_structure.md). Amber setup uses those fields directly.
-
-## What The Workflow Does
-
-PyeDNA starts from `structures/<system.name>_<amber.model>.pdb`. It reads `structures/bonds.csv`, loads dye/linker residue templates and FRCMOD files, prepares an Amber-facing PDB with atom-name changes required by component metadata, writes a `tleap` input file, and optionally runs `tleap`.
-
-The generated `tleap` input:
-
-1. sources the DNA force field, dye/linker force field, and water force field;
-2. loads each dye/linker MOL2 template;
-3. loads dye/linker FRCMOD files and compatibility FRCMOD files;
-4. applies any Amber atom-name/type mappings found in dye `.attach` metadata;
-5. loads the prepared PDB;
-6. adds covalent bonds from `structures/bonds.csv`, including DNA-dye, dye-dye, and internal composite-dye bonds;
-7. checks the molecule;
-8. solvates with `solvateBox`;
-9. neutralizes with configured ions when `neutralize = true`;
-10. writes `prmtop`, `rst7`, and a solvated PDB.
-
-Conceptually:
-
-```text
-HADDOCK3 -> determines candidate 3D arrangements
-tleap    -> establishes the Amber topology/force-field representation
-```
 
 ## Generated Outputs
 

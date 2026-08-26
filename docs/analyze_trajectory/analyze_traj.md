@@ -11,6 +11,10 @@ trajectory
     -> classical and/or quantum calculations
 ```
 
+## What the Workflow Does
+
+PyeDNA loads the topology and trajectory, validates the requested frame interval, creates an output run directory, copies the config, and writes a manifest. For each frame, it extracts capped dye snapshots for each attachment, builds configured groups, runs classical jobs, runs quantum jobs, computes quantum and classical interactions, and appends JSONL output records.
+
 ## Prerequisites
 
 - Amber topology file.
@@ -156,10 +160,6 @@ Interactions must define exactly one of `groups` or `attachments`. Coupling inte
 | `[quantum_scheduler].parallel` | optional | `false` | If true, defaults `gpu_ids` to `[0]` and `max_workers` to number of GPU IDs. |
 | `[quantum_scheduler].gpu_ids` | optional | `[0]` when parallel | Non-empty list of integers. |
 | `[quantum_scheduler].max_workers` | optional | `len(gpu_ids)` when parallel | Positive integer. |
-
-## What The Workflow Does
-
-PyeDNA loads the topology and trajectory, validates the requested frame interval, creates an output run directory, copies the config, and writes a manifest. For each frame, it extracts capped dye snapshots for each attachment, builds configured groups, runs classical jobs, runs quantum jobs, computes quantum and classical interactions, and appends JSONL output records.
 
 ## Generated Outputs
 
