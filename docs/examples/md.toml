@@ -1,0 +1,42 @@
+[system]
+name = "example_system"
+prmtop = "example_system.prmtop"
+rst7 = "example_system.rst7"
+
+[workflow]
+stages = ["minimize", "equilibrate", "production"]
+
+[simulation]
+temperature = 300.0
+pressure = 1.0
+timestep = 0.002
+cutoff = 8.0
+
+[minimization]
+max_steps = 1000
+steepest_descent_steps = 500
+
+[minimization.restraints.stage1]
+target = "structure"
+strength = 10.0
+
+[minimization.restraints.stage2]
+target = "none"
+
+[equilibration]
+heating_steps = 10000
+npt_steps = 50000
+ntpr = 5000
+ntwx = 5000
+ntwr = 5000
+
+[production]
+steps = 1000000
+log_interval = 5000
+trajectory_interval = 5000
+restart_interval = 50000
+force_interval = 0
+
+[output]
+directory = "md"
+cleanup = "standard"

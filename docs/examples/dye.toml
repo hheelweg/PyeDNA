@@ -1,0 +1,18 @@
+[component]
+type = "dye"
+name = "ExampleDye"
+code = "EXD"
+
+[structure]
+# System-specific mapped dye core. Replace with the actual dye chemistry.
+core_smiles = "[c:1]1[cH:2][cH:3][c:4]([cH:5][cH:6]1)"
+cap_smiles = "[H]"
+cap_targets = [1, 4]
+
+[parameterization]
+charge_method = "resp"
+forcefield = "gaff2"
+
+[output]
+directory = "cwd"
+cleanup = "scratch"

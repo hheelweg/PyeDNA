@@ -1,0 +1,30 @@
+[trajectory]
+run_directory = "md/run_2026_01_01_12_00"
+topology_file = "example_system.prmtop"
+trajectory_file = "example_system.nc"
+frame_interval = [0, 10]
+optimize_caps = false
+basis = "6-31g"
+
+[[attachments]]
+dye = "EXD"
+# System-specific attachment residue.
+residue = 4
+cap = "H"
+
+[[groups]]
+name = "donor"
+attachments = [4]
+
+[[classical]]
+group = "donor"
+outputs = ["center_of_geometry", "radius_of_gyration"]
+
+[analysis]
+output_root = "analysis"
+name = "example_analysis"
+
+[analysis.units]
+energy = "eV"
+coupling = "cm-1"
+distance = "angstrom"

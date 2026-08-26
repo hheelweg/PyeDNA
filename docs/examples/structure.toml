@@ -1,0 +1,30 @@
+[system]
+name = "example_system"
+
+[dna]
+source = "generate"
+name = "example_dna"
+sequence = "ATCGATCG"
+type = "double_helix"
+
+[[attachments]]
+dye = "EXD"
+linker = "EL"
+# System-specific DNA residue selected for replacement/attachment.
+residue = 4
+
+[docking]
+engine = "haddock3"
+top_models = 5
+
+[amber]
+model = 1
+output_name = "example_system"
+dna_forcefield = "OL15"
+dye_forcefield = "gaff2"
+water_forcefield = "leaprc.water.tip3p"
+water_model = "TIP3P"
+solvent_padding = 20.0
+positive_ion = "Na+"
+negative_ion = "Cl-"
+neutralize = true

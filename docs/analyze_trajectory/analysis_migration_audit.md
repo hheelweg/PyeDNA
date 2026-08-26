@@ -1,10 +1,8 @@
 # Analysis Migration Audit
 
-This audit records the OLD trajectory-analysis workflow pieces that were
-removed after the new `pyedna.analysis` / `pyedna.trajectory` workflow became
-the active path.
+This audit records the old trajectory-analysis workflow pieces that were removed after the new `pyedna.analysis` / `pyedna.trajectory` workflow became the active path.
 
-## Removed OLD Workflow Files
+## Removed Old Workflow Files
 
 The following files were deleted:
 
@@ -19,7 +17,7 @@ The following files were deleted:
 
 ## Migrated Functionality
 
-| OLD functionality | New location |
+| Old functionality | New location |
 | --- | --- |
 | trajectory frame loading and snapshot extraction | `pyedna.trajectory.snapshot` |
 | attachment molecule construction, caps, and groups | `pyedna.trajectory.structure` |
@@ -34,7 +32,7 @@ The following files were deleted:
 
 ## Intentionally Dropped Functionality
 
-These OLD workflow features were not carried forward:
+These old workflow features were not carried forward:
 
 - `traj.params` parsing
 - old pandas/MultiIndex output formatting
@@ -47,13 +45,10 @@ These OLD workflow features were not carried forward:
 
 ## Current Status
 
-The NEW trajectory-analysis workflow should now be the only supported analysis
-entry point:
+The current trajectory-analysis workflow is:
 
 ```bash
-python -m analyze_traj traj.toml
+python "$PYEDNA_HOME/scripts/analyze_traj.py" traj.toml
 ```
 
-The remaining cleanup work is documentation and example refresh: remove stale
-references to the deleted OLD workflow and make the TOML-driven analysis path
-the only advertised trajectory-analysis workflow.
+The TOML-driven analysis path is the only workflow advertised in the main user documentation.

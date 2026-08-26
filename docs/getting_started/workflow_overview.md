@@ -1,0 +1,31 @@
+# Workflow Overview
+
+PyeDNA is organized as a sequence of reusable scientific workflows.
+
+## 1. Create Reusable Components
+
+Use [create_dye](../create_components/create_dye.md) to parameterize a capped dye core and write a reusable dye residue template. Use [create_linker](../create_components/create_linker.md) to parameterize linker residue templates for 3' and 5' contexts. Use [create_dyelnk](../create_components/create_dyelnk.md) to assemble existing dye and linker templates into a linked dye-linker component used by structure generation.
+
+## 2. Create a DNA-Dye Structure
+
+Use [create_structure](../create_structure/create_structure.md) to prepare DNA, place dye-linker components at configured DNA residues, write HADDOCK3 inputs, process selected HADDOCK models, and prepare final Amber inputs.
+
+The command stages are:
+
+```text
+prepare  -> write DNA/HADDOCK inputs
+finalize -> select and reconstruct docked models
+amber    -> run tleap on a selected finalized model
+```
+
+## 3. Prepare Amber Inputs
+
+[Amber setup](../create_structure/amber_setup.md) starts from a selected finalized PDB and a generated bond table. PyeDNA writes a `tleap` input file, loads DNA and dye/linker force-field data, adds covalent bonds, solvates, neutralizes, and writes `prmtop`, `rst7`, and solvated PDB files.
+
+## 4. Run Molecular Dynamics
+
+Use [do_md](../run_md/do_md.md) with `md.toml`. The current workflow can run minimization, equilibration/heating, and production with Amber executables.
+
+## 5. Analyze Trajectories
+
+Use [analyze_traj](../analyze_trajectory/analyze_traj.md) with `traj.toml`. Analysis starts from an Amber topology and NetCDF trajectory, builds capped dye snapshots at configured attachments, groups attachments into scientific units, and runs requested classical or quantum calculations.
