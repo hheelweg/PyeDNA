@@ -1,15 +1,8 @@
-# analyze_traj
+# Analyze Amber Trajectory (`analyze_traj`)
 
 ## Purpose
 
-`analyze_traj` analyzes an Amber trajectory using the hierarchy:
-
-```text
-trajectory
-    -> attachments
-    -> groups
-    -> classical and/or quantum calculations
-```
+`analyze_traj` analyzes an Amber trajectory using the hierarchy in order to post-process especially geneated ensembles of dye molecules relative to one another classically as well as quantum-mechanically.
 
 ## What the Workflow Does
 
@@ -20,7 +13,7 @@ PyeDNA loads the topology and trajectory, validates the requested frame interval
 - Amber topology file.
 - Amber NetCDF trajectory file.
 - `DYE_DIR` set so analysis can read dye MOL2 charge data and `.attach` metadata.
-- `resid_mapping.json` available in the working directory when attachment residues need to map back to Amber dye residues.
+- `resid_mapping.json` available in the working directory when attachment residues need to map back to Amber dye residues. This file is produced by the `finalize` stage of `create_structure` as `structures/resid_mapping.json`.
 - PySCF/GPU4PySCF or ORCA backend resources when quantum jobs are requested.
 
 ## User Input Required
@@ -39,29 +32,37 @@ PyeDNA loads the topology and trajectory, validates the requested frame interval
 >
 > Explain how users should choose quantum method, backend, charge, spin, states, outputs, and coupling state pairs for their scientific question.
 
-## Minimal Configuration Example
+## Minimal Configuration Example For `traj.toml`:
 
 ```toml
 [trajectory]
 run_directory = "md/run_2026_01_01_12_00"
-topology_file = "example_system.prmtop"
-trajectory_file = "example_system.nc"
+topology_file = "dna_CY3_CY5.prmtop"
+trajectory_file = "dna_CY3_CY5.nc"
 frame_interval = [0, 10]
 optimize_caps = false
-basis = "6-31g"
 
 [[attachments]]
-dye = "EXD"
-residue = 4
+dye = "CY3"
+residue = 10
+cap = "H"
+
+[[attachments]]
+dye = "CY5"
+residue = 11
 cap = "H"
 
 [[groups]]
 name = "donor"
-attachments = [4]
+attachments = [10]
+
+[[groups]]
+name = "acceptor"
+attachments = [11]
 
 [[classical]]
 group = "donor"
-outputs = ["center_of_geometry", "radius_of_gyration"]
+outputs = ["center_of_geometry"]
 
 [analysis]
 output_root = "analysis"
@@ -95,6 +96,8 @@ distance = "angstrom"
 | `cap` | optional | `"H"` | Cap used when cutting the dye from the trajectory. Supported values are `"H"` and `"CH3"`; normalized to uppercase. |
 
 Duplicate attachment residues are not allowed.
+
+When the trajectory comes from the `create_structure` -> `do_md` workflow, the `create_structure finalize` stage writes `structures/resid_mapping.json`. That file records how the `residue` values specified in `structure.toml` under `[[attachments]]` map onto the final Amber residue numbering after each DNA residue is replaced by dye/linker residues. Use this mapping when deciding which attachment residues to list in `traj.toml`.
 
 ### `[[groups]]`
 
@@ -131,7 +134,22 @@ Groups are built by combining the capped snapshot molecules for the listed attac
 
 Values in `[quantum_defaults]` are copied into each `[[quantum]]` job unless that job sets the field directly.
 
+### `[quantum_defaults]`
+
+Use `[quantum_defaults]` for quantum settings that should apply to all `[[quantum]]` jobs, such as `backend`, `basis`, `xc`, `gpu`, `density_fit`, `tda`, `singlet`, `nstates`, `scf_cycles`, or `verbosity`. Job-specific values in an individual `[[quantum]]` block override the defaults.
+
+```toml
+[quantum_defaults]
+backend = "pyscf"
+basis = "6-31g"
+xc = "b3lyp"
+gpu = true
+density_fit = true
+```
+
 ### Interactions
+
+Interactions are quantities computed between two groups, such as a distance between two dye groups or an electronic coupling between two quantum-calculated groups. In this context, "interaction" does not mean a force-field nonbonded interaction term; it means a requested group-to-group analysis result.
 
 `[[interactions]]` is accepted as a generic legacy-style table and is normalized into quantum or classical interactions based on `type`.
 
