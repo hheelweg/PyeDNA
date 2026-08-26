@@ -108,7 +108,7 @@ The flexible-refinement stage then allows local adaptation around promising plac
 
 HADDOCK ranks models using weighted energetic and geometric terms. A simplified scoring expression is:
 
-$$
+```math
 S_{\mathrm{HADDOCK}}
 =
 w_{\mathrm{vdW}}E_{\mathrm{vdW}}
@@ -121,7 +121,7 @@ w_{\mathrm{AIR}}E_{\mathrm{AIR}}
 +
 w_{\mathrm{BSA}}\mathrm{BSA}
 + \cdots
-$$
+```
 
 In this expression:
 
