@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`create_structure` prepares dye-labeled DNA structures. It can generate or copy DNA, assemble dye-linker components from libraries, prepare HADDOCK3 docking inputs, process completed HADDOCK output, and prepare a selected model for Amber.
+`create_structure` prepares dye-labeled DNA structures. It can generate or copy DNA, assemble dye-linker components from libraries, prepare HADDOCK3 docking inputs, process completed HADDOCK output, and prepare a selected model for Amber MD.
 
 ## What the Workflow Does
 
@@ -41,10 +41,12 @@ The DNA can currently be loaded as a template from the `DNA_DIR` OR actually be 
 > Therefore, we also supply access to a manually constructed `DNA_DIR` with raw DNA `.pdb` files that can be used. 
 > - [ ] TODO : We want to streamline and automatize this workflow in the future.
 
+
 > **Haddock3**
 >
 > - [ ] TODO : Explain the scientific assumptions behind HADDOCK attachment restraints and how users should judge whether the generated restraints match the intended covalent connectivity.
 > - [ ] TODO : Explain how users should choose among HADDOCK models beyond the current implementation's geometry-score ranking.
+> - [ ] TODO : Explain how user can manually change parameters for haddock and modify the HADDOCK template in `$PYEDNA_HOME/data/haddock_templates/docking_config.cfg`.
 
 
 ## Minimal Configuration Example For `structure.toml`
