@@ -1,5 +1,7 @@
 [dyelnk]
+# Existing library components to combine.
 dye = "CY3"
 linker = "DE"
+# Library force-field folders to resolve.
 dye_forcefield = "gaff2"
 dna_forcefield = "OL15"

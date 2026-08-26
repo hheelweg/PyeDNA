@@ -1,29 +1,35 @@
 [component]
+# Reusable linker component metadata.
 type = "linker"
-name = "ExampleLinker"
-code = "EL"
+name = "diethyl_ether"
+code = "DE"
 
 [structure]
-# Syntax example only. Replace with a chemically valid mapped linker.
-dye_cap = "[H:1]"
-core = "[C:2]([H:3])([H:4])[O:5]"
-dna_cap = "[P:6](=[O:7])([O-:8])([O:9][C:10]([H:11])([H:12])[H:13])"
+# Mapped fragments concatenate to the capped linker.
+dye_cap = "[CH3:1][C:2](=[O:3])"
+core = "[CH2:4][CH2:5][O:6][CH2:7][CH2:8]"
+dna_cap = "[O:9][P:10](=[O:11])([O-:12])[O:13][CH3:14]"
 
+# ============================================================
+# Each boundary block defines cleaved bonds for one linker orientation.
 [structure.boundaries.three_prime]
-dye = [1, 2]
-dna = [5, 6]
+dye = [2, 4]
+dna = [10, 13]
 
 [structure.boundaries.five_prime]
-dye = [1, 2]
-dna = [5, 6]
+dye = [2, 4]
+dna = [9, 10]
 
 [parameterization]
+# RESP charges with GAFF2 atom typing.
 charge_method = "resp"
 forcefield = "gaff2"
 
 [parameterization.restraints]
+# DNA-cap reference charges come from OL15.
 forcefield = "OL15"
 
 [output]
+# Write into the run directory and remove scratch files.
 directory = "cwd"
 cleanup = "scratch"

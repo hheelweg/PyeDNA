@@ -1,30 +1,66 @@
 [trajectory]
+# Amber trajectory and frame range to analyze.
 run_directory = "md/run_2026_01_01_12_00"
-topology_file = "example_system.prmtop"
-trajectory_file = "example_system.nc"
+topology_file = "dna_CY3_CY5.prmtop"
+trajectory_file = "dna_CY3_CY5.nc"
 frame_interval = [0, 10]
 optimize_caps = false
-basis = "6-31g"
 
+# ============================================================
+# Each attachment mirrors one dye attachment from structure.toml.
 [[attachments]]
-dye = "EXD"
-# System-specific attachment residue.
-residue = 4
+dye = "CY3"
+residue = 10
 cap = "H"
 
+[[attachments]]
+dye = "CY5"
+residue = 11
+cap = "H"
+# ============================================================
+
+# ============================================================
+# Each group combines one or more attachment residues for analysis.
 [[groups]]
 name = "donor"
-attachments = [4]
+attachments = [10]
 
+[[groups]]
+name = "acceptor"
+attachments = [11]
+# ============================================================
+
+# ============================================================
+# Each classical block requests observables for one group.
 [[classical]]
 group = "donor"
-outputs = ["center_of_geometry", "radius_of_gyration"]
+outputs = ["center_of_geometry"]
+# ============================================================
+
+# ============================================================
+# Each quantum interaction block requests a group-to-group coupling.
+[[quantum_interactions]]
+type = "coupling"
+groups = ["donor", "acceptor"]
+method = "tdm"
+coupling_type = "electronic"
+state_pairs = [["strongest", "strongest"], [0, 0]]
+# ============================================================
+
+# ============================================================
+# Each classical interaction block requests a group-to-group distance.
+[[classical_interactions]]
+type = "distance"
+groups = ["donor", "acceptor"]
+method = "center_of_geometry"
+# ============================================================
 
 [analysis]
+# Output directory for this analysis run.
 output_root = "analysis"
-name = "example_analysis"
 
 [analysis.units]
+# Units used when writing JSONL records.
 energy = "eV"
-coupling = "cm-1"
+coupling = "eV"
 distance = "angstrom"

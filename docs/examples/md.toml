@@ -1,29 +1,36 @@
 [system]
+# Prepared Amber inputs from create_structure amber setup.
 name = "example_system"
 prmtop = "example_system.prmtop"
 rst7 = "example_system.rst7"
 
 [workflow]
+# Run the full MD workflow in order.
 stages = ["minimize", "equilibrate", "production"]
 
 [simulation]
+# Shared MD thermodynamic and integration settings.
 temperature = 300.0
 pressure = 1.0
 timestep = 0.002
 cutoff = 8.0
 
 [minimization]
+# Two minimization substages use these step counts.
 max_steps = 1000
 steepest_descent_steps = 500
 
 [minimization.restraints.stage1]
+# Relax solvent/ions while restraining the structure.
 target = "structure"
 strength = 10.0
 
 [minimization.restraints.stage2]
+# Continue minimization without restraints.
 target = "none"
 
 [equilibration]
+# Heating and NPT equilibration lengths and output intervals.
 heating_steps = 10000
 npt_steps = 50000
 ntpr = 5000
@@ -31,6 +38,7 @@ ntwx = 5000
 ntwr = 5000
 
 [production]
+# Production length and output intervals.
 steps = 1000000
 log_interval = 5000
 trajectory_interval = 5000
@@ -38,5 +46,6 @@ restart_interval = 50000
 force_interval = 0
 
 [output]
+# Timestamped runs are written below this directory.
 directory = "md"
 cleanup = "standard"

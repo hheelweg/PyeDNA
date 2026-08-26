@@ -1,18 +1,23 @@
 [component]
+# Reusable dye component metadata.
 type = "dye"
-name = "ExampleDye"
-code = "EXD"
+name = "Cy3"
+code = "CY3"
 
 [structure]
-# System-specific mapped dye core. Replace with the actual dye chemistry.
-core_smiles = "[c:1]1[cH:2][cH:3][c:4]([cH:5][cH:6]1)"
-cap_smiles = "[H]"
-cap_targets = [1, 4]
+# Uncapped dye core with mapped linker attachment atoms.
+core_smiles = 'CC1(C)C2=CC=CC=C2[N:1]/C1=C\C=C\C(C3(C)C)=[N+:2]C4=C3C=CC=C4'
+# Single-atom temporary cap added at each target.
+cap_smiles = 'C'
+cap_targets = [1, 2]
+formal_charge = 1
 
 [parameterization]
+# RESP charges with GAFF2 atom typing.
 charge_method = "resp"
 forcefield = "gaff2"
 
 [output]
+# Write into the run directory and remove scratch files.
 directory = "cwd"
 cleanup = "scratch"

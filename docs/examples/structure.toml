@@ -1,34 +1,40 @@
 [system]
+# Basename for selected structures and Amber outputs.
 name = "dna_CY3_CY5"
 
 [dna]
+# Generate a simple NAB double helix.
 source = "generate"
 name = "dna"
 sequence = "TGCACTCTCGATTTATGACCGAGCT"
 type = "double_helix"
 
+# ============================================================
+# Each attachment replaces one DNA residue with dye + two linker residues.
 [[attachments]]
 dye = "CY3"
 linker = "PP"
-# System-specific DNA residue selected for replacement/attachment.
 residue = 10
 
 [[attachments]]
 dye = "CY5"
 linker = "DE"
-# System-specific DNA residue selected for replacement/attachment.
 residue = 11
+# ============================================================
 
 [forcefield]
+# Force fields used for DNA, attachments, and solvent.
 dna = "OL15"
 attachments = "gaff2"
 water = "tip3p"
 
 [docking]
+# HADDOCK3 model generation and selection.
 engine = "haddock3"
 top_models = 5
 
 [amber]
+# Prepare the first selected model for solvated Amber MD.
 model = 1
 solvent_padding = 20.0
 positive_ion = "Na+"
