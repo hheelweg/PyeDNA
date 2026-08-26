@@ -147,7 +147,7 @@ It is:
 
 A compact way to view the effective objective is:
 
-$$
+```math
 E_{\mathrm{effective}}(\mathbf{R})
 =
 E_{\mathrm{molecular}}(\mathbf{R})
@@ -155,7 +155,7 @@ E_{\mathrm{molecular}}(\mathbf{R})
 E_{\mathrm{attachment}}(\mathbf{R})
 +
 E_{\mathrm{DNA-restraints}}(\mathbf{R}) .
-$$
+```
 
 Here, $E_{\mathrm{molecular}}$ includes terms such as van der Waals and electrostatics, $E_{\mathrm{attachment}}$ penalizes violation of the intended DNA-linker geometry, and $E_{\mathrm{DNA-restraints}}$ helps preserve nucleic-acid structure during refinement.
 
