@@ -36,9 +36,32 @@ tleap / Amber setup
 PyeDNA supplies HADDOCK3 with:
 
 - the DNA PDB prepared from NAB generation or `DNA_DIR`;
-- one PDB/topology/parameter set for each dye-linker component;
+- one PDB plus CNS topology/parameter information for each dye-linker component;
 - atom-to-atom distance restraints for the intended DNA-linker attachments;
 - a rendered `docking_config.cfg` based on `data/haddock_templates/docking_config.cfg`.
+
+## Molecular Information Passed to HADDOCK
+
+HADDOCK/CNS needs more than coordinates for non-standard residues such as dyes and linkers. PyeDNA therefore converts each dye-linker MOL2 template into HADDOCK-compatible files before docking:
+
+| Input to HADDOCK | Format | Role |
+| --- | --- | --- |
+| DNA coordinates | PDB | Standard nucleic-acid structure supplied as the first molecule. |
+| Dye-linker coordinates | PDB | One separate HADDOCK molecule per dye-linker component. |
+| Dye-linker topology | CNS `.top` | Residue, atom, bond, and connectivity definitions for non-standard dye/linker residues. |
+| Dye-linker parameters | CNS `.par` | Force-field parameters and charges used by CNS during docking/refinement. |
+| Attachment restraints | CNS restraint table | Distance restraints encoding the intended DNA-linker bonds. |
+
+In the current implementation, PyeDNA starts from the dye-linker MOL2 files produced by the component workflow. It then uses ACPYPE to create CNS topology and parameter files with GAFF-style atom typing and user-provided charges. PyeDNA combines the unique dye-linker files into:
+
+```text
+haddock/dyes_haddock.top
+haddock/dyes_haddock.par
+```
+
+These files are passed to HADDOCK through `ligand_top_fname` and `ligand_param_fname`.
+
+This means HADDOCK is **not** using the final Amber `prmtop`/`rst7` representation. However, it is still using a force-field-based molecular model: CNS-compatible topology, bonded terms, nonbonded parameters, and charges are available during docking and refinement.
 
 ## Why Restraints Are Needed
 
@@ -103,6 +126,8 @@ $$
 $$
 
 The flexible-refinement stage then allows local adaptation around promising placements.
+
+This is more than a geometric overlap check. HADDOCK performs restrained energy minimization and refinement with respect to both the molecular force-field terms and the user-specified restraints. For PyeDNA, that means candidate structures are selected from a physically informed landscape rather than from simple atom-distance filtering.
 
 ## Scoring and Model Selection
 
