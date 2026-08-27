@@ -214,7 +214,7 @@ A favorable HADDOCK score alone does not guarantee a usable structure.
 
 > **AUTHOR INPUT REQUIRED**
 >
-> Add project-specific structural acceptance criteria for choosing a HADDOCK model before Amber preparation, such as typical acceptable attachment distances, visual checks, or cases where a lower-ranked model should be preferred.
+> - [ ] TODO : Add project-specific structural acceptance criteria for choosing a HADDOCK model before Amber preparation, such as typical acceptable attachment distances, visual checks, or cases where a lower-ranked model should be preferred.
 
 ## PyeDNA Configuration
 
