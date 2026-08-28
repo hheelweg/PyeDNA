@@ -1,11 +1,22 @@
 *.nc
 *.dcd
 *.log
+
 config.sh
+config.sh.mask
+
+bin/
+
+jobs/analysis/get_forces.sh
+jobs/analysis/get_forces_dye.sh
+
 .vscode/
 .DS_Store
 *.egg-info/
+build/
+dist/
 AGENTS.md
+
 # Python bytecode and cache directories
 __pycache__/
 *.py[cod]

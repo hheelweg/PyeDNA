@@ -4,7 +4,6 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from pyedna.analysis import config
 from pyedna.config import get_config
 
 from .pdb import set_chain_and_segid

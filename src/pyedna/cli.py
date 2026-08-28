@@ -1,6 +1,8 @@
 import argparse
 from pathlib import Path
 
+from pyedna.config_workflow import run_config
+
 from pyedna.components.workflow import (
     run_create_dye,
     run_create_linker,
@@ -22,6 +24,31 @@ def main():
     )
 
     commands = parser.add_subparsers(dest="command", required=True)
+
+    config = commands.add_parser(
+        "config",
+        help="Manage PyeDNA runtime configuration",
+    )
+
+    config_commands = config.add_subparsers(
+        dest="config_command",
+        required=True,
+    )
+
+    config_commands.add_parser(
+        "init",
+        help="Create a template runtime configuration",
+    )
+
+    config_commands.add_parser(
+        "show",
+        help="Show the active runtime configuration",
+    )
+
+    config_commands.add_parser(
+        "check",
+        help="Validate the runtime configuration",
+    )
 
     structure = commands.add_parser(
         "structure",
@@ -128,6 +155,8 @@ def main():
 
     if args.command == "structure":
         run_structure(args.stage, args.config)
+    elif args.command == "config":
+        run_config(args.config_command)
     elif args.command == "components":
         if args.component_command == "create-dye":
             run_create_dye(args.config)
