@@ -568,7 +568,7 @@ class DyeLinkerConfig:
         dye_dir=None,
         lnk_dir=None,
     ):
-        """Load dye/linker templates by name from DYE_DIR and LNK_DIR."""
+        """Load dye/linker templates from the configured molecular libraries."""
         dye_ff = forcefield_id(dye_forcefield)
         dna_ff = forcefield_id(dna_forcefield)
         config = get_config()

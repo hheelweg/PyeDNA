@@ -1,16 +1,6 @@
 """Prepare HADDOCK inputs and post-process docked DNA–dye structures."""
 
-try:
-    from importlib.resources import as_file, files
-except ImportError:
-    try:
-        from importlib_resources import as_file, files
-    except ImportError:
-        as_file = files = None
-
-from contextlib import nullcontext
 from pathlib import Path
-import os
 
 from .config import _flatten_docking_overrides, _write_docking_config
 from .finalize import _reformat_docked_models, _select_best_models
@@ -18,16 +8,6 @@ from .restraints import _prepare_dna_for_haddock, _write_bond_restraints
 from .topology import _combine_ligand_topologies, _prepare_dye_topologies
 
 __all__ = ["HaddockSetup"]
-
-
-def _resource_path(*parts):
-    if files is None or as_file is None:
-        return nullcontext(Path(__file__).resolve().parents[2].joinpath(*parts))
-
-    resource = files("pyedna")
-    for part in parts:
-        resource = resource / part
-    return as_file(resource)
 
 
 class HaddockSetup:
@@ -47,16 +27,7 @@ class HaddockSetup:
     def prepare_inputs(self):
         """Write dye topologies, DNA inputs, restraints, and the HADDOCK configuration."""
 
-        with _resource_path(
-            "data",
-            "haddock_scripts",
-            "create_topology.sh",
-        ) as topology_script_path:
-            _prepare_dye_topologies(
-                self.instances,
-                self.workdir,
-                topology_script_path,
-            )
+        _prepare_dye_topologies(self.instances, self.workdir)
         self.top_file, self.par_file = _combine_ligand_topologies(
             self.instances, self.workdir
         )

@@ -1,31 +1,13 @@
 """Prepare DNA structures for structure-generation workflows."""
 
-try:
-    from importlib.resources import as_file, files
-except ImportError:
-    try:
-        from importlib_resources import as_file, files
-    except ImportError:
-        as_file = files = None
-
-from contextlib import nullcontext
 import shutil
 import subprocess
+import time
 from pathlib import Path
 
 from pyedna.config import get_config
 
 from .pdb import set_chain_and_segid
-
-
-def _resource_path(*parts):
-    if files is None or as_file is None:
-        return nullcontext(Path(__file__).resolve().parents[1].joinpath(*parts))
-
-    resource = files("pyedna")
-    for part in parts:
-        resource = resource / part
-    return as_file(resource)
 
 
 def _copy_library_dna(dna_config, dna_dir, workdir):
@@ -69,21 +51,111 @@ def _write_nab_script(dna_config, workdir):
     return nab_file
 
 
-def _run_nab(nab_file, workdir):
-    """Run NAB through the project shell wrapper."""
+def _prepend_env_path(env, key, path):
+    current = env.get(key)
+    env[key] = f"{path}{':' + current if current else ''}"
 
-    with _resource_path("data", "nab_scripts", "create_dna.sh") as run_nab_script:
-        subprocess.run(
-            [
-                "bash",
-                str(run_nab_script),
-                Path(nab_file).name,
-                str(get_config().nab.home),
-            ],
-            cwd=workdir,
-            check=True,
-            stdout=subprocess.DEVNULL,
+
+def _amberclassic_environment(amberclassic_dir, amber_home=None):
+    """Return the environment produced by sourcing AmberClassic.sh."""
+
+    amberclassic_dir = Path(amberclassic_dir)
+    amber_home = Path(amber_home) if amber_home is not None else None
+    setup_script = amberclassic_dir / "AmberClassic.sh"
+
+    if not setup_script.is_file():
+        raise FileNotFoundError(
+            f"AmberClassic.sh not found in {amberclassic_dir}"
         )
+
+    result = subprocess.run(
+        [
+            "bash",
+            "-c",
+            'source "$1" >/dev/null && env -0',
+            "bash",
+            str(setup_script),
+        ],
+        check=True,
+        capture_output=True,
+    )
+    env = dict(
+        item.split("=", 1)
+        for item in result.stdout.decode().split("\0")
+        if item
+    )
+
+    lib_dirs = [
+        Path(env["CONDA_PREFIX"]) / "lib" if env.get("CONDA_PREFIX") else None,
+        (
+            Path(env["CONDA_PREFIX"]) / "x86_64-conda-linux-gnu" / "lib"
+            if env.get("CONDA_PREFIX")
+            else None
+        ),
+        Path(env["AMBERHOME"]) / "lib" if env.get("AMBERHOME") else None,
+        amberclassic_dir / "lib",
+    ]
+    if amber_home is not None:
+        lib_dirs.extend([
+            amber_home / "lib",
+            amber_home / "miniconda" / "lib",
+            amber_home.parent / "lib",
+            amber_home.parent / "x86_64-conda-linux-gnu" / "lib",
+        ])
+
+    for lib_dir in lib_dirs:
+        if lib_dir is not None and lib_dir.is_dir():
+            for key in ("LIBRARY_PATH", "LD_LIBRARY_PATH"):
+                _prepend_env_path(env, key, lib_dir)
+
+    return env
+
+
+def _cleanup_nab_files(workdir):
+    workdir = Path(workdir)
+
+    for path in [workdir / "a.out", workdir / "tleap.out", *workdir.glob("*.c")]:
+        path.unlink(missing_ok=True)
+
+
+def _run_nab(nab_file, workdir):
+    """Compile and run a NAB script using the configured AmberClassic tree."""
+
+    workdir = Path(workdir)
+    nab_file = Path(nab_file)
+
+    if nab_file.suffix != ".nab":
+        raise ValueError("The NAB input file must have a .nab extension")
+
+    source = workdir / nab_file.name
+    if not source.is_file():
+        raise FileNotFoundError(
+            f"{nab_file.name} not found in the current directory {workdir}"
+        )
+
+    config = get_config()
+    env = _amberclassic_environment(config.nab.home, amber_home=config.amber.home)
+
+    subprocess.run(
+        ["nab", nab_file.name],
+        cwd=workdir,
+        stdout=subprocess.DEVNULL,
+        env=env,
+    )
+
+    time.sleep(1)
+
+    executable = workdir / "a.out"
+    if not executable.is_file():
+        raise FileNotFoundError("Compilation failed. a.out not generated")
+
+    subprocess.run(
+        [str(executable)],
+        cwd=workdir,
+        stdout=subprocess.DEVNULL,
+        env=env,
+    )
+    _cleanup_nab_files(workdir)
 
 
 def _generate_dna_with_nab(dna_config, workdir, remove_nab=True):

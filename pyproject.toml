@@ -19,8 +19,6 @@ dependencies    = { file = ["requirements.txt"] }
 pyedna = [
     "data/dna_templates/*.nab",
     "data/haddock_templates/*.cfg",
-    "data/haddock_scripts/*.sh",
-    "data/nab_scripts/*.sh",
 ]
 
 [project.scripts]

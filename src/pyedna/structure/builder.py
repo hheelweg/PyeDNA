@@ -57,7 +57,7 @@ class StructureBuilder:
         """Resolve dye definitions and instantiate the configured dye copies."""
 
         if self.dye_dir is None and not self.config.attachments:
-            raise EnvironmentError("DYE_DIR is not set")
+            raise EnvironmentError("Dye library directory is not configured")
         self._load_generated_dyelnks()
         self.dye_definitions = load_dye_definitions(
             self.config.dyes,
@@ -115,7 +115,7 @@ class StructureBuilder:
         """Generate DNA with NAB or copy it from the configured DNA library."""
 
         if self.config.dna.source == "library" and self.dna_dir is None:
-            raise EnvironmentError("DNA_DIR is not set")
+            raise EnvironmentError("DNA library directory is not configured")
         self.dna_pdb = prepare_dna(
             self.config, dna_dir=self.dna_dir, workdir=self.workdir
         )

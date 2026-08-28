@@ -1,28 +1,35 @@
 #!/bin/bash
+#SBATCH --job-name=create_structure
+#SBATCH --cpus-per-task=32
+#SBATCH --output=create_structure.log
+#SBATCH --error=create_structure.err
+
+set -e
+
+cd "$SLURM_SUBMIT_DIR"
 
 if [[ $# -gt 1 ]]; then
-    echo "Usage: $0 [STRUCTURE_CONFIG]"
+    echo "Usage: sbatch $0 [STRUCTURE_CONFIG]"
     exit 1
 fi
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PYEDNA_STRUCTURE_CONFIG="${1:-structure.toml}"
+STRUCTURE_CONFIG="${1:-structure.toml}"
 
-if [[ ! -f "$PYEDNA_STRUCTURE_CONFIG" ]]; then
-    echo "Error: structure configuration not found: $PYEDNA_STRUCTURE_CONFIG"
+if [[ ! -f "$STRUCTURE_CONFIG" ]]; then
+    echo "Error: structure configuration not found: $STRUCTURE_CONFIG"
     exit 1
 fi
 
-pyedna structure prepare "$PYEDNA_STRUCTURE_CONFIG" \
-    > create_structure.log 2>&1
+echo "Preparing structure..."
+pyedna structure prepare "$STRUCTURE_CONFIG"
 
-if [[ $? -ne 0 ]]; then
-    echo "Error: structure preparation failed. See create_structure.log."
-    exit 1
-fi
+echo "Running HADDOCK..."
+pyedna structure dock "$STRUCTURE_CONFIG"
 
-mkdir -p haddock
+echo "Finalizing docked structure..."
+pyedna structure finalize "$STRUCTURE_CONFIG"
 
-sbatch \
-    --export=ALL,PYEDNA_STRUCTURE_CONFIG="$PYEDNA_STRUCTURE_CONFIG" \
-    "$SCRIPT_DIR/run_haddock.sh"
+echo "Preparing Amber system..."
+pyedna structure amber "$STRUCTURE_CONFIG"
+
+rm -f docking_config.cfg

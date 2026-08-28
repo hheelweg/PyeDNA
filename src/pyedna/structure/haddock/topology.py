@@ -10,6 +10,8 @@ import MDAnalysis as mda
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 
+from ..pdb import set_chain_and_segid
+
 
 def _make_cns_resname(definition, registry):
     """
@@ -91,14 +93,117 @@ def _write_mapping(original_mol2, haddock_pdb, output_csv, max_distance=0.1):
     print(f"Wrote {output_csv} (max displacement {distances.max():.6f} Å)")
 
 
-def _prepare_dye_topology(instance, workdir, script, resname=None):
-    workdir, script = Path(workdir), Path(script)
+def _write_single_residue_mol2(input_mol2, output_mol2, resname):
+    """Write an ACPYPE-facing MOL2 with one residue id and CNS residue name."""
+
+    in_atoms, lines = False, []
+
+    for line in Path(input_mol2).read_text().splitlines():
+        if line.startswith("@<TRIPOS>ATOM"):
+            in_atoms = True
+            lines.append(line)
+            continue
+        if line.startswith("@<TRIPOS>BOND"):
+            in_atoms = False
+            lines.append(line)
+            continue
+
+        fields = line.split()
+        if in_atoms and len(fields) >= 9:
+            fields[6] = "1"
+            fields[7] = resname
+            line = " ".join(fields)
+
+        lines.append(line)
+
+    Path(output_mol2).write_text("\n".join(lines) + "\n")
+    return output_mol2
+
+
+def _first_matching_file(directory, pattern):
+    matches = list(Path(directory).glob(pattern))
+    return matches[0] if matches else None
+
+
+def _write_haddock_pdb(input_pdb, output_pdb, segid):
+    lines = []
+
+    for line in Path(input_pdb).read_text().splitlines():
+        if line.startswith(("ATOM  ", "HETATM")):
+            line = set_chain_and_segid(line, chain=segid, segid=segid)
+        lines.append(line)
+
+    Path(output_pdb).write_text("\n".join(lines) + "\n")
+    return output_pdb
+
+
+def _run_acpype_cns_topology(name, charge, resname, segid, haddock_dir):
+    haddock_dir = Path(haddock_dir)
+    mol2 = haddock_dir / f"{name}.mol2"
+    mol2_single = haddock_dir / f"{name}_{resname}.mol2"
+    acpype_dir = haddock_dir / f"{name}_{resname}.acpype"
+    tmp_dir = haddock_dir / f".acpype_tmp_{name}_{resname}"
+    out_dir = haddock_dir / name
+
+    if not mol2.exists():
+        raise FileNotFoundError(f"{mol2.name} not found")
+    if not re.fullmatch(r"[A-Za-z0-9]{1,4}", resname):
+        raise ValueError("RESNAME must contain 1-4 letters or numbers")
+    if not re.fullmatch(r"[A-Za-z0-9]", segid):
+        raise ValueError("SEGID must be one letter or number")
+
+    _write_single_residue_mol2(mol2, mol2_single, resname)
+
+    for path in (acpype_dir, tmp_dir, out_dir):
+        if path.exists():
+            shutil.rmtree(path)
+
+    subprocess.run(
+        [
+            "acpype",
+            "-i", str(mol2_single.name),
+            "-o", "cns",
+            "-a", "gaff",
+            "-c", "user",
+            "-n", str(charge),
+        ],
+        cwd=haddock_dir,
+        check=True,
+    )
+
+    top = _first_matching_file(acpype_dir, "*_CNS.top")
+    par = _first_matching_file(acpype_dir, "*_CNS.par")
+    pdb = _first_matching_file(acpype_dir, "*_NEW.pdb")
+
+    if top is None or par is None or pdb is None:
+        raise FileNotFoundError(
+            "ACPYPE completed, but one or more expected files are missing"
+        )
+
+    out_dir.mkdir(parents=True)
+    shutil.copy2(top, out_dir / f"{name}_haddock.top")
+    shutil.copy2(par, out_dir / f"{name}_haddock.par")
+    _write_haddock_pdb(pdb, out_dir / f"{name}_haddock.pdb", segid)
+
+    shutil.rmtree(acpype_dir, ignore_errors=True)
+    shutil.rmtree(tmp_dir, ignore_errors=True)
+    mol2_single.unlink(missing_ok=True)
+
+    print()
+    print("Finished.")
+    print("Generated:")
+    print(f"  {out_dir / f'{name}_haddock.top'}")
+    print(f"  {out_dir / f'{name}_haddock.par'}")
+    print(f"  {out_dir / f'{name}_haddock.pdb'}")
+    print(f"Residue name: {resname}")
+    print(f"Chain/segid:  {segid}")
+
+
+def _prepare_dye_topology(instance, workdir, resname=None):
+    workdir = Path(workdir)
     haddock_dir = workdir / "haddock"
     instance.set_prepared_paths(workdir)
     working_mol2 = haddock_dir / f"{instance.name}.mol2"
-
-    if not script.exists():
-        raise FileNotFoundError(f"Missing topology script: {script}")
 
     charge = _get_mol2_charge(instance.definition.mol2)
     #resname = instance.definition.name[:3].upper()
@@ -112,8 +217,13 @@ def _prepare_dye_topology(instance, workdir, script, resname=None):
     shutil.copy2(instance.definition.mol2, working_mol2)
 
     try:
-        subprocess.run(["bash", str(script), instance.name, str(charge), resname, instance.segid],
-                       cwd=haddock_dir, check=True)
+        _run_acpype_cns_topology(
+            instance.name,
+            charge,
+            resname,
+            instance.segid,
+            haddock_dir,
+        )
     finally:
         working_mol2.unlink(missing_ok=True)
 
@@ -138,7 +248,7 @@ def _prepare_dye_topology(instance, workdir, script, resname=None):
     return instance
 
 
-def _prepare_dye_topologies(instances, workdir, script):
+def _prepare_dye_topologies(instances, workdir):
     resname_registry = {}
 
     for instance in instances:
@@ -150,7 +260,6 @@ def _prepare_dye_topologies(instances, workdir, script):
         _prepare_dye_topology(
             instance,
             workdir,
-            script,
             resname=resname,
         )
 
