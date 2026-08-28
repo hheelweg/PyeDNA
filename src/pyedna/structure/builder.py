@@ -3,6 +3,8 @@
 import os
 from pathlib import Path
 
+from pyedna.config import get_config
+
 from .attachments import (
     DyeLinkerConfig,
     create_dye_instances,
@@ -25,17 +27,16 @@ class StructureBuilder:
     """Coordinate DNA preparation, HADDOCK docking, and Amber input preparation."""
 
     def __init__(self, structure_config, workdir=".", dna_dir=None, dye_dir=None,
-                 lnk_dir=None, pyedna_home=None):
+                 lnk_dir=None):
         self.config = structure_config
         self.workdir = Path(workdir)
-        dna_root = dna_dir or os.environ.get("DNA_DIR")
-        dye_root = dye_dir or os.environ.get("DYE_DIR")
-        lnk_root = lnk_dir or os.environ.get("LNK_DIR")
-        home_root = pyedna_home or os.environ.get("PYEDNA_HOME")
+        config = get_config()
+        dna_root = dna_dir or config.libraries.dna_dir
+        dye_root = dye_dir or config.libraries.dye_dir
+        lnk_root = lnk_dir or config.libraries.linker_dir
         self.dna_dir = Path(dna_root) if dna_root else None
         self.dye_dir = Path(dye_root) if dye_root else None
         self.lnk_dir = Path(lnk_root) if lnk_root else None
-        self.pyedna_home = Path(home_root) if home_root else None
         self.dna_pdb = self.workdir / f"{self.config.dna.name}.pdb"
         self.dye_definitions = {}
         self.dye_instances = []
@@ -133,7 +134,6 @@ class StructureBuilder:
             dna_pdb=self.dna_pdb,
             instances=self.dye_instances,
             workdir=self.workdir,
-            pyedna_home=self.pyedna_home,
         )
         setup.prepare_inputs()
         _cleanup_file(self.dna_pdb, "temporary DNA PDB")
@@ -150,7 +150,6 @@ class StructureBuilder:
             dna_pdb=self.dna_pdb,
             instances=self.dye_instances,
             workdir=self.workdir,
-            pyedna_home=self.pyedna_home,
         )
         setup.process_results()
         return setup

@@ -1,11 +1,31 @@
 """Prepare DNA structures for structure-generation workflows."""
 
+try:
+    from importlib.resources import as_file, files
+except ImportError:
+    try:
+        from importlib_resources import as_file, files
+    except ImportError:
+        as_file = files = None
+
+from contextlib import nullcontext
 import shutil
 import subprocess
 from pathlib import Path
 
-from .. import config
+from pyedna.config import get_config
+
 from .pdb import set_chain_and_segid
+
+
+def _resource_path(*parts):
+    if files is None or as_file is None:
+        return nullcontext(Path(__file__).resolve().parents[1].joinpath(*parts))
+
+    resource = files("pyedna")
+    for part in parts:
+        resource = resource / part
+    return as_file(resource)
 
 
 def _copy_library_dna(dna_config, dna_dir, workdir):
@@ -28,7 +48,7 @@ def _load_nab_template(dna_type):
     if dna_type != "double_helix":
         raise NotImplementedError("Other DNA structures not implemented yet!")
 
-    template_dir = Path(config.PROJECT_HOME) / "data" / "dna_templates"
+    template_dir = Path(__file__).resolve().parents[1] / "data" / "dna_templates"
     template_file = template_dir / f"{dna_type}.nab"
     if not template_file.exists():
         raise FileNotFoundError(f"NAB template not found: {template_file}")
@@ -52,13 +72,18 @@ def _write_nab_script(dna_config, workdir):
 def _run_nab(nab_file, workdir):
     """Run NAB through the project shell wrapper."""
 
-    run_nab_script = Path(config.PROJECT_HOME) / "bin" / "create_dna.sh"
-    subprocess.run(
-        ["bash", str(run_nab_script), Path(nab_file).name],
-        cwd=workdir,
-        check=True,
-        stdout=subprocess.DEVNULL,
-    )
+    with _resource_path("data", "nab_scripts", "create_dna.sh") as run_nab_script:
+        subprocess.run(
+            [
+                "bash",
+                str(run_nab_script),
+                Path(nab_file).name,
+                str(get_config().nab.home),
+            ],
+            cwd=workdir,
+            check=True,
+            stdout=subprocess.DEVNULL,
+        )
 
 
 def _generate_dna_with_nab(dna_config, workdir, remove_nab=True):

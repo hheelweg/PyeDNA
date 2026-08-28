@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
+from pyedna import config
 
 from .parameterization import (
     AmberSettings,
@@ -510,8 +511,9 @@ class LinkerDefinition:
         forcefield = restraints.forcefield
 
         # (1) Read the supported Amber reference library.
+        # TODO : maybe link the OL15 library a bit more robustly? 
         if forcefield.upper() == "OL15":
-            lib_file = Path(os.environ["AMBERHOME"]) / "dat/leap/lib/DNA.OL15.lib"
+            lib_file = config.get_config().amber.home / "dat/leap/lib/DNA.OL15.lib"
         else:
             raise ValueError(f"Unsupported charge forcefield: {forcefield}")
 

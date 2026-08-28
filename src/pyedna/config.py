@@ -11,15 +11,15 @@ except ModuleNotFoundError:
 
 CONFIG_PATH = Path.home() / ".config" / "pyedna" / "config.toml"
 
-# Temporary compatibility with the current PyeDNA code.
-# This will be removed once PYEDNA_HOME is no longer needed.
-PROJECT_HOME = os.getenv("PYEDNA_HOME")
 
 
 @dataclass(frozen=True)
 class AmberConfig:
     home: Path
 
+@dataclass(frozen=True)
+class NabConfig:
+    home: Path
 
 @dataclass(frozen=True)
 class LibraryConfig:
@@ -31,6 +31,7 @@ class LibraryConfig:
 @dataclass(frozen=True)
 class PyeDNAConfig:
     amber: AmberConfig
+    nab: NabConfig
     libraries: LibraryConfig
 
 
@@ -65,6 +66,9 @@ def get_config() -> PyeDNAConfig:
     return PyeDNAConfig(
         amber=AmberConfig(
             home=_get_path(data, "amber", "home"),
+        ),
+        nab=NabConfig(
+            home=_get_path(data, "nab", "home"),
         ),
         libraries=LibraryConfig(
             dye_dir=_get_path(data, "libraries", "dye_dir"),

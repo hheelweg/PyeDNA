@@ -1,16 +1,17 @@
 #!/bin/bash
 
 # USAGE:
-# bash this_script.sh nab_file.nab
+# bash this_script.sh nab_file.nab /path/to/AmberClassic
 
 
-# check if a .nab file is provided as an argument
-if [ "$#" -ne 1 ]; then
-    echo "Usage: $0 <filename.nab>"
+# check if a .nab file and AmberClassic directory are provided as arguments
+if [ "$#" -ne 2 ]; then
+    echo "Usage: $0 <filename.nab> <amberclassic_dir>"
     exit 1
 fi
 
 NAB_FILE="$1"
+AMBERCLASSIC_DIR="$2"
 
 # ensure the provided file has a .nab extension
 if [[ "$NAB_FILE" != *.nab ]]; then
@@ -23,9 +24,6 @@ if [ ! -f "$NAB_FILE" ]; then
     echo "Error: $NAB_FILE not found in the current directory $(pwd)."
     exit 1
 fi
-
-# define the path to the AmberClassic installation directory
-AMBERCLASSIC_DIR="${AMBERCLASSIC:-${AMBERCLASSICHOME:-/home/hheelweg/opt/AmberClassic}}"
 
 # source the AmberClassic environment setup script without changing directories
 if [ -f "$AMBERCLASSIC_DIR/AmberClassic.sh" ]; then

@@ -14,3 +14,14 @@ authors         = [
                   
 [tool.setuptools.dynamic]
 dependencies    = { file = ["requirements.txt"] }
+
+[tool.setuptools.package-data]
+pyedna = [
+    "data/dna_templates/*.nab",
+    "data/haddock_templates/*.cfg",
+    "data/haddock_scripts/*.sh",
+    "data/nab_scripts/*.sh",
+]
+
+[project.scripts]
+pyedna = "pyedna.cli:main"

@@ -1,8 +1,9 @@
 from dataclasses import dataclass
-import os
 from pathlib import Path
 import shutil
 import subprocess
+
+from pyedna.config import amber_environment, amber_executable, get_config
 
 
 @dataclass(frozen=True)
@@ -69,19 +70,15 @@ def resolve_output_directory(
         raise ValueError(f"{component}: code is required for library output")
 
     if component == "dye":
-        root_name = "DYE_DIR"
+        root = get_config().libraries.dye_dir
         parts = [code, amber_forcefield]
     elif component == "linker":
-        root_name = "LNK_DIR"
+        root = get_config().libraries.linker_dir
         if not dna_forcefield:
             raise ValueError("linker: DNA restraint forcefield is required")
         parts = [code, amber_forcefield, dna_forcefield]
     else:
         raise ValueError(f"Unsupported library component: {component}")
-
-    root = os.environ.get(root_name)
-    if not root:
-        raise EnvironmentError(f"{root_name} is not set")
 
     output_dir = Path(root).joinpath(*parts)
     if output_dir.exists():
@@ -336,7 +333,7 @@ def generate_ac(name, sdf_file, output_dir, amber, charge):
     ac_file = output_dir / f"{name}.ac"
 
     cmd = [
-        "antechamber",
+        str(amber_executable("antechamber")),
         "-i", str(sdf_file),
         "-fi", "sdf",
         "-o", str(ac_file),
@@ -344,7 +341,7 @@ def generate_ac(name, sdf_file, output_dir, amber, charge):
         "-at", amber.forcefield,
         "-nc", str(charge),
     ]
-    subprocess.run(cmd, check=True, cwd=output_dir)
+    subprocess.run(cmd, check=True, cwd=output_dir, env=amber_environment())
 
     return ac_file
 
@@ -371,15 +368,25 @@ def generate_resp_inputs(ac_file, output_dir, restraint_file=None):
     resp1 = output_dir / "resp1.in"
     resp2 = output_dir / "resp2.in"
 
-    cmd1 = ["respgen", "-i", str(ac_file), "-o", str(resp1), "-f", "resp1"]
+    cmd1 = [
+        str(amber_executable("respgen")),
+        "-i", str(ac_file),
+        "-o", str(resp1),
+        "-f", "resp1",
+    ]
     if restraint_file:
         cmd1 += ["-a", str(restraint_file)]
-    subprocess.run(cmd1, check=True, cwd=output_dir)
+    subprocess.run(cmd1, check=True, cwd=output_dir, env=amber_environment())
 
-    cmd2 = ["respgen", "-i", str(ac_file), "-o", str(resp2), "-f", "resp2"]
+    cmd2 = [
+        str(amber_executable("respgen")),
+        "-i", str(ac_file),
+        "-o", str(resp2),
+        "-f", "resp2",
+    ]
     if restraint_file:
         cmd2 += ["-a", str(restraint_file)]
-    subprocess.run(cmd2, check=True, cwd=output_dir)
+    subprocess.run(cmd2, check=True, cwd=output_dir, env=amber_environment())
 
     return resp1, resp2
 
@@ -407,7 +414,7 @@ def run_two_stage_resp(resp1_in, resp2_in, esp_file, output_dir, qin_file=None):
     esp_rel = Path("../qm_opt") / Path(esp_file).name
 
     cmd1 = [
-        "resp",
+        str(amber_executable("resp")),
         "-O",
         "-i", Path(resp1_in).name,
         "-e", str(esp_rel),
@@ -420,7 +427,13 @@ def run_two_stage_resp(resp1_in, resp2_in, esp_file, output_dir, qin_file=None):
     print("RESP1 command:")
     print(" ".join(cmd1), flush=True)
 
-    result = subprocess.run(cmd1, cwd=output_dir, capture_output=True, text=True)
+    result = subprocess.run(
+        cmd1,
+        cwd=output_dir,
+        capture_output=True,
+        text=True,
+        env=amber_environment(),
+    )
 
     print("RESP1 stdout:")
     print(result.stdout)
@@ -433,7 +446,7 @@ def run_two_stage_resp(resp1_in, resp2_in, esp_file, output_dir, qin_file=None):
         raise RuntimeError("RESP1 did not create charges")
 
     cmd2 = [
-        "resp",
+        str(amber_executable("resp")),
         "-O",
         "-i", Path(resp2_in).name,
         "-e", str(esp_rel),
@@ -441,7 +454,7 @@ def run_two_stage_resp(resp1_in, resp2_in, esp_file, output_dir, qin_file=None):
         "-o", "resp2.out",
         "-t", "resp2_charges",
     ]
-    subprocess.run(cmd2, cwd=output_dir, check=True)
+    subprocess.run(cmd2, cwd=output_dir, check=True, env=amber_environment())
 
     return resp2_charges
 
@@ -453,7 +466,7 @@ def generate_resp_mol2(name, ac_file, output_dir, amber):
     mol2 = output_dir / f"{name}.mol2"
 
     cmd = [
-        "antechamber",
+        str(amber_executable("antechamber")),
         "-i", str(ac_file),
         "-fi", "ac",
         "-o", str(mol2),
@@ -462,7 +475,7 @@ def generate_resp_mol2(name, ac_file, output_dir, amber):
         "-cf", str(output_dir / "resp2_charges"),
         "-at", amber.forcefield,
     ]
-    subprocess.run(cmd, check=True, cwd=output_dir)
+    subprocess.run(cmd, check=True, cwd=output_dir, env=amber_environment())
 
     return mol2
 
@@ -650,13 +663,13 @@ def generate_frcmod(mol2_file, output_file, amber):
     mol2_file = Path(mol2_file).resolve()
     output_file = Path(output_file).resolve()
     cmd = [
-        "parmchk2",
+        str(amber_executable("parmchk2")),
         "-i", str(mol2_file),
         "-f", "mol2",
         "-o", str(output_file),
         "-s", amber.forcefield,
     ]
-    subprocess.run(cmd, check=True, cwd=output_file.parent)
+    subprocess.run(cmd, check=True, cwd=output_file.parent, env=amber_environment())
 
     return output_file
 

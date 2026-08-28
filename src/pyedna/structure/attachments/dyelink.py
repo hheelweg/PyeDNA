@@ -1,6 +1,5 @@
 """Load, validate and assemble dye/linker templates."""
 
-import os
 import subprocess
 import warnings
 from dataclasses import dataclass
@@ -12,6 +11,8 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 from scipy.spatial.distance import cdist
 from scipy.spatial.transform import Rotation
+
+from pyedna.config import amber_environment, amber_executable, get_config
 
 try:
     import tomllib
@@ -570,12 +571,9 @@ class DyeLinkerConfig:
         """Load dye/linker templates by name from DYE_DIR and LNK_DIR."""
         dye_ff = forcefield_id(dye_forcefield)
         dna_ff = forcefield_id(dna_forcefield)
-        dye_root = dye_dir or os.environ.get("DYE_DIR")
-        lnk_root = lnk_dir or os.environ.get("LNK_DIR")
-        if not dye_root:
-            raise EnvironmentError("DYE_DIR is not set")
-        if not lnk_root:
-            raise EnvironmentError("LNK_DIR is not set")
+        config = get_config()
+        dye_root = dye_dir or config.libraries.dye_dir
+        lnk_root = lnk_dir or config.libraries.linker_dir
 
         dye_directory = Path(dye_root) / dye
         dye_dir = dye_directory / dye_ff
@@ -730,7 +728,7 @@ class DyeLinkerConfig:
 
         result = subprocess.run(
             [
-                "parmchk2",
+                str(amber_executable("parmchk2")),
                 "-i", str(mol2_file),
                 "-f", "mol2",
                 "-o", str(output_file),
@@ -739,6 +737,7 @@ class DyeLinkerConfig:
             cwd=workdir,
             text=True,
             capture_output=True,
+            env=amber_environment(),
         )
 
         output = result.stdout + result.stderr
@@ -867,10 +866,11 @@ quit
             )
 
         result = subprocess.run(
-            ["tleap", "-f", str(tleap_input)],
+            [str(amber_executable("tleap")), "-f", str(tleap_input)],
             cwd=workdir,
             text=True,
             capture_output=True,
+            env=amber_environment(),
         )
 
         output = result.stdout + result.stderr

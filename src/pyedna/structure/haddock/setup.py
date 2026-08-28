@@ -1,5 +1,14 @@
 """Prepare HADDOCK inputs and post-process docked DNA–dye structures."""
 
+try:
+    from importlib.resources import as_file, files
+except ImportError:
+    try:
+        from importlib_resources import as_file, files
+    except ImportError:
+        as_file = files = None
+
+from contextlib import nullcontext
 from pathlib import Path
 import os
 
@@ -11,16 +20,24 @@ from .topology import _combine_ligand_topologies, _prepare_dye_topologies
 __all__ = ["HaddockSetup"]
 
 
+def _resource_path(*parts):
+    if files is None or as_file is None:
+        return nullcontext(Path(__file__).resolve().parents[2].joinpath(*parts))
+
+    resource = files("pyedna")
+    for part in parts:
+        resource = resource / part
+    return as_file(resource)
+
+
 class HaddockSetup:
     """Prepare HADDOCK inputs and convert completed docking output into final structures."""
 
-    def __init__(self, config, dna_pdb, instances, workdir=".", pyedna_home=None):
+    def __init__(self, config, dna_pdb, instances, workdir="."):
         self.config = config
         self.dna_pdb = Path(dna_pdb)
         self.instances = instances
         self.workdir = Path(workdir)
-        home = pyedna_home or os.environ.get("PYEDNA_HOME")
-        self.pyedna_home = Path(home) if home else None
         self.haddock_dir = self.workdir / "haddock"
         self.structure_dir = self.workdir / "structures"
         self.docking_overrides = _flatten_docking_overrides(
@@ -30,11 +47,16 @@ class HaddockSetup:
     def prepare_inputs(self):
         """Write dye topologies, DNA inputs, restraints, and the HADDOCK configuration."""
 
-        if self.pyedna_home is None:
-            raise EnvironmentError("PYEDNA_HOME is not set")
-
-        topology_script = self.pyedna_home / "scripts" / "haddock" / "create_topology.sh"
-        _prepare_dye_topologies(self.instances, self.workdir, topology_script)
+        with _resource_path(
+            "data",
+            "haddock_scripts",
+            "create_topology.sh",
+        ) as topology_script_path:
+            _prepare_dye_topologies(
+                self.instances,
+                self.workdir,
+                topology_script_path,
+            )
         self.top_file, self.par_file = _combine_ligand_topologies(
             self.instances, self.workdir
         )
@@ -55,7 +77,12 @@ class HaddockSetup:
             restraint_file=self.restraint_file,
             workdir=self.workdir,
             override_values=self.docking_overrides,
-            template=self.pyedna_home / "data" / "haddock_templates" / "docking_config.cfg",
+            template=(
+                Path(__file__).resolve().parents[2]
+                / "data"
+                / "haddock_templates"
+                / "docking_config.cfg"
+            ),
         )
         return self
 

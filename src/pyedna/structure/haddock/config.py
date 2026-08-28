@@ -1,7 +1,6 @@
 """Render HADDOCK configuration files for structure docking."""
 
 from pathlib import Path
-import os
 import re
 
 
@@ -97,7 +96,12 @@ def _write_docking_config(dna_pdb, instances, top_file, par_file, restraint_file
     output = workdir / "docking_config.cfg"
 
     if template is None:
-        template = Path(os.environ["PYEDNA_HOME"]) / "data" / "haddock_templates" / "docking_config.cfg"
+        template = (
+            Path(__file__).resolve().parents[2]
+            / "data"
+            / "haddock_templates"
+            / "docking_config.cfg"
+        )
     else:
         template = Path(template)
 

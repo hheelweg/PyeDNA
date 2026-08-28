@@ -2,13 +2,14 @@
 
 from dataclasses import dataclass
 import json
-import os
 from pathlib import Path
 import tempfile
 
 import numpy as np
 from pyscf import dft, gto
 from pyscf.geomopt.geometric_solver import optimize
+
+from pyedna.config import get_config
 
 
 @dataclass(frozen=True)
@@ -97,9 +98,7 @@ def load_attachment_info(initial_residue, mapping_file="resid_mapping.json"):
 
 
 def infer_dye_charge(dye):
-    dye_dir = os.environ.get("DYE_DIR")
-    if not dye_dir:
-        raise EnvironmentError("DYE_DIR is not set")
+    dye_dir = get_config().libraries.dye_dir
 
     path = Path(dye_dir) / dye / "gaff2" / f"{dye}.mol2"
     if not path.exists():
@@ -129,9 +128,7 @@ def infer_dye_charge(dye):
 
 
 def load_attach_atoms(dye):
-    dye_dir = os.environ.get("DYE_DIR")
-    if not dye_dir:
-        raise EnvironmentError("DYE_DIR is not set")
+    dye_dir = get_config().libraries.dye_dir
 
     path = Path(dye_dir) / dye / f"{dye}.attach"
     if not path.exists():

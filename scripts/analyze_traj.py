@@ -3,6 +3,7 @@ from pyedna.analysis.workflow import run_trajectory_analysis
 
 
 def main(config_file):
+    
     return run_trajectory_analysis(config_file)
 
 

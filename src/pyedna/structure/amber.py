@@ -2,9 +2,10 @@
 
 from pathlib import Path
 import pandas as pd
-import os
 import re
 import subprocess
+
+from pyedna.config import amber_environment, amber_executable, get_config
 
 from .attachments import (
     DyeLinkerConfig,
@@ -78,10 +79,7 @@ class AmberSetup:
             raise ValueError("A StructureConfig is required to prepare Amber inputs")
 
         if self.dye_dir is None and not self.structure_config.attachments:
-            dye_root = os.environ.get("DYE_DIR")
-            if not dye_root:
-                raise EnvironmentError("DYE_DIR is not set")
-            self.dye_dir = Path(dye_root)
+            self.dye_dir = get_config().libraries.dye_dir
 
         generated = {
             attachment.name: DyeLinkerConfig.from_names(
@@ -356,10 +354,11 @@ class AmberSetup:
             leap_log.unlink()
 
         result = subprocess.run(
-            ["tleap", "-f", str(self.tleap_file.resolve())],
+            [str(amber_executable("tleap")), "-f", str(self.tleap_file.resolve())],
             cwd=self.workdir,
             text=True,
             capture_output=True,
+            env=amber_environment(),
         )
         output = result.stdout + result.stderr
         if leap_log.exists():

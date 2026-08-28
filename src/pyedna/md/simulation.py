@@ -7,6 +7,8 @@ from pathlib import Path
 import shutil
 import subprocess
 
+from pyedna.config import amber_environment, amber_executable
+
 from .config import MDConfig
 from .restraints import AmberRestraintResolver
 
@@ -278,7 +280,7 @@ class MDSimulation:
         self._require_runtime_file(ref_coord)
 
         command = [
-            "srun", executable, "-O",
+            "srun", str(amber_executable(executable)), "-O",
             "-i", f"{stage}_{self.name}.in",
             "-o", f"{stage}_{self.name}.out",
             "-p", self.prmtop_name,
@@ -289,7 +291,12 @@ class MDSimulation:
         if netcdf is not None:
             command.extend(["-x", netcdf])
 
-        subprocess.run(command, cwd=self.output_dir, check=True)
+        subprocess.run(
+            command,
+            cwd=self.output_dir,
+            check=True,
+            env=amber_environment(),
+        )
         self._require_runtime_file(out_coord)
         if netcdf is not None:
             self._require_runtime_file(netcdf)
