@@ -4,11 +4,19 @@ import os
 import shutil
 from pathlib import Path
 
-from pyedna.config import CONFIG_PATH, get_config
+from pyedna.config import (
+    AMBERTOOLS_EXECUTABLES,
+    CONFIG_PATH,
+    PMEMD_EXECUTABLES,
+    amber_data_path,
+    amber_executable,
+    get_config,
+)
 
 
 CONFIG_TEMPLATE = """[amber]
-home = "/path/to/amber"
+ambertools_home = "/path/to/ambertools26"
+pmemd_home = "/path/to/pmemd26"
 
 [nab]
 home = "/path/to/AmberClassic"
@@ -47,7 +55,8 @@ def show_config() -> None:
     config = get_config()
 
     print(f"config.path = {CONFIG_PATH}")
-    print(f"amber.home = {config.amber.home}")
+    print(f"amber.ambertools_home = {config.amber.ambertools_home}")
+    print(f"amber.pmemd_home = {config.amber.pmemd_home}")
     print(f"nab.home = {config.nab.home}")
     print(f"libraries.dye_dir = {config.libraries.dye_dir}")
     print(f"libraries.dna_dir = {config.libraries.dna_dir}")
@@ -73,7 +82,16 @@ def check_config() -> None:
         raise RuntimeError("PyeDNA config check failed.") from exc
 
     check("get_config() succeeds", True)
-    check("amber.home exists", config.amber.home.exists(), str(config.amber.home))
+    check(
+        "amber.ambertools_home exists",
+        config.amber.ambertools_home.exists(),
+        str(config.amber.ambertools_home),
+    )
+    check(
+        "amber.pmemd_home exists",
+        config.amber.pmemd_home.exists(),
+        str(config.amber.pmemd_home),
+    )
     check("nab.home exists", config.nab.home.exists(), str(config.nab.home))
     check(
         "libraries.dye_dir exists",
@@ -94,6 +112,42 @@ def check_config() -> None:
         "<nab.home>/bin/nab exists",
         (config.nab.home / "bin" / "nab").is_file(),
     )
+    for name in ("antechamber", "parmchk2", "resp", "respgen", "sander", "tleap"):
+        try:
+            executable = amber_executable(name)
+        except RuntimeError as exc:
+            check(f"AmberTools executable {name} exists", False, str(exc))
+        else:
+            check(f"AmberTools executable {name} exists", True, str(executable))
+    for name in ("pmemd", "pmemd.cuda"):
+        try:
+            executable = amber_executable(name)
+        except RuntimeError as exc:
+            check(f"pmemd executable {name} exists", False, str(exc))
+        else:
+            check(f"pmemd executable {name} exists", True, str(executable))
+    for label, parts in (
+        ("AmberTools DNA.OL15.lib exists", ("dat", "leap", "lib", "DNA.OL15.lib")),
+        ("AmberTools leaprc.DNA.OL15 exists", ("dat", "leap", "cmd", "leaprc.DNA.OL15")),
+    ):
+        try:
+            data_file = amber_data_path(*parts)
+        except RuntimeError as exc:
+            check(label, False, str(exc))
+        else:
+            check(label, True, str(data_file))
+    optional = sorted(
+        name
+        for name in (AMBERTOOLS_EXECUTABLES | PMEMD_EXECUTABLES)
+        if name not in {"antechamber", "parmchk2", "pmemd", "pmemd.cuda", "resp", "respgen", "sander", "tleap"}
+    )
+    for name in optional:
+        try:
+            executable = amber_executable(name)
+        except RuntimeError:
+            continue
+        else:
+            check(f"optional Amber executable {name} exists", True, str(executable))
     check("gcc is available", shutil.which("gcc") is not None)
 
     conda_prefix = os.environ.get("CONDA_PREFIX")

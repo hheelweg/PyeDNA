@@ -15,7 +15,13 @@ CONFIG_PATH = Path.home() / ".config" / "pyedna" / "config.toml"
 
 @dataclass(frozen=True)
 class AmberConfig:
-    home: Path
+    ambertools_home: Path
+    pmemd_home: Path
+
+    @property
+    def home(self) -> Path:
+        """Return the AmberTools root for legacy callers."""
+        return self.ambertools_home
 
 @dataclass(frozen=True)
 class NabConfig:
@@ -33,6 +39,23 @@ class PyeDNAConfig:
     amber: AmberConfig
     nab: NabConfig
     libraries: LibraryConfig
+
+
+AMBERTOOLS_EXECUTABLES = {
+    "antechamber",
+    "cpptraj",
+    "parmchk2",
+    "prepgen",
+    "resp",
+    "respgen",
+    "sander",
+    "tleap",
+}
+
+PMEMD_EXECUTABLES = {
+    "pmemd",
+    "pmemd.cuda",
+}
 
 
 def _get_path(data: dict, section: str, key: str) -> Path:
@@ -53,6 +76,19 @@ def _get_path(data: dict, section: str, key: str) -> Path:
     return path
 
 
+def _get_amber_config(data: dict) -> AmberConfig:
+    amber = data.get("amber", {})
+
+    if "ambertools_home" in amber or "pmemd_home" in amber:
+        return AmberConfig(
+            ambertools_home=_get_path(data, "amber", "ambertools_home"),
+            pmemd_home=_get_path(data, "amber", "pmemd_home"),
+        )
+
+    home = _get_path(data, "amber", "home")
+    return AmberConfig(ambertools_home=home, pmemd_home=home)
+
+
 @cache
 def get_config() -> PyeDNAConfig:
     if not CONFIG_PATH.is_file():
@@ -64,9 +100,7 @@ def get_config() -> PyeDNAConfig:
         data = tomllib.load(file)
 
     return PyeDNAConfig(
-        amber=AmberConfig(
-            home=_get_path(data, "amber", "home"),
-        ),
+        amber=_get_amber_config(data),
         nab=NabConfig(
             home=_get_path(data, "nab", "home"),
         ),
@@ -78,8 +112,24 @@ def get_config() -> PyeDNAConfig:
     )
 
 
+def _amber_executable_root(name: str) -> Path:
+    config = get_config()
+
+    if name in AMBERTOOLS_EXECUTABLES:
+        return config.amber.ambertools_home
+    if name in PMEMD_EXECUTABLES:
+        return config.amber.pmemd_home
+
+    known = sorted(AMBERTOOLS_EXECUTABLES | PMEMD_EXECUTABLES)
+    raise RuntimeError(
+        f"Unknown Amber executable {name!r}. "
+        f"Add it to the PyeDNA executable map if it is required. "
+        f"Known executables: {', '.join(known)}"
+    )
+
+
 def amber_executable(name: str) -> Path:
-    path = get_config().amber.home / "bin" / name
+    path = _amber_executable_root(name) / "bin" / name
 
     if not path.is_file():
         raise RuntimeError(f"Amber executable not found: {path}")
@@ -87,16 +137,47 @@ def amber_executable(name: str) -> Path:
     return path
 
 
-def amber_environment() -> dict[str, str]:
+def amber_data_path(*parts: str) -> Path:
     config = get_config()
-    amber_home = config.amber.home
+    path = config.amber.ambertools_home.joinpath(*parts)
+
+    if not path.exists():
+        raise RuntimeError(f"AmberTools data file not found: {path}")
+
+    return path
+
+
+def _prepend_env_path(env: dict[str, str], key: str, path: Path) -> None:
+    current = env.get(key)
+    env[key] = f"{path}{':' + current if current else ''}"
+
+
+def _unique_paths(paths: tuple[Path, ...]) -> tuple[Path, ...]:
+    unique = []
+    for path in paths:
+        if path not in unique:
+            unique.append(path)
+    return tuple(unique)
+
+
+def amber_environment(name: str | None = None) -> dict[str, str]:
+    config = get_config()
+    ambertools_home = config.amber.ambertools_home
+    pmemd_home = config.amber.pmemd_home
 
     env = os.environ.copy()
-    env["AMBERHOME"] = str(amber_home)
-    env["PATH"] = f"{amber_home / 'bin'}:{env.get('PATH', '')}"
-    env["LD_LIBRARY_PATH"] = (
-        f"{amber_home / 'lib'}"
-        f"{':' + env['LD_LIBRARY_PATH'] if env.get('LD_LIBRARY_PATH') else ''}"
-    )
+
+    if name is not None and name in PMEMD_EXECUTABLES:
+        env["PMEMDHOME"] = str(pmemd_home)
+        env["AMBERHOME"] = str(ambertools_home)
+        roots = _unique_paths((ambertools_home, pmemd_home))
+        for root in roots:
+            _prepend_env_path(env, "LD_LIBRARY_PATH", root / "lib")
+        for root in roots:
+            _prepend_env_path(env, "PATH", root / "bin")
+    else:
+        env["AMBERHOME"] = str(ambertools_home)
+        _prepend_env_path(env, "PATH", ambertools_home / "bin")
+        _prepend_env_path(env, "LD_LIBRARY_PATH", ambertools_home / "lib")
 
     return env

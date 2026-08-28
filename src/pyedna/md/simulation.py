@@ -295,7 +295,7 @@ class MDSimulation:
             command,
             cwd=self.output_dir,
             check=True,
-            env=amber_environment(),
+            env=amber_environment(executable),
         )
         self._require_runtime_file(out_coord)
         if netcdf is not None:

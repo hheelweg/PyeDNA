@@ -19,8 +19,8 @@ This page summarizes the main molecular file types used by PyeDNA.
 
 ## File Resolution
 
-Relative user-supplied paths are generally resolved from the current working directory. Library files are resolved from environment variables such as `DYE_DIR`, `LNK_DIR`, and `DNA_DIR`.
+Relative user-supplied paths are generally resolved from the current working directory. Library files are resolved from runtime configuration paths such as `libraries.dye_dir`, `libraries.linker_dir`, and `libraries.dna_dir`.
 
 ## Important Metadata Files
 
-`structures/bonds.csv` records final covalent bonds that must be passed to `tleap`. `structures/resid_mapping.json` records attachment residue mapping used later by trajectory analysis.
+`structures/bonds.csv` records final covalent bonds that must be passed to `tleap`. `resid_mapping.json` records attachment residue mapping used later by trajectory analysis.

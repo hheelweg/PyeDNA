@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`create_dye` creates and parameterizes a reusable dye component. It writes molecular and force-field files for an uncapped dye residue, optionally into the dye library configured by `DYE_DIR`.
+`create_dye` creates and parameterizes a reusable dye component. It writes molecular and force-field files for an uncapped dye residue, optionally into the dye library configured by `libraries.dye_dir`.
 
 ## What the Workflow Does
 
@@ -11,9 +11,9 @@ PyeDNA attaches temporary cap atoms to the mapped dye core, embeds a 3D conforme
 
 ## Prerequisites
 
-- `PYEDNA_HOME`, `AMBERHOME`, and AmberTools executables available through the environment.
-- PySCF/GPU4PySCF (for geometry optimization) and RDKit available in the Python environment
-- `DYE_DIR` set when `output.directory = "library"`.
+- PyeDNA runtime configuration with `amber.ambertools_home` pointing to an AmberTools installation that provides `antechamber`, `respgen`, `resp`, and `parmchk2`.
+- RDKit, PySCF, CuPy, and GPU4PySCF available in the Python environment. The current ESP-generation path imports GPU4PySCF.
+- `libraries.dye_dir` set when `output.directory = "library"`.
 
 ## User Input Required
 
@@ -79,7 +79,7 @@ The SMILES above is only a syntax example. The mapped atoms and chemistry must b
 | `[qm].maxsteps` or `[qm.geometry].maxsteps` | optional | `100` | Maximum geometry optimization steps. |
 | `[qm].classical_preopt` | optional | `false` | If true, RDKit MMFF/UFF conformer pre-optimization is run before QM optimization. |
 | `[qm].classical_conformers` | optional | `20` | Number of RDKit conformers for classical pre-optimization; must be at least 1. |
-| `[output].directory` | optional | `"cwd"` | `"cwd"` writes into the current working directory; `"library"` writes into `DYE_DIR/<code>/<forcefield>/`. |
+| `[output].directory` | optional | `"cwd"` | `"cwd"` writes into the current working directory; `"library"` writes into `<libraries.dye_dir>/<code>/<forcefield>/`. |
 | `[output].work_subdir` | optional | `"resp_fit"` | Subdirectory for RESP fitting intermediates. |
 | `[output].cleanup` | optional | `"scratch"` | One of `"none"`, `"scratch"`, `"minimal"`, or `"library"`. `"library"` requires `output.directory = "library"`. |
 
@@ -93,14 +93,16 @@ Final outputs include `<code>.mol2`, `<code>.frcmod`, and `<code>.attach`. Inter
 ## How To Run
 
 ```bash
-sbatch "$PYEDNA_HOME/jobs/components/create_dye.sh" dye.toml
+pyedna components create-dye dye.toml
 ```
 
-The direct Python entry point is:
+If the config filename is omitted, PyeDNA uses `dye.toml` in the current directory:
 
 ```bash
-python "$PYEDNA_HOME/scripts/create_dye.py" --config dye.toml
+pyedna components create-dye
 ```
+
+On HPC systems, scheduler scripts may wrap this CLI command.
 
 ## Common Modifications Or Advanced Options
 

@@ -12,9 +12,9 @@ PyeDNA loads the topology and trajectory, validates the requested frame interval
 
 - Amber topology file.
 - Amber NetCDF trajectory file.
-- `DYE_DIR` set so analysis can read dye MOL2 charge data and `.attach` metadata.
+- `libraries.dye_dir` set so analysis can read dye MOL2 charge data and `.attach` metadata.
 - `resid_mapping.json` available in the working directory when attachment residues need to map back to Amber dye residues. This file is produced by the `finalize` stage of `create_structure` as `./resid_mapping.json`.
-- PySCF/GPU4PySCF or ORCA backend resources when quantum jobs are requested.
+- PySCF, CuPy, and GPU4PySCF when quantum jobs are requested with the current PySCF backend. The current quantum trajectory workflow has no CPU-only fallback.
 
 ## User Input Required
 
@@ -24,7 +24,7 @@ We first need to make sure `analyze_traj` reads in the `[[attachments]]` properl
 
 > **Loading Attachment Information**
 >
-> In order to load information about dyes attached to the DNA structure, one needs to mirror the same structure of `[[attachments]]` as used for `structure.toml` in the `create_structure` workflow, i.e. chose the `DYE_DIR` codename for the `dye` and **importantly**, as `residue` the DNA residue from the `structure.toml` that we have used to attach the dye in the original (raw) DNA `.pdb` file (e.g. from `DNA_DIR`).
+> In order to load information about dyes attached to the DNA structure, one needs to mirror the same structure of `[[attachments]]` as used for `structure.toml` in the `create_structure` workflow, i.e. chose the `libraries.dye_dir` codename for the `dye` and **importantly**, as `residue` the DNA residue from the `structure.toml` that we have used to attach the dye in the original (raw) DNA `.pdb` file (e.g. from `libraries.dna_dir`).
 > **Note**: The residue IDs of the initial (raw) DNA `.pdb` and the Amber MD input `.pdb` differ by the simple reason that one nucleotide is replaces by one dye and two linker residues, i.e. each `[[attachment]]` in `structure.toml` increases the number of total residues by 2. 
 > The mapping file that handles this confidently is `./resid_mapping.json`, so the user should **not delete** this file.
 
@@ -123,13 +123,13 @@ distance = "angstrom"
 
 | Field | Required | Default | Meaning and constraints |
 | --- | --- | --- | --- |
-| `dye` | required | none | Dye name used to load `DYE_DIR/<dye>/gaff2/<dye>.mol2` and `DYE_DIR/<dye>/<dye>.attach`. |
+| `dye` | required | none | Dye name used to load `<libraries.dye_dir>/<dye>/gaff2/<dye>.mol2` and `<libraries.dye_dir>/<dye>/<dye>.attach`. |
 | `residue` | required | none | Unique attachment residue identifier. Groups reference attachments by this integer. |
 | `cap` | optional | `"H"` | Cap used when cutting the dye from the trajectory. Supported values are `"H"` and `"CH3"`; normalized to uppercase. |
 
 Duplicate attachment residues are not allowed.
 
-When the trajectory comes from the `create_structure` -> `do_md` workflow, the `create_structure finalize` stage writes `structures/resid_mapping.json`. That file records how the `residue` values specified in `structure.toml` under `[[attachments]]` map onto the final Amber residue numbering after each DNA residue is replaced by dye/linker residues. Use this mapping when deciding which attachment residues to list in `traj.toml`.
+When the trajectory comes from the structure and MD workflows, the `pyedna structure finalize` stage writes `resid_mapping.json` in the working directory. That file records how the `residue` values specified in `structure.toml` under `[[attachments]]` map onto the final Amber residue numbering after each DNA residue is replaced by dye/linker residues. Use this mapping when deciding which attachment residues to list in `traj.toml`.
 
 ### `[[groups]]`
 
@@ -241,17 +241,25 @@ As a rough shape check, the number of records is normally:
 
 Nested arrays and dictionaries are kept as JSON values in the raw files. When loaded through PyeDNA's helper functions, scalar lists are flattened into numbered dataframe columns. See [Loading Analysis Results](loading_results.md).
 
+> **Important**
+>
+> The current PyeDNA quantum trajectory workflow requires GPU4PySCF. A CPU-only execution path is not currently implemented. See [Installation](../getting_started/installation.md) for the validated CUDA/CuPy/GPU4PySCF stack.
+
+The ORCA backend name is accepted by configuration validation, but the current ORCA backend raises `NotImplementedError` at runtime.
+
 ## How To Run The Workflow
 
 ```bash
-python "$PYEDNA_HOME/scripts/analyze_traj.py" traj.toml
+pyedna analysis trajectory traj.toml
 ```
 
-The script also accepts:
+If the config filename is omitted, PyeDNA uses `traj.toml` in the current directory:
 
 ```bash
-python "$PYEDNA_HOME/scripts/analyze_traj.py" --config traj.toml
+pyedna analysis trajectory
 ```
+
+On HPC systems, scheduler scripts may wrap this CLI command.
 
 ## Common Modifications Or Advanced Options
 

@@ -341,7 +341,7 @@ def generate_ac(name, sdf_file, output_dir, amber, charge):
         "-at", amber.forcefield,
         "-nc", str(charge),
     ]
-    subprocess.run(cmd, check=True, cwd=output_dir, env=amber_environment())
+    subprocess.run(cmd, check=True, cwd=output_dir, env=amber_environment("antechamber"))
 
     return ac_file
 
@@ -376,7 +376,7 @@ def generate_resp_inputs(ac_file, output_dir, restraint_file=None):
     ]
     if restraint_file:
         cmd1 += ["-a", str(restraint_file)]
-    subprocess.run(cmd1, check=True, cwd=output_dir, env=amber_environment())
+    subprocess.run(cmd1, check=True, cwd=output_dir, env=amber_environment("respgen"))
 
     cmd2 = [
         str(amber_executable("respgen")),
@@ -386,7 +386,7 @@ def generate_resp_inputs(ac_file, output_dir, restraint_file=None):
     ]
     if restraint_file:
         cmd2 += ["-a", str(restraint_file)]
-    subprocess.run(cmd2, check=True, cwd=output_dir, env=amber_environment())
+    subprocess.run(cmd2, check=True, cwd=output_dir, env=amber_environment("respgen"))
 
     return resp1, resp2
 
@@ -432,7 +432,7 @@ def run_two_stage_resp(resp1_in, resp2_in, esp_file, output_dir, qin_file=None):
         cwd=output_dir,
         capture_output=True,
         text=True,
-        env=amber_environment(),
+        env=amber_environment("resp"),
     )
 
     print("RESP1 stdout:")
@@ -454,7 +454,7 @@ def run_two_stage_resp(resp1_in, resp2_in, esp_file, output_dir, qin_file=None):
         "-o", "resp2.out",
         "-t", "resp2_charges",
     ]
-    subprocess.run(cmd2, cwd=output_dir, check=True, env=amber_environment())
+    subprocess.run(cmd2, cwd=output_dir, check=True, env=amber_environment("resp"))
 
     return resp2_charges
 
@@ -475,7 +475,7 @@ def generate_resp_mol2(name, ac_file, output_dir, amber):
         "-cf", str(output_dir / "resp2_charges"),
         "-at", amber.forcefield,
     ]
-    subprocess.run(cmd, check=True, cwd=output_dir, env=amber_environment())
+    subprocess.run(cmd, check=True, cwd=output_dir, env=amber_environment("antechamber"))
 
     return mol2
 
@@ -669,7 +669,7 @@ def generate_frcmod(mol2_file, output_file, amber):
         "-o", str(output_file),
         "-s", amber.forcefield,
     ]
-    subprocess.run(cmd, check=True, cwd=output_file.parent, env=amber_environment())
+    subprocess.run(cmd, check=True, cwd=output_file.parent, env=amber_environment("parmchk2"))
 
     return output_file
 

@@ -1,5 +1,5 @@
-# PyeDNA 🧬
-#### Create DNA structures, attache dye molecules, run AMBER MD, analyze trajectories...
+# PyeDNA
+#### Create DNA structures, attach dye molecules, run AMBER MD, analyze trajectories...
 
 *credits: Maria A. Castellanos*
 
@@ -14,55 +14,68 @@ Currenty has the following functions implemented:
 
 Future versions will include:
 - Creation of more complex DNA structures 
-- Curated library with topologies and GAFF parameters for dyes (`DYE_DIR`)
+- Curated library with topologies and GAFF parameters for dyes (`libraries.dye_dir`)
 - More functionality to analyze trajectories classically
 - More functionality to analyze trajectories quantum-mechanically
 - Extension to perform high-troughput analysis of optoelectronic properties 
 - ...
 
-Stay tuned for more 🚨!
+Stay tuned for more.
 
 
 ### Installation
 
-In order to make sure user-specific environment variables are set, the user needs to set up a `config.sh` file in `PYEDNA_HOME` (root directory). A mask (`config.sh.mask`) is provided in the root directory. Navigate to `PYEDNA_HOME`, and then type.  
+Install PyeDNA as a Python package in the active scientific Python environment. For normal use, the intended released-user workflow is:
 
-```
-cp config.sh.mask config.sh
-nano config.sh
+```bash
+pip install pyedna
 ```
 
-Then set the Python environment `[env-name]`, as well as the paths to `AMBERHOME` and the (custom) `DYE_DIR` in order to reference constructed (custom) dyes.
+For developer collaborators modifying the source checkout:
+
+```bash
+pip install -e .
+```
+
+Create and validate the machine-specific runtime configuration:
+
+```bash
+pyedna config init
+pyedna config show
+pyedna config check
+```
+
+Edit `~/.config/pyedna/config.toml` to set paths to AmberTools, pmemd, AmberClassic/NAB, and the molecular libraries. Workflow-specific scientific settings remain in TOML files such as `structure.toml`, `md.toml`, and `traj.toml`.
 
 
 ### Requirements
 
 #### NAB
-In order to create/customize DNA structures, a local installation of the Nucleid Acid Builder ([NAB](https://github.com/Amber-MD/AmberClassic.git)) is required. The most well-maintained code base is found in the linked *AmberClassic* repository. The only exectuable that we need effectively is `nab`. Refer to the linked GitHub for installation details. After succesfull installation, we need to set environment variable `AMBERCLASSIC` for the AmberClassic root directory. 
+In order to create/customize DNA structures, a local installation of the Nucleic Acid Builder ([NAB](https://github.com/Amber-MD/AmberClassic.git)) is required. The current runtime config uses `nab.home` for the AmberClassic root directory and expects `<nab.home>/bin/nab`.
 
-#### Amber24
-For the Molecular Dynamics simulation we require AmberTools24 and Amber24. See the Amber24 [manual](https://ambermd.org/doc12/Amber24.pdf) for installation instructions. **Note**: We use GPU-assisted MD executables like `pmemd.cuda` for running the MD simulations. Make sure that the Amber code is complied with the right CUDA version of your computing cluster or local machine.   
+#### Amber / AmberTools
+For the Molecular Dynamics simulation we require AmberTools and Amber/pmemd. Split AmberTools and pmemd installations are configured with `amber.ambertools_home` and `amber.pmemd_home` in `~/.config/pyedna/config.toml`. **Note**: We use GPU-assisted MD executables like `pmemd.cuda` for running the MD simulations. Make sure that the Amber code is compiled with the right CUDA version of your computing cluster or local machine.
 
 #### Python
-add this! Detailled list: see `requirements.txt`.
+Python package dependencies are declared in `pyproject.toml`. PyeDNA currently requires Python `>=3.12` and pins `pyscf==2.8.0` for compatibility with the validated GPU4PySCF stack.
+
+The current quantum trajectory workflow requires GPU4PySCF and has no CPU-only execution path. The currently validated GPU Python stack is `cupy-cuda11x==13.4.1`, `gpu4pyscf-cuda11x==1.4.3`, and `pyscf==2.8.0`.
 
 
 ### Usage
 
-Before running *any* type of calculation, make sure the `PYEDNA_HOME` variable is set up correctly. In order to do that, run the following command in the shell
+PyeDNA workflows are launched through the installed `pyedna` CLI:
 
+```bash
+pyedna components create-dye dye.toml
+pyedna components create-linker linker.toml
+pyedna components create-dyelnk dyelnk.toml
+pyedna structure prepare structure.toml
+pyedna structure dock structure.toml
+pyedna structure finalize structure.toml
+pyedna structure amber structure.toml
+pyedna md run md.toml
+pyedna analysis trajectory traj.toml
 ```
-export PYEDNA_HOME="/path/to/PyeDNA"
-```
-One can also add this to the `~/.zshrc` or `~/.bashrc` for a permanent addition to the shell configuration.
-Before executing job scripts from `jobs` directory, type
 
-```
-export $PATH:/path/to/PyeDNA/jobs
-```
-
-Before executing bash scripts from `bin` directory, type
-
-```
-export $PATH:/path/to/PyeDNA/bin
-```
+Scheduler scripts may wrap these commands on HPC systems, but the repository `jobs/` directory is not required for normal installed-package use.

@@ -1,19 +1,6 @@
 import argparse
-from pathlib import Path
 
 from pyedna.config_workflow import run_config
-
-from pyedna.components.workflow import (
-    run_create_dye,
-    run_create_linker,
-    run_create_dyelnk,
-)
-
-from pyedna.structure.workflow import run_structure
-
-from pyedna.md.workflow import run_md
-
-from pyedna.analysis.workflow import run_trajectory_analysis
 
 
 
@@ -154,10 +141,18 @@ def main():
     args = parser.parse_args()
 
     if args.command == "structure":
+        from pyedna.structure.workflow import run_structure
+
         run_structure(args.stage, args.config)
     elif args.command == "config":
         run_config(args.config_command)
     elif args.command == "components":
+        from pyedna.components.workflow import (
+            run_create_dye,
+            run_create_linker,
+            run_create_dyelnk,
+        )
+
         if args.component_command == "create-dye":
             run_create_dye(args.config)
         elif args.component_command == "create-linker":
@@ -165,9 +160,13 @@ def main():
         elif args.component_command == "create-dyelnk":
             run_create_dyelnk(args.config)
     elif args.command == "md":
+        from pyedna.md.workflow import run_md
+
         if args.md_command == "run":
             run_md(args.config)
     elif args.command == "analysis":
+        from pyedna.analysis.workflow import run_trajectory_analysis
+
         if args.analysis_command == "trajectory":
             run_trajectory_analysis(args.config)
 

@@ -513,7 +513,7 @@ class LinkerDefinition:
         # (1) Read the supported Amber reference library.
         # TODO : maybe link the OL15 library a bit more robustly? 
         if forcefield.upper() == "OL15":
-            lib_file = config.get_config().amber.home / "dat/leap/lib/DNA.OL15.lib"
+            lib_file = config.amber_data_path("dat", "leap", "lib", "DNA.OL15.lib")
         else:
             raise ValueError(f"Unsupported charge forcefield: {forcefield}")
 

@@ -358,7 +358,7 @@ class AmberSetup:
             cwd=self.workdir,
             text=True,
             capture_output=True,
-            env=amber_environment(),
+            env=amber_environment("tleap"),
         )
         output = result.stdout + result.stderr
         if leap_log.exists():

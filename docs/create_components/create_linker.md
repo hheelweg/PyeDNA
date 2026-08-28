@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`create_linker` creates reusable linker residue templates for 3' and 5' DNA attachment contexts and writes them into `LNK_DIR` when library output is requested.
+`create_linker` creates reusable linker residue templates for 3' and 5' DNA attachment contexts and writes them into `libraries.linker_dir` when library output is requested.
 
 ## What the Workflow Does
 
@@ -10,10 +10,10 @@ PyeDNA combines the mapped SMILES fragments, validates that every atom has a uni
 
 ## Prerequisites
 
-- `PYEDNA_HOME`, `AMBERHOME`, and AmberTools executables available.
-- RDKit and PySCF/GPU4PySCF (for geometry optimization) available.
-- `LNK_DIR` set when `output.directory = "library"`.
-- `AMBERHOME` set so OL15 reference charges can be read from `dat/leap/lib/DNA.OL15.lib`.
+- PyeDNA runtime configuration with `amber.ambertools_home` pointing to an AmberTools installation that provides `antechamber`, `respgen`, `resp`, and `parmchk2`.
+- RDKit, PySCF, CuPy, and GPU4PySCF available in the Python environment. The current ESP-generation path imports GPU4PySCF.
+- `libraries.linker_dir` set when `output.directory = "library"`.
+- `amber.ambertools_home` set so OL15 reference charges can be read from `dat/leap/lib/DNA.OL15.lib`.
 
 ## User Input Required
 
@@ -108,7 +108,7 @@ This is a syntax example only. The mapped atoms and boundaries must match the ac
 | `[qm].maxsteps` or `[qm.geometry].maxsteps` | optional | `100` | Maximum geometry optimization steps. |
 | `[qm].classical_preopt` | optional | `false` | If true, RDKit MMFF/UFF pre-optimization is run. |
 | `[qm].classical_conformers` | optional | `20` | Must be at least 1. |
-| `[output].directory` | optional | `"cwd"` | `"cwd"` writes locally; `"library"` writes into `LNK_DIR/<code>/<forcefield>/<restraint_forcefield>/`. |
+| `[output].directory` | optional | `"cwd"` | `"cwd"` writes locally; `"library"` writes into `<libraries.linker_dir>/<code>/<forcefield>/<restraint_forcefield>/`. |
 | `[output].work_subdir` | optional | `"resp_fit"` | RESP intermediate directory. |
 | `[output].cleanup` | optional | `"scratch"` | One of `"none"`, `"scratch"`, `"minimal"`, or `"library"`. |
 
@@ -122,8 +122,10 @@ The workflow writes `<code>3.mol2`, `<code>3.frcmod`, `<code>3.attach`, `<code>5
 ## How To Run
 
 ```bash
-sbatch "$PYEDNA_HOME/jobs/components/create_linker.sh" linker.toml
+pyedna components create-linker linker.toml
 ```
+
+If the config filename is omitted, PyeDNA uses `linker.toml` in the current directory. On HPC systems, scheduler scripts may wrap this CLI command.
 
 ## Common Modifications Or Advanced Options
 

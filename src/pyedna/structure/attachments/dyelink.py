@@ -737,7 +737,7 @@ class DyeLinkerConfig:
             cwd=workdir,
             text=True,
             capture_output=True,
-            env=amber_environment(),
+            env=amber_environment("parmchk2"),
         )
 
         output = result.stdout + result.stderr
@@ -870,7 +870,7 @@ quit
             cwd=workdir,
             text=True,
             capture_output=True,
-            env=amber_environment(),
+            env=amber_environment("tleap"),
         )
 
         output = result.stdout + result.stderr

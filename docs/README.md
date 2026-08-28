@@ -4,19 +4,22 @@ PyeDNA prepares, simulates, and analyzes dye-labeled DNA systems. The user-facin
 
 ```text
 component creation
-    -> create_dye / create_linker
-    -> create_dyelnk
-    -> DYE_DIR / LNK_DIR
-    -> create_structure
+    -> pyedna components create-dye / create-linker
+    -> pyedna components create-dyelnk
+    -> libraries.dye_dir / libraries.linker_dir
+    -> pyedna structure prepare
     -> DNA preparation
-    -> HADDOCK3 docking
+    -> pyedna structure dock
     -> model selection / finalization
-    -> tleap / Amber preparation
+    -> pyedna structure finalize
+    -> pyedna structure amber
     -> prmtop + rst7
-    -> do_md
+    -> pyedna md run
     -> Amber trajectory
-    -> analyze_traj
+    -> pyedna analysis trajectory
 ```
+
+Install PyeDNA as a Python package, configure local external-software paths in `~/.config/pyedna/config.toml`, and run workflows through the `pyedna` CLI.
 
 ## Start Here
 

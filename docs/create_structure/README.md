@@ -11,8 +11,18 @@ The structure workflow builds DNA-dye systems from reusable components and prepa
 
 ```text
 prepare  -> prepare DNA, dye-linker components, HADDOCK topologies, restraints, and docking_config.cfg
+dock     -> run HADDOCK3 using docking_config.cfg
 finalize -> select HADDOCK models and reconstruct final PDB structures
 amber    -> prepare a selected final PDB with tleap
 ```
 
-The job wrapper `jobs/structure/create_structure.sh` runs `prepare`, then submits `jobs/structure/run_haddock.sh`. The HADDOCK job runs HADDOCK3 and then calls `finalize`.
+The canonical CLI commands are:
+
+```bash
+pyedna structure prepare structure.toml
+pyedna structure dock structure.toml
+pyedna structure finalize structure.toml
+pyedna structure amber structure.toml
+```
+
+Scheduler scripts may wrap these commands on HPC systems, but the `jobs/` directory is not a required installation dependency.

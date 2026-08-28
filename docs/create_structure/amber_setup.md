@@ -32,8 +32,8 @@ tleap    -> establishes the Amber topology/force-field representation
 
 - A finalized structure at `structures/<system.name>_<amber.model>.pdb`.
 - A final bond table at `structures/bonds.csv`.
-- Dye/linker MOL2, FRCMOD, and attachment metadata in `DYE_DIR` and `LNK_DIR`, or generated linked intermediates from the structure workflow.
-- AmberTools `tleap` available through the configured environment.
+- Dye/linker MOL2, FRCMOD, and attachment metadata in `libraries.dye_dir` and `libraries.linker_dir`, or generated linked intermediates from the structure workflow.
+- PyeDNA runtime configuration with `amber.ambertools_home` pointing to an AmberTools installation that provides `tleap` and Amber force-field data.
 
 ## User Input Required
 
@@ -85,7 +85,7 @@ After successful `tleap`, generated linked dye-linker intermediates and the `tle
 ## How To Run The Workflow
 
 ```bash
-python "$PYEDNA_HOME/scripts/create_structure.py" amber --config structure.toml
+pyedna structure amber structure.toml
 ```
 
 If `[workflow].prepare_amber = true`, the `finalize` stage also runs Amber setup after processing HADDOCK results.

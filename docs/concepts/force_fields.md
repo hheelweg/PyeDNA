@@ -4,7 +4,7 @@ PyeDNA combines DNA force fields, small-molecule force fields, charge fitting, a
 
 ## DNA Force Fields
 
-The current examples and defaults use `OL15`, which PyeDNA converts to the `tleap` source `leaprc.DNA.OL15`. Linker charge-restraint inference currently reads reference charges from `AMBERHOME/dat/leap/lib/DNA.OL15.lib`.
+The current examples and defaults use `OL15`, which PyeDNA converts to the `tleap` source `leaprc.DNA.OL15`. Linker charge-restraint inference currently reads reference charges from `dat/leap/lib/DNA.OL15.lib` under the configured AmberTools root.
 
 ## GAFF / GAFF2
 
@@ -24,7 +24,7 @@ MOL2 files store atom names, atom types, coordinates, bonding, residue names, an
 
 ## FRCMOD
 
-FRCMOD files store missing or customized Amber parameters such as bonds, angles, dihedrals, impropers, and nonbonded terms. PyeDNA creates dye/linker FRCMOD files with `parmchk2`. DNA-linker compatibility parameters are expected in a manually curated `connectparams.frcmod` under `LNK_DIR/connect/<dye_forcefield>/<dna_forcefield>/`.
+FRCMOD files store missing or customized Amber parameters such as bonds, angles, dihedrals, impropers, and nonbonded terms. PyeDNA creates dye/linker FRCMOD files with `parmchk2`. DNA-linker compatibility parameters are expected in a manually curated `connectparams.frcmod` under `<libraries.linker_dir>/connect/<dye_forcefield>/<dna_forcefield>/`.
 
 ## tleap
 

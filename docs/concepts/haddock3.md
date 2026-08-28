@@ -35,7 +35,7 @@ tleap / Amber setup
 
 PyeDNA supplies HADDOCK3 with:
 
-- the DNA PDB prepared from NAB generation or `DNA_DIR`;
+- the DNA PDB prepared from NAB generation or `libraries.dna_dir`;
 - one PDB plus CNS topology/parameter information for each dye-linker component;
 - atom-to-atom distance restraints for the intended DNA-linker attachments;
 - a rendered `docking_config.cfg` based on `data/haddock_templates/docking_config.cfg`.

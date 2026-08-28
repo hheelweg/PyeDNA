@@ -21,8 +21,8 @@ PyeDNA creates a timestamped directory under `output.directory`, copies the inpu
 ## Prerequisites
 
 - Amber `prmtop` and `rst7` files from structure Amber setup.
-- GPU allocation for the current script path. `scripts/do_md.py` checks that at least one CUDA GPU is visible.
-- Amber executables available, including `sander` and `pmemd.cuda`.
+- GPU allocation for `pmemd.cuda` during equilibration and production.
+- PyeDNA runtime configuration with `amber.ambertools_home` providing `sander` and `amber.pmemd_home` providing `pmemd.cuda`.
 
 ## User Input Required
 
@@ -186,14 +186,16 @@ Important files include stage `.in` and `.out` files, minimization/equilibration
 ## How To Run The Workflow
 
 ```bash
-sbatch "$PYEDNA_HOME/jobs/md/do_md_gpu.sh" md.toml
+pyedna md run md.toml
 ```
 
-The direct entry point is:
+If the config filename is omitted, PyeDNA uses `md.toml` in the current directory:
 
 ```bash
-python "$PYEDNA_HOME/scripts/do_md.py" md.toml
+pyedna md run
 ```
+
+On HPC systems, scheduler scripts may wrap this CLI command. The current implementation runs Amber stages through `srun`.
 
 ## Common Modifications Or Advanced Options
 
@@ -201,4 +203,4 @@ Use `workflow.stages` to rerun a subset only when required input restart files a
 
 ## Limitations / Troubleshooting
 
-The current direct script requires a visible CUDA GPU before starting. `custom` restraint targets are not implemented. `equilibrate` requires `min_<name>.ncrst`; `production` requires `eq2_<name>.ncrst`.
+The current workflow uses `pmemd.cuda` for equilibration and production; no CPU production switch is currently documented. `custom` restraint targets are not implemented. `equilibrate` requires `min_<name>.ncrst`; `production` requires `eq2_<name>.ncrst`.
