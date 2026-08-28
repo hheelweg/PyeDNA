@@ -8,6 +8,12 @@ set -e
 
 cd "$SLURM_SUBMIT_DIR"
 
+echo "CONDA_PREFIX=$CONDA_PREFIX"
+echo "gcc=$(command -v gcc)"
+
+echo "libgfortran:"
+ls -l "$CONDA_PREFIX/lib/libgfortran.so"*
+
 if [[ $# -gt 1 ]]; then
     echo "Usage: sbatch $0 [STRUCTURE_CONFIG]"
     exit 1

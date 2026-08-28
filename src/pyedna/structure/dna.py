@@ -2,9 +2,9 @@
 
 import shutil
 import subprocess
-import time
 from pathlib import Path
 
+from pyedna.analysis import config
 from pyedna.config import get_config
 
 from .pdb import set_chain_and_segid
@@ -56,16 +56,20 @@ def _prepend_env_path(env, key, path):
     env[key] = f"{path}{':' + current if current else ''}"
 
 
-def _amberclassic_environment(amberclassic_dir, amber_home=None):
-    """Return the environment produced by sourcing AmberClassic.sh."""
+def _amberclassic_environment(amberclassic_dir):
+    """Build the runtime environment required by AmberClassic/NAB."""
 
     amberclassic_dir = Path(amberclassic_dir)
-    amber_home = Path(amber_home) if amber_home is not None else None
     setup_script = amberclassic_dir / "AmberClassic.sh"
 
     if not setup_script.is_file():
         raise FileNotFoundError(
             f"AmberClassic.sh not found in {amberclassic_dir}"
+        )
+
+    if shutil.which("gcc") is None:
+        raise RuntimeError(
+            "NAB requires gcc, but gcc was not found on PATH."
         )
 
     result = subprocess.run(
@@ -79,34 +83,38 @@ def _amberclassic_environment(amberclassic_dir, amber_home=None):
         check=True,
         capture_output=True,
     )
+
     env = dict(
         item.split("=", 1)
         for item in result.stdout.decode().split("\0")
         if item
     )
 
+    conda_prefix = env.get("CONDA_PREFIX")
+
+    if not conda_prefix:
+        raise RuntimeError(
+            "NAB requires a linkable libgfortran runtime. "
+            "No active Conda environment was detected."
+        )
+
+    libgfortran = Path(conda_prefix) / "lib" / "libgfortran.so"
+
+    if not libgfortran.is_file():
+        raise RuntimeError(
+            "NAB requires libgfortran.so for linking, but it was not found at "
+            f"{libgfortran}."
+        )
+
     lib_dirs = [
-        Path(env["CONDA_PREFIX"]) / "lib" if env.get("CONDA_PREFIX") else None,
-        (
-            Path(env["CONDA_PREFIX"]) / "x86_64-conda-linux-gnu" / "lib"
-            if env.get("CONDA_PREFIX")
-            else None
-        ),
-        Path(env["AMBERHOME"]) / "lib" if env.get("AMBERHOME") else None,
         amberclassic_dir / "lib",
+        Path(conda_prefix) / "lib",
     ]
-    if amber_home is not None:
-        lib_dirs.extend([
-            amber_home / "lib",
-            amber_home / "miniconda" / "lib",
-            amber_home.parent / "lib",
-            amber_home.parent / "x86_64-conda-linux-gnu" / "lib",
-        ])
 
     for lib_dir in lib_dirs:
-        if lib_dir is not None and lib_dir.is_dir():
-            for key in ("LIBRARY_PATH", "LD_LIBRARY_PATH"):
-                _prepend_env_path(env, key, lib_dir)
+        if lib_dir.is_dir():
+            _prepend_env_path(env, "LIBRARY_PATH", lib_dir)
+            _prepend_env_path(env, "LD_LIBRARY_PATH", lib_dir)
 
     return env
 
@@ -134,16 +142,16 @@ def _run_nab(nab_file, workdir):
         )
 
     config = get_config()
-    env = _amberclassic_environment(config.nab.home, amber_home=config.amber.home)
+    env = _amberclassic_environment(config.nab.home)
 
     subprocess.run(
         ["nab", nab_file.name],
         cwd=workdir,
         stdout=subprocess.DEVNULL,
         env=env,
+        check=True,
     )
 
-    time.sleep(1)
 
     executable = workdir / "a.out"
     if not executable.is_file():
@@ -154,6 +162,7 @@ def _run_nab(nab_file, workdir):
         cwd=workdir,
         stdout=subprocess.DEVNULL,
         env=env,
+        check=True,
     )
     _cleanup_nab_files(workdir)
 
