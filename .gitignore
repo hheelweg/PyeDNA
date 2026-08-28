@@ -16,6 +16,7 @@ jobs/analysis/get_forces_dye.sh
 build/
 dist/
 AGENTS.md
+requirements-old.txt
 
 # Python bytecode and cache directories
 __pycache__/
