@@ -1,7 +1,6 @@
 # PyeDNA 🧬
 #### Create DNA structures, attach dye molecules, run AMBER MD, analyze trajectories...
 
-*credits: Maria A. Castellanos*
 
 Future high-throughput platform for creating DNA/chromophore structures, performing all-atom MD and analyzing trajectories with classical and quantum methods.
 Currenty has the following functions implemented:
