@@ -98,7 +98,7 @@ def _write_docking_config(dna_pdb, instances, top_file, par_file, restraint_file
     if template is None:
         template = (
             Path(__file__).resolve().parents[2]
-            / "data"
+            / "templates"
             / "haddock_templates"
             / "docking_config.cfg"
         )

@@ -29,8 +29,8 @@ dependencies = [
 
 [tool.setuptools.package-data]
 pyedna = [
-    "data/dna_templates/*.nab",
-    "data/haddock_templates/*.cfg",
+    "templates/dna_templates/*.nab",
+    "templates/haddock_templates/*.cfg",
 ]
 
 [project.scripts]

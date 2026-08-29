@@ -110,7 +110,7 @@ neutralize = true
 | `sequence` | required for `source = "generate"` | none | DNA sequence inserted into the NAB template. |
 | `type` | required for `source = "generate"` | none | Current generated-DNA implementation supports `"double_helix"`. |
 
-The DNA-input portion is functional but may be streamlined further in the future. Generated DNA uses the NAB template in `data/dna_templates/double_helix.nab`; library DNA is copied from `libraries.dna_dir` and then normalized to chain/segment ID `A`.
+The DNA-input portion is functional but may be streamlined further in the future. Generated DNA uses the NAB template in `templates/dna_templates/double_helix.nab`; library DNA is copied from `libraries.dna_dir` and then normalized to chain/segment ID `A`.
 
 ### `[[attachments]]`
 

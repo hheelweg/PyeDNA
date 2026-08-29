@@ -50,7 +50,7 @@ class HaddockSetup:
             override_values=self.docking_overrides,
             template=(
                 Path(__file__).resolve().parents[2]
-                / "data"
+                / "templates"
                 / "haddock_templates"
                 / "docking_config.cfg"
             ),

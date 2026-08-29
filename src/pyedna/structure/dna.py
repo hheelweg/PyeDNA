@@ -29,7 +29,7 @@ def _load_nab_template(dna_type):
     if dna_type != "double_helix":
         raise NotImplementedError("Other DNA structures not implemented yet!")
 
-    template_dir = Path(__file__).resolve().parents[1] / "data" / "dna_templates"
+    template_dir = Path(__file__).resolve().parents[1] / "templates" / "dna_templates"
     template_file = template_dir / f"{dna_type}.nab"
     if not template_file.exists():
         raise FileNotFoundError(f"NAB template not found: {template_file}")
