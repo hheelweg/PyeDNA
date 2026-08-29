@@ -2,6 +2,10 @@
 
 PyeDNA is organized as installed-package CLI workflows. Scheduler `.sh` files may wrap these commands on HPC systems, but the `pyedna` CLI is the PyeDNA entry point.
 
+> **Important**
+>
+> Make sure `pyedna_env` environment (as mentioned in [installation.md](installation.md)) is active and runtime configuration `config.toml` is properly set up with correct paths. 
+
 ## 1. Create Reusable Components
 
 Use [create_dye](../create_components/create_dye.md) to parameterize a capped dye core and write a reusable dye residue template. Use [create_linker](../create_components/create_linker.md) to parameterize linker residue templates for 3' and 5' contexts. Use [create_dyelnk](../create_components/create_dyelnk.md) to assemble existing dye and linker templates into a linked dye-linker component used by structure generation.
