@@ -2,7 +2,7 @@
 
 ![PyeDNA image](./pyedna.png)
 
-PyeDNA is a Python workflow package for building, simulating, and analyzing DNA systems with covalently attached molecular dyes and related chromophores. It is for the part of computational dye-DNA work where chemistry, file formats, force fields, and trajectory analysis all have to agree with each other, preferably before a three-day calculation proves that they did not.
+PyeDNA is a Python workflow package for building, simulating, and analyzing DNA systems with covalently attached molecular dyes and related chromophores. 
 
 ## What Is PyeDNA?
 
