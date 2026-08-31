@@ -14,6 +14,7 @@ from pyedna.analysis.interactions import (
     summarize_interaction_result,
 )
 from pyedna.analysis.quantum.jobs import run_quantum_jobs, summarize_quantum_result
+from pyedna.analysis.runtime import configure_thread_environment, detect_runtime_resources
 from pyedna.trajectory.structure import build_group_fragments, build_groups
 from pyedna.trajectory.trajectory import analyze_trajectory, validate_frame_interval
 
@@ -21,13 +22,23 @@ from pyedna.trajectory.trajectory import analyze_trajectory, validate_frame_inte
 def run_trajectory_analysis(config_file="traj.toml"):
     traj, cfg = analyze_trajectory(config_file)
     traj_cfg = cfg["trajectory"]
+    quantum_defaults = cfg.get("quantum_defaults", {})
+    resources = detect_runtime_resources()
+    configure_thread_environment(resources.num_cpus)
     start, stop = validate_frame_interval(traj_cfg["frame_interval"], traj.num_frames)
 
     attachments = cfg.get("attachments", [])
-    optimize_caps = traj_cfg.get("optimize_caps", False)
-    basis = traj_cfg.get("basis", "6-31g")
+    optimize_caps = traj_cfg.get(
+        "optimize_caps",
+        quantum_defaults.get("optimize_caps", False),
+    )
+    basis = traj_cfg.get("basis", quantum_defaults.get("basis", "6-31g"))
     analysis_run = prepare_output_files(cfg, config_file=config_file)
     print(f"Analysis output: {analysis_run.directory}")
+    print(
+        "Runtime resources: "
+        f"{resources.num_cpus} CPU cores, {resources.num_gpus} visible GPU(s)"
+    )
 
     for frame in range(start, stop + 1):
         analyze_frame(
@@ -38,6 +49,7 @@ def run_trajectory_analysis(config_file="traj.toml"):
             attachments=attachments,
             optimize_caps=optimize_caps,
             basis=basis,
+            resources=resources,
         )
 
     return analysis_run
@@ -51,7 +63,9 @@ def analyze_frame(
     attachments=None,
     optimize_caps=False,
     basis="6-31g",
+    resources=None,
 ):
+    resources = detect_runtime_resources() if resources is None else resources
     attachment_mols = {}
 
     for attachment in attachments or config.get("attachments", []):
@@ -63,6 +77,7 @@ def analyze_frame(
             cap_type=attachment.get("cap", "H"),
             optimize_caps=optimize_caps,
             basis=basis,
+            resources=resources,
         )
 
     groups = build_groups(config, attachment_mols, basis=basis)
@@ -80,7 +95,13 @@ def analyze_frame(
     for result in classical_results:
         print(summarize_classical_result(result))
 
-    quantum_results = run_quantum_jobs(config, groups, frame, group_fragments=group_fragments)
+    quantum_results = run_quantum_jobs(
+        config,
+        groups,
+        frame,
+        group_fragments=group_fragments,
+        resources=resources,
+    )
     append_quantum_results(analysis_run, quantum_results)
 
     for result in quantum_results:

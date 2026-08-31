@@ -56,4 +56,4 @@ Use [analyze_traj](../analyze_trajectory/analyze_traj.md) with `traj.toml`. Anal
 pyedna analysis trajectory traj.toml
 ```
 
-The current quantum trajectory workflow requires GPU4PySCF and does not implement a CPU-only fallback.
+Quantum trajectory analysis uses the same scientific TOML on CPU and GPU jobs. PyeDNA runs PySCF on CPU when no CUDA GPU is visible, and uses GPU4PySCF automatically when a GPU allocation and the validated GPU stack are available.

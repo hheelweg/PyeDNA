@@ -41,7 +41,7 @@ class Trajectory:
         return atoms
 
     def get_capped_snapshot(self, frame, initial_residue, dye=None, cap_type="H",
-                        optimize_caps=False, basis="6-31g", spin=0):
+                        optimize_caps=False, basis="6-31g", spin=0, resources=None):
         info = self.get_attachment_info(initial_residue)
 
         if dye is not None and dye != info["dye"]:
@@ -79,6 +79,6 @@ class Trajectory:
         )
 
         if optimize_caps:
-            mol = optimize_cap_geometry(mol, cap_indices)
+            mol = optimize_cap_geometry(mol, cap_indices, resources=resources)
 
         return mol

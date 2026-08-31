@@ -64,7 +64,7 @@ The following runtime dependencies must be installed separately and configured f
 | AmberClassic / NAB | Generated DNA structures when `dna.source = "generate"`. |
 | HADDOCK3 | Structure docking after PyeDNA writes `docking_config.cfg`. |
 | ACPYPE | Conversion of dye-linker components into HADDOCK/CNS topology and parameter files. |
-| NVIDIA/CUDA environment | Required for the current GPU4PySCF quantum trajectory workflow and for GPU Amber MD with `pmemd.cuda`. |
+| NVIDIA/CUDA environment | Required for GPU4PySCF acceleration and for GPU Amber MD with `pmemd.cuda`. |
 
 ### Amber and AmberTools
 
@@ -157,9 +157,9 @@ Do not hardcode user- or machine-specific paths into Python source files.
 
 > **Important**
 >
-> The current PyeDNA quantum trajectory workflow requires [GPU4PySCF](https://github.com/pyscf/gpu4pyscf). A CPU-only execution path is not currently implemented for that workflow. Users intending to run quantum trajectory analysis must install the validated CUDA/CuPy/GPU4PySCF stack and run on a compatible NVIDIA GPU.
+> GPU-accelerated PySCF workflows require [GPU4PySCF](https://github.com/pyscf/gpu4pyscf). CPU trajectory quantum analysis and CPU component parameterization use plain PySCF when no CUDA GPU is visible to the process.
 >
-> Component parameterization is different: `pyedna components create-dye` and `pyedna components create-linker` can generate RESP electrostatic-potential files with plain CPU PySCF, and use GPU4PySCF automatically only when the package stack is installed and a CUDA device is visible to the process.
+> `pyedna components create-dye`, `pyedna components create-linker`, and `pyedna analysis trajectory` can all use plain CPU PySCF when no CUDA GPU is visible, and use GPU4PySCF automatically when the package stack is installed and a CUDA device is visible to the process.
 
 The currently validated GPU Python stack is:
 
@@ -182,12 +182,12 @@ pip install "gpu4pyscf-cuda11x==1.4.3"
 
 One can also install the appropriate version of cuTENSOR.
 
-For component parameterization, the same scientific TOML file and CLI command are used for CPU and GPU jobs. Backend selection is controlled by the runtime resources allocated to the process:
+For component parameterization and trajectory quantum analysis, the same scientific TOML file and CLI command are used for CPU and GPU jobs. Backend selection is controlled by the runtime resources allocated to the process:
 
 - CPU jobs should request no GPU resources. PyeDNA falls back to CPU PySCF even if CuPy and GPU4PySCF are installed in the active environment but no CUDA device is visible.
-- GPU jobs should request a GPU through the scheduler, for example with `#SBATCH --gres=gpu:1`. If CuPy, GPU4PySCF, and a visible CUDA device are all available, PyeDNA uses GPU4PySCF for PySCF-backed geometry optimization and RESP ESP generation.
+- GPU jobs should request a GPU through the scheduler, for example with `#SBATCH --gres=gpu:1`. If CuPy, GPU4PySCF, and a visible CUDA device are all available, PyeDNA uses GPU4PySCF for PySCF-backed geometry optimization, RESP ESP generation, and trajectory DFT/TDDFT.
 
-Amber RESP fitting itself is CPU AmberTools software. GPU4PySCF accelerates the PySCF quantum calculation used to generate the electrostatic-potential target for RESP. Trajectory quantum analysis with the PySCF backend still imports GPU4PySCF and CuPy. **Note:** There is currently no documented CPU fallback for the quantum trajectory workflow.
+Amber RESP fitting itself is CPU AmberTools software. GPU4PySCF accelerates the PySCF quantum calculation used to generate the electrostatic-potential target for RESP and PySCF-backed trajectory quantum calculations.
 
 
 ## 3. Runtime Configuration
@@ -216,5 +216,3 @@ pyedna config check
  > **Important**
  >
  > Make sure to run PyeDNA through the CLI **only** with activated Conda environment, i.e. `conda activate pyedna_env`.
-
-

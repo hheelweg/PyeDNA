@@ -3,18 +3,25 @@
 import subprocess
 
 import numpy as np
-from pyscf import gto
+from pyscf import dft, gto
 
+from pyedna.analysis.runtime import require_gpu4pyscf
 from .base import DFTResult, QuantumBackend
 
 
 class PySCFBackend(QuantumBackend):
     name = "pyscf"
 
+    def __init__(self, device="cpu"):
+        if device not in ("cpu", "gpu"):
+            raise ValueError("PySCF device must be 'cpu' or 'gpu'")
+        self.device = device
+
     def run_dft(self, molecule_input, molecule_id, settings):
-        mol, mf, occ, virt, orbital_energies = run_dft_gpu(
+        mol, mf, occ, virt, orbital_energies = run_dft(
             molecule_input,
             molecule_id=molecule_id,
+            device=self.device,
             **settings,
         )
         return DFTResult(
@@ -26,12 +33,13 @@ class PySCFBackend(QuantumBackend):
         )
 
     def run_tddft(self, dft_result, output_flags, settings):
-        return run_tddft_gpu(
+        return run_tddft(
             dft_result.molecule,
             dft_result.mean_field,
             dft_result.occupied_orbitals,
             dft_result.virtual_orbitals,
             output_flags,
+            device=self.device,
             fragments=settings.get("fragments"),
             state_ids=settings.get("state_ids"),
             tda=settings.get("tda", True),
@@ -39,8 +47,52 @@ class PySCFBackend(QuantumBackend):
         )
 
 
+def run_dft(molecule_input, molecule_id, device="cpu", **settings):
+    if device == "gpu":
+        return do_dft_gpu(molecule_input, molecule_id=molecule_id, **settings)
+    return do_dft_cpu(molecule_input, molecule_id=molecule_id, **settings)
+
+
 def run_dft_gpu(molecule_input, molecule_id, **settings):
     return do_dft_gpu(molecule_input, molecule_id=molecule_id, **settings)
+
+
+def run_tddft(
+    molecule_mol,
+    molecule_mf,
+    occupied_orbitals,
+    virtual_orbitals,
+    output_flags,
+    *,
+    device="cpu",
+    fragments=None,
+    state_ids=None,
+    tda=True,
+    singlet=True,
+):
+    if device == "gpu":
+        return do_tddft_gpu(
+            molecule_mol,
+            molecule_mf,
+            occupied_orbitals,
+            virtual_orbitals,
+            output_flags,
+            fragments=fragments,
+            state_ids=[0] if state_ids is None else state_ids,
+            TDA=tda,
+            singlet=singlet,
+        )
+    return do_tddft_cpu(
+        molecule_mol,
+        molecule_mf,
+        occupied_orbitals,
+        virtual_orbitals,
+        output_flags,
+        fragments=fragments,
+        state_ids=[0] if state_ids is None else state_ids,
+        TDA=tda,
+        singlet=singlet,
+    )
 
 
 def run_tddft_gpu(
@@ -80,6 +132,7 @@ def do_dft_gpu(
     verbosity=4,
     optimize_cap=False,
 ):
+    require_gpu4pyscf()
     from gpu4pyscf.dft import rks
 
     mol = gto.M(atom=molecule, basis=basis, charge=charge, spin=spin)
@@ -98,7 +151,47 @@ def do_dft_gpu(
     mf = mf.PCM()
     mf.with_solvent.method = "COSMO"
     if density_fit:
-        mf.density_fit()
+        mf = mf.density_fit()
+
+    mf.kernel()
+
+    mo = mf.mo_coeff
+    occ = mo[:, mf.mo_occ != 0]
+    virt = mo[:, mf.mo_occ == 0]
+    orbital_energies = mf.mo_energy
+
+    return mol, mf, occ, virt, orbital_energies
+
+
+def do_dft_cpu(
+    molecule,
+    molecule_id,
+    basis="6-31g",
+    xc="b3lyp",
+    density_fit=False,
+    charge=0,
+    spin=0,
+    scf_cycles=200,
+    verbosity=4,
+    optimize_cap=False,
+):
+    mol = gto.M(atom=molecule, basis=basis, charge=charge, spin=spin)
+    mol.verbose = verbosity
+
+    if optimize_cap:
+        mf_opt = dft.RKS(mol, xc=xc).density_fit()
+        mf_opt.verbose = 0
+        freeze_atom_string = f"1-{len(molecule) - 2}"
+        mol = constrained_optimization(mf_opt, molecule_id, freeze_atom_string)
+
+    mf = dft.RKS(mol) if spin == 0 else dft.UKS(mol)
+    mf.xc = xc
+    mf.max_cycle = scf_cycles
+    mf.conv_tol = 1e-6
+    mf = mf.PCM()
+    mf.with_solvent.method = "COSMO"
+    if density_fit:
+        mf = mf.density_fit()
 
     mf.kernel()
 
@@ -121,6 +214,7 @@ def do_tddft_gpu(
     TDA=False,
     singlet=True,
 ):
+    require_gpu4pyscf()
     import cupy as cp
 
     state_ids = [0] if state_ids is None else state_ids
@@ -147,12 +241,83 @@ def do_tddft_gpu(
         * cp.asarray(occ_orbits).dot(cp.asarray(molecule_td.xy[state_id][0])).dot(cp.asarray(virt_orbits).T)
         for state_id in state_ids
     ]
+    tdms_np = [tdm.get() for tdm in tdms]
 
     tddft_output = {}
     if quantum_dict["exc"]:
         tddft_output["exc"] = np.array(exc_energies)
     if quantum_dict["tdm"]:
-        tddft_output["tdm"] = np.array([tdm.get() for tdm in tdms])
+        tddft_output["tdm"] = np.array(tdms_np)
+    if quantum_dict["dip"]:
+        tddft_output["dip"] = np.array(trans_dipoles)
+    if quantum_dict["quad"]:
+        tddft_output["quad"] = np.array(trans_quadpoles)
+    if quantum_dict["osc"]:
+        tddft_output["osc"] = np.array(osc_strengths)
+    if quantum_dict["idx"]:
+        tddft_output["idx"] = osc_idx
+
+    if quantum_dict["mull_pops"] or quantum_dict["mull_chrgs"]:
+        tddft_output["mull_pops"], tddft_output["mull_chrgs"] = do_mulliken_analysis(
+            molecule_mf,
+            molecule_mol,
+            tdms_np,
+            state_ids=state_ids,
+        )
+
+    if quantum_dict["OPA"] and fragments is not None:
+        tddft_output["OPA"] = do_orbital_participation_analysis(
+            molecule_mol,
+            molecule_td,
+            fragments,
+            state_ids=state_ids,
+            TDA=TDA,
+        )
+
+    return tddft_output
+
+
+def do_tddft_cpu(
+    molecule_mol,
+    molecule_mf,
+    occ_orbits,
+    virt_orbits,
+    quantum_dict,
+    fragments=None,
+    state_ids=None,
+    TDA=False,
+    singlet=True,
+):
+    state_ids = [0] if state_ids is None else state_ids
+    nstates = len(state_ids)
+
+    molecule_td = molecule_mf.TDA().run(nstates=nstates) if TDA else molecule_mf.TDDFT().run(nstates=nstates)
+
+    exc_energies = [molecule_td.e[state_id] for state_id in state_ids]
+    trans_dipoles = [molecule_td.transition_dipole()[state_id] for state_id in state_ids]
+    trans_quadpoles = [molecule_td.transition_quadrupole()[state_id] for state_id in state_ids]
+
+    osc_strengths = [
+        2 / 3 * exc_energies[i] * np.linalg.norm(trans_dipoles[i]) ** 2
+        for i in range(len(exc_energies))
+    ]
+    osc_idx = (
+        np.argmax(osc_strengths)
+        if not any(np.array(osc_strengths) > 0.1)
+        else np.argwhere(np.array(osc_strengths) > 0.1)[0][0]
+    )
+
+    tdms = [
+        np.sqrt(2)
+        * np.asarray(occ_orbits).dot(np.asarray(molecule_td.xy[state_id][0])).dot(np.asarray(virt_orbits).T)
+        for state_id in state_ids
+    ]
+
+    tddft_output = {}
+    if quantum_dict["exc"]:
+        tddft_output["exc"] = np.array(exc_energies)
+    if quantum_dict["tdm"]:
+        tddft_output["tdm"] = np.array(tdms)
     if quantum_dict["dip"]:
         tddft_output["dip"] = np.array(trans_dipoles)
     if quantum_dict["quad"]:

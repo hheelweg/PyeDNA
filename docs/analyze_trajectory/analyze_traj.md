@@ -14,7 +14,8 @@ PyeDNA loads the topology and trajectory, validates the requested frame interval
 - Amber NetCDF trajectory file.
 - `libraries.dye_dir` set so analysis can read dye MOL2 charge data and `.attach` metadata.
 - `resid_mapping.json` available in the working directory when attachment residues need to map back to Amber dye residues. This file is produced by the `finalize` stage of `create_structure` as `./resid_mapping.json`.
-- PySCF, CuPy, and GPU4PySCF when quantum jobs are requested with the current PySCF backend. The current quantum trajectory workflow has no CPU-only fallback.
+- PySCF when quantum jobs are requested with the PySCF backend.
+- Optional: CuPy and GPU4PySCF for GPU-accelerated PySCF execution when a CUDA GPU is visible to the job.
 
 ## User Input Required
 
@@ -116,8 +117,8 @@ distance = "angstrom"
 | `topology_file` | required | none | Amber topology file, resolved relative to the current working directory. |
 | `trajectory_file` | required | none | Trajectory file within `run_directory`. |
 | `frame_interval` | required | none | Two integers `[initial_frame, final_frame]`, inclusive. Start must be non-negative and final must be within the trajectory. |
-| `optimize_caps` | optional | `false` | If true, cap atoms appended to extracted dye snapshots are optimized with constrained DFT. |
-| `basis` | optional | `"6-31g"` | Basis used when building PySCF molecules for caps/groups. |
+| `optimize_caps` | optional | `[quantum_defaults].optimize_caps`, else `false` | If true, cap atoms appended to extracted dye snapshots are optimized with constrained DFT. |
+| `basis` | optional | `[quantum_defaults].basis`, else `"6-31g"` | Basis used when building PySCF molecules for caps/groups. |
 
 ### `[[attachments]]`
 
@@ -161,22 +162,22 @@ Groups are built by combining the capped snapshot molecules for the listed attac
 | `nstates` | optional | backend default | Positive integer number of states. |
 | `state_ids` | optional | backend default | Contiguous zero-based state IDs such as `[0, 1, 2]`. |
 | `outputs` | optional | `[]` | Supported outputs include `energies`, `excited_state_energies`, `excitation_energies`, `oscillator_strengths`, `transition_dipoles`, `transition_quadrupoles`, `transition_density_matrices`, `tdm`, `strongest_state`, `mulliken`, `mulliken_populations`, `mulliken_charges`, `opa`, and `orbital_participation`. |
-| `gpu`, `density_fit`, `tda`, `singlet` | optional | backend-specific defaults | Boolean quantum settings. |
+| `gpu`, `density_fit`, `tda`, `singlet` | optional | backend-specific defaults | Boolean quantum settings. `gpu` is deprecated; CPU/GPU execution is selected from visible runtime resources. |
 | `scf_cycles`, `verbosity` | optional | backend-specific defaults | Integer quantum settings. |
 
-Values in `[quantum_defaults]` are copied into each `[[quantum]]` job unless that job sets the field directly.
+Values in `[quantum_defaults]` are copied into each `[[quantum]]` job unless that job sets the field directly. `optimize_caps` is also accepted here as a trajectory construction default, but is not copied into individual `[[quantum]]` jobs.
 
 ### `[quantum_defaults]`
 
-Use `[quantum_defaults]` for quantum settings that should apply to all `[[quantum]]` jobs, such as `backend`, `basis`, `xc`, `gpu`, `density_fit`, `tda`, `singlet`, `nstates`, `scf_cycles`, or `verbosity`. Job-specific values in an individual `[[quantum]]` block override the defaults.
+Use `[quantum_defaults]` for quantum settings that should apply to all `[[quantum]]` jobs, such as `backend`, `basis`, `xc`, `density_fit`, `tda`, `singlet`, `nstates`, `scf_cycles`, or `verbosity`. Job-specific values in an individual `[[quantum]]` block override the defaults. `basis` and `optimize_caps` can also provide defaults for capped molecule and group construction unless `[trajectory]` sets them explicitly.
 
 ```toml
 [quantum_defaults]
 backend = "pyscf"
 basis = "6-31g"
 xc = "b3lyp"
-gpu = true
 density_fit = true
+optimize_caps = false
 ```
 
 ### Interactions
@@ -207,9 +208,57 @@ Interactions must define exactly one of `groups` or `attachments`. Coupling inte
 | `[output].quantum_interactions_file` | optional | `"quantum_interactions.jsonl"` | Quantum interaction results filename. |
 | `[output].classical_interactions_file` | optional | `"classical_interactions.jsonl"` | Classical interaction results filename. |
 | `[output].interaction_file` | optional | quantum interactions legacy alias | Used when `quantum_interactions_file` is absent. |
-| `[quantum_scheduler].parallel` | optional | `false` | If true, defaults `gpu_ids` to `[0]` and `max_workers` to number of GPU IDs. |
-| `[quantum_scheduler].gpu_ids` | optional | `[0]` when parallel | Non-empty list of integers. |
-| `[quantum_scheduler].max_workers` | optional | `len(gpu_ids)` when parallel | Positive integer. |
+| `[quantum_scheduler].parallel` | optional | `false` | If true, independent quantum jobs within one frame may run concurrently. |
+| `[quantum_scheduler].gpu_ids` | optional | inferred from visible GPUs | Deprecated advanced override. Non-empty list of visible GPU IDs. |
+| `[quantum_scheduler].max_workers` | optional | GPU: visible GPU count; CPU: `1` | Positive integer advanced override for concurrent quantum worker processes. |
+
+## How To Run The Workflow
+
+Run the workflow directly with:
+
+```bash
+pyedna analysis trajectory traj.toml
+```
+
+If the config filename is omitted, PyeDNA uses `traj.toml` in the current directory:
+
+```bash
+pyedna analysis trajectory
+```
+
+On HPC systems, use the sample scheduler wrapper:
+
+```bash
+sbatch jobs/analysis/analyze_traj.sh traj.toml
+```
+
+Edit the `#SBATCH` resource lines in `jobs/analysis/analyze_traj.sh` for the resources you want to allocate on your cluster. Keep `traj.toml` focused on trajectory, group, classical, and quantum-analysis settings.
+
+## CPU/GPU Resource Selection
+
+`traj.toml` stores scientific analysis settings only. It should not need `gpu = true` or `gpu_ids = [...]` just to mirror the SLURM allocation. The example [jobs/analysis/analyze_traj.sh](../../jobs/analysis/analyze_traj.sh) script requests SLURM resources, then runs the same command:
+
+```bash
+pyedna analysis trajectory "$@"
+```
+
+Choose CPU or GPU execution by changing the script's `#SBATCH` resource lines:
+
+```bash
+# CPU
+#SBATCH --cpus-per-task=16
+```
+
+```bash
+# GPU
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:2
+#SBATCH --cpus-per-task=16
+```
+
+At runtime, PyeDNA inspects `CUDA_VISIBLE_DEVICES` and SLURM variables such as `SLURM_CPUS_PER_TASK`, `SLURM_JOB_GPUS`, `SLURM_GPUS`, and `SLURM_GPUS_ON_NODE`. If no CUDA GPU is visible, cap optimization and DFT/TDDFT run with plain CPU PySCF. If one or more GPUs are visible, PyeDNA uses GPU4PySCF for PySCF-backed cap optimization and DFT/TDDFT.
+
+For quantum analysis, `[quantum_scheduler].parallel = true` allows independent quantum jobs within one frame to run concurrently. In GPU mode, the default is one quantum worker per visible GPU. In CPU mode, the default is one quantum worker so each PySCF calculation can use the allocated CPU threads without accidental oversubscription. Use `[quantum_scheduler].max_workers` only as an advanced override.
 
 ## Generated Outputs
 
@@ -243,27 +292,13 @@ Nested arrays and dictionaries are kept as JSON values in the raw files. When lo
 
 > **Important**
 >
-> The current PyeDNA quantum trajectory workflow requires GPU4PySCF. A CPU-only execution path is not currently implemented. See [Installation](../getting_started/installation.md) for the validated CUDA/CuPy/GPU4PySCF stack.
+> GPU trajectory quantum analysis requires the validated CUDA/CuPy/GPU4PySCF stack. CPU trajectory quantum analysis requires PySCF only.
 
 The ORCA backend name is accepted by configuration validation, but the current ORCA backend raises `NotImplementedError` at runtime.
 
-## How To Run The Workflow
-
-```bash
-pyedna analysis trajectory traj.toml
-```
-
-If the config filename is omitted, PyeDNA uses `traj.toml` in the current directory:
-
-```bash
-pyedna analysis trajectory
-```
-
-On HPC systems, scheduler scripts may wrap this CLI command.
-
 ## Common Modifications Or Advanced Options
 
-Use `[quantum_defaults]` to avoid repeating backend, basis, functional, GPU, or TDDFT settings across quantum jobs. Use interactions to request derived distances or couplings between groups.
+Use `[quantum_defaults]` to avoid repeating backend, basis, functional, or TDDFT settings across quantum jobs. Use interactions to request derived distances or couplings between groups.
 
 ## Limitations / Troubleshooting
 

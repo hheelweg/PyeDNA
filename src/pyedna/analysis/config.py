@@ -477,10 +477,6 @@ def _validate_quantum_scheduler(config):
     if "max_workers" in scheduler:
         _validate_positive_int(scheduler["max_workers"], "[quantum_scheduler].max_workers")
 
-    if scheduler.get("parallel", False):
-        scheduler.setdefault("gpu_ids", [0])
-        scheduler.setdefault("max_workers", len(scheduler["gpu_ids"]))
-
 
 def _apply_quantum_defaults(config):
     defaults = config.get("quantum_defaults", {})
@@ -490,8 +486,15 @@ def _apply_quantum_defaults(config):
     if not isinstance(defaults, dict):
         raise TypeError("[quantum_defaults] must be a table")
 
+    if "optimize_caps" in defaults and not isinstance(defaults["optimize_caps"], bool):
+        raise TypeError("[quantum_defaults].optimize_caps must be true or false")
+    if "basis" in defaults and (not isinstance(defaults["basis"], str) or not defaults["basis"]):
+        raise TypeError("[quantum_defaults].basis must be a non-empty string")
+
     for job in config.get("quantum", []) or []:
         for key, value in defaults.items():
+            if key == "optimize_caps":
+                continue
             job.setdefault(key, value)
 
 

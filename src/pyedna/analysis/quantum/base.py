@@ -22,13 +22,13 @@ class QuantumBackend:
         raise NotImplementedError
 
 
-def get_quantum_backend(name="pyscf"):
+def get_quantum_backend(name="pyscf", device="cpu"):
     name = (name or "pyscf").lower()
 
     if name == "pyscf":
         from .pyscf import PySCFBackend
 
-        return PySCFBackend()
+        return PySCFBackend(device=device)
 
     if name == "orca":
         from .orca import ORCABackend

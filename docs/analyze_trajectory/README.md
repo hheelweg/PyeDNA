@@ -2,7 +2,7 @@
 
 The analysis workflow reads an Amber topology and trajectory, extracts capped dye snapshots, groups attachments, and runs classical and/or quantum calculations.
 
-The current quantum trajectory workflow requires GPU4PySCF and does not implement a CPU-only fallback. See [Installation](../getting_started/installation.md) for the validated GPU Python stack.
+Quantum trajectory analysis runs with plain CPU PySCF when no CUDA GPU is visible to the job, and uses GPU4PySCF automatically when GPU resources and the validated GPU Python stack are available.
 
 See [analyze_traj](analyze_traj.md) for `traj.toml` fields and output files.
 

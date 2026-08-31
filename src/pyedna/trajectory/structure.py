@@ -9,6 +9,7 @@ import numpy as np
 from pyscf import dft, gto
 from pyscf.geomopt.geometric_solver import optimize
 
+from pyedna.analysis.runtime import detect_runtime_resources, require_gpu4pyscf
 from pyedna.config import get_config
 
 
@@ -196,7 +197,7 @@ def build_cap(attachment, external, cap_type):
     return [("C", carbon), *hydrogens]
 
 
-def optimize_cap_geometry(mol, cap_indices, xc="b3lyp", maxsteps=25):
+def optimize_cap_geometry(mol, cap_indices, xc="b3lyp", maxsteps=25, resources=None):
     if not cap_indices:
         return mol
 
@@ -205,9 +206,12 @@ def optimize_cap_geometry(mol, cap_indices, xc="b3lyp", maxsteps=25):
     if cap_indices != list(range(first_cap, mol.natm)):
         raise ValueError("Cap atoms must be appended after the original dye atoms")
 
+    resources = detect_runtime_resources() if resources is None else resources
     mf = (dft.RKS(mol) if mol.spin == 0 else dft.UKS(mol)).density_fit()
     mf.xc = xc
-    mf = mf.to_gpu()
+    if resources.has_gpu:
+        require_gpu4pyscf()
+        mf = mf.to_gpu()
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".txt") as f:
         f.write(f"$freeze\nxyz 1-{first_cap}\n")

@@ -3,7 +3,9 @@
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 import os
+import warnings
 
+from pyedna.analysis.runtime import configure_thread_environment, detect_runtime_resources
 from pyedna.analysis.quantum.base import get_quantum_backend
 
 
@@ -50,7 +52,7 @@ class QuantumResult:
     write_outputs: list
 
 
-def run_quantum_jobs(config, groups, frame, group_fragments=None):
+def run_quantum_jobs(config, groups, frame, group_fragments=None, resources=None):
     jobs = config.get("quantum", [])
     if not jobs:
         return []
@@ -58,25 +60,49 @@ def run_quantum_jobs(config, groups, frame, group_fragments=None):
     _validate_quantum_groups(jobs, groups)
 
     scheduler = config.get("quantum_scheduler", {})
+    resources = detect_runtime_resources() if resources is None else resources
     if scheduler.get("parallel", False):
-        return run_quantum_jobs_parallel(jobs, groups, frame, scheduler, group_fragments or {})
+        return run_quantum_jobs_parallel(
+            jobs,
+            groups,
+            frame,
+            scheduler,
+            group_fragments or {},
+            resources=resources,
+        )
 
     return [
-        run_quantum_job(job, groups[job["group"]], frame, (group_fragments or {}).get(job["group"], []))
+        run_quantum_job(
+            job,
+            groups[job["group"]],
+            frame,
+            (group_fragments or {}).get(job["group"], []),
+            resources=resources,
+        )
         for job in jobs
     ]
 
 
-def run_quantum_jobs_parallel(jobs, groups, frame, scheduler, group_fragments=None):
-    gpu_ids = scheduler.get("gpu_ids", [0])
-    max_workers = scheduler.get("max_workers", len(gpu_ids))
+def run_quantum_jobs_parallel(jobs, groups, frame, scheduler, group_fragments=None, resources=None):
+    resources = detect_runtime_resources() if resources is None else resources
+    device = _device_from_resources(resources)
+    gpu_ids = _scheduler_gpu_ids(scheduler, resources) if device == "gpu" else []
+    max_workers = _scheduler_max_workers(scheduler, resources, device, len(jobs))
+    threads_per_worker = _threads_per_worker(resources, max_workers)
 
     payloads = []
     for index, job in enumerate(jobs):
         group_mol = groups[job["group"]]
-        gpu_id = gpu_ids[index % len(gpu_ids)]
+        gpu_id = gpu_ids[index % len(gpu_ids)] if gpu_ids else None
         fragments = (group_fragments or {}).get(job["group"], [])
-        payloads.append((job, _group_payload(group_mol, fragments), frame, gpu_id))
+        payloads.append((
+            job,
+            _group_payload(group_mol, fragments),
+            frame,
+            device,
+            gpu_id,
+            threads_per_worker,
+        ))
 
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
         futures = [
@@ -86,15 +112,15 @@ def run_quantum_jobs_parallel(jobs, groups, frame, scheduler, group_fragments=No
         return [future.result() for future in futures]
 
 
-def run_quantum_job(job, group_mol, frame, fragments=None):
-    use_gpu = job.get("gpu", True)
-    if not use_gpu:
-        raise NotImplementedError(
-            "[[quantum]].gpu = false is not implemented in the new runner yet; "
-            "omit gpu or set gpu = true"
-        )
+def run_quantum_job(job, group_mol, frame, fragments=None, resources=None):
+    resources = detect_runtime_resources() if resources is None else resources
 
-    return _run_quantum_payload(job, _group_payload(group_mol, fragments or []), frame)
+    return _run_quantum_payload(
+        job,
+        _group_payload(group_mol, fragments or []),
+        frame,
+        device=_device_from_resources(resources),
+    )
 
 
 def pyscf_mol_to_atom_list(mol):
@@ -127,13 +153,22 @@ def summarize_quantum_result(result):
 
 
 def _run_quantum_payload_worker(payload):
-    job, group_payload, frame, gpu_id = payload
-    os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
-    return _run_quantum_payload(job, group_payload, frame, gpu_id=gpu_id)
+    job, group_payload, frame, device, gpu_id, threads_per_worker = payload
+    if gpu_id is not None:
+        os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
+    _set_worker_threads(threads_per_worker)
+    return _run_quantum_payload(
+        job,
+        group_payload,
+        frame,
+        device=device,
+        worker=True,
+    )
 
 
-def _run_quantum_payload(job, group_payload, frame, gpu_id=None):
-    backend = get_quantum_backend(job.get("backend", "pyscf"))
+def _run_quantum_payload(job, group_payload, frame, device="cpu", worker=False):
+    _warn_ignored_gpu_setting(job)
+    backend = get_quantum_backend(job.get("backend", "pyscf"), device=device)
     method = job["method"]
     molecule_input = group_payload["atoms"]
     dft_settings = _dft_settings(job, group_payload)
@@ -163,7 +198,7 @@ def _run_quantum_payload(job, group_payload, frame, gpu_id=None):
         _add_fragment_summaries(tddft, group_payload)
 
     molecule = mol
-    if gpu_id is not None:
+    if worker:
         molecule = MoleculeSummary(natm=mol.natm, charge=mol.charge, spin=mol.spin)
 
     return QuantumResult(
@@ -171,9 +206,9 @@ def _run_quantum_payload(job, group_payload, frame, gpu_id=None):
         group=job["group"],
         method=method,
         molecule=molecule,
-        mean_field=None if gpu_id is not None else dft_result.mean_field,
-        occupied_orbitals=None if gpu_id is not None else dft_result.occupied_orbitals,
-        virtual_orbitals=None if gpu_id is not None else dft_result.virtual_orbitals,
+        mean_field=None if worker else dft_result.mean_field,
+        occupied_orbitals=None if worker else dft_result.occupied_orbitals,
+        virtual_orbitals=None if worker else dft_result.virtual_orbitals,
         orbital_energies=dft_result.orbital_energies,
         tddft=tddft,
         molecule_input=molecule_input,
@@ -216,6 +251,49 @@ def _get_group_value(group_mol, key, default):
     if isinstance(group_mol, dict):
         return group_mol.get(key, default)
     return getattr(group_mol, key, default)
+
+
+def _device_from_resources(resources):
+    return "gpu" if resources.has_gpu else "cpu"
+
+
+def _scheduler_gpu_ids(scheduler, resources):
+    if "gpu_ids" in scheduler:
+        warnings.warn(
+            "[quantum_scheduler].gpu_ids is deprecated; GPU assignment is "
+            "normally inferred from the scheduler allocation.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return [str(gpu_id) for gpu_id in scheduler["gpu_ids"]]
+    return list(resources.gpu_ids)
+
+
+def _scheduler_max_workers(scheduler, resources, device, num_jobs):
+    if "max_workers" in scheduler:
+        return min(scheduler["max_workers"], num_jobs)
+    if device == "gpu":
+        return max(1, min(resources.num_gpus, num_jobs))
+    return 1
+
+
+def _threads_per_worker(resources, max_workers):
+    return max(1, resources.num_cpus // max(1, max_workers))
+
+
+def _set_worker_threads(threads):
+    configure_thread_environment(threads)
+
+
+def _warn_ignored_gpu_setting(job):
+    if "gpu" not in job:
+        return
+    warnings.warn(
+        "[[quantum]].gpu is deprecated and ignored; PySCF CPU/GPU execution is "
+        "selected from resources visible to the process.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
 
 
 def _validate_quantum_groups(jobs, groups):
