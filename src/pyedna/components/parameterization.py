@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -195,6 +196,40 @@ def write_xyz(atoms, coords, filename, comment=""):
             f.write(f"{atom:2s} {x:16.10f} {y:16.10f} {z:16.10f}\n")
 
 
+def _cuda_visible_devices_allows_gpu():
+    """Return whether CUDA_VISIBLE_DEVICES leaves any GPU visible."""
+    visible = os.environ.get("CUDA_VISIBLE_DEVICES")
+    if visible is None:
+        return True
+
+    tokens = [token.strip() for token in visible.split(",")]
+    return any(token and token.lower() not in {"-1", "none", "void"} for token in tokens)
+
+
+def _gpu4pyscf_is_available():
+    """Return True when GPU4PySCF is importable and a CUDA device is visible."""
+    if not _cuda_visible_devices_allows_gpu():
+        return False
+
+    try:
+        import cupy as cp
+    except ImportError:
+        return False
+
+    try:
+        if cp.cuda.runtime.getDeviceCount() < 1:
+            return False
+    except Exception:
+        return False
+
+    try:
+        import gpu4pyscf  # noqa: F401
+    except ImportError:
+        return False
+
+    return True
+
+
 def optimize_rdkit_geometry(
     mol,
     name,
@@ -231,16 +266,10 @@ def optimize_rdkit_geometry(
     )
     mf = scf.RHF(pyscf_mol).density_fit()
 
-    try:
-        import cupy as cp
-        import gpu4pyscf
-
-        if cp.cuda.runtime.getDeviceCount() > 0:
-            mf = mf.to_gpu()
-            print("QM backend: GPU4PySCF")
-        else:
-            print("QM backend: PySCF CPU")
-    except (ImportError, RuntimeError):
+    if _gpu4pyscf_is_available():
+        mf = mf.to_gpu()
+        print("QM backend: GPU4PySCF")
+    else:
         print("QM backend: PySCF CPU")
 
     mol_opt = optimize(mf, maxsteps=qm.maxsteps)
@@ -271,12 +300,8 @@ def optimize_rdkit_geometry(
 
 def compute_resp_esp_from_xyz(xyz_file, output_file=None, charge=0):
     """Compute and write an Amber RESP electrostatic-potential file."""
-    import cupy as cp
-    from pyscf import gto, scf
+    from pyscf import gto
     from pyscf.data import radii
-    from gpu4pyscf.pop import esp
-    from gpu4pyscf.gto.int3c1e import int1e_grids
-    from gpu4pyscf.lib.cupy_helper import dist_matrix
 
     xyz_file = Path(xyz_file)
     output_file = Path(output_file or xyz_file.with_suffix(".esp"))
@@ -295,18 +320,64 @@ def compute_resp_esp_from_xyz(xyz_file, output_file=None, charge=0):
         spin=0,
         unit="Angstrom",
     )
+    points = _resp_vdw_surface(
+        mol,
+        scales=[1.4, 1.6, 1.8, 2.0],
+        density=1.0 * radii.BOHR**2,
+    )
+
+    if _gpu4pyscf_is_available():
+        print("RESP ESP backend: GPU4PySCF")
+        values = _compute_resp_esp_gpu(mol, points)
+    else:
+        print("RESP ESP backend: PySCF CPU")
+        values = _compute_resp_esp_cpu(mol, points)
+
+    _write_amber_resp_esp(mol, points, values, output_file)
+
+    return output_file
+
+
+def _compute_resp_esp_cpu(mol, points, block_size=2000):
+    """Evaluate electrostatic potential values with plain CPU PySCF."""
+    import numpy as np
+    from pyscf import scf
+    from scipy.spatial import distance_matrix
+
+    mf = scf.RHF(mol).density_fit()
+    mf.kernel()
+    if not mf.converged:
+        raise RuntimeError("RHF calculation did not converge.")
+
+    dm = mf.make_rdm1()
+    coords = mol.atom_coords(unit="B")
+    charges = mol.atom_charges()
+    values = np.empty(len(points))
+
+    for start in range(0, len(points), block_size):
+        stop = min(start + block_size, len(points))
+        block = points[start:stop]
+        rinv = 1.0 / distance_matrix(coords, block)
+        v_nuc = charges.dot(rinv)
+        v_elec = np.einsum("pij,ij->p", mol.intor("int1e_grids", grids=block), dm)
+        values[start:stop] = v_nuc - v_elec
+
+    return values
+
+
+def _compute_resp_esp_gpu(mol, points):
+    """Evaluate electrostatic potential values with GPU4PySCF."""
+    import cupy as cp
+    from pyscf import scf
+    from gpu4pyscf.gto.int3c1e import int1e_grids
+    from gpu4pyscf.lib.cupy_helper import dist_matrix
+
     mf = scf.RHF(mol).density_fit().to_gpu()
     mf.kernel()
     if not mf.converged:
         raise RuntimeError("RHF calculation did not converge.")
 
     dm = mf.make_rdm1()
-    points = esp.vdw_surface(
-        mol,
-        scales=[1.4, 1.6, 1.8, 2.0],
-        density=1.0 * radii.BOHR**2,
-    )
-
     coords = cp.asarray(mol.atom_coords(unit="B"))
     charges = cp.asarray(mol.atom_charges())
     points_gpu = cp.asarray(points)
@@ -314,16 +385,95 @@ def compute_resp_esp_from_xyz(xyz_file, output_file=None, charge=0):
     rinv = 1.0 / dist_matrix(coords, points_gpu)
     v_nuc = cp.dot(charges, rinv)
     v_elec = int1e_grids(mol, points, dm=dm, direct_scf_tol=1e-14)
-    values = cp.asnumpy(v_nuc - v_elec)
+    return cp.asnumpy(v_nuc - v_elec)
 
+
+def _resp_unit_surface(n):
+    """Generate spherical grid points on a unit sphere."""
+    import numpy as np
+
+    ux = []
+    uy = []
+    uz = []
+    eps = 1e-10
+    nequat = int(np.sqrt(np.pi * n))
+    nvert = int(nequat / 2)
+    for i in range(nvert + 1):
+        fi = np.pi * i / nvert
+        z = np.cos(fi)
+        xy = np.sin(fi)
+        nhor = int(nequat * xy + eps)
+        if nhor < 1:
+            nhor = 1
+
+        fj = 2.0 * np.pi * np.arange(nhor) / nhor
+        x = np.cos(fj) * xy
+        y = np.sin(fj) * xy
+        ux.append(x)
+        uy.append(y)
+        uz.append(z * np.ones_like(x))
+
+    ux = np.concatenate(ux)
+    uy = np.concatenate(uy)
+    uz = np.concatenate(uz)
+
+    return np.array([ux[:n], uy[:n], uz[:n]]).T
+
+
+def _resp_vdw_surface(mol, scales, density):
+    """Generate the RESP molecular surface grid in Bohr."""
+    import numpy as np
+    from pyscf import gto
+    from pyscf.data import radii
+    from scipy.spatial import distance_matrix
+
+    # GAMESS van der Waals radii mirrored from gpu4pyscf.pop.esp.
+    r_vdw = 1.0 / radii.BOHR * np.asarray([
+        -1,
+        1.20,  # H
+        1.20,  # He
+        1.37,  # Li
+        1.45,  # Be
+        1.45,  # B
+        1.50,  # C
+        1.50,  # N
+        1.40,  # O
+        1.35,  # F
+        1.30,  # Ne
+        1.57,  # Na
+        1.36,  # Mg
+        1.24,  # Al
+        1.17,  # Si
+        1.80,  # P
+        1.75,  # S
+        1.70,  # Cl
+    ])
+
+    coords = mol.atom_coords(unit="B")
+    charges = np.asarray([gto.charge(sym) for sym in mol.elements])
+    atom_radii = r_vdw[charges]
+    surface_points = []
+    for scale in scales:
+        scaled_radii = atom_radii * scale
+        for i, coord in enumerate(coords):
+            r = scaled_radii[i]
+            nd = int(density * 4.0 * np.pi * r**2)
+            points = coord + r * _resp_unit_surface(nd)
+            dist = distance_matrix(points, coords) + 1e-10
+            included = np.all(dist >= scaled_radii, axis=1)
+            surface_points.append(points[included])
+
+    return np.concatenate(surface_points)
+
+
+def _write_amber_resp_esp(mol, points, values, output_file):
+    """Write electrostatic potential values in Amber RESP format."""
     with output_file.open("w") as f:
         f.write(f"{mol.natm:5d}{len(points):6d}\n")
         for x, y, z in mol.atom_coords(unit="B"):
             f.write(f"{'':17s}{x:16.7E}{y:16.7E}{z:16.7E}\n")
         for value, (x, y, z) in zip(values, points):
             f.write(f" {value:16.7E}{x:16.7E}{y:16.7E}{z:16.7E}\n")
-
-    return output_file
 
 
 def generate_ac(name, sdf_file, output_dir, amber, charge):

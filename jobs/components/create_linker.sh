@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --partition=gpu
+#SBATCH --partition=normal
 #SBATCH --nodelist=gpu001
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=48

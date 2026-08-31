@@ -11,7 +11,8 @@ PyeDNA combines the mapped SMILES fragments, validates that every atom has a uni
 ## Prerequisites
 
 - PyeDNA runtime configuration with `amber.ambertools_home` pointing to an AmberTools installation that provides `antechamber`, `respgen`, `resp`, and `parmchk2`.
-- RDKit, PySCF, CuPy, and GPU4PySCF available in the Python environment. The current ESP-generation path imports GPU4PySCF.
+- RDKit and PySCF available in the Python environment.
+- Optional: CuPy and GPU4PySCF available in the Python environment for GPU-accelerated PySCF steps when a CUDA device is visible to the process.
 - `libraries.linker_dir` set when `output.directory = "library"`.
 - `amber.ambertools_home` set so OL15 reference charges can be read from `dat/leap/lib/DNA.OL15.lib`.
 
@@ -126,6 +127,8 @@ pyedna components create-linker linker.toml
 ```
 
 If the config filename is omitted, PyeDNA uses `linker.toml` in the current directory. On HPC systems, scheduler scripts may wrap this CLI command.
+
+The scientific TOML file and CLI command are the same for CPU and GPU execution. Submit the job without GPU resources for CPU PySCF execution, or request a CUDA GPU through the scheduler to let PyeDNA use GPU4PySCF automatically when the validated GPU stack is installed.
 
 ## Common Modifications Or Advanced Options
 
