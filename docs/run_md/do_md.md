@@ -198,10 +198,22 @@ pyedna md run
 On HPC systems, use the sample scheduler wrapper:
 
 ```bash
-jobs/md/do_md.sh
+sbatch jobs/md/do_md.sh md.toml
 ```
 
-Set CPU, CPU MPI, or GPU resources by editing the `#SBATCH` resource lines in `jobs/md/do_md.sh`. Keep `md.toml` unchanged.
+Edit the `#SBATCH` resource lines in `jobs/md/do_md.sh` for the resources you want to allocate on your cluster. Keep `md.toml` unchanged.
+
+Serial Amber stages run through `srun`; CPU MPI stages run through `mpirun -np $SLURM_NTASKS`.
+
+## CPU/GPU Resource Selection
+
+`md.toml` stores scientific MD settings only. It does not contain a CPU/GPU backend field. The example [jobs/md/do_md.sh](../../jobs/md/do_md.sh) script requests SLURM resources, then runs the same command:
+
+```bash
+pyedna md run "$@"
+```
+
+Choose serial CPU, CPU MPI, or GPU execution by changing the script's `#SBATCH` resource lines:
 
 ```bash
 # Serial CPU
@@ -219,12 +231,6 @@ Set CPU, CPU MPI, or GPU resources by editing the `#SBATCH` resource lines in `j
 #SBATCH --ntasks=1
 #SBATCH --gres=gpu:1
 ```
-
-Serial Amber stages run through `srun`; CPU MPI stages run through `mpirun -np $SLURM_NTASKS`.
-
-### MD Engine Selection
-
-`md.toml` stores scientific MD settings only. It does not contain a CPU/GPU backend field.
 
 At runtime, PyeDNA checks scheduler-provided environment variables and selects one Amber executable for the whole workflow:
 
