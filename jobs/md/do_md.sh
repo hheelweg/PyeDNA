@@ -1,12 +1,12 @@
 #!/bin/bash
 
 #SBATCH --nodes=1
-#SBATCH --partition=gpu
+#SBATCH --partition=normal
 #SBATCH --nodelist=gpu001
-#SBATCH --ntasks=1
 #SBATCH --gres=gpu:1
-#SBATCH --cpus-per-task=8
-#SBATCH --job-name=dummy
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=3
+#SBATCH --job-name=do_md
 #SBATCH --output=slurm-%j.log
 
 if [[ $# -gt 1 ]]; then
@@ -24,6 +24,12 @@ fi
 JOB_NAME="$(basename "$MD_CONFIG" .toml)_md"
 
 scontrol update JobID=$SLURM_JOB_ID Name=$JOB_NAME
+
+echo "MD config: $MD_CONFIG"
+echo "SLURM job: $SLURM_JOB_ID"
+echo "SLURM tasks: ${SLURM_NTASKS:-unset}"
+echo "CPU cores: ${SLURM_CPUS_PER_TASK:-unset}"
+echo "CUDA_VISIBLE_DEVICES: ${CUDA_VISIBLE_DEVICES:-unset}"
 
 pyedna md run "$MD_CONFIG"
 

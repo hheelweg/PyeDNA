@@ -54,6 +54,7 @@ AMBERTOOLS_EXECUTABLES = {
 
 PMEMD_EXECUTABLES = {
     "pmemd",
+    "pmemd.MPI",
     "pmemd.cuda",
 }
 

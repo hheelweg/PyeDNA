@@ -42,7 +42,7 @@ amber    -> run tleap on a selected finalized model
 
 ## 4. Run Molecular Dynamics
 
-Use [do_md](../run_md/do_md.md) with `md.toml`. The current workflow runs minimization with `sander` and equilibration/production with `pmemd.cuda`.
+Use [do_md](../run_md/do_md.md) with `md.toml`. The MD workflow selects one pmemd engine from the resources visible to the process: serial CPU jobs use `pmemd`, CPU MPI jobs use `pmemd.MPI`, and GPU jobs with a visible CUDA device use `pmemd.cuda`.
 
 ```bash
 pyedna md run md.toml

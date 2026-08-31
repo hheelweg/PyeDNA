@@ -59,8 +59,8 @@ The following runtime dependencies must be installed separately and configured f
 
 | Dependency | Role in PyeDNA |
 | --- | --- |
-| AmberTools 26-compatible installation | Small-molecule parameterization, RESP fitting, `tleap` Amber setup, minimization, and AmberTools data files. |
-| Amber / pmemd26-compatible installation | `pmemd` and `pmemd.cuda` executables for MD equilibration and production. |
+| AmberTools 26-compatible installation | Small-molecule parameterization, RESP fitting, `tleap` Amber setup, and AmberTools data files. |
+| Amber / pmemd26-compatible installation | `pmemd`, `pmemd.MPI`, and `pmemd.cuda` executables for MD minimization, equilibration, and production. |
 | AmberClassic / NAB | Generated DNA structures when `dna.source = "generate"`. |
 | HADDOCK3 | Structure docking after PyeDNA writes `docking_config.cfg`. |
 | ACPYPE | Conversion of dye-linker components into HADDOCK/CNS topology and parameter files. |
@@ -84,7 +84,7 @@ pmemd_home = "/path/to/pmemd26"
 
 The configured AmberTools installation is expected to provide the executables currently invoked by PyeDNA workflows: `antechamber`, `parmchk2`, `resp`, `respgen`, `sander`, and `tleap`. 
 
-The configured Amber/pmemd installation is expected to provide `pmemd` and `pmemd.cuda`. 
+The configured Amber/pmemd installation must provide the executable required by the requested MD resources: `pmemd` for serial CPU jobs, `pmemd.MPI` for CPU MPI jobs, and `pmemd.cuda` for GPU jobs. The MD workflow uses `pmemd` when no CUDA device is visible to the process and one SLURM task is requested, `pmemd.MPI` when no CUDA device is visible and multiple SLURM tasks are requested, and `pmemd.cuda` when a CUDA device is visible.
 
 > **Important**
 > 
@@ -210,15 +210,11 @@ pyedna config show
 pyedna config check
 ```
 
-`pyedna config check` validates the config file, configured directories, required AmberTools and pmemd executables, required AmberTools OL15 data files, `<nab.home>/bin/nab`, `gcc`, `CONDA_PREFIX`, and `$CONDA_PREFIX/lib/libgfortran.so`.
+`pyedna config check` validates the config file, configured directories, required AmberTools executables, required `pmemd`, optional mapped Amber executables such as `pmemd.MPI` and `pmemd.cuda`, required AmberTools OL15 data files, `<nab.home>/bin/nab`, `gcc`, `CONDA_PREFIX`, and `$CONDA_PREFIX/lib/libgfortran.so`.
  More information can be found in the [configuration.md](configuration.md). 
 
  > **Important**
  >
  > Make sure to run PyeDNA through the CLI **only** with activated Conda environment, i.e. `conda activate pyedna_env`.
-
-
-
-
 
 

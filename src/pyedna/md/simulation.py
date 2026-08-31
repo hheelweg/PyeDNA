@@ -11,6 +11,7 @@ from pyedna.config import amber_environment, amber_executable
 
 from .config import MDConfig
 from .restraints import AmberRestraintResolver
+from .runtime import md_executable, slurm_ntasks
 
 
 class MDSimulation:
@@ -36,6 +37,8 @@ class MDSimulation:
         self.prmtop = self._resolve_input(self.config.system.prmtop_path)
         self.rst7 = self._resolve_input(self.config.system.rst7_path)
         self.restraints = AmberRestraintResolver(self.prmtop, self.config)
+        self.md_engine = None
+        self.md_engine_path = None
 
     @classmethod
     def from_file(cls, path, workdir="."):
@@ -54,6 +57,11 @@ class MDSimulation:
 
     def run(self):
         """Run the configured user-facing workflow stages."""
+
+        self._resolve_md_engine()
+        backend = self._backend_label()
+        print(f"MD backend: {backend}", flush=True)
+        print(f"Amber engine: {self.md_engine}", flush=True)
 
         self.output_dir.mkdir(parents=True, exist_ok=False)
         self._copy_config()
@@ -94,14 +102,12 @@ class MDSimulation:
         self._write_input("min1")
         self._write_input("min2")
         self._run_stage(
-            executable="sander",
             stage="min1",
             in_coord=self.rst7_name,
             out_coord=f"min1_{self.name}.ncrst",
             ref_coord=self.rst7_name,
         )
         self._run_stage(
-            executable="sander",
             stage="min2",
             in_coord=f"min1_{self.name}.ncrst",
             out_coord=f"min_{self.name}.ncrst",
@@ -115,7 +121,6 @@ class MDSimulation:
         self._write_input("eq1")
         self._write_input("eq2")
         self._run_stage(
-            executable="pmemd.cuda",
             stage="eq1",
             in_coord=f"min_{self.name}.ncrst",
             out_coord=f"eq1_{self.name}.ncrst",
@@ -123,7 +128,6 @@ class MDSimulation:
             netcdf=f"eq1_{self.name}.nc",
         )
         self._run_stage(
-            executable="pmemd.cuda",
             stage="eq2",
             in_coord=f"eq1_{self.name}.ncrst",
             out_coord=f"eq2_{self.name}.ncrst",
@@ -137,7 +141,6 @@ class MDSimulation:
         self._require_runtime_file(f"eq2_{self.name}.ncrst")
         self._write_input("prod")
         self._run_stage(
-            executable="pmemd.cuda",
             stage="prod",
             in_coord=f"eq2_{self.name}.ncrst",
             out_coord=f"{self.name}.ncrst",
@@ -275,12 +278,13 @@ class MDSimulation:
             return value
         return f"'{value}'"
 
-    def _run_stage(self, executable, stage, in_coord, out_coord, ref_coord, netcdf=None):
+    def _run_stage(self, stage, in_coord, out_coord, ref_coord, netcdf=None):
         self._require_runtime_file(in_coord)
         self._require_runtime_file(ref_coord)
+        executable = self._md_engine()
 
         command = [
-            "srun", str(amber_executable(executable)), "-O",
+            *self._stage_launcher(), "-O",
             "-i", f"{stage}_{self.name}.in",
             "-o", f"{stage}_{self.name}.out",
             "-p", self.prmtop_name,
@@ -300,6 +304,39 @@ class MDSimulation:
         self._require_runtime_file(out_coord)
         if netcdf is not None:
             self._require_runtime_file(netcdf)
+
+    def _md_engine(self):
+        if self.md_engine is None:
+            self._resolve_md_engine()
+        return self.md_engine
+
+    def _resolve_md_engine(self):
+        self.md_engine = md_executable()
+        try:
+            self.md_engine_path = amber_executable(self.md_engine)
+        except RuntimeError as exc:
+            backend = self._backend_label()
+            raise RuntimeError(
+                f"Selected {backend} MD backend but {self.md_engine} is unavailable. "
+                f"{exc}"
+            ) from exc
+
+    def _backend_label(self):
+        if self.md_engine == "pmemd.cuda":
+            return "GPU"
+        if self.md_engine == "pmemd.MPI":
+            return "CPU MPI"
+        return "CPU"
+
+    def _stage_launcher(self):
+        if self._md_engine() == "pmemd.MPI":
+            return ["mpirun", "-np", str(self._mpi_tasks()), str(self.md_engine_path)]
+        return ["srun", "--ntasks", "1", str(self.md_engine_path)]
+
+    def _mpi_tasks(self):
+        if self._md_engine() == "pmemd.MPI":
+            return slurm_ntasks()
+        return 1
 
     def _require_runtime_file(self, filename):
         path = self.output_dir / filename

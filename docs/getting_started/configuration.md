@@ -33,8 +33,8 @@ linker_dir = "/path/to/linker_library"
 
 | Setting | Required for | Meaning |
 | --- | --- | --- |
-| `amber.ambertools_home` | component parameterization, dye-linker assembly, Amber setup, minimization, AmberTools data | Root of the AmberTools installation. PyeDNA resolves AmberTools executables and Amber data relative to this root. |
-| `amber.pmemd_home` | MD equilibration and production | Root of the Amber/pmemd installation. PyeDNA resolves pmemd-family executables from this root. |
+| `amber.ambertools_home` | component parameterization, dye-linker assembly, Amber setup, AmberTools data | Root of the AmberTools installation. PyeDNA resolves AmberTools executables and Amber data relative to this root. |
+| `amber.pmemd_home` | MD minimization, equilibration, and production | Root of the Amber/pmemd installation. PyeDNA resolves pmemd-family executables from this root. |
 | `nab.home` | generated DNA structures | Root of the AmberClassic/NAB installation. PyeDNA expects `<nab.home>/bin/nab`. |
 | `libraries.dye_dir` | dye library lookup and dye library output | User's dye parameter/template library. |
 | `libraries.dna_dir` | library DNA input | User's DNA structure library containing reusable DNA PDB templates named `<dna.name>.pdb`. |
@@ -62,9 +62,9 @@ pyedna config check
 - configured AmberTools, pmemd, NAB, dye-library, DNA-library, and linker-library directories exist;
 - `<nab.home>/bin/nab` exists;
 - required AmberTools executables `antechamber`, `parmchk2`, `resp`, `respgen`, `sander`, and `tleap` exist;
-- required pmemd executables `pmemd` and `pmemd.cuda` exist;
+- required pmemd executable `pmemd` exists;
+- optional mapped Amber executables such as `cpptraj`, `pmemd.MPI`, `pmemd.cuda`, and `prepgen` are reported when present;
 - AmberTools data files `dat/leap/lib/DNA.OL15.lib` and `dat/leap/cmd/leaprc.DNA.OL15` exist;
-- optional mapped Amber executables such as `cpptraj` and `prepgen` are reported when present;
 - `gcc`, `CONDA_PREFIX`, and `$CONDA_PREFIX/lib/libgfortran.so` are available for NAB.
 
 ## Scientific Config Files
@@ -108,4 +108,4 @@ The compatibility file may also be named `connectparms.frcmod` for dye-linker as
 
 ## External Software Roles
 
-AmberTools creates component charge and parameter files, and `tleap` creates final Amber topology and coordinate inputs. Amber/pmemd runs GPU MD stages. AmberClassic/NAB generates simple DNA templates. HADDOCK3 samples docked DNA-dye arrangements before final Amber preparation. ACPYPE prepares HADDOCK/CNS topology inputs for dye-linker components. PySCF/GPU4PySCF perform geometry optimization, electrostatic-potential generation, and quantum trajectory analysis.
+AmberTools creates component charge and parameter files, and `tleap` creates final Amber topology and coordinate inputs. Amber/pmemd runs MD stages, selecting `pmemd`, `pmemd.MPI`, or `pmemd.cuda` from runtime scheduler resources. AmberClassic/NAB generates simple DNA templates. HADDOCK3 samples docked DNA-dye arrangements before final Amber preparation. ACPYPE prepares HADDOCK/CNS topology inputs for dye-linker components. PySCF/GPU4PySCF perform geometry optimization, electrostatic-potential generation, and quantum trajectory analysis.

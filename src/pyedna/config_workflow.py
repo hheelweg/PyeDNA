@@ -119,7 +119,7 @@ def check_config() -> None:
             check(f"AmberTools executable {name} exists", False, str(exc))
         else:
             check(f"AmberTools executable {name} exists", True, str(executable))
-    for name in ("pmemd", "pmemd.cuda"):
+    for name in ("pmemd",):
         try:
             executable = amber_executable(name)
         except RuntimeError as exc:
@@ -139,7 +139,7 @@ def check_config() -> None:
     optional = sorted(
         name
         for name in (AMBERTOOLS_EXECUTABLES | PMEMD_EXECUTABLES)
-        if name not in {"antechamber", "parmchk2", "pmemd", "pmemd.cuda", "resp", "respgen", "sander", "tleap"}
+        if name not in {"antechamber", "parmchk2", "pmemd", "resp", "respgen", "sander", "tleap"}
     )
     for name in optional:
         try:

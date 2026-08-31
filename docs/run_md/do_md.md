@@ -6,7 +6,7 @@
 
 ## What the Workflow Does
 
-PyeDNA creates a timestamped directory under `output.directory`, copies the input `md.toml`, symlinks or copies `prmtop` and `rst7`, writes Amber input files for each internal stage, runs `sander` for minimization, runs `pmemd.cuda` for equilibration and production, verifies expected files, and cleans intermediate files according to `output.cleanup`.
+PyeDNA creates a timestamped directory under `output.directory`, copies the input `md.toml`, symlinks or copies `prmtop` and `rst7`, writes Amber input files for each internal stage, selects one Amber pmemd engine from the resources visible to the process, runs all requested MD stages with that engine, verifies expected files, and cleans intermediate files according to `output.cleanup`.
 
 ### Stage Summary
 
@@ -21,8 +21,8 @@ PyeDNA creates a timestamped directory under `output.directory`, copies the inpu
 ## Prerequisites
 
 - Amber `prmtop` and `rst7` files from structure Amber setup.
-- GPU allocation for `pmemd.cuda` during equilibration and production.
-- PyeDNA runtime configuration with `amber.ambertools_home` providing `sander` and `amber.pmemd_home` providing `pmemd.cuda`.
+- PyeDNA runtime configuration with `amber.pmemd_home` providing `pmemd`, plus `pmemd.MPI` for CPU MPI jobs or `pmemd.cuda` for GPU jobs.
+- For GPU MD, a scheduler allocation that exposes a CUDA device to the job process.
 
 ## User Input Required
 
@@ -195,7 +195,67 @@ If the config filename is omitted, PyeDNA uses `md.toml` in the current director
 pyedna md run
 ```
 
-On HPC systems, scheduler scripts may wrap this CLI command. The current implementation runs Amber stages through `srun`.
+On HPC systems, use the sample scheduler wrapper:
+
+```bash
+jobs/md/do_md.sh
+```
+
+Set CPU, CPU MPI, or GPU resources by editing the `#SBATCH` resource lines in `jobs/md/do_md.sh`. Keep `md.toml` unchanged.
+
+```bash
+# Serial CPU
+#SBATCH --ntasks=1
+```
+
+```bash
+# CPU MPI
+#SBATCH --ntasks=<N>
+#SBATCH --cpus-per-task=1
+```
+
+```bash
+# GPU
+#SBATCH --ntasks=1
+#SBATCH --gres=gpu:1
+```
+
+Serial Amber stages run through `srun`; CPU MPI stages run through `mpirun -np $SLURM_NTASKS`.
+
+### MD Engine Selection
+
+`md.toml` stores scientific MD settings only. It does not contain a CPU/GPU backend field.
+
+At runtime, PyeDNA checks scheduler-provided environment variables and selects one Amber executable for the whole workflow:
+
+| Runtime signal | Amber executable |
+| --- | --- |
+| `CUDA_VISIBLE_DEVICES` exposes at least one CUDA device | `pmemd.cuda` |
+| no visible CUDA device and `SLURM_NTASKS > 1` | `pmemd.MPI` |
+| no visible CUDA device and `SLURM_NTASKS` is unset or `1` | `pmemd` |
+
+If `CUDA_VISIBLE_DEVICES` exposes a CUDA device, PyeDNA selects:
+
+```text
+MD backend: GPU
+Amber engine: pmemd.cuda
+```
+
+If no CUDA device is visible and `SLURM_NTASKS > 1`, PyeDNA selects:
+
+```text
+MD backend: CPU MPI
+Amber engine: pmemd.MPI
+```
+
+Otherwise, PyeDNA selects serial CPU:
+
+```text
+MD backend: CPU
+Amber engine: pmemd
+```
+
+The selected engine is resolved once per workflow run and reused for minimization, equilibration, and production. PyeDNA does not select GPU mode merely because `pmemd.cuda` is installed.
 
 ## Common Modifications Or Advanced Options
 
@@ -203,4 +263,4 @@ Use `workflow.stages` to rerun a subset only when required input restart files a
 
 ## Limitations / Troubleshooting
 
-The current workflow uses `pmemd.cuda` for equilibration and production; no CPU production switch is currently documented. `custom` restraint targets are not implemented. `equilibrate` requires `min_<name>.ncrst`; `production` requires `eq2_<name>.ncrst`.
+The GPU backend uses serial `pmemd.cuda`; one GPU is expected for the standard wrapper examples. CPU scaling uses `pmemd.MPI` only when `SLURM_NTASKS > 1`; allocating many CPU cores with `--cpus-per-task` but only one task should not be expected to provide efficient CPU scaling. `custom` restraint targets are not implemented. `equilibrate` requires `min_<name>.ncrst`; `production` requires `eq2_<name>.ncrst`.
