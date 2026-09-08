@@ -6,11 +6,11 @@
 
 ## What the Workflow Does
 
-`prepare` prepares DNA, assembles requested dye-linker intermediates, creates HADDOCK dye instances with unique segment IDs, writes ligand topology/parameter files, removes DNA residues occupied by dyes from the HADDOCK DNA input, writes distance restraints for intended covalent connections, and renders `docking_config.cfg`.
+`prepare` prepares DNA, assembles requested dye-linker intermediates, creates HADDOCK dye instances with unique segment IDs, writes ligand topology/parameter files, removes DNA residues occupied by dyes from the HADDOCK DNA input, normalizes terminal DNA residue names, strips DNA hydrogens, cleans uncommon 5-prime terminal phosphate and phosphate-oxygen naming conventions for HADDOCK, writes distance restraints for intended covalent connections, and renders `docking_config.cfg`.
 
 `dock` runs HADDOCK3 with the generated `docking_config.cfg` and writes HADDOCK output under `haddock/run/`.
 
-`finalize` reads completed HADDOCK output, ranks models using the sum of selected CAPRI geometry columns (`vdw`, `elec`, `bonds`, `angles`, `dihe`, and `improper`), copies the top models into `structures/`, restores original atom/residue names, reinserts dye residues into the DNA template order, and writes final bond and residue-mapping metadata.
+`finalize` reads completed HADDOCK output, verifies the intended attachment distances in the raw flexible-refinement models, rejects models that do not satisfy all attachment restraints, ranks the valid models using the sum of selected CAPRI geometry columns (`vdw`, `elec`, `bonds`, `angles`, `dihe`, and `improper`), copies the top valid models into `structures/`, restores original atom/residue names, reinserts dye residues into the DNA template order, validates the reformatted attachment distances, and writes final bond and residue-mapping metadata.
 
 `amber` prepares one selected finalized structure for Amber using `tleap`; see [Amber setup](amber_setup.md).
 
@@ -142,6 +142,13 @@ This shape remains accepted for existing workflows, but `[[attachments]]` is the
 
 `[haddock]` and `[docking]` are merged, with `[docking]` values overriding `[haddock]` values.
 
+PyeDNA sets the HADDOCK `flexref.tolerance` default to `10`, allowing one failed flexible-refinement job when `seletop.select = 16` while still failing when multiple selected models do not produce output. Override it only when a run produces enough scientifically useful flexref models but HADDOCK aborts because the missing-output fraction exceeds the module tolerance:
+
+```toml
+[docking.overrides.flexref]
+tolerance = 15
+```
+
 ### `[forcefield]`
 
 This is the preferred user-facing place to select force fields for `create_structure`.
@@ -182,8 +189,10 @@ Important outputs include:
 - `haddock/<dna>_haddock.pdb`
 - `haddock/bond_restraint.tbl`
 - `haddock/bonds.csv`
+- `haddock/attachment_validation.csv`
 - `haddock/run/` from `pyedna structure dock`
 - `structures/<system>_<n>.pdb`
+- `structures/attachment_validation.csv`
 - `structures/bonds.csv`
 - `resid_mapping.json`
 - final Amber outputs from the `amber` stage
@@ -213,4 +222,6 @@ Use `[docking.overrides.*]` only for HADDOCK parameters that are present in the 
 
 ## Limitations / Troubleshooting
 
-Generated DNA currently supports `double_helix` only. `[[attachments]]` requires matching dye/linker library entries and a manually curated DNA-linker compatibility FRCMOD. HADDOCK finalization requires `haddock/run/4_caprieval/capri_ss.tsv` and selected flexref model PDB files.
+Generated DNA currently supports `double_helix` only. `[[attachments]]` requires matching dye/linker library entries and a manually curated DNA-linker compatibility FRCMOD. HADDOCK finalization requires `haddock/run/4_caprieval/capri_ss.tsv` and flexref model PDB files under `haddock/run/3_flexref/`.
+
+During finalization, attachment restraints are treated as feasibility requirements for subsequent Amber setup. PyeDNA writes per-model diagnostics to `haddock/attachment_validation.csv`, selects only models whose intended attachment distances fall within the bond-forming validation window, and fails explicitly if no HADDOCK model satisfies those distances. The default validation window is 1.2-2.3 A. If fewer valid models are available than `docking.top_models`, only the valid subset is written.

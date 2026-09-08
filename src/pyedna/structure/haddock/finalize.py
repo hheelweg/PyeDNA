@@ -1,6 +1,7 @@
 """Post-process HADDOCK docking output into final structure files."""
 
 import json
+import math
 from pathlib import Path
 import shutil
 
@@ -9,7 +10,253 @@ import pandas as pd
 from ..pdb import set_chain_and_segid
 
 
-def _select_best_models(run_dir, output_dir, top=5, structure_name="dna_dyes"):
+ATTACHMENT_TARGET_A = 1.5
+ATTACHMENT_MIN_DISTANCE_A = 1.2
+ATTACHMENT_MAX_DISTANCE_A = 2.3
+
+
+def _pdb_coordinates(pdb):
+    coordinates = {}
+
+    for line in Path(pdb).read_text().splitlines():
+        if not line.startswith(("ATOM  ", "HETATM")):
+            continue
+
+        key = (line[72:76].strip(), int(line[22:26]), line[12:16].strip())
+        coordinates[key] = (
+            float(line[30:38]),
+            float(line[38:46]),
+            float(line[46:54]),
+        )
+
+    return coordinates
+
+
+def _distance(coord1, coord2):
+    return math.sqrt(sum((a - b) ** 2 for a, b in zip(coord1, coord2)))
+
+
+def _dye_haddock_atom(instance, resname, resid, atom):
+    mapping = pd.read_csv(instance.mapping)
+    match = mapping[
+        (mapping["original_resname"].astype(str) == str(resname))
+        & (mapping["original_resid"].astype(int) == int(resid))
+        & (mapping["original_name"].astype(str) == str(atom))
+    ]
+
+    if len(match) != 1:
+        raise ValueError(
+            f"{instance.name}: expected one HADDOCK mapping for "
+            f"{resname} {resid} {atom}, found {len(match)}"
+        )
+
+    return str(match.iloc[0]["haddock_name"])
+
+
+def _raw_attachment_selector(bond, side, instances_by_name, dna_segid="A"):
+    atom_type = bond[f"{side}_type"]
+    atom = str(bond[f"{side}_atom"])
+    resid = int(bond[f"{side}_resid"])
+
+    if atom_type == "dna":
+        return {
+            "type": atom_type,
+            "instance": "",
+            "resname": str(bond[f"{side}_resname"]),
+            "resid": resid,
+            "atom": atom,
+            "segid": dna_segid,
+            "pdb_resid": resid,
+            "pdb_atom": atom,
+        }
+
+    if atom_type != "dye":
+        raise ValueError(f"Unsupported attachment bond type {atom_type!r}")
+
+    instance_name = str(bond[f"{side}_instance"])
+    instance = instances_by_name[instance_name]
+    haddock_atom = _dye_haddock_atom(
+        instance,
+        bond[f"{side}_resname"],
+        resid,
+        atom,
+    )
+
+    return {
+        "type": atom_type,
+        "instance": instance_name,
+        "resname": str(bond[f"{side}_resname"]),
+        "resid": resid,
+        "atom": atom,
+        "segid": instance.segid,
+        "pdb_resid": 1,
+        "pdb_atom": haddock_atom,
+    }
+
+
+def _final_attachment_selector(bond, side, residue_map):
+    instance = str(bond[f"{side}_instance"])
+    resid = int(bond[f"{side}_resid"])
+    atom_type = str(bond[f"{side}_type"])
+    key = (atom_type, instance, resid)
+
+    if key not in residue_map:
+        raise KeyError(f"Could not map attachment restraint residue {key}")
+
+    return {
+        "type": atom_type,
+        "instance": instance,
+        "resname": str(bond[f"{side}_resname"]),
+        "resid": resid,
+        "atom": str(bond[f"{side}_atom"]),
+        "segid": "A",
+        "pdb_resid": residue_map[key],
+        "pdb_atom": str(bond[f"{side}_atom"]),
+    }
+
+
+def _format_restraint_atom(selector):
+    source = selector["instance"] or "DNA"
+    return (
+        f"{source}:{selector['resname']}:{selector['resid']}:"
+        f"{selector['atom']}"
+    )
+
+
+def _attachment_restraints_from_bonds(
+    bond_file,
+    instances,
+    residue_map=None,
+    dna_segid="A",
+):
+    bonds = pd.read_csv(bond_file, keep_default_na=False)
+    instances_by_name = {instance.name: instance for instance in instances}
+    restraints = []
+
+    for index, bond in bonds.iterrows():
+        if residue_map is None:
+            left = _raw_attachment_selector(bond, "left", instances_by_name, dna_segid)
+            right = _raw_attachment_selector(bond, "right", instances_by_name, dna_segid)
+        else:
+            left = _final_attachment_selector(bond, "left", residue_map)
+            right = _final_attachment_selector(bond, "right", residue_map)
+
+        restraints.append({
+            "restraint": index + 1,
+            "left": left,
+            "right": right,
+        })
+
+    return restraints
+
+
+def _measure_attachment_restraints(
+    pdb,
+    restraints,
+    target=ATTACHMENT_TARGET_A,
+    min_distance=ATTACHMENT_MIN_DISTANCE_A,
+    max_distance=ATTACHMENT_MAX_DISTANCE_A,
+):
+    coordinates = _pdb_coordinates(pdb)
+    rows = []
+
+    for restraint in restraints:
+        left, right = restraint["left"], restraint["right"]
+        left_key = (left["segid"], left["pdb_resid"], left["pdb_atom"])
+        right_key = (right["segid"], right["pdb_resid"], right["pdb_atom"])
+        distance = None
+        violation = None
+        status = "ok"
+
+        if left_key not in coordinates:
+            status = f"missing atom {_format_restraint_atom(left)}"
+        elif right_key not in coordinates:
+            status = f"missing atom {_format_restraint_atom(right)}"
+        else:
+            distance = _distance(coordinates[left_key], coordinates[right_key])
+            violation = max(min_distance - distance, 0.0, distance - max_distance)
+
+        valid = status == "ok" and violation <= 0.0
+        rows.append({
+            "model": Path(pdb).name,
+            "restraint": restraint["restraint"],
+            "atom1": _format_restraint_atom(left),
+            "atom2": _format_restraint_atom(right),
+            "distance_A": distance,
+            "target_A": target,
+            "lower_bound_A": min_distance,
+            "upper_bound_A": max_distance,
+            "violation_A": violation,
+            "valid": valid,
+            "status": status,
+        })
+
+    return rows
+
+
+def _summarize_attachment_validation(rows):
+    valid_flags = [row["valid"] for row in rows]
+    violations = [
+        row["violation_A"] for row in rows
+        if row["violation_A"] is not None
+    ]
+
+    return {
+        "all_restraints_valid": bool(valid_flags) and all(valid_flags),
+        "number_of_violated_restraints": sum(not flag for flag in valid_flags),
+        "max_restraint_violation": max(violations, default=None),
+        "total_restraint_violation": sum(violations),
+    }
+
+
+def _validate_attachment_models(
+    model_paths,
+    restraints,
+    output_csv=None,
+    model_names=None,
+    target=ATTACHMENT_TARGET_A,
+    min_distance=ATTACHMENT_MIN_DISTANCE_A,
+    max_distance=ATTACHMENT_MAX_DISTANCE_A,
+):
+    rows, summaries = [], []
+
+    model_names = model_names or [Path(pdb).name for pdb in model_paths]
+
+    for pdb, model_name in zip(model_paths, model_names):
+        model_rows = _measure_attachment_restraints(
+            pdb,
+            restraints,
+            target=target,
+            min_distance=min_distance,
+            max_distance=max_distance,
+        )
+        for row in model_rows:
+            row["model"] = model_name
+        summary = _summarize_attachment_validation(model_rows)
+        for row in model_rows:
+            row.update(summary)
+        summary["model"] = model_name
+        rows.extend(model_rows)
+        summaries.append(summary)
+
+    if output_csv is not None:
+        output_csv = Path(output_csv)
+        output_csv.parent.mkdir(parents=True, exist_ok=True)
+        pd.DataFrame(rows).to_csv(output_csv, index=False)
+        print(f"Wrote {output_csv}")
+
+    return pd.DataFrame(summaries)
+
+
+def _select_best_models(
+    run_dir,
+    output_dir,
+    top=5,
+    structure_name="dna_dyes",
+    instances=None,
+    bond_file=None,
+    validation_output=None,
+):
     run_dir, output_dir = Path(run_dir), Path(output_dir)
     flexref_dir = run_dir / "3_flexref"
     capri_file = run_dir / "4_caprieval" / "capri_ss.tsv"
@@ -26,6 +273,36 @@ def _select_best_models(run_dir, output_dir, top=5, structure_name="dna_dyes"):
     df["geometry_score"] = df[columns].sum(axis=1)
     ranked = df.sort_values("geometry_score").reset_index(drop=True)
 
+    if bond_file is not None:
+        if instances is None:
+            raise ValueError("instances are required when validating attachment restraints")
+
+        restraints = _attachment_restraints_from_bonds(bond_file, instances)
+        model_paths = [flexref_dir / model for model in ranked["model"]]
+        validation_output = validation_output or run_dir.parent / "attachment_validation.csv"
+        validation = _validate_attachment_models(
+            model_paths,
+            restraints,
+            output_csv=validation_output,
+            model_names=list(ranked["model"]),
+        )
+        ranked = ranked.merge(validation, on="model", how="left")
+        ranked["all_restraints_valid"] = ranked["all_restraints_valid"].fillna(False)
+        total_models = len(ranked)
+        valid_models = int(ranked["all_restraints_valid"].sum())
+        rejected = total_models - valid_models
+
+        print(f"{total_models} models evaluated")
+        print(f"{valid_models} satisfy all attachment restraints")
+        print(f"{rejected} rejected")
+
+        ranked = ranked[ranked["all_restraints_valid"]].reset_index(drop=True)
+        if ranked.empty:
+            raise RuntimeError(
+                "No HADDOCK models satisfy all attachment restraints; "
+                f"see {validation_output}"
+            )
+
     output_dir.mkdir(parents=True, exist_ok=True)
     for old in output_dir.glob(f"{structure_name}_*.pdb"):
         old.unlink()
@@ -41,7 +318,10 @@ def _select_best_models(run_dir, output_dir, top=5, structure_name="dna_dyes"):
 
         shutil.copy2(src, dst)
 
-    print(f"Selected {nmodels} models in {output_dir}")
+    if nmodels < top:
+        print(f"Only {nmodels} valid models available for requested top={top}")
+
+    print(f"Selected top {nmodels} valid models in {output_dir}")
     return ranked.iloc[:nmodels].copy()
 
 
@@ -366,6 +646,22 @@ def _reformat_docked_models(instances, dna_template, bonding_csv, structure_dir,
         output.append("END")
         pdb.write_text("\n".join(output) + "\n")
         print(f"Reformatted {pdb}")
+
+    final_restraints = _attachment_restraints_from_bonds(
+        bond_file,
+        instances,
+        residue_map=final_residue_map,
+    )
+    final_validation = _validate_attachment_models(
+        model_files,
+        final_restraints,
+        output_csv=structure_dir / "attachment_validation.csv",
+    )
+    if not final_validation["all_restraints_valid"].all():
+        raise RuntimeError(
+            "One or more reformatted structures failed attachment validation; "
+            f"see {structure_dir / 'attachment_validation.csv'}"
+        )
 
     _write_final_bonds(bond_file, structure_dir / "bonds.csv", final_residue_map, instances)
     _write_resid_mapping(

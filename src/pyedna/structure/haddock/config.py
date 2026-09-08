@@ -14,11 +14,11 @@ DEFAULT_DOCKING_CONFIG = {
     "delenph": True,
     "autohis": False,
 
-    "rigidbody_sampling": 10,
+    "rigidbody_sampling": 32,
     "rigidbody_ntrials": 10,
     "rigidbody_randremoval": False,
-    "rigidbody_unambig_scale": 800,
-    "rigidbody_inter_rigid": 0.001,
+    "rigidbody_unambig_scale": 1000,
+    "rigidbody_inter_rigid": 0.01,
     "rigidbody_elecflag": True,
     "rigidbody_w_air": 9999.0,
     "rigidbody_w_vdw": 1.0,
@@ -30,8 +30,9 @@ DEFAULT_DOCKING_CONFIG = {
     "rigidbody_surfrest": False,
     "rigidbody_ranair": False,
     "rigidbody_rigidtrans": True,
+    "rigidbody_mol_fix_origin_1": True,
 
-    "seletop_select": 10,
+    "seletop_select": 16,
 
     "flexref_randremoval": False,
     "flexref_unambig_hot": 1000,
@@ -47,6 +48,7 @@ DEFAULT_DOCKING_CONFIG = {
     "flexref_mdsteps_cool1": 0,
     "flexref_mdsteps_cool2": 2000,
     "flexref_mdsteps_cool3": 2000,
+    "flexref_tolerance": 10,
     "flexref_dnarest_on": True,
     "flexref_tadfactor": 1,
     "flexref_temp_cool3_init": 300,

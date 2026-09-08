@@ -77,6 +77,9 @@ class HaddockSetup:
             output_dir=self.structure_dir,
             top=self.config.haddock.top_models,
             structure_name=self.config.name,
+            instances=self.instances,
+            bond_file=self.haddock_dir / "bonds.csv",
+            validation_output=self.haddock_dir / "attachment_validation.csv",
         )
         _reformat_docked_models(
             instances=self.instances,

@@ -1,5 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=create_structure
+##SBATCH --ntasks=32
+##SBATCH --cpus-per-task=1
 #SBATCH --cpus-per-task=32
 #SBATCH --output=create_structure.log
 #SBATCH --error=create_structure.err
@@ -25,6 +27,8 @@ if [[ ! -f "$STRUCTURE_CONFIG" ]]; then
     echo "Error: structure configuration not found: $STRUCTURE_CONFIG"
     exit 1
 fi
+
+export OMPI_MCA_btl="^openib"
 
 echo "Preparing structure..."
 pyedna structure prepare "$STRUCTURE_CONFIG"

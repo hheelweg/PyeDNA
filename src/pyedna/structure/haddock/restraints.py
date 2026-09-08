@@ -6,6 +6,93 @@ import csv
 import pandas as pd
 
 
+DNA_TERMINAL_RESNAMES = {
+    "DA5": "DA",
+    "DA3": "DA",
+    "DC5": "DC",
+    "DC3": "DC",
+    "DG5": "DG",
+    "DG3": "DG",
+    "DT5": "DT",
+    "DT3": "DT",
+}
+
+DNA_PHOSPHATE_ATOM_ALIASES = {
+    "O1P": "OP1",
+    "O2P": "OP2",
+}
+
+DNA_5P_TERMINAL_PHOSPHATE_ATOMS = {"P", "O1P", "O2P", "OP1", "OP2"}
+
+
+def _strip_dna_terminal_resname(line):
+    resname = line[17:20].strip()
+    if resname not in DNA_TERMINAL_RESNAMES:
+        return line
+
+    return line[:17] + f"{DNA_TERMINAL_RESNAMES[resname]:<3s}" + line[20:]
+
+
+def _is_hydrogen_atom(line):
+    atom_name = line[12:16].strip()
+    element = line[76:78].strip()
+    return element == "H" or atom_name.startswith("H")
+
+
+def _dna_haddock_segment_start_resids(lines, remove_resids):
+    """Return first kept residue IDs for explicit DNA segments in a PDB file.
+
+    Some unusual library templates, such as triangle_clean1.pdb, carry a
+    5-prime phosphate on every TER-separated strand start. HADDOCK may drop
+    those terminal phosphates, and Amber maps residues after TER records to
+    DA5/DC5/DG5/DT5 templates that do not type a leading P/OP1/OP2 group on the
+    same residue. We therefore identify only explicit segment starts in the
+    heavy-atom DNA copy prepared for HADDOCK. Ordinary PDB files without TER
+    separated 5-prime phosphates are not changed, and internal phosphates remain
+    protected because their residues are not marked as segment starts.
+    """
+
+    segment_start_resids = set()
+    at_segment_start = True
+
+    for line in lines:
+        if line.startswith(("ATOM  ", "HETATM")):
+            resid = int(line[22:26])
+            if resid in remove_resids or _is_hydrogen_atom(line):
+                continue
+            if at_segment_start:
+                segment_start_resids.add(resid)
+                at_segment_start = False
+        elif line.startswith("TER"):
+            at_segment_start = True
+
+    return segment_start_resids
+
+
+def _normalize_dna_haddock_input_line(line, segment_start_resids):
+    """Normalize rare DNA PDB conventions that HADDOCK does not round-trip.
+
+    Some library/template files, such as triangle_clean1.pdb, carry 5-prime
+    terminal phosphates and use O1P/O2P phosphate oxygen names. HADDOCK may
+    remove terminal phosphates and writes phosphate oxygens as OP1/OP2, so the
+    post-docking coordinate reconstruction would otherwise look for heavy atoms
+    that HADDOCK cannot return under the same names. This helper only cleans the
+    HADDOCK-facing copy of such unusual DNA inputs; ordinary PDB files without
+    these conventions pass through unchanged.
+    """
+
+    atom_name = line[12:16].strip()
+    resid = int(line[22:26])
+
+    if resid in segment_start_resids and atom_name in DNA_5P_TERMINAL_PHOSPHATE_ATOMS:
+        return None
+
+    if atom_name in DNA_PHOSPHATE_ATOM_ALIASES:
+        return line[:12] + f"{DNA_PHOSPHATE_ATOM_ALIASES[atom_name]:>4s}" + line[16:]
+
+    return line
+
+
 def _prepare_dna_for_haddock(dna_pdb, instances, workdir):
     dna_pdb, workdir = Path(dna_pdb), Path(workdir)
     haddock_dir = workdir / "haddock"
@@ -18,12 +105,20 @@ def _prepare_dna_for_haddock(dna_pdb, instances, workdir):
     remove_resids = {resid for instance in instances for resid in instance.residues}
     haddock_dir.mkdir(parents=True, exist_ok=True)
 
+    input_lines = dna_pdb.read_text().splitlines()
+    segment_start_resids = _dna_haddock_segment_start_resids(input_lines, remove_resids)
     kept, ter_after, last_resid = [], [], None
 
-    for line in dna_pdb.read_text().splitlines():
+    for line in input_lines:
         if line.startswith(("ATOM  ", "HETATM")):
             resid = int(line[22:26])
             if resid in remove_resids:
+                continue
+            if _is_hydrogen_atom(line):
+                continue
+            line = _strip_dna_terminal_resname(line)
+            line = _normalize_dna_haddock_input_line(line, segment_start_resids)
+            if line is None:
                 continue
             kept.append(line)
             last_resid = resid
