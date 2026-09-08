@@ -196,6 +196,16 @@ def write_xyz(atoms, coords, filename, comment=""):
             f.write(f"{atom:2s} {x:16.10f} {y:16.10f} {z:16.10f}\n")
 
 
+def draw_rdkit_molecule(mol, output_file, size=(900, 600)):
+    """Write a 2D RDKit depiction of a molecule."""
+    from rdkit import Chem
+    from rdkit.Chem import Draw
+
+    output_file = Path(output_file)
+    Draw.MolToFile(Chem.Mol(mol), str(output_file), size=size)
+    return output_file
+
+
 def _cuda_visible_devices_allows_gpu():
     """Return whether CUDA_VISIBLE_DEVICES leaves any GPU visible."""
     visible = os.environ.get("CUDA_VISIBLE_DEVICES")
@@ -834,7 +844,7 @@ def cleanup_outputs(name, output, workdir=None, extra_scratch=()):
     if mode == "library" and output.directory != "library":
         raise ValueError("cleanup='library' is only supported for library output")
     if mode == "library":
-        keep_suffixes = {".mol2", ".frcmod", ".attach"}
+        keep_suffixes = {".png", ".mol2", ".frcmod", ".attach"}
         removed = []
 
         for path in workdir.iterdir():

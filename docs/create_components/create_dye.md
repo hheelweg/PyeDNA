@@ -2,11 +2,11 @@
 
 ## Purpose
 
-`create_dye` creates and parameterizes a reusable dye component. It writes molecular and force-field files for an uncapped dye residue, optionally into the dye library configured by `libraries.dye_dir`.
+`create_dye` creates and parameterizes a reusable dye component. It writes molecular, depiction, and force-field files for an uncapped dye residue, optionally into the dye library configured by `libraries.dye_dir`.
 
 ## What the Workflow Does
 
-PyeDNA attaches temporary cap atoms to the mapped dye core, embeds a 3D conformer, writes SDF/PDB structures, optimizes the capped geometry, computes an electrostatic potential, and performs two-stage RESP charge fitting. It then extracts the uncapped core atoms into a final residue MOL2, creates missing GAFF parameters with `parmchk2`, writes a `.attach` file containing the final linker attachment atom names, and checks that the MOL2 charge is close to the target formal charge of the dye.
+PyeDNA writes a 2D RDKit depiction of the parsed dye core, attaches temporary cap atoms to the mapped dye core, embeds a 3D conformer, writes SDF/PDB structures, optimizes the capped geometry, computes an electrostatic potential, and performs two-stage RESP charge fitting. It then extracts the uncapped core atoms into a final residue MOL2, creates missing GAFF parameters with `parmchk2`, writes a `.attach` file containing the final linker attachment atom names, and checks that the MOL2 charge is close to the target formal charge of the dye.
 
 
 ## Prerequisites
@@ -89,7 +89,7 @@ Legacy `[dye]`, `[core]`, `[caps]`, `[charge]`, and `[amber]` shapes are still p
 
 ## Generated Outputs
 
-Final outputs include `<code>.mol2`, `<code>.frcmod`, and `<code>.attach`. Intermediate outputs can include `<name>.sdf`, `<name>.pdb`, `qm_opt/`, and the RESP working directory, depending on `[output].cleanup` settings. 
+Final outputs include `<code>.png`, `<code>.mol2`, `<code>.frcmod`, and `<code>.attach`. The PNG is a 2D RDKit depiction of the parsed core SMILES for quick inspection before geometry optimization. Intermediate outputs can include `<name>.sdf`, `<name>.pdb`, `qm_opt/`, and the RESP working directory, depending on `[output].cleanup` settings.
 
 ## How To Run
 

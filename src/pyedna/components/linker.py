@@ -8,6 +8,7 @@ from .parameterization import (
     QMSettings,
     cleanup_outputs,
     compute_resp_esp_from_xyz,
+    draw_rdkit_molecule,
     embed_rdkit_conformer,
     extract_mol2_subset,
     generate_ac,
@@ -218,6 +219,16 @@ class LinkerDefinition:
             "formal_charge": self.formal_charge,
             "fragments": len(Chem.GetMolFrags(self.mol)),
         }
+
+    def draw_core(self, output_file):
+        """Write a 2D depiction of the parsed linker core SMILES."""
+        from rdkit import Chem
+
+        core = Chem.MolFromSmiles(self.core)
+        if core is None:
+            raise ValueError(f"Could not parse linker core '{self.name}'.")
+
+        return draw_rdkit_molecule(core, output_file)
 
     def generate_conformer(self, output_file=None):
         """Generate and write an RDKit 3D conformer for the full linker."""

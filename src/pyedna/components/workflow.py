@@ -19,8 +19,10 @@ def run_create_dye(config_file="dye.toml"):
     print(f"Dye output directory: {workdir}")
 
     dye.validate()
+    dye.draw_core(workdir / f"{dye.residue_name}.png")
     dye.generate_conformer(workdir / f"{dye.name}.sdf")
 
+    print(f"Generated dye core depiction: {dye.residue_name}.png")
     print(f"Generated dye structure: {dye.name}.sdf")
     print(f"Generated dye structure: {dye.name}.pdb")
 
@@ -61,7 +63,10 @@ def run_create_linker(config_file="linker.toml"):
     print(f"Linker output directory: {workdir}")
 
     linker.validate()
+    linker.draw_core(workdir / f"{linker.code or linker.name}.png")
     linker.generate_conformer(workdir / f"{linker.name}.sdf")
+
+    print(f"Generated linker core depiction: {linker.code or linker.name}.png")
 
     linker.optimize_geometry(workdir / "qm_opt")
 

@@ -6,6 +6,7 @@ from .parameterization import (
     QMSettings,
     cleanup_outputs,
     compute_resp_esp_from_xyz,
+    draw_rdkit_molecule,
     embed_rdkit_conformer,
     extract_mol2_subset,
     generate_ac,
@@ -56,6 +57,7 @@ class DyeDefinition:
         self.qm = qm or QMSettings()
         self.config = config or {}
         self.mol = None
+        self.core_mol = None
         self.core_map_ids = set()
         self.core_atom_indices = set()
         self.cap_map_ids = set()
@@ -146,6 +148,7 @@ class DyeDefinition:
         core = Chem.MolFromSmiles(self.core_smiles)
         if core is None:
             raise ValueError(f"Could not parse dye core '{self.name}'.")
+        self.core_mol = core
 
         cap = Chem.MolFromSmiles(self.cap_smiles)
         if cap is None:
@@ -174,6 +177,16 @@ class DyeDefinition:
         self.attach_caps()
         if not self.core_resp_indices():
             raise ValueError("Dye core RESP group is empty.")
+
+    def draw_core(self, output_file):
+        """Write a 2D depiction of the parsed dye core SMILES."""
+        from rdkit import Chem
+
+        core = self.core_mol or Chem.MolFromSmiles(self.core_smiles)
+        if core is None:
+            raise ValueError(f"Could not parse dye core '{self.name}'.")
+
+        return draw_rdkit_molecule(core, output_file)
 
     def attach_caps(self):
         """Attach cap atoms to mapped core atoms."""

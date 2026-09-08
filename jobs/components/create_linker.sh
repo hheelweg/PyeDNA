@@ -1,8 +1,8 @@
 #!/bin/bash
-#SBATCH --partition=normal
+#SBATCH --partition=gpu
 #SBATCH --nodelist=gpu001
 #SBATCH --gres=gpu:1
-#SBATCH --cpus-per-task=48
+#SBATCH --cpus-per-task=24
 #SBATCH --job-name=create_linker
 #SBATCH --output=create_linker.log
 

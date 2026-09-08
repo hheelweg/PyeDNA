@@ -2,11 +2,11 @@
 
 ## Purpose
 
-`create_linker` creates reusable linker residue templates for 3' and 5' DNA attachment contexts and writes them into `libraries.linker_dir` when library output is requested.
+`create_linker` creates reusable linker residue templates for 3' and 5' DNA attachment contexts and writes them into `libraries.linker_dir` when library output is requested. It also writes a 2D depiction of the parsed linker core for quick inspection.
 
 ## What the Workflow Does
 
-PyeDNA combines the mapped SMILES fragments, validates that every atom has a unique map ID, embeds and optimizes the full capped linker, computes an electrostatic potential, and performs RESP fitting. It fixes DNA-cap charges from OL15 reference charges inferred from the DNA-cap topology, writes one group charge restraint for the retained linker residue, and extracts separate 3' and 5' residue templates.
+PyeDNA combines the mapped SMILES fragments, validates that every atom has a unique map ID, writes a 2D RDKit depiction of the parsed linker core, embeds and optimizes the full capped linker, computes an electrostatic potential, and performs RESP fitting. It fixes DNA-cap charges from OL15 reference charges inferred from the DNA-cap topology, writes one group charge restraint for the retained linker residue, and extracts separate 3' and 5' residue templates.
 
 ## Prerequisites
 
@@ -118,7 +118,7 @@ Legacy `[linker]`, `[smiles]`, `[boundaries]`, `[charges]`, and `[amber]` shapes
 
 ## Generated Outputs
 
-The workflow writes `<code>3.mol2`, `<code>3.frcmod`, `<code>3.attach`, `<code>5.mol2`, `<code>5.frcmod`, and `<code>5.attach`. The `.attach` files contain `3CONNECT` and `5CONNECT` atom names for later bonding.
+The workflow writes `<code>.png`, `<code>3.mol2`, `<code>3.frcmod`, `<code>3.attach`, `<code>5.mol2`, `<code>5.frcmod`, and `<code>5.attach`. The PNG is a 2D RDKit depiction of the parsed linker core SMILES. The `.attach` files contain `3CONNECT` and `5CONNECT` atom names for later bonding.
 
 ## How To Run
 
