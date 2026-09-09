@@ -1,0 +1,30 @@
+parameters based on DNA.OL15 and parm10.dat to describe the boundary between dye+linker (gaff) and DNA (DNA.OL15), i.e. from parm10.dat
+MASS
+
+BOND
+OS-p5   230.0    1.610       JCC,7,(1986),230; NA PHOSPHATES
+os-P    230.0    1.610       JCC,7,(1986),230; NA PHOSPHATES
+
+ANGLE
+OS-p5-os     45.0      102.60
+os-P-OS      45.0      102.60
+o-p5-OS     100.0      108.23
+O2-P-os     100.0      108.23
+c3-os-P     100.0      120.50
+C7-OS-p5    100.0      120.50    
+
+DIHE
+os-p5-OS-C7   1    1.20          0.0             2.         gg&gt ene.631g*/mp2
+OS-P -os-c3   1    1.20          0.0             2.         gg&gt ene.631g*/mp2
+C7-OS-p5-o    1    1.20          0.0             2.         gg&gt ene.631g*/mp2
+c3-os-P-O2    1    1.20          0.0             2.         gg&gt ene.631g*/mp2
+
+
+IMPROPER
+c   c   n   c3    1.1    180.0    2
+
+
+NONBON
+
+
+

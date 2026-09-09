@@ -32,3 +32,5 @@ The dye and linker workflows:
 ## Library Output
 
 Use `output.directory = "library"` only when the component is ready to be written into the shared reusable library. PyeDNA refuses to overwrite an existing library output directory.
+
+For concrete dye and linker library layouts, see the repository [example libraries](../../examples/README.md).

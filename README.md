@@ -89,3 +89,4 @@ For installation, runtime configuration, TOML fields, external software requirem
 - [Documentation overview](docs/README.md)
 - [Installation](docs/getting_started/installation.md)
 - [Workflow overview](docs/getting_started/workflow_overview.md)
+- [Example molecular libraries](examples/README.md)

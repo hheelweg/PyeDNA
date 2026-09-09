@@ -36,6 +36,8 @@ For the current main workflow, use `[[attachments]]` with an existing dye, exist
 > Note that each linker comes with a 3' and 5' end, i.e. when respcifying in `[[attachment]]` the `residue` to replace in the DNA structure is effectively getting replaced by *three* formal residues (one dye, two linkers), which will affect the residue indexing in the final `.pdb` structure we generate here.
 > **Important**: We can only load dyes and linkers whose name is existent in `libraries.dye_dir` or `libraries.linker_dir`, repsectively. Also be careful adjusting `[forcefield].attachments` and `[forcefield].dna` accordingly.
 
+Example dye and linker library entries are listed in the repository [example libraries](../../examples/README.md).
+
 The DNA can currently be loaded as a template from `libraries.dna_dir` OR actually be generated with the a simple run of the Nucleid Acid Builder ([NAB](https://github.com/Amber-MD/AmberClassic.git)).
 
 > **Generating DNA structures and `libraries.dna_dir`**

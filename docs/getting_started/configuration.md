@@ -106,6 +106,8 @@ The structure workflow resolves dye and linker inputs from:
 
 The compatibility file may also be named `connectparms.frcmod` for dye-linker assembly, but final Amber setup reports the canonical `connectparams.frcmod` path when missing DNA-linker parameters are detected.
 
+The repository includes example dye and linker libraries under [`examples/libraries`](../../examples/README.md), showing concrete `libraries.dye_dir` and `libraries.linker_dir` layouts. An example `libraries.dna_dir` still needs to be added.
+
 ## External Software Roles
 
 AmberTools creates component charge and parameter files, and `tleap` creates final Amber topology and coordinate inputs. Amber/pmemd runs MD stages, selecting `pmemd`, `pmemd.MPI`, or `pmemd.cuda` from runtime scheduler resources. AmberClassic/NAB generates simple DNA templates. HADDOCK3 samples docked DNA-dye arrangements before final Amber preparation. ACPYPE prepares HADDOCK/CNS topology inputs for dye-linker components. PySCF/GPU4PySCF perform geometry optimization, electrostatic-potential generation, and quantum trajectory analysis.
