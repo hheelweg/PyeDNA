@@ -19,15 +19,14 @@ cutoff = 8.0
 # Two minimization substages use these step counts.
 max_steps = 1000
 steepest_descent_steps = 500
-
 [minimization.restraints.stage1]
 # Relax solvent/ions while restraining the structure.
 target = "structure"
 strength = 10.0
-
 [minimization.restraints.stage2]
-# Continue minimization without restraints.
-target = "none"
+# Continue minimization with weak restraints on terminal DNA residues.
+target = "terminal"
+strength = 10.0
 
 [equilibration]
 # Heating and NPT equilibration lengths and output intervals.
@@ -36,6 +35,15 @@ npt_steps = 50000
 ntpr = 5000
 ntwx = 5000
 ntwr = 5000
+[equilibration.restraints.stage1]
+# Heat entire system with weak restraints on terminal DNA residues.
+target = "terminal"
+strength = 10.0
+[equilibration.restraints.stage2]
+# Equilibrate entire system with weak restraints on terminal DNA residues.
+target = "terminal"
+strength = 5.0
+
 
 [production]
 # Production length and output intervals.
@@ -44,6 +52,10 @@ log_interval = 5000
 trajectory_interval = 5000
 restart_interval = 50000
 force_interval = 0
+[production.restraints]
+# Run entire system with weak restraints on terminal DNA residues.
+target = "terminal"
+strength = 5.0
 
 [output]
 # Timestamped runs are written below this directory.
