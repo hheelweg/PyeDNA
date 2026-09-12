@@ -6,6 +6,10 @@
 #SBATCH --job-name=create_dye
 #SBATCH --output=create_dye.log
 
+# -----------------------------------------------------------------------------
+# PyeDNA dye creation
+# -----------------------------------------------------------------------------
+
 if [[ $# -gt 1 ]]; then
     echo "Usage: sbatch $0 [DYE_CONFIG]"
     exit 1

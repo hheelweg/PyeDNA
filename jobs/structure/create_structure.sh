@@ -1,10 +1,12 @@
 #!/bin/bash
-#SBATCH --job-name=create_structure
-##SBATCH --ntasks=32
-##SBATCH --cpus-per-task=1
 #SBATCH --cpus-per-task=32
+#SBATCH --job-name=create_structure
 #SBATCH --output=create_structure.log
 #SBATCH --error=create_structure.err
+
+# -----------------------------------------------------------------------------
+# PyeDNA structure preparation
+# -----------------------------------------------------------------------------
 
 set -e
 

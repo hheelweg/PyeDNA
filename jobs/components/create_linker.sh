@@ -6,6 +6,10 @@
 #SBATCH --job-name=create_linker
 #SBATCH --output=create_linker.log
 
+# -----------------------------------------------------------------------------
+# PyeDNA linker creation
+# -----------------------------------------------------------------------------
+
 if [[ $# -gt 1 ]]; then
     echo "Usage: sbatch $0 [LINKER_CONFIG]"
     exit 1

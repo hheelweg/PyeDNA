@@ -1,5 +1,4 @@
 #!/bin/bash
-
 #SBATCH --nodes=1
 #SBATCH --partition=gpu
 #SBATCH --nodelist=gpu001
@@ -8,6 +7,10 @@
 #SBATCH --cpus-per-task=24
 #SBATCH --job-name=do_md
 #SBATCH --output=slurm-%j.log
+
+# -----------------------------------------------------------------------------
+# PyeDNA molecular dynamics
+# -----------------------------------------------------------------------------
 
 if [[ $# -gt 1 ]]; then
     echo "Usage: $0 [MD_CONFIG]"
