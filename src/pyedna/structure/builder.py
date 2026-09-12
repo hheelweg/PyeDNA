@@ -42,6 +42,17 @@ class StructureBuilder:
         self.dye_instances = []
         self.generated_dyelnks = {}
 
+    def _amber_metadata_dir(self):
+        """Return the structure-owned directory for Amber preparation metadata."""
+
+        return self.workdir / "structures" / "amber"
+
+    def _generated_dyelnk_dir(self):
+        """Return where generated dye-linker files are available."""
+
+        amber_dir = self._amber_metadata_dir()
+        return amber_dir if amber_dir.exists() else self.workdir
+
     @classmethod
     def from_file(cls, path, workdir=None, **kwargs):
         """Construct a builder from a structure TOML file."""
@@ -63,7 +74,7 @@ class StructureBuilder:
             self.config.dyes,
             self.dye_dir,
             generated=self.generated_dyelnks,
-            workdir=self.workdir,
+            workdir=self._generated_dyelnk_dir(),
             dye_forcefield=self.config.amber.dye_forcefield,
         )
         self.dye_instances = create_dye_instances(
@@ -94,18 +105,21 @@ class StructureBuilder:
     def _prepare_linked_dyes(self):
         """Generate linked dye MOL2 files used as explicit intermediates."""
 
+        amber_dir = self._amber_metadata_dir()
+        amber_dir.mkdir(parents=True, exist_ok=True)
+
         for name, dyelnk in self._load_generated_dyelnks().items():
-            mol2_output = self.workdir / f"{name}_linked.mol2"
-            frcmod_output = self.workdir / f"{name}_linked.frcmod"
+            mol2_output = amber_dir / f"{name}_linked.mol2"
+            frcmod_output = amber_dir / f"{name}_linked.frcmod"
 
             if not mol2_output.exists():
-                mol2_output = dyelnk.build_linked_mol2(self.workdir, name=name)
+                mol2_output = dyelnk.build_linked_mol2(amber_dir, name=name)
                 print(f"Generated dye-linker MOL2: {mol2_output}")
             elif not frcmod_output.exists():
                 frcmod_output = dyelnk.build_linked_frcmod(
                     mol2_output,
                     output_file=frcmod_output,
-                    workdir=self.workdir,
+                    workdir=amber_dir,
                 )
                 print(f"Generated dye-linker FRCMOD: {frcmod_output}")
 
@@ -163,17 +177,3 @@ class StructureBuilder:
         """Backward-compatible alias for finalize_haddock."""
 
         return self.finalize_haddock()
-
-    def prepare_amber(self, run_tleap=True):
-        """Prepare a finalized structure and run tleap by default."""
-
-        from .amber import AmberSetup
-
-        setup = AmberSetup.from_config(
-            self.config,
-            workdir=self.workdir,
-            dye_dir=self.dye_dir,
-            lnk_dir=self.lnk_dir,
-        )
-        setup.prepare(run_tleap=run_tleap)
-        return setup

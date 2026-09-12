@@ -3,9 +3,9 @@
 #SBATCH --nodes=1
 #SBATCH --partition=gpu
 #SBATCH --nodelist=gpu001
-#SBATCH --gres=gpu:1
-#SBATCH --ntasks=1
-#SBATCH --cpus-per-task=48
+#SBATCH --gres=gpu:2
+#SBATCH --ntasks=2
+#SBATCH --cpus-per-task=24
 #SBATCH --job-name=do_md
 #SBATCH --output=slurm-%j.log
 

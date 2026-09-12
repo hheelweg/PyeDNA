@@ -84,10 +84,8 @@ class HaddockConfig:
 
 @dataclass(frozen=True)
 class AmberConfig:
-    """Store tleap force-field, solvation, and output options."""
+    """Store internal force-field defaults used during structure preparation."""
 
-    model: int = 1
-    output_name: Optional[str] = None
     dna_forcefield: str = "OL15"
     dye_forcefield: str = "gaff2"
     water_forcefield: str = "leaprc.water.tip3p"
@@ -97,20 +95,10 @@ class AmberConfig:
     negative_ion: str = "Cl-"
     neutralize: bool = True
 
-    def __post_init__(self):
-        if self.model < 1:
-            raise ValueError("'amber.model' must be at least 1")
-
 
 @dataclass(frozen=True)
 class WorkflowConfig:
     """Store optional cross-stage workflow behavior."""
-
-    prepare_amber: bool = False
-
-    def __post_init__(self):
-        if not isinstance(self.prepare_amber, bool):
-            raise ValueError("'workflow.prepare_amber' must be true or false")
 
 
 @dataclass(frozen=True)
@@ -128,8 +116,6 @@ class StructureConfig:
     def __post_init__(self):
         if not self.name:
             raise ValueError("'system.name' must be specified")
-        if self.amber.model > self.haddock.top_models:
-            raise ValueError("'amber.model' cannot exceed 'docking.top_models'")
         if self.attachments and self.dyes != [a.as_placement() for a in self.attachments]:
             raise ValueError("Do not mix legacy [[dyes]] with [[attachments]]")
 

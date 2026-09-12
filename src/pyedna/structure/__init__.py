@@ -1,6 +1,7 @@
 """Build dye-labeled DNA structures and prepare them for simulation."""
 
-from .amber import AmberSetup
+import importlib
+
 from . import attachments as _attachments_module
 from .builder import StructureBuilder
 from .attachments import AmberAtomMapping, AttachmentAtom, DyeDefinition, DyeInstance
@@ -32,3 +33,12 @@ __all__ = [
     "StructureConfig",
     "WorkflowConfig",
 ]
+
+
+def __getattr__(name):
+    if name != "AmberSetup":
+        raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+    module = importlib.import_module("pyedna.structure.amber")
+    value = getattr(module, name)
+    globals()[name] = value
+    return value

@@ -125,7 +125,7 @@ class DyeDefinition:
         return output_file
 
     def linked_intermediates(self):
-        """Return generated linked files safe to remove after Amber setup."""
+        """Return generated linked files owned by the structure-to-MD bridge."""
         if self.attach is not None:
             return []
 

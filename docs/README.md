@@ -12,9 +12,9 @@ component creation
     -> pyedna structure dock
     -> model selection / finalization
     -> pyedna structure finalize
-    -> pyedna structure amber
-    -> prmtop + rst7
+    -> ranked unsolvated structures
     -> pyedna md run
+    -> tleap preparation per selected structure
     -> Amber trajectory
     -> pyedna analysis trajectory
 ```
@@ -34,7 +34,7 @@ Install PyeDNA as a Python package, configure local external-software paths in `
 - [Create a linker](create_components/create_linker.md)
 - [Create a dye-linker component](create_components/create_dyelnk.md)
 - [Create a structure](create_structure/create_structure.md)
-- [Amber setup](create_structure/amber_setup.md)
+- [Amber preparation note](create_structure/amber_setup.md)
 - [Run MD](run_md/do_md.md)
 - [Analyze a trajectory](analyze_trajectory/analyze_traj.md)
 

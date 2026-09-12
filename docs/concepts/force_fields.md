@@ -20,7 +20,7 @@ The component workflows currently support RESP charge fitting. PyeDNA computes a
 
 ## MOL2
 
-MOL2 files store atom names, atom types, coordinates, bonding, residue names, and fitted partial charges for dye/linker residue templates. PyeDNA loads MOL2 templates into `tleap` during Amber setup.
+MOL2 files store atom names, atom types, coordinates, bonding, residue names, and fitted partial charges for dye/linker residue templates. PyeDNA loads MOL2 templates into `tleap` during MD Amber preparation.
 
 ## FRCMOD
 

@@ -57,7 +57,7 @@ The default direct workflow writes:
 - `<dye>_<linker>_linked.frcmod`
 - `<dye>_<linker>_linked.parmchk2.log`
 
-When called internally by `create_structure`, files are named with the attachment name and may be removed after Amber setup.
+When called internally by `create_structure`, files are named with the attachment name, written under `structures/amber/`, and reused later by MD Amber preparation.
 
 ## How To Run
 

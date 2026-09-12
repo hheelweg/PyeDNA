@@ -33,7 +33,7 @@ linker_dir = "/path/to/linker_library"
 
 | Setting | Required for | Meaning |
 | --- | --- | --- |
-| `amber.ambertools_home` | component parameterization, dye-linker assembly, Amber setup, AmberTools data | Root of the AmberTools installation. PyeDNA resolves AmberTools executables and Amber data relative to this root. |
+| `amber.ambertools_home` | component parameterization, dye-linker assembly, MD Amber preparation, AmberTools data | Root of the AmberTools installation. PyeDNA resolves AmberTools executables and Amber data relative to this root. |
 | `amber.pmemd_home` | MD minimization, equilibration, and production | Root of the Amber/pmemd installation. PyeDNA resolves pmemd-family executables from this root. |
 | `nab.home` | generated DNA structures | Root of the AmberClassic/NAB installation. PyeDNA expects `<nab.home>/bin/nab`. |
 | `libraries.dye_dir` | dye library lookup and dye library output | User's dye parameter/template library. |
@@ -78,7 +78,6 @@ pyedna components create-dyelnk dyelnk.toml
 pyedna structure prepare structure.toml
 pyedna structure dock structure.toml
 pyedna structure finalize structure.toml
-pyedna structure amber structure.toml
 pyedna md run md.toml
 pyedna analysis trajectory traj.toml
 ```
@@ -104,10 +103,10 @@ The structure workflow resolves dye and linker inputs from:
 <libraries.linker_dir>/connect/<dye_forcefield>/<dna_forcefield>/connectparams.frcmod
 ```
 
-The compatibility file may also be named `connectparms.frcmod` for dye-linker assembly, but final Amber setup reports the canonical `connectparams.frcmod` path when missing DNA-linker parameters are detected.
+The compatibility file may also be named `connectparms.frcmod` for dye-linker assembly, but MD Amber preparation reports the canonical `connectparams.frcmod` path when missing DNA-linker parameters are detected.
 
 The repository includes example dye and linker libraries under [`examples/libraries`](../../examples/README.md), showing concrete `libraries.dye_dir` and `libraries.linker_dir` layouts. An example `libraries.dna_dir` still needs to be added.
 
 ## External Software Roles
 
-AmberTools creates component charge and parameter files, and `tleap` creates final Amber topology and coordinate inputs. Amber/pmemd runs MD stages, selecting `pmemd`, `pmemd.MPI`, or `pmemd.cuda` from runtime scheduler resources. AmberClassic/NAB generates simple DNA templates. HADDOCK3 samples docked DNA-dye arrangements before final Amber preparation. ACPYPE prepares HADDOCK/CNS topology inputs for dye-linker components. PySCF/GPU4PySCF perform geometry optimization, electrostatic-potential generation, and quantum trajectory analysis.
+AmberTools creates component charge and parameter files, and MD uses `tleap` to create final Amber topology and coordinate inputs from selected structure models. Amber/pmemd runs MD stages, selecting `pmemd`, `pmemd.MPI`, or `pmemd.cuda` from runtime scheduler resources. AmberClassic/NAB generates simple DNA templates. HADDOCK3 samples docked DNA-dye arrangements before finalization. ACPYPE prepares HADDOCK/CNS topology inputs for dye-linker components. PySCF/GPU4PySCF perform geometry optimization, electrostatic-potential generation, and quantum trajectory analysis.

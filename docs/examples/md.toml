@@ -1,12 +1,22 @@
 [system]
-# Prepared Amber inputs from create_structure amber setup.
-name = "example_system"
-prmtop = "example_system.prmtop"
-rst7 = "example_system.rst7"
+# Select ranked finalized structures from create_structure.
+name = "dna_CY3_CY5"
+structure_directory = "structures"
+structures = [1]
+
+[amber]
+# Amber/tleap preparation settings applied to each selected structure.
+dna_forcefield = "OL15"
+dye_forcefield = "gaff2"
+water_forcefield = "tip3p"
+solvent_padding = 20.0
+positive_ion = "Na+"
+negative_ion = "Cl-"
+neutralize = true
 
 [workflow]
-# Run the full MD workflow in order.
-stages = ["minimize", "equilibrate", "production"]
+# Prepare Amber inputs, then run the full MD workflow in order.
+stages = ["prepare", "minimize", "equilibrate", "production"]
 
 [simulation]
 # Shared MD thermodynamic and integration settings.

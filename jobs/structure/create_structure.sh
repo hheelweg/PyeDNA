@@ -39,7 +39,4 @@ pyedna structure dock "$STRUCTURE_CONFIG"
 echo "Finalizing docked structure..."
 pyedna structure finalize "$STRUCTURE_CONFIG"
 
-echo "Preparing Amber system..."
-pyedna structure amber "$STRUCTURE_CONFIG"
-
 rm -f docking_config.cfg

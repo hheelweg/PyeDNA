@@ -34,8 +34,5 @@ def run_structure(stage, config_file="structure.toml"):
     elif stage == "finalize":
         builder.finalize()
 
-    elif stage == "amber":
-        builder.prepare_amber()
-
     else:
         raise ValueError(f"Unknown structure stage: {stage}")

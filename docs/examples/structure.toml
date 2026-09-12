@@ -23,20 +23,11 @@ residue = 11
 # ============================================================
 
 [forcefield]
-# Force fields used for DNA, attachments, and solvent.
+# Force fields used while assembling DNA/linker/dye components.
 dna = "OL15"
 attachments = "gaff2"
-water = "tip3p"
 
 [docking]
 # HADDOCK3 model generation and selection.
 engine = "haddock3"
 top_models = 5
-
-[amber]
-# Prepare the first selected model for solvated Amber MD.
-model = 1
-solvent_padding = 20.0
-positive_ion = "Na+"
-negative_ion = "Cl-"
-neutralize = true

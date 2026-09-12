@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import concurrent.futures
 from datetime import datetime
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -10,12 +12,14 @@ import subprocess
 from pyedna.config import amber_environment, amber_executable
 
 from .config import MDConfig
+from .preparation import AmberSetup
 from .restraints import AmberRestraintResolver
-from .runtime import md_executable, slurm_ntasks
+from .runtime import md_executable, slurm_ntasks, visible_gpus
+from .structures import resolve_structure_runs, write_manifest, write_status
 
 
 class MDSimulation:
-    """Run Amber minimization, equilibration, and production stages."""
+    """Run one MD submission across the structures selected in md.toml."""
 
     def __init__(self, config, workdir=".", config_file=None, run_timestamp=None):
         self.config = config
@@ -24,6 +28,146 @@ class MDSimulation:
         timestamp = run_timestamp or datetime.now().strftime("%Y_%m_%d_%H_%M")
         self.output_root = self.workdir / self.config.output.directory
         self.output_dir = self.output_root / f"run_{timestamp}"
+        self.name = self.config.system.name
+        self.structure_runs = resolve_structure_runs(self.config, self.workdir)
+
+    @classmethod
+    def from_file(cls, path, workdir="."):
+        """Create an MD simulation from md.toml."""
+
+        path = Path(path)
+        return cls(MDConfig.from_file(path), workdir=workdir, config_file=path.resolve())
+
+    def run(self):
+        """Run the configured workflow for all selected structures."""
+
+        self._resolve_md_engine()
+        backend = self._backend_label()
+        print(f"MD backend: {backend}", flush=True)
+        print(f"Amber engine: {self.md_engine}", flush=True)
+
+        self.output_dir.mkdir(parents=True, exist_ok=False)
+        self._copy_config()
+        self._write_manifest()
+        for run in self.structure_runs:
+            structure_dir = self.output_dir / run["directory"]
+            structure_dir.mkdir()
+            write_status(structure_dir, run["structure"], "pending", "")
+
+        gpus = visible_gpus()
+        if self.md_engine == "pmemd.cuda" and len(gpus) > 1 and len(self.structure_runs) > 1:
+            self._run_gpu_queue(gpus)
+        else:
+            env = self._model_env(gpus[0]) if self.md_engine == "pmemd.cuda" and gpus else None
+            for run in self.structure_runs:
+                self._run_model(run, env=env)
+
+        return self
+
+    def _run_gpu_queue(self, gpus):
+        failures = []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(gpus)) as executor:
+            futures = {}
+            pending = iter(self.structure_runs)
+
+            for gpu in gpus:
+                try:
+                    run = next(pending)
+                except StopIteration:
+                    break
+                future = executor.submit(self._run_model, run, self._model_env(gpu))
+                futures[future] = gpu
+
+            while futures:
+                done, _ = concurrent.futures.wait(
+                    futures,
+                    return_when=concurrent.futures.FIRST_COMPLETED,
+                )
+                for future in done:
+                    gpu = futures.pop(future)
+                    try:
+                        future.result()
+                    except Exception as exc:
+                        failures.append(exc)
+                    try:
+                        run = next(pending)
+                    except StopIteration:
+                        continue
+                    futures[executor.submit(self._run_model, run, self._model_env(gpu))] = gpu
+
+        if failures:
+            raise RuntimeError("One or more MD structure runs failed") from failures[0]
+
+    def _run_model(self, run, env=None):
+        structure_dir = self.output_dir / run["directory"]
+        simulation = _ModelSimulation(
+            config=self.config,
+            structure_index=run["structure"],
+            structure_path=run["structure_path"],
+            output_dir=structure_dir,
+            source_workdir=self.workdir,
+            md_engine=self.md_engine,
+            md_engine_path=self.md_engine_path,
+            env=env,
+        )
+        try:
+            simulation.run()
+        except Exception:
+            write_status(
+                structure_dir,
+                run["structure"],
+                "failed",
+                simulation.current_stage,
+            )
+            raise
+
+    def _copy_config(self):
+        if self.config_file is not None:
+            shutil.copy2(self.config_file, self.output_dir / self.config_file.name)
+
+    def _write_manifest(self):
+        write_manifest(
+            self.output_dir / "manifest.toml",
+            self.name,
+            self.structure_runs,
+            self.config.system,
+        )
+
+    @staticmethod
+    def _model_env(gpu):
+        env = os.environ.copy()
+        env["CUDA_VISIBLE_DEVICES"] = str(gpu)
+        return env
+
+    def _resolve_md_engine(self):
+        self.md_engine = md_executable()
+        try:
+            self.md_engine_path = amber_executable(self.md_engine)
+        except RuntimeError as exc:
+            backend = self._backend_label()
+            raise RuntimeError(
+                f"Selected {backend} MD backend but {self.md_engine} is unavailable. "
+                f"{exc}"
+            ) from exc
+
+    def _backend_label(self):
+        if self.md_engine == "pmemd.cuda":
+            return "GPU"
+        if self.md_engine == "pmemd.MPI":
+            return "CPU MPI"
+        return "CPU"
+
+
+class _ModelSimulation:
+    """Run Amber preparation and MD stages for one selected structure."""
+
+    def __init__(self, config, structure_index, structure_path, output_dir, source_workdir,
+                 md_engine, md_engine_path, env=None):
+        self.config = config
+        self.structure_index = structure_index
+        self.structure_path = Path(structure_path)
+        self.output_dir = Path(output_dir)
+        self.source_workdir = Path(source_workdir)
         self.name = self.config.system.name
 
         self.temp = self.config.simulation.temperature
@@ -34,41 +178,24 @@ class MDSimulation:
         self.traj_steps = self.config.traj_steps
         self.total_steps = self.config.production.steps
 
-        self.prmtop = self._resolve_input(self.config.system.prmtop_path)
-        self.rst7 = self._resolve_input(self.config.system.rst7_path)
-        self.restraints = AmberRestraintResolver(self.prmtop, self.config)
-        self.md_engine = None
-        self.md_engine_path = None
-
-    @classmethod
-    def from_file(cls, path, workdir="."):
-        """Create an MD simulation from md.toml."""
-
-        path = Path(path)
-        return cls(MDConfig.from_file(path), workdir=workdir, config_file=path.resolve())
-
-    def _resolve_input(self, filename):
-        path = Path(filename)
-        if not path.is_absolute():
-            path = self.workdir / path
-        if not path.exists():
-            raise FileNotFoundError(f"Amber input file not found: {path}")
-        return path
+        self.prmtop = self.output_dir / f"{self.name}.prmtop"
+        self.rst7 = self.output_dir / f"{self.name}.rst7"
+        self.prmtop_name = self.prmtop.name
+        self.rst7_name = self.rst7.name
+        self.restraints = None
+        self.md_engine = md_engine
+        self.md_engine_path = md_engine_path
+        self.env = env
+        self.current_stage = ""
 
     def run(self):
         """Run the configured user-facing workflow stages."""
 
-        self._resolve_md_engine()
-        backend = self._backend_label()
-        print(f"MD backend: {backend}", flush=True)
-        print(f"Amber engine: {self.md_engine}", flush=True)
-
-        self.output_dir.mkdir(parents=True, exist_ok=False)
-        self._copy_config()
-        self._link_or_copy_inputs()
-        print(self.restraints.analysis_text(), flush=True)
-
         for stage in self.config.workflow.stages:
+            self._write_status("running", stage)
+            self.current_stage = stage
+            if stage == "prepare":
+                self.run_preparation()
             if stage == "minimize":
                 self.run_minimization()
             elif stage == "equilibrate":
@@ -77,24 +204,24 @@ class MDSimulation:
                 self.run_production()
 
         self.clean_files()
+        self._write_status("completed", "")
         return self
 
-    def _copy_config(self):
-        if self.config_file is not None:
-            shutil.copy2(self.config_file, self.output_dir / self.config_file.name)
+    def run_preparation(self):
+        setup = AmberSetup.from_md_config(
+            self.config,
+            self.structure_index,
+            workdir=self.output_dir,
+            source_workdir=self.source_workdir,
+        )
+        setup.prepare(run_tleap=True, cleanup_intermediates=False)
+        self._require_runtime_file(self.prmtop_name)
+        self._require_runtime_file(self.rst7_name)
+        self.restraints = AmberRestraintResolver(self.prmtop, self.config)
+        print(self.restraints.analysis_text(), flush=True)
 
-    def _link_or_copy_inputs(self):
-        for source in (self.prmtop, self.rst7):
-            target = self.output_dir / source.name
-            if target.exists():
-                continue
-            try:
-                target.symlink_to(source.resolve())
-            except OSError:
-                shutil.copy2(source, target)
-
-        self.prmtop_name = self.prmtop.name
-        self.rst7_name = self.rst7.name
+    def _write_status(self, state, stage):
+        write_status(self.output_dir, self.structure_index, state, stage)
 
     def run_minimization(self):
         """Run solvent/ion and whole-system minimization."""
@@ -149,6 +276,9 @@ class MDSimulation:
         )
 
     def _write_input(self, stage):
+        if self.restraints is None:
+            self._require_runtime_file(self.prmtop_name)
+            self.restraints = AmberRestraintResolver(self.prmtop, self.config)
         path = self.output_dir / f"{stage}_{self.name}.in"
         path.write_text(self._stage_input(stage))
         return path
@@ -281,6 +411,8 @@ class MDSimulation:
     def _run_stage(self, stage, in_coord, out_coord, ref_coord, netcdf=None):
         self._require_runtime_file(in_coord)
         self._require_runtime_file(ref_coord)
+        if self.restraints is None:
+            self.restraints = AmberRestraintResolver(self.prmtop, self.config)
         executable = self._md_engine()
 
         command = [
@@ -299,7 +431,7 @@ class MDSimulation:
             command,
             cwd=self.output_dir,
             check=True,
-            env=amber_environment(executable),
+            env=self._amber_env(executable),
         )
         self._require_runtime_file(out_coord)
         if netcdf is not None:
@@ -310,23 +442,11 @@ class MDSimulation:
             self._resolve_md_engine()
         return self.md_engine
 
-    def _resolve_md_engine(self):
-        self.md_engine = md_executable()
-        try:
-            self.md_engine_path = amber_executable(self.md_engine)
-        except RuntimeError as exc:
-            backend = self._backend_label()
-            raise RuntimeError(
-                f"Selected {backend} MD backend but {self.md_engine} is unavailable. "
-                f"{exc}"
-            ) from exc
-
-    def _backend_label(self):
-        if self.md_engine == "pmemd.cuda":
-            return "GPU"
-        if self.md_engine == "pmemd.MPI":
-            return "CPU MPI"
-        return "CPU"
+    def _amber_env(self, executable):
+        env = amber_environment(executable)
+        if self.env is not None and "CUDA_VISIBLE_DEVICES" in self.env:
+            env["CUDA_VISIBLE_DEVICES"] = self.env["CUDA_VISIBLE_DEVICES"]
+        return env
 
     def _stage_launcher(self):
         if self._md_engine() == "pmemd.MPI":

@@ -20,6 +20,19 @@ def gpu_available(env=None):
     return any(token.lower() not in _CUDA_DISABLED_VALUES for token in tokens)
 
 
+def visible_gpus(env=None):
+    """Return CUDA device tokens visible to the current process."""
+
+    env = os.environ if env is None else env
+    visible = env.get("CUDA_VISIBLE_DEVICES")
+    if visible is None:
+        return []
+    return [
+        token.strip() for token in visible.split(",")
+        if token.strip().lower() not in _CUDA_DISABLED_VALUES
+    ]
+
+
 def md_executable(env=None):
     """Return the Amber engine selected from visible runtime resources."""
 

@@ -2,17 +2,17 @@
 
 ## Purpose
 
-`create_structure` prepares dye-labeled DNA structures. It can generate or copy DNA, assemble dye-linker components from libraries, prepare HADDOCK3 docking inputs, process completed HADDOCK output, and prepare a selected model for Amber MD.
+`create_structure` prepares dye-labeled DNA structures. It can generate or copy DNA, assemble dye-linker components from libraries, prepare HADDOCK3 docking inputs, and process completed HADDOCK output into ranked, finalized, unsolvated structural models.
 
 ## What the Workflow Does
 
-`prepare` prepares DNA, assembles requested dye-linker intermediates, creates HADDOCK dye instances with unique segment IDs, writes ligand topology/parameter files, removes DNA residues occupied by dyes from the HADDOCK DNA input, normalizes terminal DNA residue names, strips DNA hydrogens, cleans uncommon 5-prime terminal phosphate and phosphate-oxygen naming conventions for HADDOCK, writes distance restraints for intended covalent connections, and renders `docking_config.cfg`.
+`prepare` prepares DNA, assembles requested dye-linker intermediates under `structures/amber/`, creates HADDOCK dye instances with unique segment IDs, writes ligand topology/parameter files, removes DNA residues occupied by dyes from the HADDOCK DNA input, normalizes terminal DNA residue names, strips DNA hydrogens, cleans uncommon 5-prime terminal phosphate and phosphate-oxygen naming conventions for HADDOCK, writes distance restraints for intended covalent connections, and renders `docking_config.cfg`.
 
 `dock` runs HADDOCK3 with the generated `docking_config.cfg` and writes HADDOCK output under `haddock/run/`.
 
 `finalize` reads completed HADDOCK output, verifies the intended attachment distances in the raw flexible-refinement models, rejects models that do not satisfy all attachment restraints, ranks the valid models using the sum of selected CAPRI geometry columns (`vdw`, `elec`, `bonds`, `angles`, `dihe`, and `improper`), copies the top valid models into `structures/`, restores original atom/residue names, reinserts dye residues into the DNA template order, validates the reformatted attachment distances, and writes final bond and residue-mapping metadata.
 
-`amber` prepares one selected finalized structure for Amber using `tleap`; see [Amber setup](amber_setup.md).
+Amber/tleap preparation is part of the MD workflow. After `finalize`, use `md.toml` to select one or more ranked structures for simulation.
 
 ## Prerequisites
 
@@ -22,7 +22,7 @@
 - NAB available through the runtime config when `dna.source = "generate"`.
 - HADDOCK3 available in the active environment when running `pyedna structure dock`.
 - ACPYPE available for preparing HADDOCK/CNS topology and parameter files.
-- PyeDNA runtime configuration with `amber.ambertools_home` pointing to AmberTools for internal dye-linker assembly and final Amber setup.
+- PyeDNA runtime configuration with `amber.ambertools_home` pointing to AmberTools for internal dye-linker assembly.
 
 ## User Input Required
 
@@ -81,18 +81,10 @@ residue = 11
 [forcefield]
 dna = "OL15"
 attachments = "gaff2"
-water = "tip3p"
 
 [docking]
 engine = "haddock3"
 top_models = 5
-
-[amber]
-model = 1
-solvent_padding = 20.0
-positive_ion = "Na+"
-negative_ion = "Cl-"
-neutralize = true
 ```
 
 ## Configuration Reference
@@ -101,7 +93,7 @@ neutralize = true
 
 | Field | Required | Default | Meaning and constraints |
 | --- | --- | --- | --- |
-| `name` | required | none | Base name for selected structures and final Amber outputs. Legacy `[structure].name` is also accepted. |
+| `name` | required | none | Base name for selected finalized structures. Legacy `[structure].name` is also accepted. |
 
 ### `[dna]`
 
@@ -159,29 +151,8 @@ This is the preferred user-facing place to select force fields for `create_struc
 | --- | --- | --- | --- |
 | `dna` | optional | `"OL15"` | DNA force-field identifier. Compact values such as `"OL15"` are expanded internally to the corresponding `tleap` source. |
 | `attachments` | optional | `"gaff2"` | Dye/linker force-field identifier. This must match the library layout under `libraries.dye_dir` and `libraries.linker_dir`. |
-| `water` | optional | `"leaprc.water.tip3p"` | Water force-field source or compact water identifier. `"tip3p"` is expanded internally to `leaprc.water.tip3p`. |
 
 Do not use `forcefield.components`; the parser will reject it and ask for `forcefield.attachments`.
-
-### `[amber]`
-
-| Field | Required | Default | Meaning and constraints |
-| --- | --- | --- | --- |
-| `model` | optional | `1` | Selected model number from `structures/<system.name>_<model>.pdb`; must be at least 1 and cannot exceed `docking.top_models`. |
-| `output_name` | optional | `system.name` | Basename for final Amber files. |
-| `water_model` | optional | `"TIP3P"` | Solvent box model. Current implementation supports `"TIP3P"`. |
-| `solvent_padding` | optional | `20.0` | Padding passed to `solvateBox`. |
-| `positive_ion` | optional | `"Na+"` | Positive ion name passed to `addIons`. |
-| `negative_ion` | optional | `"Cl-"` | Negative ion name passed to `addIons`. |
-| `neutralize` | optional | `true` | If true, `addIons mol <ion> 0` is called for both positive and negative ions. |
-
-Advanced/internal aliases `amber.dna_forcefield`, `amber.dye_forcefield`, and `amber.water_forcefield` are also accepted by the current parser because `[forcefield]` values are mapped onto those internal settings. Prefer `[forcefield]` in user-written `structure.toml` files.
-
-### `[workflow]`
-
-| Field | Required | Default | Meaning and constraints |
-| --- | --- | --- | --- |
-| `prepare_amber` | optional | `false` | If true, `finalize` immediately runs Amber preparation after processing HADDOCK results. Must be boolean. |
 
 ## Generated Outputs
 
@@ -196,8 +167,14 @@ Important outputs include:
 - `structures/<system>_<n>.pdb`
 - `structures/attachment_validation.csv`
 - `structures/bonds.csv`
+- `structures/amber/<dye>_<linker>_linked.mol2`
+- `structures/amber/<dye>_<linker>_linked.frcmod`
+- `structures/amber/<dye>_<linker>_linked.parmchk2.log`
 - `resid_mapping.json`
-- final Amber outputs from the `amber` stage
+
+The suffixes in `structures/<system>_1.pdb`, `structures/<system>_2.pdb`, and so on encode the existing finalized-model ranking: `_1` is the highest-ranked finalized structure, `_2` is second, and so forth. Amber preparation does not re-rank these models.
+
+The `structures/amber/` files are persistent metadata for generated dye-linker attachments. They are reused by MD Amber preparation and should remain with the finalized structures.
 
 ## How To Run The Workflow
 
@@ -207,7 +184,6 @@ Run the structure stages:
 pyedna structure prepare structure.toml
 pyedna structure dock structure.toml
 pyedna structure finalize structure.toml
-pyedna structure amber structure.toml
 ```
 
 If the config filename is omitted, PyeDNA uses `structure.toml` in the current directory:
@@ -220,10 +196,10 @@ On HPC systems, scheduler scripts may wrap these CLI commands, for example to su
 
 ## Common Modifications Or Advanced Options
 
-Use `[docking.overrides.*]` only for HADDOCK parameters that are present in the PyeDNA template defaults. Use `[workflow].prepare_amber = true` when finalization should immediately generate Amber inputs for the selected model.
+Use `[docking.overrides.*]` only for HADDOCK parameters that are present in the PyeDNA template defaults. Use `md.toml` to choose which finalized structures should be prepared with `tleap` and simulated.
 
 ## Limitations / Troubleshooting
 
 Generated DNA currently supports `double_helix` only. `[[attachments]]` requires matching dye/linker library entries and a manually curated DNA-linker compatibility FRCMOD. HADDOCK finalization requires `haddock/run/4_caprieval/capri_ss.tsv` and flexref model PDB files under `haddock/run/3_flexref/`.
 
-During finalization, attachment restraints are treated as feasibility requirements for subsequent Amber setup. PyeDNA writes per-model diagnostics to `haddock/attachment_validation.csv`, selects only models whose intended attachment distances fall within the bond-forming validation window, and fails explicitly if no HADDOCK model satisfies those distances. The default validation window is 1.2-2.3 A. If fewer valid models are available than `docking.top_models`, only the valid subset is written.
+During finalization, attachment restraints are treated as feasibility requirements for subsequent MD Amber preparation. PyeDNA writes per-model diagnostics to `haddock/attachment_validation.csv`, selects only models whose intended attachment distances fall within the bond-forming validation window, and fails explicitly if no HADDOCK model satisfies those distances. The default validation window is 1.2-2.3 A. If fewer valid models are available than `docking.top_models`, only the valid subset is written.

@@ -5,7 +5,6 @@ from __future__ import annotations
 import ast
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 try:
     import tomllib
@@ -16,30 +15,43 @@ except ImportError:
         tomllib = None
 
 
-STAGE_GROUPS = ("minimize", "equilibrate", "production")
+STAGE_GROUPS = ("prepare", "minimize", "equilibrate", "production")
 CLEANUP_LEVELS = ("minimal", "standard", "restart", "all")
 RESTRAINT_TARGETS = ("none", "terminal", "structure", "custom")
 
 
 @dataclass(frozen=True)
 class SystemConfig:
-    """Store the MD system name and prepared Amber inputs."""
+    """Store the MD system name and selected finalized structures."""
 
     name: str
-    prmtop: Optional[str] = None
-    rst7: Optional[str] = None
+    structure_directory: str = "structures"
+    structures: list[int] = field(default_factory=lambda: [1])
 
     def __post_init__(self):
         if not self.name:
             raise ValueError("'system.name' must be specified")
+        if not self.structures:
+            raise ValueError("'system.structures' must contain at least one structure")
+        invalid = [
+            structure for structure in self.structures
+            if not isinstance(structure, int) or structure < 1
+        ]
+        if invalid:
+            raise ValueError(
+                f"'system.structures' contains invalid structure numbers: {invalid}"
+            )
+        duplicates = sorted({
+            structure for structure in self.structures
+            if self.structures.count(structure) > 1
+        })
+        if duplicates:
+            raise ValueError(
+                f"'system.structures' contains duplicate structure numbers: {duplicates}"
+            )
 
-    @property
-    def prmtop_path(self):
-        return self.prmtop or f"{self.name}.prmtop"
-
-    @property
-    def rst7_path(self):
-        return self.rst7 or f"{self.name}.rst7"
+    def structure_path(self, structure):
+        return Path(self.structure_directory) / f"{self.name}_{structure}.pdb"
 
 
 @dataclass(frozen=True)
@@ -47,7 +59,7 @@ class WorkflowConfig:
     """Store user-facing MD workflow stages."""
 
     stages: list[str] = field(
-        default_factory=lambda: ["minimize", "equilibrate", "production"]
+        default_factory=lambda: ["prepare", "minimize", "equilibrate", "production"]
     )
 
     def __post_init__(self):
@@ -203,6 +215,33 @@ class BarostatConfig:
 
 
 @dataclass(frozen=True)
+class AmberPreparationConfig:
+    """Store tleap force-field and solvation settings owned by MD."""
+
+    dna_forcefield: str = "OL15"
+    dye_forcefield: str = "gaff2"
+    water_forcefield: str = "tip3p"
+    water_model: str | None = None
+    solvent_padding: float = 20.0
+    positive_ion: str = "Na+"
+    negative_ion: str = "Cl-"
+    neutralize: bool = True
+
+    @property
+    def water_box(self):
+        """Return the tleap solvent box selected by the water force field."""
+
+        water = self.water_model or self.water_forcefield
+        water = str(water).removeprefix("leaprc.water.").lower()
+        boxes = {
+            "tip3p": "TIP3PBOX",
+        }
+        if water not in boxes:
+            raise ValueError(f"Unsupported water force field: {self.water_forcefield!r}")
+        return boxes[water]
+
+
+@dataclass(frozen=True)
 class OutputConfig:
     """Store runtime output and cleanup behavior."""
 
@@ -226,6 +265,7 @@ class MDConfig:
     production: ProductionConfig = field(default_factory=ProductionConfig)
     thermostat: ThermostatConfig = field(default_factory=ThermostatConfig)
     barostat: BarostatConfig = field(default_factory=BarostatConfig)
+    amber: AmberPreparationConfig = field(default_factory=AmberPreparationConfig)
     output: OutputConfig = field(default_factory=OutputConfig)
 
     @classmethod
@@ -245,6 +285,15 @@ class MDConfig:
             )
 
         try:
+            system = dict(system)
+            if "models" in system:
+                if "structures" in system:
+                    raise ValueError(
+                        f"{path}: use either system.structures or legacy "
+                        "system.models, not both"
+                    )
+                system["structures"] = system.pop("models")
+
             return cls(
                 system=SystemConfig(**system),
                 workflow=WorkflowConfig(**data.get("workflow", {})),
@@ -258,6 +307,7 @@ class MDConfig:
                 production=ProductionConfig.from_mapping(data.get("production", {})),
                 thermostat=ThermostatConfig(**data.get("thermostat", {})),
                 barostat=BarostatConfig(**data.get("barostat", {})),
+                amber=AmberPreparationConfig(**data.get("amber", {})),
                 output=OutputConfig(**data.get("output", {})),
             )
         except TypeError as exc:
