@@ -5,11 +5,11 @@ graphics silhouettes true width 2
 
 # Standard DNA
 
-color :DA,DT,DC,DG tan
+color :DA,DT,DC,DG,DA3,DA5,DC3,DC5,DG3,DG5,DT3,DT5 tan
 
-transparency :DA,DT,DC,DG 70 atoms
-transparency :DA,DT,DC,DG 70 cartoons
-transparency :DA,DT,DC,DG 70 target f
+transparency :DA,DT,DC,DG,DA3,DA5,DC3,DC5,DG3,DG5,DT3,DT5 70 atoms
+transparency :DA,DT,DC,DG,DA3,DA5,DC3,DC5,DG3,DG5,DT3,DT5 70 cartoons
+transparency :DA,DT,DC,DG,DA3,DA5,DC3,DC5,DG3,DG5,DT3,DT5 70 target f
 
 # Dye colors
 

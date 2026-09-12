@@ -28,3 +28,26 @@ cp examples/visualizations/chimerax/chimera_style.cxc .
 ```
 
 Set `CHIMERAX=/path/to/chimerax` if your ChimeraX executable is not named `chimerax`.
+
+## Trajectory viewing
+
+`view_trajectory.sh` opens one Amber NetCDF trajectory from a structure directory, using `<name>_solvated.pdb` as the ChimeraX reference model, then hides solvent and ions for visualization and applies `chimera_style.cxc`.
+The solvent and ions remain present in the trajectory/topology files; only their display is hidden.
+
+Expected trajectory layout:
+
+```text
+.
+|-- view_trajectory.sh
+|-- chimera_style.cxc
+`-- structure_xxx/
+    |-- name_solvated.pdb
+    |-- name.prmtop
+    `-- name.nc
+```
+
+Run:
+
+```bash
+./view_trajectory.sh structure_xxx name
+```
