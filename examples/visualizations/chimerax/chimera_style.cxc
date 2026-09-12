@@ -1,0 +1,31 @@
+lighting full
+set bgColor white
+
+graphics silhouettes true width 2
+
+# Standard DNA
+
+color :DA,DT,DC,DG tan
+
+transparency :DA,DT,DC,DG 70 atoms
+transparency :DA,DT,DC,DG 70 cartoons
+transparency :DA,DT,DC,DG 70 target f
+
+# Dye colors
+
+color :CY3 #D55E00
+color :CY5 #0072B2
+color :PDI #CC79A7
+color :SQA #009E73
+
+style :CY3,CY5,PDI,SQA stick
+size :CY3,CY5,PDI,SQA stickRadius 0.30
+select :CY3,CY5,PDI,SQA
+graphics selection width 3 color black
+
+# Linkers
+
+color :C33,C35,C63,C65,DE3,DE5 #808080
+
+transparency :C33,C35,C63,C65,DE3,DE5 80 atoms
+transparency :C33,C35,C63,C65,DE3,DE5 80 cartoons
