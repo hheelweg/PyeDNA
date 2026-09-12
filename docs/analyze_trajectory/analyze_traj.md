@@ -6,12 +6,12 @@
 
 ## What the Workflow Does
 
-PyeDNA loads the topology and trajectory, validates the requested frame interval, creates an output run directory, copies the config, and writes a manifest. For each frame, it extracts capped dye snapshots for each attachment, builds configured groups, runs classical jobs, runs quantum jobs, computes quantum and classical interactions, and appends JSONL output records.
+PyeDNA loads one or more Amber topology/trajectory pairs, validates the requested frame interval for each trajectory, creates an output run directory, copies the config, and writes a manifest. For each frame, it extracts capped dye snapshots for each attachment, builds configured groups, runs classical jobs, runs quantum jobs, computes quantum and classical interactions, and appends JSONL output records.
 
 ## Prerequisites
 
-- Amber topology file.
-- Amber NetCDF trajectory file.
+- An MD run directory from `pyedna md run`, including `manifest.toml` and one `structure_<NNN>/` directory per selected structure.
+- Alternatively, an explicit Amber topology file and Amber NetCDF trajectory file for legacy single-trajectory analysis.
 - `libraries.dye_dir` set so analysis can read dye MOL2 charge data and `.attach` metadata.
 - `resid_mapping.json` available in the working directory when attachment residues need to map back to Amber dye residues. This file is produced by the `finalize` stage of `create_structure` as `./resid_mapping.json`.
 - PySCF when quantum jobs are requested with the PySCF backend.
@@ -19,7 +19,7 @@ PyeDNA loads the topology and trajectory, validates the requested frame interval
 
 ## User Input Required
 
-**Required:** trajectory files, frame interval, dye attachments, group definitions, and requested calculations.
+**Required:** an MD run directory and selected structures, or explicit trajectory files; a frame interval; dye attachments; group definitions; and requested calculations.
 
 We first need to make sure `analyze_traj` reads in the `[[attachments]]` properly that have been done initially when creating the DNA/dye structure from some `structure.toml`.
 
@@ -59,8 +59,7 @@ The term interaction does *not* refer to some actual physcial interaction betwee
 ```toml
 [trajectory]
 run_directory = "md/run_2026_01_01_12_00"
-topology_file = "dna_CY3_CY5.prmtop"
-trajectory_file = "dna_CY3_CY5.nc"
+structures = [1, 2]
 frame_interval = [0, 10]
 optimize_caps = false
 
@@ -86,6 +85,19 @@ attachments = [11]
 group = "donor"
 outputs = ["center_of_geometry"]
 
+[qm_defaults]
+method = "tddft"
+basis = "sto-3g"
+nstates = 1
+outputs = ["excited_state_energies", "oscillator_strengths", "strongest_state"]
+verbosity = 0
+
+[[quantum]]
+group = "donor"
+
+[[quantum]]
+group = "acceptor"
+
 [[quantum_interactions]]
 type = "coupling"
 groups = ["donor", "acceptor"]
@@ -105,6 +117,10 @@ output_root = "analysis"
 energy = "eV"
 coupling = "eV"
 distance = "angstrom"
+
+[quantum_scheduler]
+device = "auto"
+parallel = true
 ```
 
 ## Configuration Reference
@@ -113,12 +129,32 @@ distance = "angstrom"
 
 | Field | Required | Default | Meaning and constraints |
 | --- | --- | --- | --- |
-| `run_directory` | required | none | Directory containing the trajectory file, resolved relative to the current working directory. |
-| `topology_file` | required | none | Amber topology file, resolved relative to the current working directory. |
-| `trajectory_file` | required | none | Trajectory file within `run_directory`. |
-| `frame_interval` | required | none | Two integers `[initial_frame, final_frame]`, inclusive. Start must be non-negative and final must be within the trajectory. |
-| `optimize_caps` | optional | `[quantum_defaults].optimize_caps`, else `false` | If true, cap atoms appended to extracted dye snapshots are optimized with constrained DFT. |
-| `basis` | optional | `[quantum_defaults].basis`, else `"6-31g"` | Basis used when building PySCF molecules for caps/groups. |
+| `run_directory` | required | none | MD run directory, resolved relative to the current working directory. In structure-selection mode it must contain the MD `manifest.toml`. |
+| `structures` | conditionally required | none | Ranked finalized structure numbers to analyze from the MD run. Use this instead of `topology_file` and `trajectory_file`. Values must be unique positive integers. Each value resolves through `manifest.toml` to `structure_<NNN>/<system>.prmtop` and `structure_<NNN>/<system>.nc`. |
+| `topology_file` | conditionally required | none | Legacy single-trajectory mode only. Amber topology file, resolved relative to the current working directory; if absent there, PyeDNA also checks inside `run_directory`. |
+| `trajectory_file` | conditionally required | none | Legacy single-trajectory mode only. Trajectory file within `run_directory`. |
+| `frame_interval` | required | none | Two integers `[initial_frame, final_frame]`, inclusive. Start must be non-negative and final must be within each selected trajectory. The same interval is applied independently to every structure trajectory. |
+| `optimize_caps` | optional | `[qm_defaults].optimize_caps`, else `false` | If true, cap atoms appended to extracted dye snapshots are optimized with constrained DFT. |
+| `basis` | optional | `[qm_defaults].basis`, else `"6-31g"` | Basis used when building PySCF molecules for caps/groups. |
+
+The preferred MD-run mode is:
+
+```toml
+[trajectory]
+run_directory = "md/run_2026_01_01_12_00"
+structures = [1, 2]
+frame_interval = [0, 10]
+```
+
+Legacy explicit-file mode remains supported:
+
+```toml
+[trajectory]
+run_directory = "md/run_2026_01_01_12_00"
+topology_file = "dna_CY3_CY5.prmtop"
+trajectory_file = "dna_CY3_CY5.nc"
+frame_interval = [0, 10]
+```
 
 ### `[[attachments]]`
 
@@ -165,14 +201,16 @@ Groups are built by combining the capped snapshot molecules for the listed attac
 | `gpu`, `density_fit`, `tda`, `singlet` | optional | backend-specific defaults | Boolean quantum settings. `gpu` is deprecated; CPU/GPU execution is selected from visible runtime resources. |
 | `scf_cycles`, `verbosity` | optional | backend-specific defaults | Integer quantum settings. |
 
-Values in `[quantum_defaults]` are copied into each `[[quantum]]` job unless that job sets the field directly. `optimize_caps` is also accepted here as a trajectory construction default, but is not copied into individual `[[quantum]]` jobs.
+Values in `[qm_defaults]` are copied into each `[[quantum]]` job unless that job sets the field directly. `optimize_caps` is also accepted here as a trajectory construction default, but is not copied into individual `[[quantum]]` jobs. Legacy `[quantum_defaults]` is still accepted as an alias, but do not define both tables in one config.
 
-### `[quantum_defaults]`
+### `[qm_defaults]`
 
-Use `[quantum_defaults]` for quantum settings that should apply to all `[[quantum]]` jobs, such as `backend`, `basis`, `xc`, `density_fit`, `tda`, `singlet`, `nstates`, `scf_cycles`, or `verbosity`. Job-specific values in an individual `[[quantum]]` block override the defaults. `basis` and `optimize_caps` can also provide defaults for capped molecule and group construction unless `[trajectory]` sets them explicitly.
+Use `[qm_defaults]` for quantum settings that should apply to all `[[quantum]]` jobs, such as `backend`, `basis`, `xc`, `density_fit`, `tda`, `singlet`, `nstates`, `scf_cycles`, or `verbosity`. Job-specific values in an individual `[[quantum]]` block override the defaults. `basis` and `optimize_caps` can also provide defaults for capped molecule and group construction unless `[trajectory]` sets them explicitly.
+
+Do not set `gpu` in `[qm_defaults]`. CPU/GPU execution is controlled by `[quantum_scheduler].device`.
 
 ```toml
-[quantum_defaults]
+[qm_defaults]
 backend = "pyscf"
 basis = "6-31g"
 xc = "b3lyp"
@@ -208,6 +246,7 @@ Interactions must define exactly one of `groups` or `attachments`. Coupling inte
 | `[output].quantum_interactions_file` | optional | `"quantum_interactions.jsonl"` | Quantum interaction results filename. |
 | `[output].classical_interactions_file` | optional | `"classical_interactions.jsonl"` | Classical interaction results filename. |
 | `[output].interaction_file` | optional | quantum interactions legacy alias | Used when `quantum_interactions_file` is absent. |
+| `[quantum_scheduler].device` | optional | `"auto"` | `"auto"` uses GPU4PySCF for quantum jobs when CUDA GPUs are visible and CPU PySCF otherwise. `"cpu"` forces CPU PySCF even inside a GPU allocation. `"gpu"` requires at least one visible CUDA GPU. |
 | `[quantum_scheduler].parallel` | optional | `false` | If true, independent quantum jobs within one frame may run concurrently. |
 | `[quantum_scheduler].gpu_ids` | optional | inferred from visible GPUs | Deprecated advanced override. Non-empty list of visible GPU IDs. |
 | `[quantum_scheduler].max_workers` | optional | GPU: visible GPU count; CPU: `1` | Positive integer advanced override for concurrent quantum worker processes. |
@@ -236,7 +275,7 @@ Edit the `#SBATCH` resource lines in `jobs/analysis/analyze_traj.sh` for the res
 
 ## CPU/GPU Resource Selection
 
-`traj.toml` stores scientific analysis settings only. It should not need `gpu = true` or `gpu_ids = [...]` just to mirror the SLURM allocation. The example [jobs/analysis/analyze_traj.sh](../../jobs/analysis/analyze_traj.sh) script requests SLURM resources, then runs the same command:
+`traj.toml` stores scientific analysis settings and can optionally pin the quantum device. It should not need legacy `[[quantum]].gpu = true` or `[quantum_scheduler].gpu_ids = [...]` just to mirror the SLURM allocation. The example [jobs/analysis/analyze_traj.sh](../../jobs/analysis/analyze_traj.sh) script requests SLURM resources, then runs the same command:
 
 ```bash
 pyedna analysis trajectory "$@"
@@ -256,9 +295,34 @@ Choose CPU or GPU execution by changing the script's `#SBATCH` resource lines:
 #SBATCH --cpus-per-task=16
 ```
 
-At runtime, PyeDNA inspects `CUDA_VISIBLE_DEVICES` and SLURM variables such as `SLURM_CPUS_PER_TASK`, `SLURM_JOB_GPUS`, `SLURM_GPUS`, and `SLURM_GPUS_ON_NODE`. If no CUDA GPU is visible, cap optimization and DFT/TDDFT run with plain CPU PySCF. If one or more GPUs are visible, PyeDNA uses GPU4PySCF for PySCF-backed cap optimization and DFT/TDDFT.
+At runtime, PyeDNA inspects `CUDA_VISIBLE_DEVICES` and SLURM variables such as `SLURM_CPUS_PER_TASK`, `SLURM_JOB_GPUS`, `SLURM_GPUS`, and `SLURM_GPUS_ON_NODE`. If no CUDA GPU is visible, DFT/TDDFT quantum jobs run with plain CPU PySCF. If one or more GPUs are visible, the default `device = "auto"` uses GPU4PySCF for PySCF-backed DFT/TDDFT.
 
-For quantum analysis, `[quantum_scheduler].parallel = true` allows independent quantum jobs within one frame to run concurrently. In GPU mode, the default is one quantum worker per visible GPU. In CPU mode, the default is one quantum worker so each PySCF calculation can use the allocated CPU threads without accidental oversubscription. Use `[quantum_scheduler].max_workers` only as an advanced override.
+Use explicit CPU mode for debugging or for systems where GPU4PySCF is unavailable or numerically unstable:
+
+```toml
+[quantum_scheduler]
+device = "cpu"
+parallel = false
+```
+
+Use one GPU for the most conservative GPU run:
+
+```toml
+[quantum_scheduler]
+device = "gpu"
+parallel = false
+```
+
+For quantum analysis, `[quantum_scheduler].parallel = true` allows independent quantum jobs within one frame to run concurrently. In GPU mode, the default is one spawned quantum worker per visible GPU, with each worker receiving one `CUDA_VISIBLE_DEVICES` token before GPU4PySCF is imported. In CPU mode, the default is one quantum worker so each PySCF calculation can use the allocated CPU threads without accidental oversubscription. Use `[quantum_scheduler].max_workers` only as an advanced override.
+
+Two-GPU quantum-job parallelism can be requested with:
+
+```toml
+[quantum_scheduler]
+device = "gpu"
+parallel = true
+max_workers = 2
+```
 
 ## Generated Outputs
 
@@ -268,16 +332,38 @@ The default output directory is:
 analysis/analysis_YYYY_MM_DD_HH_MM/
 ```
 
+For an MD run with `structures = [1, 2]`, outputs are grouped by structure:
+
+```text
+analysis/analysis_YYYY_MM_DD_HH_MM/
+    traj.toml
+    manifest.json
+    structure_001/
+        classical.jsonl
+        quantum.jsonl
+        quantum_interactions.jsonl
+        classical_interactions.jsonl
+    structure_002/
+        classical.jsonl
+        quantum.jsonl
+        quantum_interactions.jsonl
+        classical_interactions.jsonl
+```
+
+Legacy explicit-file analysis writes the same JSONL files directly in the analysis run directory.
+
 Outputs include:
 
 - `traj.toml`: copy of the analysis configuration used for the run.
-- `manifest.json`: run metadata, trajectory input paths, units, output file paths, requested interactions, and quantum job summaries.
+- `manifest.json`: run metadata, trajectory input paths, selected structure mappings, units, output file paths, requested interactions, and quantum job summaries.
 - `classical.jsonl`: one JSON object per classical result, with `frame`, `group`, and a `values` object containing requested quantities such as `center_of_geometry`, `center_of_mass`, or `radius_of_gyration`.
 - `quantum.jsonl`: one JSON object per quantum result, with `frame`, `group`, `method`, `atom_count`, `charge`, `spin`, and, for TDDFT jobs, a nested `tddft` object containing requested outputs such as excited-state energies, oscillator strengths, transition dipoles, transition density matrices, or strongest-state information.
 - `classical_interactions.jsonl`: one JSON object per classical group-to-group interaction result, with `frame`, `type`, `method`, `groups`, and a `values` object such as `distance`.
 - `quantum_interactions.jsonl`: one JSON object per quantum group-to-group interaction result, with `frame`, `type`, `method`, `groups`, `state_pair`, and a `values` object containing coupling quantities.
 
 The `.jsonl` files use JSON Lines format: each line is an independent JSON object. This makes the files easy to append during long analyses and straightforward to load into tabular tools later.
+
+In MD-run structure mode, every JSONL record also includes `trajectory_index`, `structure`, and `structure_directory`. `trajectory_index` is the zero-based position in `[trajectory].structures`, so `structures = [2, 1]` records structure 2 with `trajectory_index = 0` and structure 1 with `trajectory_index = 1`.
 
 As a rough shape check, the number of records is normally:
 
@@ -298,7 +384,7 @@ The ORCA backend name is accepted by configuration validation, but the current O
 
 ## Common Modifications Or Advanced Options
 
-Use `[quantum_defaults]` to avoid repeating backend, basis, functional, or TDDFT settings across quantum jobs. Use interactions to request derived distances or couplings between groups.
+Use `[qm_defaults]` to avoid repeating backend, basis, functional, or TDDFT settings across quantum jobs. Use interactions to request derived distances or couplings between groups.
 
 ## Limitations / Troubleshooting
 

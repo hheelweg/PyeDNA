@@ -2,6 +2,7 @@
 
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
+import multiprocessing
 import os
 import warnings
 
@@ -61,6 +62,7 @@ def run_quantum_jobs(config, groups, frame, group_fragments=None, resources=None
 
     scheduler = config.get("quantum_scheduler", {})
     resources = detect_runtime_resources() if resources is None else resources
+    device = _device_from_scheduler(scheduler, resources)
     if scheduler.get("parallel", False):
         return run_quantum_jobs_parallel(
             jobs,
@@ -68,6 +70,7 @@ def run_quantum_jobs(config, groups, frame, group_fragments=None, resources=None
             frame,
             scheduler,
             group_fragments or {},
+            device=device,
             resources=resources,
         )
 
@@ -77,15 +80,25 @@ def run_quantum_jobs(config, groups, frame, group_fragments=None, resources=None
             groups[job["group"]],
             frame,
             (group_fragments or {}).get(job["group"], []),
+            device=device,
             resources=resources,
         )
         for job in jobs
     ]
 
 
-def run_quantum_jobs_parallel(jobs, groups, frame, scheduler, group_fragments=None, resources=None):
+def run_quantum_jobs_parallel(
+    jobs,
+    groups,
+    frame,
+    scheduler,
+    group_fragments=None,
+    *,
+    device=None,
+    resources=None,
+):
     resources = detect_runtime_resources() if resources is None else resources
-    device = _device_from_resources(resources)
+    device = device or _device_from_scheduler(scheduler, resources)
     gpu_ids = _scheduler_gpu_ids(scheduler, resources) if device == "gpu" else []
     max_workers = _scheduler_max_workers(scheduler, resources, device, len(jobs))
     threads_per_worker = _threads_per_worker(resources, max_workers)
@@ -104,22 +117,33 @@ def run_quantum_jobs_parallel(jobs, groups, frame, scheduler, group_fragments=No
             threads_per_worker,
         ))
 
-    with ProcessPoolExecutor(max_workers=max_workers) as executor:
+    context = _process_context(device)
+    with ProcessPoolExecutor(max_workers=max_workers, mp_context=context) as executor:
         futures = [
             executor.submit(_run_quantum_payload_worker, payload)
             for payload in payloads
         ]
-        return [future.result() for future in futures]
+        try:
+            return [future.result() for future in futures]
+        except Exception as exc:
+            if device == "gpu":
+                raise RuntimeError(
+                    "Parallel GPU quantum analysis failed while running worker "
+                    "processes. Try [quantum_scheduler].parallel = false, or "
+                    "use [quantum_scheduler].device = 'cpu' for CPU execution."
+                ) from exc
+            raise
 
 
-def run_quantum_job(job, group_mol, frame, fragments=None, resources=None):
+def run_quantum_job(job, group_mol, frame, fragments=None, device=None, resources=None):
     resources = detect_runtime_resources() if resources is None else resources
+    device = device or _device_from_scheduler({}, resources)
 
     return _run_quantum_payload(
         job,
         _group_payload(group_mol, fragments or []),
         frame,
-        device=_device_from_resources(resources),
+        device=device,
     )
 
 
@@ -156,6 +180,8 @@ def _run_quantum_payload_worker(payload):
     job, group_payload, frame, device, gpu_id, threads_per_worker = payload
     if gpu_id is not None:
         os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
+    elif device == "cpu":
+        os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
     _set_worker_threads(threads_per_worker)
     return _run_quantum_payload(
         job,
@@ -253,8 +279,22 @@ def _get_group_value(group_mol, key, default):
     return getattr(group_mol, key, default)
 
 
-def _device_from_resources(resources):
-    return "gpu" if resources.has_gpu else "cpu"
+def _device_from_scheduler(scheduler, resources):
+    device = scheduler.get("device", "auto")
+    if device == "auto":
+        return "gpu" if resources.has_gpu else "cpu"
+    if device == "gpu" and not resources.has_gpu:
+        raise RuntimeError(
+            "[quantum_scheduler].device = 'gpu' was requested, but no CUDA GPU "
+            "is visible to the analysis process."
+        )
+    return device
+
+
+def _process_context(device):
+    if device == "gpu":
+        return multiprocessing.get_context("spawn")
+    return None
 
 
 def _scheduler_gpu_ids(scheduler, resources):

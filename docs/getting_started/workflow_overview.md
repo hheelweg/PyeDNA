@@ -46,7 +46,7 @@ One `sbatch jobs/md/do_md.sh md.toml` submission can run multiple selected struc
 
 ## 4. Analyze Trajectories
 
-Use [analyze_traj](../analyze_trajectory/analyze_traj.md) with `traj.toml`. Analysis starts from an Amber topology and NetCDF trajectory, builds capped dye snapshots at configured attachments, groups attachments into scientific units, and runs requested classical or quantum calculations.
+Use [analyze_traj](../analyze_trajectory/analyze_traj.md) with `traj.toml`. Analysis starts from one or more Amber topologies and NetCDF trajectories, typically selected from an MD run with `[trajectory].structures`, builds capped dye snapshots at configured attachments, groups attachments into scientific units, and runs requested classical or quantum calculations.
 
 ```bash
 pyedna analysis trajectory traj.toml

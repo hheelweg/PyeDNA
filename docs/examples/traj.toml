@@ -1,8 +1,7 @@
 [trajectory]
-# Amber trajectory and frame range to analyze.
+# MD run directory, selected ranked structures, and frame range to analyze.
 run_directory = "md/run_2026_01_01_12_00"
-topology_file = "dna_CY3_CY5.prmtop"
-trajectory_file = "dna_CY3_CY5.nc"
+structures = [1, 2]
 frame_interval = [0, 10]
 optimize_caps = false
 
@@ -38,6 +37,23 @@ outputs = ["center_of_geometry"]
 # ============================================================
 
 # ============================================================
+# Defaults shared by quantum jobs.
+[qm_defaults]
+method = "tddft"
+basis = "sto-3g"
+nstates = 1
+outputs = ["excited_state_energies", "oscillator_strengths", "strongest_state"]
+verbosity = 0
+
+# Each quantum block requests a calculation for one group.
+[[quantum]]
+group = "donor"
+
+[[quantum]]
+group = "acceptor"
+# ============================================================
+
+# ============================================================
 # Each quantum interaction block requests a group-to-group coupling.
 [[quantum_interactions]]
 type = "coupling"
@@ -64,3 +80,8 @@ output_root = "analysis"
 energy = "eV"
 coupling = "eV"
 distance = "angstrom"
+
+[quantum_scheduler]
+# Use "auto" to select GPU4PySCF when CUDA GPUs are visible, else CPU PySCF.
+device = "auto"
+parallel = true

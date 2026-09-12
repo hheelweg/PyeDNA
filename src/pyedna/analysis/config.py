@@ -68,14 +68,34 @@ def _validate_trajectory(config):
     if not isinstance(traj, dict):
         raise ValueError("traj.toml requires a [trajectory] table")
 
-    required = ("run_directory", "topology_file", "trajectory_file", "frame_interval")
+    required = ("run_directory", "frame_interval")
     missing = [key for key in required if key not in traj]
     if missing:
         raise ValueError(f"[trajectory] is missing required keys: {missing}")
 
-    for key in ("run_directory", "topology_file", "trajectory_file"):
+    for key in ("run_directory",):
         if not isinstance(traj[key], str) or not traj[key]:
             raise TypeError(f"[trajectory].{key} must be a non-empty string")
+
+    has_structures = "structures" in traj
+    has_explicit_files = "topology_file" in traj or "trajectory_file" in traj
+    if has_structures and has_explicit_files:
+        raise ValueError(
+            "[trajectory] must use either structures or explicit topology_file/"
+            "trajectory_file, not both"
+        )
+    if has_structures:
+        _validate_structures(traj["structures"])
+    else:
+        missing = [
+            key for key in ("topology_file", "trajectory_file")
+            if key not in traj
+        ]
+        if missing:
+            raise ValueError(f"[trajectory] is missing required keys: {missing}")
+        for key in ("topology_file", "trajectory_file"):
+            if not isinstance(traj[key], str) or not traj[key]:
+                raise TypeError(f"[trajectory].{key} must be a non-empty string")
 
     _validate_frame_interval_shape(traj["frame_interval"])
 
@@ -83,6 +103,29 @@ def _validate_trajectory(config):
         raise TypeError("[trajectory].optimize_caps must be true or false")
     if "basis" in traj and not isinstance(traj["basis"], str):
         raise TypeError("[trajectory].basis must be a string")
+
+
+def _validate_structures(structures):
+    if not isinstance(structures, list) or not structures:
+        raise ValueError("[trajectory].structures must contain at least one structure")
+
+    invalid = [
+        structure for structure in structures
+        if not isinstance(structure, int) or structure <= 0
+    ]
+    if invalid:
+        raise ValueError(
+            f"[trajectory].structures contains invalid structure numbers: {invalid}"
+        )
+
+    duplicates = sorted({
+        structure for structure in structures
+        if structures.count(structure) > 1
+    })
+    if duplicates:
+        raise ValueError(
+            f"[trajectory].structures contains duplicate structure numbers: {duplicates}"
+        )
 
 
 def _validate_frame_interval_shape(frame_interval):
@@ -471,6 +514,12 @@ def _validate_quantum_scheduler(config):
 
     if "parallel" in scheduler and not isinstance(scheduler["parallel"], bool):
         raise TypeError("[quantum_scheduler].parallel must be true or false")
+    if "device" in scheduler:
+        if not isinstance(scheduler["device"], str) or not scheduler["device"]:
+            raise TypeError("[quantum_scheduler].device must be a non-empty string")
+        scheduler["device"] = scheduler["device"].lower()
+        if scheduler["device"] not in {"auto", "cpu", "gpu"}:
+            raise ValueError("[quantum_scheduler].device must be 'auto', 'cpu', or 'gpu'")
     if "gpu_ids" in scheduler:
         if not _is_int_list(scheduler["gpu_ids"]) or not scheduler["gpu_ids"]:
             raise TypeError("[quantum_scheduler].gpu_ids must be a non-empty list of integers")
@@ -479,6 +528,11 @@ def _validate_quantum_scheduler(config):
 
 
 def _apply_quantum_defaults(config):
+    if "qm_defaults" in config:
+        if "quantum_defaults" in config:
+            raise ValueError("Use either [qm_defaults] or [quantum_defaults], not both")
+        config["quantum_defaults"] = config.pop("qm_defaults")
+
     defaults = config.get("quantum_defaults", {})
     if defaults is None:
         defaults = {}
@@ -493,7 +547,7 @@ def _apply_quantum_defaults(config):
 
     for job in config.get("quantum", []) or []:
         for key, value in defaults.items():
-            if key == "optimize_caps":
+            if key in {"optimize_caps", "gpu"}:
                 continue
             job.setdefault(key, value)
 

@@ -50,7 +50,12 @@ class AnalysisRun:
 
 def prepare_output_files(config, config_file=None):
     run = create_analysis_run(config, config_file=config_file)
+    reset_output_files(run)
 
+    return run
+
+
+def reset_output_files(run):
     for path in (
         run.quantum_file,
         run.quantum_interactions_file,
@@ -63,6 +68,29 @@ def prepare_output_files(config, config_file=None):
                 path.unlink()
 
     return run
+
+
+def analysis_run_in_directory(run, directory):
+    directory = Path(directory)
+    child = AnalysisRun(
+        directory=directory,
+        quantum_file=_child_output_path(run.directory, directory, run.quantum_file),
+        quantum_interactions_file=_child_output_path(
+            run.directory,
+            directory,
+            run.quantum_interactions_file,
+        ),
+        classical_interactions_file=_child_output_path(
+            run.directory,
+            directory,
+            run.classical_interactions_file,
+        ),
+        classical_file=_child_output_path(run.directory, directory, run.classical_file),
+        manifest_file=run.manifest_file,
+        config_file=run.config_file,
+        units=run.units,
+    )
+    return reset_output_files(child)
 
 
 def create_analysis_run(config, config_file=None):
@@ -97,19 +125,33 @@ def create_analysis_run(config, config_file=None):
     return run
 
 
-def write_manifest(config, run):
+def write_manifest(config, run, trajectories=None):
+    outputs = {
+        "quantum": str(run.quantum_file),
+        "classical": str(run.classical_file),
+        "quantum_interactions": str(run.quantum_interactions_file),
+        "classical_interactions": str(run.classical_interactions_file),
+    }
+    has_child_directories = trajectories is not None and any(
+        item["analysis_directory"] is not None
+        for item in trajectories
+    )
+    if has_child_directories:
+        outputs = {
+            "per_trajectory": [
+                _manifest_child_outputs(run, item)
+                for item in trajectories
+            ]
+        }
+
     manifest = {
         "created_at": datetime.now().isoformat(timespec="seconds"),
         "directory": str(run.directory),
         "config_file": str(run.config_file),
         "trajectory": config.get("trajectory", {}),
+        "trajectories": _manifest_trajectories(trajectories),
         "units": config.get("analysis", {}).get("units", DEFAULT_ANALYSIS_UNITS),
-        "outputs": {
-            "quantum": str(run.quantum_file),
-            "classical": str(run.classical_file),
-            "quantum_interactions": str(run.quantum_interactions_file),
-            "classical_interactions": str(run.classical_interactions_file),
-        },
+        "outputs": outputs,
         "classical_interactions": config.get("classical_interactions", []),
         "quantum_interactions": config.get("quantum_interactions", []),
         "quantum_jobs": [
@@ -125,6 +167,55 @@ def write_manifest(config, run):
 
     with run.manifest_file.open("w") as f:
         json.dump(manifest, f, indent=2)
+
+
+def _manifest_trajectories(trajectories):
+    if trajectories is None:
+        return []
+
+    return [
+        {
+            "trajectory_index": item["trajectory_index"],
+            "structure": item["structure"],
+            "structure_directory": item["structure_directory"],
+            "topology_file": str(item["topology_file"]),
+            "trajectory_file": str(item["trajectory_file"]),
+            "analysis_directory": item["analysis_directory"],
+        }
+        for item in trajectories
+    ]
+
+
+def _manifest_child_outputs(run, item):
+    directory = run.directory / item["analysis_directory"]
+    quantum_interactions_file = _child_output_path(
+        run.directory,
+        directory,
+        run.quantum_interactions_file,
+    )
+    classical_interactions_file = _child_output_path(
+        run.directory,
+        directory,
+        run.classical_interactions_file,
+    )
+    return {
+        "trajectory_index": item["trajectory_index"],
+        "structure": item["structure"],
+        "structure_directory": item["structure_directory"],
+        "directory": str(directory),
+        "quantum": str(_child_output_path(run.directory, directory, run.quantum_file)),
+        "classical": str(_child_output_path(run.directory, directory, run.classical_file)),
+        "quantum_interactions": str(quantum_interactions_file),
+        "classical_interactions": str(classical_interactions_file),
+    }
+
+
+def _child_output_path(parent_directory, child_directory, path):
+    try:
+        relative = path.relative_to(parent_directory)
+    except ValueError:
+        relative = Path(path.name)
+    return child_directory / relative
 
 
 def quantum_output_file(target):
@@ -147,49 +238,67 @@ def classical_output_file(target):
     return _output_path(target, "classical_file", DEFAULT_CLASSICAL_OUTPUT)
 
 
-def append_quantum_results(target, results):
+def append_quantum_results(target, results, metadata=None):
     path = quantum_output_file(target)
     if path is None or not results:
         return
 
     with path.open("a") as f:
         for result in results:
-            f.write(json.dumps(quantum_result_record(result, units=_analysis_units(target))) + "\n")
+            record = quantum_result_record(result, units=_analysis_units(target))
+            f.write(json.dumps(_with_metadata(record, metadata)) + "\n")
 
 
-def append_interaction_results(target, results):
-    append_quantum_interaction_results(target, [result for result in results if result.type == "coupling"])
-    append_classical_interaction_results(target, [result for result in results if result.type == "distance"])
+def append_interaction_results(target, results, metadata=None):
+    append_quantum_interaction_results(
+        target,
+        [result for result in results if result.type == "coupling"],
+        metadata=metadata,
+    )
+    append_classical_interaction_results(
+        target,
+        [result for result in results if result.type == "distance"],
+        metadata=metadata,
+    )
 
 
-def append_quantum_interaction_results(target, results):
+def append_quantum_interaction_results(target, results, metadata=None):
     path = quantum_interactions_output_file(target)
     if path is None or not results:
         return
 
     with path.open("a") as f:
         for result in results:
-            f.write(json.dumps(quantum_interaction_result_record(result, units=_analysis_units(target))) + "\n")
+            record = quantum_interaction_result_record(result, units=_analysis_units(target))
+            f.write(json.dumps(_with_metadata(record, metadata)) + "\n")
 
 
-def append_classical_interaction_results(target, results):
+def append_classical_interaction_results(target, results, metadata=None):
     path = classical_interactions_output_file(target)
     if path is None or not results:
         return
 
     with path.open("a") as f:
         for result in results:
-            f.write(json.dumps(classical_interaction_result_record(result, units=_analysis_units(target))) + "\n")
+            record = classical_interaction_result_record(result, units=_analysis_units(target))
+            f.write(json.dumps(_with_metadata(record, metadata)) + "\n")
 
 
-def append_classical_results(target, results):
+def append_classical_results(target, results, metadata=None):
     path = classical_output_file(target)
     if path is None or not results:
         return
 
     with path.open("a") as f:
         for result in results:
-            f.write(json.dumps(classical_result_record(result, units=_analysis_units(target))) + "\n")
+            record = classical_result_record(result, units=_analysis_units(target))
+            f.write(json.dumps(_with_metadata(record, metadata)) + "\n")
+
+
+def _with_metadata(record, metadata):
+    if not metadata:
+        return record
+    return {**metadata, **record}
 
 
 def quantum_result_record(result, units=None):
@@ -301,6 +410,25 @@ def load_analysis_run(path):
         manifest = json.load(f)
 
     outputs = manifest.get("outputs", {})
+    if "per_trajectory" in outputs:
+        per_trajectory = outputs["per_trajectory"]
+        return LoadedAnalysisRun(
+            directory=directory,
+            manifest=manifest,
+            quantum=_read_per_trajectory_outputs(directory, per_trajectory, "quantum"),
+            classical=_read_per_trajectory_outputs(directory, per_trajectory, "classical"),
+            quantum_interactions=_read_per_trajectory_outputs(
+                directory,
+                per_trajectory,
+                "quantum_interactions",
+            ),
+            classical_interactions=_read_per_trajectory_outputs(
+                directory,
+                per_trajectory,
+                "classical_interactions",
+            ),
+        )
+
     return LoadedAnalysisRun(
         directory=directory,
         manifest=manifest,
@@ -309,6 +437,14 @@ def load_analysis_run(path):
         quantum_interactions=read_jsonl(_analysis_output_path(directory, outputs, "quantum_interactions")),
         classical_interactions=read_jsonl(_analysis_output_path(directory, outputs, "classical_interactions")),
     )
+
+
+def _read_per_trajectory_outputs(directory, outputs, key):
+    records = []
+    for item in outputs:
+        path = _analysis_output_path(directory, item, key)
+        records.extend(read_jsonl(path))
+    return records
 
 
 def read_jsonl(path):
