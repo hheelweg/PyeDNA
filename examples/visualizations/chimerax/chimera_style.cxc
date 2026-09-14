@@ -13,10 +13,13 @@ transparency :DA,DT,DC,DG,DA3,DA5,DC3,DC5,DG3,DG5,DT3,DT5 70 target f
 
 # Dye colors
 
-color :CY3 #D55E00
-color :CY5 #0072B2
-color :PDI #CC79A7
-color :SQA #009E73
+color :CY3 #D369CE
+color :CY5 #CEA36E
+color :PDI #A36BD1
+color :SQA #CF716D
+
+# next colors
+# #716DCF, #D16B9A
 
 style :CY3,CY5,PDI,SQA stick
 size :CY3,CY5,PDI,SQA stickRadius 0.30
