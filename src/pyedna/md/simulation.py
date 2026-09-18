@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import concurrent.futures
 from datetime import datetime
 import os
 from pathlib import Path
@@ -55,48 +54,11 @@ class MDSimulation:
             write_status(structure_dir, run["structure"], "pending", "")
 
         gpus = visible_gpus()
-        if self.md_engine == "pmemd.cuda" and len(gpus) > 1 and len(self.structure_runs) > 1:
-            self._run_gpu_queue(gpus)
-        else:
-            env = self._model_env(gpus[0]) if self.md_engine == "pmemd.cuda" and gpus else None
-            for run in self.structure_runs:
-                self._run_model(run, env=env)
+        env = self._model_env(gpus[0]) if self.md_engine == "pmemd.cuda" and gpus else None
+        for run in self.structure_runs:
+            self._run_model(run, env=env)
 
         return self
-
-    def _run_gpu_queue(self, gpus):
-        failures = []
-        with concurrent.futures.ThreadPoolExecutor(max_workers=len(gpus)) as executor:
-            futures = {}
-            pending = iter(self.structure_runs)
-
-            for gpu in gpus:
-                try:
-                    run = next(pending)
-                except StopIteration:
-                    break
-                future = executor.submit(self._run_model, run, self._model_env(gpu))
-                futures[future] = gpu
-
-            while futures:
-                done, _ = concurrent.futures.wait(
-                    futures,
-                    return_when=concurrent.futures.FIRST_COMPLETED,
-                )
-                for future in done:
-                    gpu = futures.pop(future)
-                    try:
-                        future.result()
-                    except Exception as exc:
-                        failures.append(exc)
-                    try:
-                        run = next(pending)
-                    except StopIteration:
-                        continue
-                    futures[executor.submit(self._run_model, run, self._model_env(gpu))] = gpu
-
-        if failures:
-            raise RuntimeError("One or more MD structure runs failed") from failures[0]
 
     def _run_model(self, run, env=None):
         structure_dir = self.output_dir / run["directory"]
@@ -246,7 +208,6 @@ class _ModelSimulation:
 
         self._require_runtime_file(f"min_{self.name}.ncrst")
         self._write_input("eq1")
-        self._write_input("eq2")
         self._run_stage(
             stage="eq1",
             in_coord=f"min_{self.name}.ncrst",
@@ -254,13 +215,77 @@ class _ModelSimulation:
             ref_coord=f"min_{self.name}.ncrst",
             netcdf=f"eq1_{self.name}.nc",
         )
-        self._run_stage(
-            stage="eq2",
-            in_coord=f"eq1_{self.name}.ncrst",
-            out_coord=f"eq2_{self.name}.ncrst",
-            ref_coord=f"min_{self.name}.ncrst",
-            netcdf=f"eq2_{self.name}.nc",
+        self._run_npt_equilibration()
+
+    def _run_npt_equilibration(self):
+        """Run NPT equilibration as one stage or restart chunks."""
+
+        chunks = self.config.equilibration.npt_chunks
+        if chunks == 1:
+            self._write_input("eq2")
+            self._run_stage(
+                stage="eq2",
+                in_coord=f"eq1_{self.name}.ncrst",
+                out_coord=f"eq2_{self.name}.ncrst",
+                ref_coord=f"min_{self.name}.ncrst",
+                netcdf=f"eq2_{self.name}.nc",
+            )
+            return
+
+        chunk_steps = self.config.equilibration.npt_steps // chunks
+        in_coord = f"eq1_{self.name}.ncrst"
+        final_restart = None
+        previous_prefix = None
+        (self.output_dir / f"eq2_{self.name}.out").write_text("")
+        for index in range(1, chunks + 1):
+            prefix = f"eq2_{index:03d}"
+            self._write_input(
+                "eq2",
+                prefix=prefix,
+                control_overrides={"nstlim": chunk_steps},
+            )
+            out_coord = f"{prefix}_{self.name}.ncrst"
+            self._run_stage(
+                stage="eq2",
+                prefix=prefix,
+                in_coord=in_coord,
+                out_coord=out_coord,
+                ref_coord=f"min_{self.name}.ncrst",
+                netcdf=f"{prefix}_{self.name}.nc",
+            )
+            self._append_npt_chunk_output(prefix, index, chunks)
+            in_coord = out_coord
+            final_restart = out_coord
+            if previous_prefix is not None:
+                self._cleanup_npt_chunk(previous_prefix)
+            previous_prefix = prefix
+
+        shutil.copy2(
+            self.output_dir / final_restart,
+            self.output_dir / f"eq2_{self.name}.ncrst",
         )
+        if self.config.equilibration.npt_cleanup in {"previous", "all"}:
+            self._cleanup_npt_chunk(previous_prefix)
+
+    def _append_npt_chunk_output(self, prefix, index, chunks):
+        """Append one chunk log to the canonical eq2 output."""
+
+        output = self.output_dir / f"eq2_{self.name}.out"
+        chunk = self.output_dir / f"{prefix}_{self.name}.out"
+        with output.open("a") as merged:
+            merged.write(f"===== eq2 chunk {index}/{chunks}: {chunk.name} =====\n")
+            merged.write(chunk.read_text())
+            merged.write("\n")
+
+    def _cleanup_npt_chunk(self, prefix):
+        """Remove temporary files for a completed NPT chunk when configured."""
+
+        if self.config.equilibration.npt_cleanup == "none":
+            return
+        for suffix in ("in", "out", "ncrst", "nc"):
+            path = self.output_dir / f"{prefix}_{self.name}.{suffix}"
+            if path.exists():
+                path.unlink()
 
     def run_production(self):
         """Run production MD."""
@@ -275,15 +300,16 @@ class _ModelSimulation:
             netcdf=f"{self.name}.nc",
         )
 
-    def _write_input(self, stage):
+    def _write_input(self, stage, prefix=None, control_overrides=None):
         if self.restraints is None:
             self._require_runtime_file(self.prmtop_name)
             self.restraints = AmberRestraintResolver(self.prmtop, self.config)
-        path = self.output_dir / f"{stage}_{self.name}.in"
-        path.write_text(self._stage_input(stage))
+        prefix = prefix or stage
+        path = self.output_dir / f"{prefix}_{self.name}.in"
+        path.write_text(self._stage_input(stage, control_overrides=control_overrides))
         return path
 
-    def _stage_input(self, stage):
+    def _stage_input(self, stage, control_overrides=None):
         restraint = self.restraints.for_stage(stage)
         titles = {
             "min1": "dna_dye: Initial minimization (solvent + ions)",
@@ -292,7 +318,10 @@ class _ModelSimulation:
             "eq2": "dna_dye: NPT equilibration and slowly remove DNA restraint",
             "prod": "dna_dye: production run (NPT)",
         }
-        lines = [titles[stage], self._namelist(self._stage_controls(stage, restraint))]
+        controls = self._stage_controls(stage, restraint)
+        if control_overrides:
+            controls.update(control_overrides)
+        lines = [titles[stage], self._namelist(controls)]
         return "\n".join(lines) + "\n"
 
     def _stage_controls(self, stage, restraint):
@@ -305,13 +334,14 @@ class _ModelSimulation:
 
         common = {
             "iwrap": sim.iwrap,
-            "cut": sim.cutoff,
+            "cut": self._stage_cutoff(stage),
             "ntr": int(restraint.active),
         }
         minimization = {
             "imin": 1,
             "maxcyc": min_cfg.max_steps,
             "ncyc": min_cfg.steepest_descent_steps,
+            "ntmin": min_cfg.ntmin,
             "ntb": sim.ntb,
         }
         md = {
@@ -381,6 +411,26 @@ class _ModelSimulation:
         controls.update(restraint_controls)
         return controls
 
+    def _stage_cutoff(self, stage):
+        sim_cutoff = self.config.simulation.cutoff
+        if stage in {"min1", "min2"}:
+            return self.config.minimization.cutoff or sim_cutoff
+        if stage == "eq1":
+            return (
+                self.config.equilibration.heating_cutoff
+                or self.config.equilibration.cutoff
+                or sim_cutoff
+            )
+        if stage == "eq2":
+            return (
+                self.config.equilibration.npt_cutoff
+                or self.config.equilibration.cutoff
+                or sim_cutoff
+            )
+        if stage == "prod":
+            return self.config.production.cutoff or sim_cutoff
+        raise ValueError(f"Unknown MD stage: {stage}")
+
     def _mask_restraint_controls(self, restraint):
         if not restraint.active:
             return {}
@@ -408,17 +458,20 @@ class _ModelSimulation:
             return value
         return f"'{value}'"
 
-    def _run_stage(self, stage, in_coord, out_coord, ref_coord, netcdf=None):
+    def _run_stage(self, stage, in_coord, out_coord, ref_coord, netcdf=None,
+                   prefix=None):
         self._require_runtime_file(in_coord)
         self._require_runtime_file(ref_coord)
         if self.restraints is None:
             self.restraints = AmberRestraintResolver(self.prmtop, self.config)
-        executable = self._md_engine()
+        executable = self._stage_engine(stage)
+        executable_path = self._stage_engine_path(executable)
+        prefix = prefix or stage
 
         command = [
-            *self._stage_launcher(), "-O",
-            "-i", f"{stage}_{self.name}.in",
-            "-o", f"{stage}_{self.name}.out",
+            *self._stage_launcher(executable, executable_path), "-O",
+            "-i", f"{prefix}_{self.name}.in",
+            "-o", f"{prefix}_{self.name}.out",
             "-p", self.prmtop_name,
             "-c", in_coord,
             "-r", out_coord,
@@ -442,20 +495,64 @@ class _ModelSimulation:
             self._resolve_md_engine()
         return self.md_engine
 
+    def _stage_engine(self, stage):
+        if stage in {"min1", "min2"}:
+            engine = self.config.minimization.engine
+        elif stage in {"eq1", "eq2"}:
+            engine = self.config.equilibration.engine
+        elif stage == "prod":
+            engine = self.config.production.engine
+        else:
+            raise ValueError(f"Unknown MD stage: {stage}")
+        if engine == "auto":
+            return self._md_engine()
+        return engine
+
+    def _stage_engine_path(self, executable):
+        self._validate_stage_engine_resources(executable)
+        if executable == self.md_engine:
+            return self.md_engine_path
+        return amber_executable(executable)
+
+    def _validate_stage_engine_resources(self, executable):
+        if executable == "pmemd.cuda" and not visible_gpus(self.env):
+            print(
+                "Warning: Amber engine 'pmemd.cuda' was requested but no CUDA "
+                "GPU is visible to this process.",
+                flush=True,
+            )
+            raise RuntimeError(
+                "Amber engine 'pmemd.cuda' was requested for an MD stage, but no "
+                "CUDA GPU is visible to the process. Request a GPU in the SLURM "
+                "script, for example with '#SBATCH --gres=gpu:1', or set the "
+                "stage engine to 'auto', 'pmemd', 'pmemd.MPI', or 'sander'."
+            )
+        if executable == "pmemd.MPI" and slurm_ntasks(self.env) <= 1:
+            print(
+                "Warning: Amber engine 'pmemd.MPI' was requested but "
+                "SLURM_NTASKS is unset or 1; this stage will run with one MPI task.",
+                flush=True,
+            )
+
     def _amber_env(self, executable):
         env = amber_environment(executable)
         if self.env is not None and "CUDA_VISIBLE_DEVICES" in self.env:
             env["CUDA_VISIBLE_DEVICES"] = self.env["CUDA_VISIBLE_DEVICES"]
         return env
 
-    def _stage_launcher(self):
-        if self._md_engine() == "pmemd.MPI":
-            return ["mpirun", "-np", str(self._mpi_tasks()), str(self.md_engine_path)]
-        return ["srun", "--ntasks", "1", str(self.md_engine_path)]
+    def _stage_launcher(self, executable, executable_path):
+        if executable == "pmemd.MPI":
+            return [
+                "mpirun",
+                "-np",
+                str(self._mpi_tasks(executable)),
+                str(executable_path),
+            ]
+        return ["srun", "--ntasks", "1", str(executable_path)]
 
-    def _mpi_tasks(self):
-        if self._md_engine() == "pmemd.MPI":
-            return slurm_ntasks()
+    def _mpi_tasks(self, executable):
+        if executable == "pmemd.MPI":
+            return slurm_ntasks(self.env)
         return 1
 
     def _require_runtime_file(self, filename):
@@ -476,6 +573,10 @@ class _ModelSimulation:
 
         if cleanup == "minimal":
             self._unlink_matching("*.out", keep={f"prod_{self.name}.out"})
+
+        if cleanup == "standard":
+            self._unlink_matching("eq2_[0-9][0-9][0-9]_*.in")
+            self._unlink_matching("eq2_[0-9][0-9][0-9]_*.out")
 
         if cleanup in {"minimal", "standard"}:
             self._unlink_matching("*.ncrst", keep={f"min_{self.name}.ncrst"})

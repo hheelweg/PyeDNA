@@ -18,6 +18,9 @@ except ImportError:
 STAGE_GROUPS = ("prepare", "minimize", "equilibrate", "production")
 CLEANUP_LEVELS = ("minimal", "standard", "restart", "all")
 RESTRAINT_TARGETS = ("none", "terminal", "structure", "custom")
+AMBER_MD_ENGINES = ("auto", "pmemd", "pmemd.MPI", "pmemd.cuda", "sander")
+MINIMIZATION_ENGINES = AMBER_MD_ENGINES
+NPT_CLEANUP_LEVELS = ("previous", "all", "none")
 
 
 @dataclass(frozen=True)
@@ -135,9 +138,15 @@ class MinimizationConfig:
 
     max_steps: int = 1000
     steepest_descent_steps: int = 500
+    engine: str = "pmemd"
+    cutoff: float | None = None
+    ntmin: int = 1
     restraints: MinimizationRestraintConfig = field(
         default_factory=MinimizationRestraintConfig
     )
+
+    def __post_init__(self):
+        _validate_md_engine("minimization.engine", self.engine)
 
     @classmethod
     def from_mapping(cls, data):
@@ -152,14 +161,34 @@ class MinimizationConfig:
 class EquilibrationConfig:
     """Store equilibration step counts, output intervals, and restraints."""
 
+    engine: str = "auto"
+    cutoff: float | None = None
+    heating_cutoff: float | None = None
+    npt_cutoff: float | None = None
     heating_steps: int = 10000
     npt_steps: int = 50000
+    npt_chunks: int = 1
+    npt_cleanup: str = "previous"
     ntpr: int = 5000
     ntwx: int = 5000
     ntwr: int = 5000
     restraints: EquilibrationRestraintConfig = field(
         default_factory=EquilibrationRestraintConfig
     )
+
+    def __post_init__(self):
+        _validate_md_engine("equilibration.engine", self.engine)
+        if self.npt_chunks < 1:
+            raise ValueError("'equilibration.npt_chunks' must be at least 1")
+        if self.npt_steps % self.npt_chunks != 0:
+            raise ValueError(
+                "'equilibration.npt_steps' must be divisible by "
+                "'equilibration.npt_chunks'"
+            )
+        if self.npt_cleanup not in NPT_CLEANUP_LEVELS:
+            raise ValueError(
+                f"'equilibration.npt_cleanup' must be one of {NPT_CLEANUP_LEVELS}"
+            )
 
     @classmethod
     def from_mapping(cls, data):
@@ -174,12 +203,17 @@ class EquilibrationConfig:
 class ProductionConfig:
     """Store production MD length, output intervals, and restraints."""
 
+    engine: str = "auto"
+    cutoff: float | None = None
     steps: int = 1000000
     log_interval: int = 5000
     trajectory_interval: int = 5000
     restart_interval: int = 50000
     force_interval: int = 0
     restraints: StageRestraintConfig = field(default_factory=StageRestraintConfig)
+
+    def __post_init__(self):
+        _validate_md_engine("production.engine", self.engine)
 
     @classmethod
     def from_mapping(cls, data):
@@ -190,6 +224,11 @@ class ProductionConfig:
         _rename_legacy_field(data, "ntwr", "restart_interval")
         _rename_legacy_field(data, "ntwf", "force_interval")
         return cls(restraints=restraints, **data)
+
+
+def _validate_md_engine(field_name, engine):
+    if engine not in AMBER_MD_ENGINES:
+        raise ValueError(f"'{field_name}' must be one of {AMBER_MD_ENGINES}")
 
 
 @dataclass(frozen=True)

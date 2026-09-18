@@ -26,7 +26,10 @@ timestep = 0.002
 cutoff = 8.0
 
 [minimization]
-# Two minimization substages use these step counts.
+# Two minimization substages use these step counts and the CPU pmemd engine by default.
+engine = "pmemd"
+cutoff = 8.0
+ntmin = 1
 max_steps = 1000
 steepest_descent_steps = 500
 [minimization.restraints.stage1]
@@ -39,9 +42,14 @@ target = "terminal"
 strength = 10.0
 
 [equilibration]
-# Heating and NPT equilibration lengths and output intervals.
+# Heating and NPT equilibration lengths, output intervals, and optional engine/cutoffs.
+engine = "auto"
+heating_cutoff = 8.0
+npt_cutoff = 8.0
 heating_steps = 10000
 npt_steps = 50000
+npt_chunks = 5
+npt_cleanup = "previous"
 ntpr = 5000
 ntwx = 5000
 ntwr = 5000
@@ -56,7 +64,9 @@ strength = 5.0
 
 
 [production]
-# Production length and output intervals.
+# Production length, output intervals, and optional engine/cutoff.
+engine = "auto"
+cutoff = 8.0
 steps = 1000000
 log_interval = 5000
 trajectory_interval = 5000
