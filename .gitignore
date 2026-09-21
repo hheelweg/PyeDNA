@@ -21,3 +21,6 @@ requirements-old.txt
 # Python bytecode and cache directories
 __pycache__/
 *.py[cod]
+
+# Avoid push of tests/ code
+tests/
