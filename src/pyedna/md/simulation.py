@@ -153,6 +153,14 @@ class _ModelSimulation:
     def run(self):
         """Run the configured user-facing workflow stages."""
 
+        if self.config.system.prmtop is not None:
+            if "prepare" in self.config.workflow.stages:
+                raise ValueError(
+                    "'system.prmtop' supplies a ready topology; remove 'prepare' "
+                    "from 'workflow.stages'"
+                )
+            self.copy_topology()
+
         for stage in self.config.workflow.stages:
             self._write_status("running", stage)
             self.current_stage = stage
@@ -179,6 +187,23 @@ class _ModelSimulation:
         setup.prepare(run_tleap=True, cleanup_intermediates=False)
         self._require_runtime_file(self.prmtop_name)
         self._require_runtime_file(self.rst7_name)
+        self.restraints = AmberRestraintResolver(self.prmtop, self.config)
+        print(self.restraints.analysis_text(), flush=True)
+
+    def copy_topology(self):
+        """Use a user-supplied prmtop/rst7 instead of the tleap 'prepare' stage."""
+
+        for source, target in (
+            (self.config.system.prmtop, self.prmtop),
+            (self.config.system.rst7, self.rst7),
+        ):
+            source = Path(source)
+            if not source.is_absolute():
+                source = self.source_workdir / source
+            if not source.exists():
+                raise FileNotFoundError(f"Supplied topology file not found: {source}")
+            shutil.copy2(source, target)
+            print(f"Copied {source} -> {target}", flush=True)
         self.restraints = AmberRestraintResolver(self.prmtop, self.config)
         print(self.restraints.analysis_text(), flush=True)
 
