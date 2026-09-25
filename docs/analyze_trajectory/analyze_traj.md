@@ -60,7 +60,8 @@ The term interaction does *not* refer to some actual physcial interaction betwee
 [trajectory]
 run_directory = "md/run_2026_01_01_12_00"
 structures = [1, 2]
-frame_interval = [0, 10]
+frame_interval = "all"
+frame_stride = 1
 optimize_caps = false
 
 [[attachments]]
@@ -110,6 +111,15 @@ type = "distance"
 groups = ["donor", "acceptor"]
 method = "center_of_geometry"
 
+[[classical_interactions]]
+type = "axis_angle"
+groups = ["donor", "acceptor"]
+
+[[classical_interactions]]
+type = "orientation_factor"
+groups = ["donor", "acceptor"]
+method = "center_of_geometry"
+
 [analysis]
 output_root = "analysis"
 
@@ -133,7 +143,8 @@ parallel = true
 | `structures` | conditionally required | none | Ranked finalized structure numbers to analyze from the MD run. Use this instead of `topology_file` and `trajectory_file`. Values must be unique positive integers. Each value resolves through `manifest.toml` to `structure_<NNN>/<system>.prmtop` and `structure_<NNN>/<system>.nc`. |
 | `topology_file` | conditionally required | none | Legacy single-trajectory mode only. Amber topology file, resolved relative to the current working directory; if absent there, PyeDNA also checks inside `run_directory`. |
 | `trajectory_file` | conditionally required | none | Legacy single-trajectory mode only. Trajectory file within `run_directory`. |
-| `frame_interval` | required | none | Two integers `[initial_frame, final_frame]`, inclusive. Start must be non-negative and final must be within each selected trajectory. The same interval is applied independently to every structure trajectory. |
+| `frame_interval` | required | none | Either `"all"` or two integers `[initial_frame, final_frame]`, inclusive. `"all"` analyzes frames `0` through `num_frames - 1` for each selected trajectory. Explicit starts must be non-negative and explicit final frames must be within each selected trajectory. The same selection is applied independently to every structure trajectory. |
+| `frame_stride` | optional | `1` | Positive integer stride for frame iteration within `frame_interval`. `1` analyzes every selected frame; `10` analyzes every tenth frame such as `0, 10, 20, ...` for `frame_interval = "all"`. |
 | `optimize_caps` | optional | `[qm_defaults].optimize_caps`, else `false` | If true, cap atoms appended to extracted dye snapshots are optimized with constrained DFT. |
 | `basis` | optional | `[qm_defaults].basis`, else `"6-31g"` | Basis used when building PySCF molecules for caps/groups. |
 
@@ -143,7 +154,28 @@ The preferred MD-run mode is:
 [trajectory]
 run_directory = "md/run_2026_01_01_12_00"
 structures = [1, 2]
-frame_interval = [0, 10]
+frame_interval = "all"
+frame_stride = 1
+```
+
+To analyze every tenth available frame:
+
+```toml
+[trajectory]
+run_directory = "md/run_2026_01_01_12_00"
+structures = [1, 2]
+frame_interval = "all"
+frame_stride = 10
+```
+
+To analyze every fifth frame between explicit inclusive endpoints:
+
+```toml
+[trajectory]
+run_directory = "md/run_2026_01_01_12_00"
+structures = [1, 2]
+frame_interval = [20, 100]
+frame_stride = 5
 ```
 
 Legacy explicit-file mode remains supported:
@@ -153,7 +185,8 @@ Legacy explicit-file mode remains supported:
 run_directory = "md/run_2026_01_01_12_00"
 topology_file = "dna_CY3_CY5.prmtop"
 trajectory_file = "dna_CY3_CY5.nc"
-frame_interval = [0, 10]
+frame_interval = "all"
+frame_stride = 1
 ```
 
 ### `[[attachments]]`
@@ -182,7 +215,7 @@ Groups are built by combining the capped snapshot molecules for the listed attac
 | Field | Required | Default | Meaning and constraints |
 | --- | --- | --- | --- |
 | `group` | required | none | Existing group name. |
-| `outputs` | optional | none | Supported values are `axis_angle`, `center_of_geometry`, `center_of_mass`, and `radius_of_gyration`. |
+| `outputs` | optional | none | Supported values are `center_of_geometry`, `center_of_mass`, and `radius_of_gyration`. |
 
 ### `[[quantum]]`
 
@@ -227,9 +260,26 @@ Interactions are quantities computed between two groups, such as a distance betw
 | Table | Type | Required fields | Optional fields |
 | --- | --- | --- | --- |
 | `[[classical_interactions]]` | `"distance"` | exactly two `groups` or at least two `attachments` | `method = "center_of_geometry"` or `"center_of_mass"` |
+| `[[classical_interactions]]` | `"axis_angle"` | exactly two `groups`; each group must contain exactly one attachment | `method = "axis"` |
+| `[[classical_interactions]]` | `"orientation_factor"` | exactly two `groups`; each group must contain exactly one attachment | `method = "center_of_geometry"` or `"center_of_mass"` |
 | `[[quantum_interactions]]` | `"coupling"` | exactly two `groups` or at least two `attachments` | `method = "tdm"`, `state_pairs`, `coupling_type = "electronic"`, `"cJ"`, or `"cK"` |
 
-Interactions must define exactly one of `groups` or `attachments`. Coupling interactions can request state pairs containing non-negative integers or `"strongest"`.
+Interactions must define exactly one of `groups` or `attachments`. `axis_angle` and `orientation_factor` currently support `groups` only, and each referenced group must contain exactly one dye attachment. Coupling interactions can request state pairs containing non-negative integers or `"strongest"`.
+
+For geometry-dependent analyses such as `axis_angle` and `orientation_factor`, each dye-library entry must manually define optional geometry metadata when the analysis is requested:
+
+```toml
+# <libraries.dye_dir>/<DYE>/geometry.toml
+[axis]
+atoms = ["ATOM1", "ATOM2"]
+
+[plane]
+atoms = ["ATOM1", "ATOM2", "ATOM3"]
+```
+
+`[axis].atoms` must contain exactly two atom names. `[plane].atoms`, when present, must contain at least three atom names and is parsed for geometry support, although `plane_angle` is not exposed in `traj.toml`. The `axis_angle` value is an undirected molecular-axis angle in degrees, computed from `acos(abs(dot(axis1, axis2)))`, so antiparallel axes give `0` degrees.
+
+For `orientation_factor`, PyeDNA treats the user-specified dye `[axis]` as a classical proxy for the dye transition-dipole direction. This is a geometry-based approximation unless that molecular axis has independently been shown to correspond to the actual optical transition dipole. For donor and acceptor axes `mu_D` and `mu_A`, and the donor-to-acceptor unit vector `R`, PyeDNA computes `kappa = mu_D dot mu_A - 3 (mu_D dot R)(mu_A dot R)` and writes both signed `kappa` and `kappa_squared`. The center vector is defined using `method = "center_of_geometry"` by default, or `method = "center_of_mass"` when requested. If the donor and acceptor centers coincide, the calculation fails clearly.
 
 ### `[analysis]`, `[analysis.units]`, `[analysis.save]`, `[output]`, and `[quantum_scheduler]`
 
@@ -358,7 +408,7 @@ Outputs include:
 - `manifest.json`: run metadata, trajectory input paths, selected structure mappings, units, output file paths, requested interactions, and quantum job summaries.
 - `classical.jsonl`: one JSON object per classical result, with `frame`, `group`, and a `values` object containing requested quantities such as `center_of_geometry`, `center_of_mass`, or `radius_of_gyration`.
 - `quantum.jsonl`: one JSON object per quantum result, with `frame`, `group`, `method`, `atom_count`, `charge`, `spin`, and, for TDDFT jobs, a nested `tddft` object containing requested outputs such as excited-state energies, oscillator strengths, transition dipoles, transition density matrices, or strongest-state information.
-- `classical_interactions.jsonl`: one JSON object per classical group-to-group interaction result, with `frame`, `type`, `method`, `groups`, and a `values` object such as `distance`.
+- `classical_interactions.jsonl`: one JSON object per classical group-to-group interaction result, with `frame`, `type`, `method`, `groups`, and a `values` object such as `distance`, `axis_angle`, or `orientation_factor` values `kappa` and `kappa_squared`.
 - `quantum_interactions.jsonl`: one JSON object per quantum group-to-group interaction result, with `frame`, `type`, `method`, `groups`, `state_pair`, and a `values` object containing coupling quantities.
 
 The `.jsonl` files use JSON Lines format: each line is an independent JSON object. This makes the files easy to append during long analyses and straightforward to load into tabular tools later.

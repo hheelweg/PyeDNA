@@ -24,11 +24,11 @@ SUPPORTED_QUANTUM_OUTPUTS = {
     "orbital_participation",
 }
 SUPPORTED_CLASSICAL_OUTPUTS = {
-    "axis_angle",
     "center_of_geometry",
     "center_of_mass",
     "radius_of_gyration",
 }
+SUPPORTED_CLASSICAL_INTERACTIONS = {"axis_angle", "distance", "orientation_factor"}
 
 
 @dataclass(frozen=True)
@@ -97,7 +97,8 @@ def _validate_trajectory(config):
             if not isinstance(traj[key], str) or not traj[key]:
                 raise TypeError(f"[trajectory].{key} must be a non-empty string")
 
-    _validate_frame_interval_shape(traj["frame_interval"])
+    traj["frame_interval"] = _validate_frame_interval_shape(traj["frame_interval"])
+    _validate_frame_stride(traj)
 
     if "optimize_caps" in traj and not isinstance(traj["optimize_caps"], bool):
         raise TypeError("[trajectory].optimize_caps must be true or false")
@@ -129,8 +130,13 @@ def _validate_structures(structures):
 
 
 def _validate_frame_interval_shape(frame_interval):
+    if isinstance(frame_interval, str):
+        if frame_interval.lower() == "all":
+            return "all"
+        raise ValueError('[trajectory].frame_interval string value must be "all"')
+
     if not isinstance(frame_interval, list) or len(frame_interval) != 2:
-        raise ValueError("[trajectory].frame_interval must be [initial_frame, final_frame]")
+        raise ValueError('[trajectory].frame_interval must be [initial_frame, final_frame] or "all"')
 
     start, stop = frame_interval
     if not isinstance(start, int) or not isinstance(stop, int):
@@ -139,6 +145,14 @@ def _validate_frame_interval_shape(frame_interval):
         raise ValueError("[trajectory].frame_interval initial frame cannot be negative")
     if stop < start:
         raise ValueError("[trajectory].frame_interval final frame must be >= initial frame")
+    return frame_interval
+
+
+def _validate_frame_stride(traj):
+    stride = traj.get("frame_stride", 1)
+    if not isinstance(stride, int) or isinstance(stride, bool) or stride <= 0:
+        raise TypeError("[trajectory].frame_stride must be a positive integer")
+    traj["frame_stride"] = stride
 
 
 def _validate_attachments(config):
@@ -340,9 +354,11 @@ def _normalize_interactions(config):
         if not isinstance(interaction, dict):
             raise TypeError(f"[[interactions]] block {index} must be a table")
         interaction_type = interaction.get("type")
+        if isinstance(interaction_type, str):
+            interaction_type = interaction_type.lower()
         if interaction_type == "coupling":
             quantum_interactions.append(interaction)
-        elif interaction_type == "distance":
+        elif interaction_type in SUPPORTED_CLASSICAL_INTERACTIONS:
             classical_interactions.append(interaction)
         else:
             raise ValueError(
@@ -371,18 +387,44 @@ def _validate_classical_interactions(config, attachment_residues, group_names):
         if not isinstance(interaction["type"], str) or not interaction["type"]:
             raise TypeError(f"[[classical_interactions]] block {index} type must be a non-empty string")
         interaction["type"] = interaction["type"].lower()
-        if interaction["type"] != "distance":
-            raise ValueError(f"[[classical_interactions]] block {index} currently supports type = 'distance'")
-
-        if "groups" not in interaction:
-            raise ValueError(f"[[classical_interactions]] block {index} distance requires groups")
-        if len(interaction["groups"]) != 2:
-            raise ValueError(f"[[classical_interactions]] block {index} distance requires exactly two groups")
-        method = interaction.get("method", "center_of_geometry")
-        if method not in ("center_of_geometry", "center_of_mass"):
+        if interaction["type"] not in SUPPORTED_CLASSICAL_INTERACTIONS:
             raise ValueError(
-                f"[[classical_interactions]] block {index} distance method must be center_of_geometry or center_of_mass"
+                f"[[classical_interactions]] block {index} type must be one of "
+                f"{sorted(SUPPORTED_CLASSICAL_INTERACTIONS)}"
             )
+
+        if interaction["type"] == "distance":
+            if "groups" not in interaction:
+                raise ValueError(f"[[classical_interactions]] block {index} distance requires groups")
+            if len(interaction["groups"]) != 2:
+                raise ValueError(f"[[classical_interactions]] block {index} distance requires exactly two groups")
+            method = interaction.get("method", "center_of_geometry")
+            if method not in ("center_of_geometry", "center_of_mass"):
+                raise ValueError(
+                    f"[[classical_interactions]] block {index} distance method must be center_of_geometry or center_of_mass"
+                )
+
+        if interaction["type"] == "axis_angle":
+            if "groups" not in interaction:
+                raise ValueError(f"[[classical_interactions]] block {index} axis_angle requires groups")
+            if len(interaction["groups"]) != 2:
+                raise ValueError(f"[[classical_interactions]] block {index} axis_angle requires exactly two groups")
+            method = interaction.get("method", "axis")
+            if method != "axis":
+                raise ValueError(f"[[classical_interactions]] block {index} axis_angle method must be axis")
+            interaction["method"] = method
+
+        if interaction["type"] == "orientation_factor":
+            if "groups" not in interaction:
+                raise ValueError(f"[[classical_interactions]] block {index} orientation_factor requires groups")
+            if len(interaction["groups"]) != 2:
+                raise ValueError(f"[[classical_interactions]] block {index} orientation_factor requires exactly two groups")
+            method = interaction.get("method", "center_of_geometry")
+            if method not in ("center_of_geometry", "center_of_mass"):
+                raise ValueError(
+                    f"[[classical_interactions]] block {index} orientation_factor method must be center_of_geometry or center_of_mass"
+                )
+            interaction["method"] = method
 
 
 def _validate_quantum_interactions(config, attachment_residues, group_names):

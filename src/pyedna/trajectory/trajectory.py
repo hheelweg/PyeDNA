@@ -25,8 +25,16 @@ except ImportError:
 
 
 def validate_frame_interval(frame_interval, num_frames):
+    if num_frames <= 0:
+        raise ValueError("Trajectory contains no frames")
+
+    if isinstance(frame_interval, str):
+        if frame_interval.lower() == "all":
+            return 0, num_frames - 1
+        raise ValueError('frame_interval string value must be "all"')
+
     if not isinstance(frame_interval, (list, tuple)) or len(frame_interval) != 2:
-        raise ValueError("frame_interval must be [initial_frame, final_frame]")
+        raise ValueError('frame_interval must be [initial_frame, final_frame] or "all"')
 
     start, stop = frame_interval
 

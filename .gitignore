@@ -22,5 +22,6 @@ requirements-old.txt
 __pycache__/
 *.py[cod]
 
-# Avoid push of tests/ code
-tests/
+# Avoid push of tests/ code except focused repository tests
+tests/*
+!tests/test_classical_geometry.py

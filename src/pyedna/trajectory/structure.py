@@ -20,6 +20,16 @@ class Fragment:
     atom_indices: list
 
 
+@dataclass(frozen=True)
+class AttachmentSnapshot:
+    residue: int
+    dye: str
+    amber_residue: int
+    atom_names: tuple
+    coordinates: np.ndarray
+    molecule: object
+
+
 def combine_molecules(molecules, basis="6-31g", spin=0):
     atoms = []
     for mol in molecules:
