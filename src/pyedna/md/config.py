@@ -30,10 +30,16 @@ class SystemConfig:
     name: str
     structure_directory: str = "structures"
     structures: list[int] = field(default_factory=lambda: [1])
+    prmtop: str | None = None
+    rst7: str | None = None
 
     def __post_init__(self):
         if not self.name:
             raise ValueError("'system.name' must be specified")
+        if (self.prmtop is None) != (self.rst7 is None):
+            raise ValueError(
+                "'system.prmtop' and 'system.rst7' must be given together"
+            )
         if not self.structures:
             raise ValueError("'system.structures' must contain at least one structure")
         invalid = [
