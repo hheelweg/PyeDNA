@@ -200,6 +200,6 @@ Use `[docking.overrides.*]` only for HADDOCK parameters that are present in the 
 
 ## Limitations / Troubleshooting
 
-Generated DNA currently supports `double_helix` only. `[[attachments]]` requires matching dye/linker library entries and a manually curated DNA-linker compatibility FRCMOD. HADDOCK finalization requires `haddock/run/4_caprieval/capri_ss.tsv` and flexref model PDB files under `haddock/run/3_flexref/`.
+Generated DNA currently supports `double_helix` only. `[[attachments]]` requires matching dye/linker library entries and a manually curated DNA-linker compatibility FRCMOD. Generated dye-linker components are rejected if assembly or the final linked MOL2 contains severe all-atom steric clashes, so invalid geometries fail inside PyeDNA before ACPYPE or HADDOCK topology preparation. HADDOCK finalization requires `haddock/run/4_caprieval/capri_ss.tsv` and flexref model PDB files under `haddock/run/3_flexref/`.
 
 During finalization, attachment restraints are treated as feasibility requirements for subsequent MD Amber preparation. PyeDNA writes per-model diagnostics to `haddock/attachment_validation.csv`, selects only models whose intended attachment distances fall within the bond-forming validation window, and fails explicitly if no HADDOCK model satisfies those distances. The default validation window is 1.2-2.3 A. If fewer valid models are available than `docking.top_models`, only the valid subset is written.

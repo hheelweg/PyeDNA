@@ -20,6 +20,34 @@ except ImportError:
     import tomli as tomllib
 
 
+_VDW_RADII = {
+    "H": 1.20,
+    "C": 1.70,
+    "N": 1.55,
+    "O": 1.52,
+    "P": 1.80,
+    "S": 1.80,
+    "F": 1.47,
+    "Cl": 1.75,
+    "Br": 1.85,
+    "I": 1.98,
+}
+
+
+@dataclass(frozen=True)
+class ClashResult:
+    """Steric overlap summary for one intermolecular/contact scan."""
+
+    score: float
+    valid: bool
+    min_distance: float
+    atom_i: object = None
+    atom_j: object = None
+    threshold: float = 0.0
+    hard_threshold: float = 0.0
+    rejected: int = 0
+
+
 def _read_attach(path):
     """Read attachment labels and atom names from an .attach file."""
     data = {}
@@ -221,9 +249,49 @@ def _rotate_about_axis(coords, origin, axis, angle_deg):
     return rotation.apply(coords - origin) + origin
 
 
-def _clash_score(moving, fixed, moving_coords=None, fixed_coords=None,
-                 exclude_pair=None, cutoff=2.0):
-    """Return heavy-atom intermolecular overlap penalty."""
+def _element(atom):
+    """Return a normalized element symbol for an MDAnalysis atom."""
+    element = getattr(atom, "element", "") or _element_from_gaff(atom.type)
+    if not element:
+        raise ValueError(f"Cannot determine element for atom {atom.name}")
+    return element[0].upper() + element[1:].lower()
+
+
+def _atom_label(atom):
+    """Return a concise atom identifier for diagnostics."""
+    return (
+        f"{getattr(atom, 'resname', '?')}:{getattr(atom, 'resid', '?')}:"
+        f"{atom.name}(id={getattr(atom, 'id', atom.index + 1)})"
+    )
+
+
+def _vdw_radii(atoms):
+    """Return van der Waals radii for atoms used in steric screening."""
+    radii = []
+
+    for atom in atoms:
+        element = _element(atom)
+        try:
+            radii.append(_VDW_RADII[element])
+        except KeyError as exc:
+            raise ValueError(
+                f"No van der Waals radius configured for element {element!r} "
+                f"on atom {_atom_label(atom)}"
+            ) from exc
+
+    return np.asarray(radii, dtype=float)
+
+
+def _clash_result(
+    moving,
+    fixed,
+    moving_coords=None,
+    fixed_coords=None,
+    exclude_pairs=(),
+    soft_scale=0.75,
+    hard_scale=0.50,
+):
+    """Return all-atom, element-aware intermolecular steric diagnostics."""
     moving_coords = (
         moving.positions if moving_coords is None else np.asarray(moving_coords)
     )
@@ -232,19 +300,61 @@ def _clash_score(moving, fixed, moving_coords=None, fixed_coords=None,
     )
 
     distances = cdist(moving_coords, fixed_coords)
+    radius_sums = _vdw_radii(moving)[:, None] + _vdw_radii(fixed)[None, :]
+    soft_thresholds = soft_scale * radius_sums
+    hard_thresholds = hard_scale * radius_sums
+    mask = np.ones(distances.shape, dtype=bool)
 
-    moving_heavy = np.asarray(moving.elements) != "H"
-    fixed_heavy = np.asarray(fixed.elements) != "H"
-    mask = moving_heavy[:, None] & fixed_heavy[None, :]
-
-    # The intended new covalent bond is ~1.5 Å and must not count as a clash.
-    if exclude_pair is not None:
-        moving_idx, fixed_idx = exclude_pair
+    for moving_idx, fixed_idx in exclude_pairs:
         mask[moving_idx, fixed_idx] = False
 
-    overlap = np.clip(cutoff - distances, 0.0, None)
-    return float(np.sum((overlap[mask]) ** 2))
+    if not np.any(mask):
+        return ClashResult(score=0.0, valid=True, min_distance=np.inf)
 
+    overlap = np.clip(soft_thresholds - distances, 0.0, None)
+    score = float(np.sum((overlap[mask]) ** 2))
+
+    masked_distances = np.where(mask, distances, np.inf)
+    min_flat = int(np.argmin(masked_distances))
+    min_i, min_j = np.unravel_index(min_flat, distances.shape)
+
+    hard_clashes = mask & (distances < hard_thresholds)
+    valid = not np.any(hard_clashes)
+
+    return ClashResult(
+        score=score,
+        valid=valid,
+        min_distance=float(distances[min_i, min_j]),
+        atom_i=moving[min_i],
+        atom_j=fixed[min_j],
+        threshold=float(soft_thresholds[min_i, min_j]),
+        hard_threshold=float(hard_thresholds[min_i, min_j]),
+    )
+
+
+def _clash_score(moving, fixed, moving_coords=None, fixed_coords=None,
+                 exclude_pair=None):
+    """Return all-atom intermolecular steric overlap penalty."""
+    exclude_pairs = () if exclude_pair is None else (exclude_pair,)
+    return _clash_result(
+        moving,
+        fixed,
+        moving_coords=moving_coords,
+        fixed_coords=fixed_coords,
+        exclude_pairs=exclude_pairs,
+    ).score
+
+
+def _format_clash(result):
+    """Return a compact human-readable clash diagnostic."""
+    if result.atom_i is None or result.atom_j is None:
+        return "no atom pair available"
+    return (
+        f"{_atom_label(result.atom_i)} -- {_atom_label(result.atom_j)}\n"
+        f"  distance: {result.min_distance:.3f} A\n"
+        f"  hard minimum: {result.hard_threshold:.3f} A\n"
+        f"  clash score: {result.score:.3f}"
+    )
 
 
 def _generate_linker_conformers(linker, n_conformers=20, seed=7):
@@ -365,7 +475,9 @@ def _place_conformer(linker, coords, linker_atom_name, dye, dye_atom_name,
     placed += target
 
     best_coords = None
-    best_score = np.inf
+    best_result = None
+    best_invalid = None
+    rejected = 0
 
     for angle in np.arange(0.0, 360.0, angle_step):
         candidate = _rotate_about_axis(
@@ -375,18 +487,40 @@ def _place_conformer(linker, coords, linker_atom_name, dye, dye_atom_name,
             angle,
         )
 
-        score = _clash_score(
+        result = _clash_result(
             linker.atoms,
             fixed,
             moving_coords=candidate,
-            exclude_pair=(linker_idx, dye_idx),
+            exclude_pairs=((linker_idx, dye_idx),),
         )
 
-        if score < best_score:
-            best_score = score
+        if not result.valid:
+            rejected += 1
+            if (
+                best_invalid is None
+                or result.min_distance > best_invalid.min_distance
+            ):
+                best_invalid = result
+            continue
+
+        if best_result is None or result.score < best_result.score:
+            best_result = result
             best_coords = candidate.copy()
 
-    return best_coords, best_score
+    if best_result is None:
+        return None, best_invalid, rejected
+
+    best_result = ClashResult(
+        score=best_result.score,
+        valid=True,
+        min_distance=best_result.min_distance,
+        atom_i=best_result.atom_i,
+        atom_j=best_result.atom_j,
+        threshold=best_result.threshold,
+        hard_threshold=best_result.hard_threshold,
+        rejected=rejected,
+    )
+    return best_coords, best_result, rejected
 
 
 def _select_linker_pair(
@@ -400,6 +534,7 @@ def _select_linker_pair(
     n_conformers=20,
     bond_length=1.50,
     angle_step=10.0,
+    label="dye-linker",
 ):
     """Select the globally lowest-clash DE3/DE5 conformer combination."""
     conformers3 = _generate_linker_conformers(
@@ -415,9 +550,12 @@ def _select_linker_pair(
 
     best = None
     best_key = (np.inf, np.inf)
+    rejected3 = 0
+    rejected5 = 0
+    best_invalid = None
 
     for coords3, energy3 in conformers3:
-        placed3, clash3 = _place_conformer(
+        placed3, result3, n_rejected3 = _place_conformer(
             linker3,
             coords3,
             linker3_atom,
@@ -427,6 +565,16 @@ def _select_linker_pair(
             bond_length=bond_length,
             angle_step=angle_step,
         )
+        rejected3 += n_rejected3
+
+        if placed3 is None:
+            if (
+                result3 is not None
+                and (best_invalid is None
+                     or result3.min_distance > best_invalid.min_distance)
+            ):
+                best_invalid = result3
+            continue
 
         linker3.atoms.positions = placed3
 
@@ -434,7 +582,7 @@ def _select_linker_pair(
         fixed = mda.Merge(dye.atoms, linker3.atoms)
 
         for coords5, energy5 in conformers5:
-            placed5, clash5 = _place_conformer(
+            placed5, result5, n_rejected5 = _place_conformer(
                 linker5,
                 coords5,
                 linker5_atom,
@@ -444,12 +592,22 @@ def _select_linker_pair(
                 bond_length=bond_length,
                 angle_step=angle_step,
             )
+            rejected5 += n_rejected5
 
-            # clash5 contains both:
+            if placed5 is None:
+                if (
+                    result5 is not None
+                    and (best_invalid is None
+                         or result5.min_distance > best_invalid.min_distance)
+                ):
+                    best_invalid = result5
+                continue
+
+            # result5 contains both:
             #   DE5 <-> dye
             #   DE5 <-> DE3
-            # while clash3 contains DE3 <-> dye.
-            total_clash = clash3 + clash5
+            # while result3 contains DE3 <-> dye.
+            total_clash = result3.score + result5.score
             total_energy = energy3 + energy5
 
             # Sterics dominate. Conformer MMFF/UFF energy only breaks ties.
@@ -460,12 +618,99 @@ def _select_linker_pair(
                 best = (placed3.copy(), placed5.copy())
 
     if best is None:
-        raise RuntimeError("Could not find a valid linker conformer pair")
+        detail = _format_clash(best_invalid) if best_invalid else "none"
+        raise RuntimeError(
+            f"Could not generate a clash-free {label} assembly.\n\n"
+            f"Sampled:\n"
+            f"  linker3 conformers: {len(conformers3)}\n"
+            f"  linker5 conformers: {len(conformers5)}\n"
+            f"  rejected linker3 rotations: {rejected3}\n"
+            f"  rejected linker5 rotations: {rejected5}\n\n"
+            f"Closest contact in best attempted geometry:\n  {detail}"
+        )
 
     linker3.atoms.positions = best[0]
     linker5.atoms.positions = best[1]
 
     return linker3, linker5
+
+
+def _topological_exclusion_mask(universe):
+    """Return pairs excluded from final nonbonded steric validation."""
+    atoms = universe.atoms
+    excluded = np.eye(len(atoms), dtype=bool)
+    adjacency = [set() for _ in atoms]
+
+    for bond in universe.bonds:
+        i, j = map(int, bond.atoms.indices)
+        excluded[i, j] = True
+        excluded[j, i] = True
+        adjacency[i].add(j)
+        adjacency[j].add(i)
+
+    # 1-3 pairs are angle terms, not ordinary nonbonded contacts.
+    for i, neighbors in enumerate(adjacency):
+        for j in neighbors:
+            for k in adjacency[j]:
+                if k != i:
+                    excluded[i, k] = True
+                    excluded[k, i] = True
+
+    return excluded
+
+
+def validate_mol2_geometry(mol2_file, hard_scale=0.50):
+    """Fail if a MOL2 contains severe nonbonded steric overlaps."""
+    mol2_file = Path(mol2_file)
+    universe = _load_mol2(mol2_file)
+    atoms = universe.atoms
+
+    if len(atoms) < 2:
+        return ClashResult(score=0.0, valid=True, min_distance=np.inf)
+
+    distances = cdist(atoms.positions, atoms.positions)
+    radius_sums = _vdw_radii(atoms)[:, None] + _vdw_radii(atoms)[None, :]
+    hard_thresholds = hard_scale * radius_sums
+
+    mask = np.triu(np.ones(distances.shape, dtype=bool), k=1)
+    mask &= ~_topological_exclusion_mask(universe)
+
+    if not np.any(mask):
+        return ClashResult(score=0.0, valid=True, min_distance=np.inf)
+
+    masked_distances = np.where(mask, distances, np.inf)
+    min_flat = int(np.argmin(masked_distances))
+    min_i, min_j = np.unravel_index(min_flat, distances.shape)
+
+    hard_clashes = mask & (distances < hard_thresholds)
+    if not np.any(hard_clashes):
+        return ClashResult(
+            score=0.0,
+            valid=True,
+            min_distance=float(distances[min_i, min_j]),
+            atom_i=atoms[min_i],
+            atom_j=atoms[min_j],
+            hard_threshold=float(hard_thresholds[min_i, min_j]),
+        )
+
+    margins = np.where(hard_clashes, distances - hard_thresholds, np.inf)
+    worst_flat = int(np.argmin(margins))
+    worst_i, worst_j = np.unravel_index(worst_flat, distances.shape)
+    result = ClashResult(
+        score=float(np.sum((hard_thresholds[hard_clashes]
+                            - distances[hard_clashes]) ** 2)),
+        valid=False,
+        min_distance=float(distances[worst_i, worst_j]),
+        atom_i=atoms[worst_i],
+        atom_j=atoms[worst_j],
+        hard_threshold=float(hard_thresholds[worst_i, worst_j]),
+    )
+
+    raise RuntimeError(
+        f"Linked dye-linker MOL2 failed geometry validation: {mol2_file}\n\n"
+        "Severe nonbonded steric overlap detected before parmchk2/ACPYPE.\n"
+        f"{_format_clash(result)}"
+    )
 
 
 def _write_combined_pdb(dye, linker3, linker5, output_file):
@@ -726,6 +971,8 @@ class DyeLinkerConfig:
         if not mol2_file.exists():
             raise FileNotFoundError(f"Linked dye-linker MOL2 not found: {mol2_file}")
 
+        validate_mol2_geometry(mol2_file)
+
         result = subprocess.run(
             [
                 str(amber_executable("parmchk2")),
@@ -778,6 +1025,7 @@ class DyeLinkerConfig:
             n_conformers=n_conformers,
             bond_length=bond_length,
             angle_step=angle_step,
+            label=f"{self.dye}/{self.linker} dye-linker",
         )
 
         output_file = Path(

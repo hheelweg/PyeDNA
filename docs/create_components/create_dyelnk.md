@@ -6,7 +6,7 @@
 
 ## What the Workflow Does
 
-PyeDNA loads the dye MOL2 and attachment metadata, loads both linker variants and their `3CONNECT`/`5CONNECT` metadata, validates all referenced atom names, generates a low-clash assembled PDB using RDKit conformers for the linkers, writes a `tleap` input file, runs `tleap` to create a linked MOL2, and runs `parmchk2` to create a linked FRCMOD.
+PyeDNA loads the dye MOL2 and attachment metadata, loads both linker variants and their `3CONNECT`/`5CONNECT` metadata, validates all referenced atom names, generates a low-clash assembled PDB using RDKit conformers for the linkers, writes a `tleap` input file, runs `tleap` to create a linked MOL2, validates the linked MOL2 for severe nonbonded steric overlaps, and runs `parmchk2` to create a linked FRCMOD.
 
 The molecular order in the assembled component is 5' linker, dye, then 3' linker.
 
@@ -79,4 +79,4 @@ The public TOML interface currently exposes only component names and force-field
 
 ## Limitations / Troubleshooting
 
-Missing MOL2, FRCMOD, `.attach`, or compatibility FRCMOD files are reported before assembly. `parmchk2` output is written to a log file when linked FRCMOD generation fails.
+Missing MOL2, FRCMOD, `.attach`, or compatibility FRCMOD files are reported before assembly. PyeDNA rejects dye-linker assemblies with severe all-atom steric clashes before passing the linked MOL2 to `parmchk2`, ACPYPE, HADDOCK, or MD preparation. `parmchk2` output is written to a log file when linked FRCMOD generation fails.
