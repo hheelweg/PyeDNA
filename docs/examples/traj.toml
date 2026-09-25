@@ -34,7 +34,7 @@ attachments = [11]
 # Each classical block requests observables for one group.
 [[classical]]
 group = "donor"
-outputs = ["center_of_geometry"]
+outputs = ["center_of_geometry", "plane_deviation"]
 # ============================================================
 
 # ============================================================
@@ -79,6 +79,10 @@ groups = ["donor", "acceptor"]
 type = "orientation_factor"
 groups = ["donor", "acceptor"]
 method = "center_of_geometry"
+
+[[classical_interactions]]
+type = "plane_angle"
+groups = ["donor", "acceptor"]
 # ============================================================
 
 [analysis]

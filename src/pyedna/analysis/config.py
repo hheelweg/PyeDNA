@@ -26,9 +26,10 @@ SUPPORTED_QUANTUM_OUTPUTS = {
 SUPPORTED_CLASSICAL_OUTPUTS = {
     "center_of_geometry",
     "center_of_mass",
+    "plane_deviation",
     "radius_of_gyration",
 }
-SUPPORTED_CLASSICAL_INTERACTIONS = {"axis_angle", "distance", "orientation_factor"}
+SUPPORTED_CLASSICAL_INTERACTIONS = {"axis_angle", "distance", "orientation_factor", "plane_angle"}
 
 
 @dataclass(frozen=True)
@@ -424,6 +425,16 @@ def _validate_classical_interactions(config, attachment_residues, group_names):
                 raise ValueError(
                     f"[[classical_interactions]] block {index} orientation_factor method must be center_of_geometry or center_of_mass"
                 )
+            interaction["method"] = method
+
+        if interaction["type"] == "plane_angle":
+            if "groups" not in interaction:
+                raise ValueError(f"[[classical_interactions]] block {index} plane_angle requires groups")
+            if len(interaction["groups"]) != 2:
+                raise ValueError(f"[[classical_interactions]] block {index} plane_angle requires exactly two groups")
+            method = interaction.get("method", "plane")
+            if method != "plane":
+                raise ValueError(f"[[classical_interactions]] block {index} plane_angle method must be plane")
             interaction["method"] = method
 
 

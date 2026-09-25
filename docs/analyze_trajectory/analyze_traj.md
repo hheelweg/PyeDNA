@@ -84,7 +84,7 @@ attachments = [11]
 
 [[classical]]
 group = "donor"
-outputs = ["center_of_geometry"]
+outputs = ["center_of_geometry", "plane_deviation"]
 
 [qm_defaults]
 method = "tddft"
@@ -119,6 +119,10 @@ groups = ["donor", "acceptor"]
 type = "orientation_factor"
 groups = ["donor", "acceptor"]
 method = "center_of_geometry"
+
+[[classical_interactions]]
+type = "plane_angle"
+groups = ["donor", "acceptor"]
 
 [analysis]
 output_root = "analysis"
@@ -215,7 +219,7 @@ Groups are built by combining the capped snapshot molecules for the listed attac
 | Field | Required | Default | Meaning and constraints |
 | --- | --- | --- | --- |
 | `group` | required | none | Existing group name. |
-| `outputs` | optional | none | Supported values are `center_of_geometry`, `center_of_mass`, and `radius_of_gyration`. |
+| `outputs` | optional | none | Supported values are `center_of_geometry`, `center_of_mass`, `radius_of_gyration`, and `plane_deviation`. `plane_deviation` requires the group to contain exactly one attachment and writes `plane_rmsd`. |
 
 ### `[[quantum]]`
 
@@ -262,11 +266,12 @@ Interactions are quantities computed between two groups, such as a distance betw
 | `[[classical_interactions]]` | `"distance"` | exactly two `groups` or at least two `attachments` | `method = "center_of_geometry"` or `"center_of_mass"` |
 | `[[classical_interactions]]` | `"axis_angle"` | exactly two `groups`; each group must contain exactly one attachment | `method = "axis"` |
 | `[[classical_interactions]]` | `"orientation_factor"` | exactly two `groups`; each group must contain exactly one attachment | `method = "center_of_geometry"` or `"center_of_mass"` |
+| `[[classical_interactions]]` | `"plane_angle"` | exactly two `groups`; each group must contain exactly one attachment | `method = "plane"` |
 | `[[quantum_interactions]]` | `"coupling"` | exactly two `groups` or at least two `attachments` | `method = "tdm"`, `state_pairs`, `coupling_type = "electronic"`, `"cJ"`, or `"cK"` |
 
-Interactions must define exactly one of `groups` or `attachments`. `axis_angle` and `orientation_factor` currently support `groups` only, and each referenced group must contain exactly one dye attachment. Coupling interactions can request state pairs containing non-negative integers or `"strongest"`.
+Interactions must define exactly one of `groups` or `attachments`. `axis_angle`, `orientation_factor`, and `plane_angle` currently support `groups` only, and each referenced group must contain exactly one dye attachment. `plane_deviation` has the same one-attachment group restriction under `[[classical]]`. Coupling interactions can request state pairs containing non-negative integers or `"strongest"`.
 
-For geometry-dependent analyses such as `axis_angle` and `orientation_factor`, each dye-library entry must manually define optional geometry metadata when the analysis is requested:
+For geometry-dependent analyses such as `axis_angle`, `orientation_factor`, `plane_deviation`, and `plane_angle`, each dye-library entry must manually define optional geometry metadata when the analysis is requested:
 
 ```toml
 # <libraries.dye_dir>/<DYE>/geometry.toml
@@ -277,9 +282,11 @@ atoms = ["ATOM1", "ATOM2"]
 atoms = ["ATOM1", "ATOM2", "ATOM3"]
 ```
 
-`[axis].atoms` must contain exactly two atom names. `[plane].atoms`, when present, must contain at least three atom names and is parsed for geometry support, although `plane_angle` is not exposed in `traj.toml`. The `axis_angle` value is an undirected molecular-axis angle in degrees, computed from `acos(abs(dot(axis1, axis2)))`, so antiparallel axes give `0` degrees.
+`[axis].atoms` must contain exactly two atom names. `[plane].atoms`, when present, must contain at least three atom names. Three non-collinear atoms define a plane exactly, so `plane_deviation` gives `plane_rmsd` approximately zero for a three-atom plane up to floating-point error. The `axis_angle` value is an undirected molecular-axis angle in degrees, computed from `acos(abs(dot(axis1, axis2)))`, so antiparallel axes give `0` degrees. The `plane_angle` value is also undirected and uses `acos(abs(dot(normal1, normal2)))`, so it lies between `0` and `90` degrees.
 
 For `orientation_factor`, PyeDNA treats the user-specified dye `[axis]` as a classical proxy for the dye transition-dipole direction. This is a geometry-based approximation unless that molecular axis has independently been shown to correspond to the actual optical transition dipole. For donor and acceptor axes `mu_D` and `mu_A`, and the donor-to-acceptor unit vector `R`, PyeDNA computes `kappa = mu_D dot mu_A - 3 (mu_D dot R)(mu_A dot R)` and writes both signed `kappa` and `kappa_squared`. The center vector is defined using `method = "center_of_geometry"` by default, or `method = "center_of_mass"` when requested. If the donor and acceptor centers coincide, the calculation fails clearly.
+
+For `plane_deviation`, PyeDNA selects the `[plane].atoms` for the single dye in the group, fits a best-fit plane using SVD, and writes `plane_rmsd = sigma_3 / sqrt(N)` in Angstrom to `classical.jsonl`. For `plane_angle`, PyeDNA fits each group's plane normal from `[plane].atoms` and writes the undirected angle in degrees to `classical_interactions.jsonl`.
 
 ### `[analysis]`, `[analysis.units]`, `[analysis.save]`, `[output]`, and `[quantum_scheduler]`
 
@@ -406,9 +413,9 @@ Outputs include:
 
 - `traj.toml`: copy of the analysis configuration used for the run.
 - `manifest.json`: run metadata, trajectory input paths, selected structure mappings, units, output file paths, requested interactions, and quantum job summaries.
-- `classical.jsonl`: one JSON object per classical result, with `frame`, `group`, and a `values` object containing requested quantities such as `center_of_geometry`, `center_of_mass`, or `radius_of_gyration`.
+- `classical.jsonl`: one JSON object per classical result, with `frame`, `group`, and a `values` object containing requested quantities such as `center_of_geometry`, `center_of_mass`, `radius_of_gyration`, or `plane_rmsd` from `plane_deviation`.
 - `quantum.jsonl`: one JSON object per quantum result, with `frame`, `group`, `method`, `atom_count`, `charge`, `spin`, and, for TDDFT jobs, a nested `tddft` object containing requested outputs such as excited-state energies, oscillator strengths, transition dipoles, transition density matrices, or strongest-state information.
-- `classical_interactions.jsonl`: one JSON object per classical group-to-group interaction result, with `frame`, `type`, `method`, `groups`, and a `values` object such as `distance`, `axis_angle`, or `orientation_factor` values `kappa` and `kappa_squared`.
+- `classical_interactions.jsonl`: one JSON object per classical group-to-group interaction result, with `frame`, `type`, `method`, `groups`, and a `values` object such as `distance`, `axis_angle`, `plane_angle`, or `orientation_factor` values `kappa` and `kappa_squared`.
 - `quantum_interactions.jsonl`: one JSON object per quantum group-to-group interaction result, with `frame`, `type`, `method`, `groups`, `state_pair`, and a `values` object containing coupling quantities.
 
 The `.jsonl` files use JSON Lines format: each line is an independent JSON object. This makes the files easy to append during long analyses and straightforward to load into tabular tools later.

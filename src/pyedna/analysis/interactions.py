@@ -13,6 +13,8 @@ from pyedna.analysis.classical import (
     distance_between_groups,
     load_dye_geometry,
     orientation_factor,
+    plane_angle,
+    plane_normal_from_named_atoms,
 )
 
 
@@ -83,6 +85,16 @@ def run_classical_interactions(config, groups, frame, attachment_snapshots=None)
                     interaction,
                     config,
                     groups,
+                    attachment_snapshots,
+                    frame,
+                    context=context,
+                )
+            )
+        elif interaction["type"] == "plane_angle":
+            results.append(
+                run_plane_angle_interaction(
+                    interaction,
+                    config,
                     attachment_snapshots,
                     frame,
                     context=context,
@@ -191,6 +203,33 @@ def run_orientation_factor_interaction(
     )
 
 
+def run_plane_angle_interaction(
+    interaction,
+    config,
+    attachment_snapshots,
+    frame,
+    context="[[interactions]]",
+):
+    group_names = interaction["groups"]
+    snapshots = _single_attachment_snapshots(
+        config,
+        group_names,
+        attachment_snapshots,
+        "plane_angle",
+        context,
+    )
+    normals = _snapshot_plane_normals(snapshots, "plane_angle")
+
+    return InteractionResult(
+        frame=frame,
+        type=interaction["type"],
+        method=interaction.get("method", "plane"),
+        groups=group_names,
+        state_pair=None,
+        values={"plane_angle": plane_angle(normals[0], normals[1])},
+    )
+
+
 def run_coupling_interaction(interaction, quantum_by_group, context="[[interactions]]"):
     from pyedna.analysis.quantum.couplings import tdm_coupling
 
@@ -287,6 +326,25 @@ def _snapshot_axes(snapshots, analysis):
             )
         )
     return axes
+
+
+def _snapshot_plane_normals(snapshots, analysis):
+    normals = []
+    for snapshot in snapshots:
+        geometry = load_dye_geometry(
+            snapshot.dye,
+            require_plane=True,
+            analysis=analysis,
+        )
+        normals.append(
+            plane_normal_from_named_atoms(
+                snapshot.atom_names,
+                snapshot.coordinates,
+                geometry.plane_atoms,
+                context=f"{analysis} for dye {snapshot.dye}",
+            )
+        )
+    return normals
 
 
 def _group_attachments(config):

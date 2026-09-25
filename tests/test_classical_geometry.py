@@ -7,10 +7,13 @@ from unittest.mock import patch
 import numpy as np
 
 from pyedna.analysis.classical.geometry import (
+    angle_between_vectors,
     axis_angle,
     axis_from_named_atoms,
     orientation_factor,
     load_dye_geometry,
+    plane_angle,
+    plane_deviation_from_named_atoms,
     plane_normal_from_named_atoms,
 )
 from pyedna.analysis.config import validate_analysis_config
@@ -18,6 +21,7 @@ from pyedna.analysis.interactions import (
     run_axis_angle_interaction,
     run_distance_interaction,
     run_orientation_factor_interaction,
+    run_plane_angle_interaction,
 )
 from pyedna.analysis.classical.jobs import classical_observables
 from pyedna.trajectory.trajectory import validate_frame_interval
@@ -106,6 +110,28 @@ class ClassicalGeometryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "found 2"):
             axis_from_named_atoms(["C1", "C1"], [[0, 0, 0], [1, 0, 0]], ["C1", "C2"])
 
+
+    def test_angle_between_vectors_directed_parallel(self):
+        self.assertAlmostEqual(angle_between_vectors([1, 0, 0], [2, 0, 0]), 0.0)
+
+    def test_angle_between_vectors_directed_antiparallel(self):
+        self.assertAlmostEqual(angle_between_vectors([1, 0, 0], [-1, 0, 0]), 180.0)
+
+    def test_angle_between_vectors_undirected_antiparallel(self):
+        self.assertAlmostEqual(
+            angle_between_vectors([1, 0, 0], [-1, 0, 0], undirected=True),
+            0.0,
+        )
+
+    def test_angle_between_vectors_perpendicular(self):
+        self.assertAlmostEqual(angle_between_vectors([1, 0, 0], [0, 1, 0]), 90.0)
+
+    def test_angle_between_vectors_known_sixty_degrees(self):
+        self.assertAlmostEqual(
+            angle_between_vectors([1, 0, 0], [0.5, np.sqrt(3) / 2, 0]),
+            60.0,
+        )
+
     def test_axis_angle_zero_degrees(self):
         self.assertAlmostEqual(axis_angle([1, 0, 0], [2, 0, 0]), 0.0)
 
@@ -123,6 +149,138 @@ class ClassicalGeometryTests(unittest.TestCase):
         )
 
         self.assertAlmostEqual(abs(float(np.dot(normal, [0, 0, 1]))), 1.0)
+
+
+    def test_plane_deviation_three_atoms_is_zero(self):
+        values = plane_deviation_from_named_atoms(
+            ["A", "B", "C"],
+            [[0, 0, 0], [1, 0, 0], [0, 1, 0]],
+            ["A", "B", "C"],
+        )
+
+        self.assertAlmostEqual(values["plane_rmsd"], 0.0)
+
+    def test_plane_deviation_known_nonplanar_geometry(self):
+        values = plane_deviation_from_named_atoms(
+            ["A", "B", "C", "D"],
+            [[1, 0, 0.25], [-1, 0, 0.25], [0, 1, -0.25], [0, -1, -0.25]],
+            ["A", "B", "C", "D"],
+        )
+
+        self.assertAlmostEqual(values["plane_rmsd"], 0.25)
+
+    def test_plane_deviation_rejects_collinear_atoms(self):
+        with self.assertRaisesRegex(ValueError, "collinear"):
+            plane_deviation_from_named_atoms(
+                ["A", "B", "C"],
+                [[0, 0, 0], [1, 0, 0], [2, 0, 0]],
+                ["A", "B", "C"],
+            )
+
+    def test_plane_angle_parallel_planes(self):
+        self.assertAlmostEqual(plane_angle([0, 0, 1], [0, 0, 2]), 0.0)
+
+    def test_plane_angle_opposite_normals_are_undirected(self):
+        self.assertAlmostEqual(plane_angle([0, 0, 1], [0, 0, -1]), 0.0)
+
+    def test_plane_angle_perpendicular_planes(self):
+        self.assertAlmostEqual(plane_angle([0, 0, 1], [1, 0, 0]), 90.0)
+
+    def test_plane_deviation_observable_known_geometry(self):
+        dye_dir = self._dye_dir("CY3", '[plane]\natoms = ["A", "B", "C", "D"]\n')
+        config = {"groups": [{"name": "donor", "attachments": [10]}]}
+        snapshots = {
+            10: SimpleNamespace(
+                dye="CY3",
+                atom_names=("A", "B", "C", "D"),
+                coordinates=np.array(
+                    [[1, 0, 0.25], [-1, 0, 0.25], [0, 1, -0.25], [0, -1, -0.25]],
+                    dtype=float,
+                ),
+            ),
+        }
+
+        with self._patch_config(dye_dir):
+            values = classical_observables(
+                DummyMol([[0, 0, 0]]),
+                ["plane_deviation"],
+                group_name="donor",
+                config=config,
+                attachment_snapshots=snapshots,
+            )
+
+        self.assertAlmostEqual(values["plane_rmsd"], 0.25)
+
+    def test_plane_deviation_missing_plane_mentions_requested_analysis(self):
+        dye_dir = self._dye_dir("CY3", '[axis]\natoms = ["A", "B"]\n')
+        config = {"groups": [{"name": "donor", "attachments": [10]}]}
+        snapshots = {
+            10: SimpleNamespace(dye="CY3", atom_names=("A", "B", "C"), coordinates=np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0]], dtype=float)),
+        }
+
+        with self._patch_config(dye_dir), self.assertRaisesRegex(ValueError, "plane_deviation"):
+            classical_observables(
+                DummyMol([[0, 0, 0]]),
+                ["plane_deviation"],
+                group_name="donor",
+                config=config,
+                attachment_snapshots=snapshots,
+            )
+
+    def test_plane_deviation_invalid_atom_names_are_rejected(self):
+        dye_dir = self._dye_dir("CY3", '[plane]\natoms = ["A", "B", "C"]\n')
+        config = {"groups": [{"name": "donor", "attachments": [10]}]}
+        snapshots = {
+            10: SimpleNamespace(dye="CY3", atom_names=("A", "B", "X"), coordinates=np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0]], dtype=float)),
+        }
+
+        with self._patch_config(dye_dir), self.assertRaisesRegex(ValueError, "found 0"):
+            classical_observables(
+                DummyMol([[0, 0, 0]]),
+                ["plane_deviation"],
+                group_name="donor",
+                config=config,
+                attachment_snapshots=snapshots,
+            )
+
+    def test_plane_deviation_rejects_multi_attachment_group(self):
+        config = {"groups": [{"name": "donor", "attachments": [10, 11]}]}
+
+        with self.assertRaisesRegex(ValueError, "exactly one attachment"):
+            classical_observables(
+                DummyMol([[0, 0, 0]]),
+                ["plane_deviation"],
+                group_name="donor",
+                config=config,
+                attachment_snapshots={},
+            )
+
+    def test_plane_angle_interaction_known_geometry(self):
+        self._dye_dir("CY3", '[plane]\natoms = ["A", "B", "C"]\n')
+        dye_dir = self._dye_dir("CY5", '[plane]\natoms = ["D", "E", "F"]\n')
+        config = {"groups": [{"name": "donor", "attachments": [10]}, {"name": "acceptor", "attachments": [12]}]}
+        snapshots = {
+            10: SimpleNamespace(dye="CY3", atom_names=("A", "B", "C"), coordinates=np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0]], dtype=float)),
+            12: SimpleNamespace(dye="CY5", atom_names=("D", "E", "F"), coordinates=np.array([[0, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=float)),
+        }
+
+        with self._patch_config(dye_dir):
+            result = run_plane_angle_interaction(
+                {"type": "plane_angle", "groups": ["donor", "acceptor"], "method": "plane"},
+                config,
+                snapshots,
+                frame=5,
+            )
+
+        self.assertEqual(result.method, "plane")
+        self.assertAlmostEqual(result.values["plane_angle"], 90.0)
+
+    def test_plane_angle_rejects_multi_attachment_group(self):
+        config = {"groups": [{"name": "donor", "attachments": [10, 11]}, {"name": "acceptor", "attachments": [12]}]}
+        interaction = {"type": "plane_angle", "groups": ["donor", "acceptor"]}
+
+        with self.assertRaisesRegex(ValueError, "exactly one attachment"):
+            run_plane_angle_interaction(interaction, config, {}, frame=0)
 
     def test_axis_angle_interaction_rejects_multi_attachment_group(self):
         config = {"groups": [{"name": "donor", "attachments": [10, 11]}, {"name": "acceptor", "attachments": [12]}]}
@@ -342,6 +500,22 @@ class ClassicalGeometryTests(unittest.TestCase):
         validated = validate_analysis_config(config).data
 
         self.assertEqual(validated["classical_interactions"][1]["method"], "axis")
+
+    def test_config_accepts_plane_deviation_output(self):
+        config = _minimal_analysis_config()
+        config["classical"] = [{"group": "donor", "outputs": ["plane_deviation"]}]
+
+        validated = validate_analysis_config(config).data
+
+        self.assertEqual(validated["classical"][0]["outputs"], ["plane_deviation"])
+
+    def test_config_accepts_plane_angle_interaction(self):
+        config = _minimal_analysis_config()
+        config["classical_interactions"].append({"type": "plane_angle", "groups": ["donor", "acceptor"]})
+
+        validated = validate_analysis_config(config).data
+
+        self.assertEqual(validated["classical_interactions"][1]["method"], "plane")
 
     def test_config_accepts_orientation_factor_interaction(self):
         config = _minimal_analysis_config()

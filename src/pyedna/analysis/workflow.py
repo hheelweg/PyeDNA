@@ -125,7 +125,12 @@ def analyze_frame(
             f"{mol.natm} atoms, charge {mol.charge}"
         )
 
-    classical_results = run_classical_jobs(config, groups, frame)
+    classical_results = run_classical_jobs(
+        config,
+        groups,
+        frame,
+        attachment_snapshots=attachment_snapshots,
+    )
     append_classical_results(analysis_run, classical_results, metadata=metadata)
 
     for result in classical_results:

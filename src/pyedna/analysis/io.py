@@ -257,7 +257,7 @@ def append_interaction_results(target, results, metadata=None):
     )
     append_classical_interaction_results(
         target,
-        [result for result in results if result.type in {"axis_angle", "distance", "orientation_factor"}],
+        [result for result in results if result.type in {"axis_angle", "distance", "orientation_factor", "plane_angle"}],
         metadata=metadata,
     )
 
@@ -557,7 +557,7 @@ def _convert_classical_values(values, units):
     values = _to_json_value(values)
     return _scale_matching_keys(
         values,
-        ("center_of_geometry", "center_of_mass", "radius_of_gyration"),
+        ("center_of_geometry", "center_of_mass", "radius_of_gyration", "plane_rmsd"),
         distance_factor(units["distance"]),
     )
 
