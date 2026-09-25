@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 import tempfile
 from types import SimpleNamespace
 import unittest
@@ -18,12 +19,23 @@ from pyedna.analysis.classical.geometry import (
 )
 from pyedna.analysis.config import validate_analysis_config
 from pyedna.analysis.interactions import (
+    InteractionResult,
     run_axis_angle_interaction,
     run_distance_interaction,
     run_orientation_factor_interaction,
     run_plane_angle_interaction,
 )
-from pyedna.analysis.classical.jobs import classical_observables
+from pyedna.analysis.io import (
+    AnalysisJsonlWriter,
+    analysis_run_in_directory,
+    append_classical_results,
+    create_analysis_run,
+    load_analysis_run,
+    write_manifest,
+)
+from pyedna.analysis.quantum.jobs import QuantumResult
+from pyedna.analysis.serialization import build_result_schemas, family_row
+from pyedna.analysis.classical.jobs import ClassicalResult, classical_observables
 from pyedna.trajectory.trajectory import validate_frame_interval
 
 
@@ -592,6 +604,299 @@ def _minimal_analysis_config():
             {"type": "distance", "groups": ["donor", "acceptor"], "method": "center_of_geometry"},
         ],
     }
+
+
+
+class AnalysisSerializationTests(unittest.TestCase):
+    def setUp(self):
+        self._tempdir = tempfile.TemporaryDirectory()
+        self.tmpdir = Path(self._tempdir.name)
+
+    def tearDown(self):
+        self._tempdir.cleanup()
+
+    def _config(self):
+        return {
+            "trajectory": {
+                "run_directory": "md/run",
+                "topology_file": "system.prmtop",
+                "trajectory_file": "system.nc",
+                "frame_interval": [0, 1],
+                "frame_stride": 1,
+            },
+            "attachments": [
+                {"dye": "CY3", "residue": 10, "cap": "H"},
+                {"dye": "CY5", "residue": 11, "cap": "H"},
+            ],
+            "groups": [
+                {"name": "donor", "attachments": [10]},
+                {"name": "acceptor", "attachments": [11]},
+            ],
+            "classical": [
+                {"group": "donor", "outputs": ["center_of_geometry", "plane_deviation"]},
+                {"group": "acceptor", "outputs": ["center_of_geometry"]},
+            ],
+            "quantum": [
+                {
+                    "group": "donor",
+                    "method": "tddft",
+                    "backend": "pyscf",
+                    "basis": "sto-3g",
+                    "xc": "b3lyp",
+                    "nstates": 2,
+                    "outputs": ["excited_state_energies", "transition_dipoles"],
+                    "_write_outputs": ["excited_state_energies", "transition_dipoles"],
+                    "_compute_outputs": ["excited_state_energies", "transition_dipoles"],
+                }
+            ],
+            "classical_interactions": [
+                {"type": "distance", "groups": ["donor", "acceptor"], "method": "center_of_geometry"},
+                {"type": "orientation_factor", "groups": ["donor", "acceptor"], "method": "center_of_geometry"},
+            ],
+            "quantum_interactions": [
+                {
+                    "type": "coupling",
+                    "groups": ["donor", "acceptor"],
+                    "method": "tdm",
+                    "coupling_type": "electronic",
+                    "state_pairs": [[0, 0], [1, 0]],
+                }
+            ],
+            "analysis": {
+                "output_root": str(self.tmpdir),
+                "name": "analysis_run",
+                "units": {"distance": "angstrom", "energy": "eV", "coupling": "eV"},
+            },
+        }
+
+    def test_schema_generation_for_all_result_families(self):
+        schemas = build_result_schemas(self._config())
+
+        self.assertEqual(
+            [column["name"] for column in schemas["classical"].columns],
+            [
+                "frame",
+                "donor.center_of_geometry",
+                "donor.plane_rmsd",
+                "acceptor.center_of_geometry",
+            ],
+        )
+        self.assertIn(
+            "donor.acceptor.kappa_squared",
+            [column["name"] for column in schemas["classical_interactions"].columns],
+        )
+        self.assertIn(
+            "donor.transition_dipoles",
+            [column["name"] for column in schemas["quantum"].columns],
+        )
+        self.assertIn(
+            "donor.acceptor.state_1_0.coupling",
+            [column["name"] for column in schemas["quantum_interactions"].columns],
+        )
+
+    def test_family_rows_allow_scalar_vector_matrix_object_and_null_cells(self):
+        schemas = build_result_schemas(self._config())
+        row = family_row(
+            "classical",
+            schemas["classical"].to_manifest(),
+            0,
+            [
+                ClassicalResult(
+                    frame=0,
+                    group="donor",
+                    values={"center_of_geometry": np.array([1.0, 2.0, 3.0]), "plane_rmsd": 0.1},
+                )
+            ],
+            self._config()["analysis"]["units"],
+        )
+
+        self.assertEqual(row, [0, [1.0, 2.0, 3.0], 0.1, None])
+
+        quantum = QuantumResult(
+            frame=0,
+            group="donor",
+            method="tddft",
+            molecule=SimpleNamespace(natm=3, charge=0, spin=0),
+            mean_field=None,
+            occupied_orbitals=None,
+            virtual_orbitals=None,
+            orbital_energies=None,
+            tddft={"exc": np.array([1.0, 2.0]), "dip": np.ones((2, 3))},
+            molecule_input=None,
+            dft_settings={},
+            write_outputs=["excited_state_energies", "transition_dipoles"],
+        )
+        qrow = family_row(
+            "quantum",
+            schemas["quantum"].to_manifest(),
+            0,
+            [quantum],
+            self._config()["analysis"]["units"],
+        )
+
+        self.assertEqual(qrow[0], 0)
+        self.assertAlmostEqual(qrow[1][0], 27.211386245988)
+        self.assertAlmostEqual(qrow[1][1], 54.422772491976)
+        self.assertEqual(qrow[2], [[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]])
+
+    def test_writer_writes_one_row_per_frame_and_loader_uses_schema_columns(self):
+        config = self._config()
+        run = create_analysis_run(config)
+        schemas = build_result_schemas(config)
+
+        with AnalysisJsonlWriter(run, schemas) as writer:
+            writer.write_frame(
+                0,
+                classical=[
+                    ClassicalResult(0, "donor", {"center_of_geometry": [1, 2, 3], "plane_rmsd": 0.2}),
+                    ClassicalResult(0, "acceptor", {"center_of_geometry": [4, 5, 6]}),
+                ],
+                classical_interactions=[
+                    InteractionResult(0, "distance", "center_of_geometry", ["donor", "acceptor"], None, {"distance": 10.0}),
+                    InteractionResult(0, "orientation_factor", "center_of_geometry", ["donor", "acceptor"], None, {"kappa": -1.0, "kappa_squared": 1.0}),
+                ],
+            )
+
+        self.assertEqual(json.loads(run.classical_file.read_text().strip()), [0, [1, 2, 3], 0.2, [4, 5, 6]])
+        loaded = load_analysis_run(run.directory)
+        self.assertEqual(len(loaded.classical), 1)
+        self.assertEqual(loaded.classical[0]["donor.center_of_geometry"], [1, 2, 3])
+        self.assertIn("donor.center_of_geometry", loaded.classical_dataframe().columns)
+        self.assertNotIn("donor.center_of_geometry.0", loaded.classical_dataframe().columns)
+        self.assertIn("donor.center_of_geometry.0", loaded.classical_dataframe(flatten=True).columns)
+        np.testing.assert_array_equal(loaded.array("classical", "donor.center_of_geometry"), np.array([[1, 2, 3]]))
+
+    def test_multi_structure_loading_adds_structure_metadata_without_row_duplication(self):
+        config = self._config()
+        run = create_analysis_run(config)
+        trajectories = [
+            {
+                "trajectory_index": 0,
+                "structure": 1,
+                "structure_directory": "structure_001",
+                "topology_file": self.tmpdir / "s1.prmtop",
+                "trajectory_file": self.tmpdir / "s1.nc",
+                "analysis_directory": "structure_001",
+            }
+        ]
+        write_manifest(config, run, trajectories=trajectories)
+        child_run = analysis_run_in_directory(run, run.directory / "structure_001")
+        schemas = build_result_schemas(config)
+
+        with AnalysisJsonlWriter(child_run, schemas) as writer:
+            writer.write_frame(0, classical=[ClassicalResult(0, "donor", {"center_of_geometry": [1, 2, 3], "plane_rmsd": 0.2})])
+
+        raw_row = json.loads(child_run.classical_file.read_text().strip())
+        self.assertIsInstance(raw_row, list)
+        self.assertNotIn("trajectory_index", raw_row)
+
+        loaded = load_analysis_run(run.directory)
+        self.assertEqual(loaded.classical[0]["trajectory_index"], 0)
+        self.assertEqual(loaded.classical[0]["structure"], 1)
+
+    def test_incompatible_arrays_raise_clear_error(self):
+        config = self._config()
+        run = create_analysis_run(config)
+        schemas = build_result_schemas(config)
+        with AnalysisJsonlWriter(run, schemas) as writer:
+            writer.write_frame(0, classical=[ClassicalResult(0, "donor", {"center_of_geometry": [1, 2, 3], "plane_rmsd": 0.2})])
+            writer.write_frame(1, classical=[ClassicalResult(1, "donor", {"center_of_geometry": [1, 2], "plane_rmsd": 0.3})])
+
+        loaded = load_analysis_run(run.directory)
+        with self.assertRaisesRegex(ValueError, "incompatible array shapes"):
+            loaded.array("classical", "donor.center_of_geometry")
+
+    def test_old_record_format_still_loads(self):
+        directory = self.tmpdir / "old_run"
+        directory.mkdir()
+        (directory / "manifest.json").write_text(json.dumps({
+            "outputs": {"classical": "classical.jsonl"}
+        }))
+        (directory / "classical.jsonl").write_text(json.dumps({
+            "frame": 0,
+            "group": "donor",
+            "values": {"distance": 1.0},
+        }) + "\n")
+
+        loaded = load_analysis_run(directory)
+        self.assertEqual(loaded.classical[0]["group"], "donor")
+        self.assertIn("values.distance", loaded.classical_dataframe().columns)
+
+    def test_append_helper_writes_schema_row_for_analysis_run(self):
+        config = self._config()
+        run = create_analysis_run(config)
+        append_classical_results(
+            run,
+            [ClassicalResult(0, "donor", {"center_of_geometry": [1, 2, 3], "plane_rmsd": 0.2})],
+        )
+
+        self.assertEqual(json.loads(run.classical_file.read_text().strip()), [0, [1, 2, 3], 0.2, None])
+
+    def test_unrequested_quantum_outputs_are_not_created(self):
+        config = self._config()
+        config["quantum"] = []
+        config["quantum_interactions"] = []
+        run = create_analysis_run(config)
+        schemas = build_result_schemas(config)
+
+        with AnalysisJsonlWriter(run, schemas) as writer:
+            writer.write_frame(
+                0,
+                classical=[
+                    ClassicalResult(
+                        0,
+                        "donor",
+                        {"center_of_geometry": [1, 2, 3], "plane_rmsd": 0.2},
+                    )
+                ],
+            )
+
+        manifest = json.loads(run.manifest_file.read_text())
+        self.assertIn("classical", manifest["outputs"])
+        self.assertNotIn("quantum", manifest["outputs"])
+        self.assertNotIn("quantum_interactions", manifest["outputs"])
+        self.assertFalse(run.quantum_file.exists())
+        self.assertFalse(run.quantum_interactions_file.exists())
+
+        loaded = load_analysis_run(run.directory)
+        self.assertEqual(loaded.quantum, [])
+        self.assertEqual(loaded.quantum_interactions, [])
+
+    def test_unrequested_classical_outputs_are_not_created(self):
+        config = self._config()
+        config["classical"] = []
+        config["classical_interactions"] = []
+        config["quantum_interactions"] = []
+        run = create_analysis_run(config)
+        schemas = build_result_schemas(config)
+        quantum = QuantumResult(
+            frame=0,
+            group="donor",
+            method="tddft",
+            molecule=SimpleNamespace(natm=3, charge=0, spin=0),
+            mean_field=None,
+            occupied_orbitals=None,
+            virtual_orbitals=None,
+            orbital_energies=None,
+            tddft={"exc": np.array([1.0, 2.0]), "dip": np.ones((2, 3))},
+            molecule_input=None,
+            dft_settings={},
+            write_outputs=["excited_state_energies", "transition_dipoles"],
+        )
+
+        with AnalysisJsonlWriter(run, schemas) as writer:
+            writer.write_frame(0, quantum=[quantum])
+
+        manifest = json.loads(run.manifest_file.read_text())
+        self.assertIn("quantum", manifest["outputs"])
+        self.assertNotIn("classical", manifest["outputs"])
+        self.assertNotIn("classical_interactions", manifest["outputs"])
+        self.assertFalse(run.classical_file.exists())
+        self.assertFalse(run.classical_interactions_file.exists())
+
+        loaded = load_analysis_run(run.directory)
+        self.assertEqual(loaded.classical, [])
+        self.assertEqual(loaded.classical_interactions, [])
 
 
 if __name__ == "__main__":

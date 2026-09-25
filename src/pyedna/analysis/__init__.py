@@ -8,6 +8,7 @@ import importlib
 
 _LAZY_ATTRS = {
     "AnalysisConfig": "pyedna.analysis.config",
+    "AnalysisJsonlWriter": "pyedna.analysis.io",
     "AnalysisRun": "pyedna.analysis.io",
     "ClassicalResult": "pyedna.analysis.classical",
     "InteractionResult": "pyedna.analysis.interactions",
@@ -21,6 +22,7 @@ _LAZY_ATTRS = {
     "append_interaction_results": "pyedna.analysis.io",
     "append_quantum_interaction_results": "pyedna.analysis.io",
     "append_quantum_results": "pyedna.analysis.io",
+    "build_result_schemas": "pyedna.analysis.serialization",
     "load_analysis_run": "pyedna.analysis.io",
     "prepare_output_files": "pyedna.analysis.io",
     "read_jsonl": "pyedna.analysis.io",

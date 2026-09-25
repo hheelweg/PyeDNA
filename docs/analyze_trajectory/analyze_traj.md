@@ -6,7 +6,7 @@
 
 ## What the Workflow Does
 
-PyeDNA loads one or more Amber topology/trajectory pairs, validates the requested frame interval for each trajectory, creates an output run directory, copies the config, and writes a manifest. For each frame, it extracts capped dye snapshots for each attachment, builds configured groups, runs classical jobs, runs quantum jobs, computes quantum and classical interactions, and appends JSONL output records.
+PyeDNA loads one or more Amber topology/trajectory pairs, validates the requested frame interval for each trajectory, creates an output run directory, copies the config, and writes a manifest. For each frame, it extracts capped dye snapshots for each attachment, builds configured groups, runs classical jobs, runs quantum jobs, computes quantum and classical interactions, and appends compact JSONL rows described by schemas in `manifest.json`.
 
 ## Prerequisites
 
@@ -298,10 +298,10 @@ For `plane_deviation`, PyeDNA selects the `[plane].atoms` for the single dye in 
 | `[analysis.units].coupling` | optional | `"cm-1"` | Same supported values as energy. |
 | `[analysis.units].distance` | optional | `"angstrom"` | One of `"angstrom"`, `"a"`, `"bohr"`, or `"nm"`. |
 | `[analysis.save].save_intermediates` | optional | backend-specific behavior | Must be boolean if present. |
-| `[output].quantum_file` | optional | `"quantum.jsonl"` | Quantum results filename. |
-| `[output].classical_file` | optional | `"classical.jsonl"` | Classical results filename. |
-| `[output].quantum_interactions_file` | optional | `"quantum_interactions.jsonl"` | Quantum interaction results filename. |
-| `[output].classical_interactions_file` | optional | `"classical_interactions.jsonl"` | Classical interaction results filename. |
+| `[output].quantum_file` | optional | `"quantum.jsonl"` | Quantum results filename, used only when `[[quantum]]` requests at least one output column. |
+| `[output].classical_file` | optional | `"classical.jsonl"` | Classical results filename, used only when `[[classical]]` requests at least one output column. |
+| `[output].quantum_interactions_file` | optional | `"quantum_interactions.jsonl"` | Quantum interaction results filename, used only when `[[quantum_interactions]]` requests at least one output column. |
+| `[output].classical_interactions_file` | optional | `"classical_interactions.jsonl"` | Classical interaction results filename, used only when `[[classical_interactions]]` requests at least one output column. |
 | `[output].interaction_file` | optional | quantum interactions legacy alias | Used when `quantum_interactions_file` is absent. |
 | `[quantum_scheduler].device` | optional | `"auto"` | `"auto"` uses GPU4PySCF for quantum jobs when CUDA GPUs are visible and CPU PySCF otherwise. `"cpu"` forces CPU PySCF even inside a GPU allocation. `"gpu"` requires at least one visible CUDA GPU. |
 | `[quantum_scheduler].parallel` | optional | `false` | If true, independent quantum jobs within one frame may run concurrently. |
@@ -389,7 +389,7 @@ The default output directory is:
 analysis/analysis_YYYY_MM_DD_HH_MM/
 ```
 
-For an MD run with `structures = [1, 2]`, outputs are grouped by structure:
+For an MD run with `structures = [1, 2]`, outputs are grouped by structure. Only requested result-family files are generated; this example shows all four families present:
 
 ```text
 analysis/analysis_YYYY_MM_DD_HH_MM/
@@ -407,31 +407,31 @@ analysis/analysis_YYYY_MM_DD_HH_MM/
         classical_interactions.jsonl
 ```
 
-Legacy explicit-file analysis writes the same JSONL files directly in the analysis run directory.
+Legacy explicit-file analysis writes the requested JSONL files directly in the analysis run directory.
 
 Outputs include:
 
 - `traj.toml`: copy of the analysis configuration used for the run.
-- `manifest.json`: run metadata, trajectory input paths, selected structure mappings, units, output file paths, requested interactions, and quantum job summaries.
-- `classical.jsonl`: one JSON object per classical result, with `frame`, `group`, and a `values` object containing requested quantities such as `center_of_geometry`, `center_of_mass`, `radius_of_gyration`, or `plane_rmsd` from `plane_deviation`.
-- `quantum.jsonl`: one JSON object per quantum result, with `frame`, `group`, `method`, `atom_count`, `charge`, `spin`, and, for TDDFT jobs, a nested `tddft` object containing requested outputs such as excited-state energies, oscillator strengths, transition dipoles, transition density matrices, or strongest-state information.
-- `classical_interactions.jsonl`: one JSON object per classical group-to-group interaction result, with `frame`, `type`, `method`, `groups`, and a `values` object such as `distance`, `axis_angle`, `plane_angle`, or `orientation_factor` values `kappa` and `kappa_squared`.
-- `quantum_interactions.jsonl`: one JSON object per quantum group-to-group interaction result, with `frame`, `type`, `method`, `groups`, `state_pair`, and a `values` object containing coupling quantities.
+- `manifest.json`: authoritative run metadata, trajectory input paths, selected structure mappings, units, output file paths for active result families, requested calculations, static calculation metadata, `analysis_format_version`, and ordered schemas for each result family. Families with only a `frame` schema column are inactive and do not create JSONL files.
+- `classical.jsonl`: one JSON array per analyzed frame. The array columns are defined by `manifest.json` and aggregate all requested `[[classical]]` group outputs for that frame, such as `donor.center_of_geometry` or `donor.plane_rmsd`.
+- `quantum.jsonl`: one JSON array per analyzed frame. The schema can include scalar, array, or object columns such as `donor.excited_state_energies`, `donor.transition_dipoles`, or structured fragment summaries. Static quantum request metadata is stored in `manifest.json`; runtime-static molecule metadata such as `atom_count`, `charge`, and `spin` is added to manifest runtime metadata when available.
+- `classical_interactions.jsonl`: one JSON array per analyzed frame. The array aggregates all requested classical interaction outputs, such as `donor.acceptor.distance`, `donor.acceptor.axis_angle`, `donor.acceptor.plane_angle`, `donor.acceptor.kappa`, and `donor.acceptor.kappa_squared`.
+- `quantum_interactions.jsonl`: one JSON array per analyzed frame. Coupling columns are keyed by groups and state pair, for example `donor.acceptor.state_0_0.coupling`.
 
-The `.jsonl` files use JSON Lines format: each line is an independent JSON object. This makes the files easy to append during long analyses and straightforward to load into tabular tools later.
+The `.jsonl` files use JSON Lines format: each line is an independently readable JSON array. Each row has the same number and order of cells as the corresponding schema in `manifest.json`. Cell values may be scalars, nested arrays, structured objects, or `null` when a value is absent for that frame.
 
-In MD-run structure mode, every JSONL record also includes `trajectory_index`, `structure`, and `structure_directory`. `trajectory_index` is the zero-based position in `[trajectory].structures`, so `structures = [2, 1]` records structure 2 with `trajectory_index = 0` and structure 1 with `trajectory_index = 1`.
+In MD-run structure mode, JSONL rows do not repeat `trajectory_index`, `structure`, or `structure_directory`. The root `manifest.json` records those values once for each `structure_<NNN>/` directory. When loading results with PyeDNA, those fields are reconstructed as in-memory columns so dataframes can still be filtered or grouped by structure. `trajectory_index` is the zero-based position in `[trajectory].structures`, so `structures = [2, 1]` loads structure 2 with `trajectory_index = 0` and structure 1 with `trajectory_index = 1`.
 
-As a rough shape check, the number of records is normally:
+As a rough shape check, the number of rows is normally one row per analyzed frame in each generated result-family file. If a family is not requested, its JSONL file is omitted:
 
-| File | Expected number of records |
+| File | Expected number of rows |
 | --- | --- |
-| `classical.jsonl` | number of analyzed frames x number of `[[classical]]` jobs |
-| `quantum.jsonl` | number of analyzed frames x number of `[[quantum]]` jobs |
-| `classical_interactions.jsonl` | number of analyzed frames x number of `[[classical_interactions]]` jobs |
-| `quantum_interactions.jsonl` | number of analyzed frames x number of `[[quantum_interactions]]` jobs x number of requested `state_pairs`; one `[0, 0]` pair is used when `state_pairs` is omitted |
+| `classical.jsonl` | number of analyzed frames; all `[[classical]]` outputs are columns in each row |
+| `quantum.jsonl` | number of analyzed frames; all `[[quantum]]` outputs are columns in each row |
+| `classical_interactions.jsonl` | number of analyzed frames; all `[[classical_interactions]]` outputs are columns in each row |
+| `quantum_interactions.jsonl` | number of analyzed frames; requested state-pair couplings are columns in each row |
 
-Nested arrays and dictionaries are kept as JSON values in the raw files. When loaded through PyeDNA's helper functions, scalar lists are flattened into numbered dataframe columns. See [Loading Analysis Results](loading_results.md).
+Nested arrays and dictionaries are kept as JSON values in the raw files. When loaded through PyeDNA's helper functions, schema columns become dataframe columns directly. See [Loading Analysis Results](loading_results.md).
 
 > **Important**
 >

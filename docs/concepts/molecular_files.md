@@ -14,7 +14,7 @@ This page summarizes the main molecular file types used by PyeDNA.
 | RST7 (`.rst7`) / NCRST (`.ncrst`) | Amber setup and MD stage restarts | Amber coordinate/restart files. |
 | NetCDF (`.nc`) | MD trajectories | Binary Amber trajectory format used by MD and trajectory analysis. |
 | TOML (`.toml`) | user workflow configuration | Human-editable configuration for PyeDNA workflows. |
-| JSONL (`.jsonl`) | trajectory analysis outputs | One JSON record per result, suitable for streaming and later loading. |
+| JSONL (`.jsonl`) | trajectory analysis outputs | One schema-described JSON row per analyzed frame, suitable for streaming and later loading. |
 | CSV (`.csv`) | structure bond and mapping metadata | Tabular metadata used to reconstruct connectivity and Amber inputs. |
 
 ## File Resolution

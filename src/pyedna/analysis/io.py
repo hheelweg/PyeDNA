@@ -7,6 +7,19 @@ from pathlib import Path
 import shutil
 
 from .units import DEFAULT_ANALYSIS_UNITS, distance_factor, energy_factor, merged_units
+from .serialization import (
+    ANALYSIS_FORMAT_VERSION,
+    RESULT_FAMILIES,
+    active_result_families,
+    build_result_schemas,
+    compatible_array,
+    family_row,
+    runtime_quantum_metadata,
+    schema_metadata_to_manifest,
+    schema_has_data_columns,
+    schemas_to_manifest,
+    validate_row_length,
+)
 
 DEFAULT_QUANTUM_OUTPUT = "quantum.jsonl"
 DEFAULT_QUANTUM_INTERACTIONS_OUTPUT = "quantum_interactions.jsonl"
@@ -23,17 +36,28 @@ class LoadedAnalysisRun:
     quantum_interactions: list
     classical_interactions: list
 
-    def quantum_dataframe(self):
-        return records_dataframe(self.quantum)
+    def quantum_dataframe(self, flatten=False):
+        return _loaded_dataframe(self, "quantum", flatten=flatten)
 
-    def classical_dataframe(self):
-        return records_dataframe(self.classical)
+    def classical_dataframe(self, flatten=False):
+        return _loaded_dataframe(self, "classical", flatten=flatten)
 
-    def quantum_interactions_dataframe(self):
-        return records_dataframe(self.quantum_interactions)
+    def quantum_interactions_dataframe(self, flatten=False):
+        return _loaded_dataframe(self, "quantum_interactions", flatten=flatten)
 
-    def classical_interactions_dataframe(self):
-        return records_dataframe(self.classical_interactions)
+    def classical_interactions_dataframe(self, flatten=False):
+        return _loaded_dataframe(self, "classical_interactions", flatten=flatten)
+
+    def dataframe(self, family, flatten=False):
+        return _loaded_dataframe(self, family, flatten=flatten)
+
+    def array(self, family, column):
+        values = []
+        for record in _family_records(self, family):
+            if column not in record:
+                raise KeyError(f"Column '{column}' is not present in {family}")
+            values.append(record[column])
+        return compatible_array(values, family, column)
 
 
 @dataclass(frozen=True)
@@ -46,6 +70,75 @@ class AnalysisRun:
     manifest_file: Path
     config_file: Path
     units: dict
+
+
+class AnalysisJsonlWriter:
+    """Write one schema-described JSON array per frame for each result family."""
+
+    def __init__(self, run, schemas, flush=True):
+        self.run = run
+        self.schemas = schemas
+        self.flush = flush
+        self.files = {}
+        self.runtime_metadata = {"quantum": {}}
+
+    def __enter__(self):
+        paths = {
+            "classical": self.run.classical_file,
+            "classical_interactions": self.run.classical_interactions_file,
+            "quantum": self.run.quantum_file,
+            "quantum_interactions": self.run.quantum_interactions_file,
+        }
+        for family, path in paths.items():
+            if not schema_has_data_columns(self.schemas[family]):
+                continue
+            if path is None:
+                continue
+            path.parent.mkdir(parents=True, exist_ok=True)
+            self.files[family] = path.open("a")
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        for fileobj in self.files.values():
+            fileobj.close()
+        if exc_type is None:
+            self.update_manifest_runtime_metadata()
+
+    def write_frame(
+        self,
+        frame,
+        classical=None,
+        classical_interactions=None,
+        quantum=None,
+        quantum_interactions=None,
+    ):
+        results_by_family = {
+            "classical": classical or [],
+            "classical_interactions": classical_interactions or [],
+            "quantum": quantum or [],
+            "quantum_interactions": quantum_interactions or [],
+        }
+        if quantum:
+            self.runtime_metadata["quantum"].update(runtime_quantum_metadata(quantum))
+
+        for family, results in results_by_family.items():
+            fileobj = self.files.get(family)
+            if fileobj is None:
+                continue
+            schema = self.schemas[family].to_manifest()
+            row = family_row(family, schema, frame, results, self.run.units)
+            fileobj.write(json.dumps(row) + "\n")
+            if self.flush:
+                fileobj.flush()
+
+    def update_manifest_runtime_metadata(self):
+        if not self.runtime_metadata.get("quantum"):
+            return
+        with self.run.manifest_file.open() as f:
+            manifest = json.load(f)
+        manifest.setdefault("runtime_metadata", {}).update(self.runtime_metadata)
+        with self.run.manifest_file.open("w") as f:
+            json.dump(manifest, f, indent=2)
 
 
 def prepare_output_files(config, config_file=None):
@@ -126,12 +219,9 @@ def create_analysis_run(config, config_file=None):
 
 
 def write_manifest(config, run, trajectories=None):
-    outputs = {
-        "quantum": str(run.quantum_file),
-        "classical": str(run.classical_file),
-        "quantum_interactions": str(run.quantum_interactions_file),
-        "classical_interactions": str(run.classical_interactions_file),
-    }
+    schemas = build_result_schemas(config)
+    active_families = active_result_families(schemas)
+    outputs = _manifest_outputs(run, active_families)
     has_child_directories = trajectories is not None and any(
         item["analysis_directory"] is not None
         for item in trajectories
@@ -139,12 +229,13 @@ def write_manifest(config, run, trajectories=None):
     if has_child_directories:
         outputs = {
             "per_trajectory": [
-                _manifest_child_outputs(run, item)
+                _manifest_child_outputs(run, item, active_families)
                 for item in trajectories
             ]
         }
 
     manifest = {
+        "analysis_format_version": ANALYSIS_FORMAT_VERSION,
         "created_at": datetime.now().isoformat(timespec="seconds"),
         "directory": str(run.directory),
         "config_file": str(run.config_file),
@@ -152,6 +243,8 @@ def write_manifest(config, run, trajectories=None):
         "trajectories": _manifest_trajectories(trajectories),
         "units": config.get("analysis", {}).get("units", DEFAULT_ANALYSIS_UNITS),
         "outputs": outputs,
+        "schemas": schemas_to_manifest(schemas),
+        "metadata": schema_metadata_to_manifest(schemas),
         "classical_interactions": config.get("classical_interactions", []),
         "quantum_interactions": config.get("quantum_interactions", []),
         "quantum_jobs": [
@@ -186,28 +279,34 @@ def _manifest_trajectories(trajectories):
     ]
 
 
-def _manifest_child_outputs(run, item):
+def _manifest_outputs(run, active_families):
+    paths = {
+        "quantum": run.quantum_file,
+        "classical": run.classical_file,
+        "quantum_interactions": run.quantum_interactions_file,
+        "classical_interactions": run.classical_interactions_file,
+    }
+    return {family: str(path) for family, path in paths.items() if family in active_families}
+
+
+def _manifest_child_outputs(run, item, active_families):
     directory = run.directory / item["analysis_directory"]
-    quantum_interactions_file = _child_output_path(
-        run.directory,
-        directory,
-        run.quantum_interactions_file,
-    )
-    classical_interactions_file = _child_output_path(
-        run.directory,
-        directory,
-        run.classical_interactions_file,
-    )
-    return {
+    entry = {
         "trajectory_index": item["trajectory_index"],
         "structure": item["structure"],
         "structure_directory": item["structure_directory"],
         "directory": str(directory),
-        "quantum": str(_child_output_path(run.directory, directory, run.quantum_file)),
-        "classical": str(_child_output_path(run.directory, directory, run.classical_file)),
-        "quantum_interactions": str(quantum_interactions_file),
-        "classical_interactions": str(classical_interactions_file),
     }
+    child_paths = {
+        "quantum": run.quantum_file,
+        "classical": run.classical_file,
+        "quantum_interactions": run.quantum_interactions_file,
+        "classical_interactions": run.classical_interactions_file,
+    }
+    for family, path in child_paths.items():
+        if family in active_families:
+            entry[family] = str(_child_output_path(run.directory, directory, path))
+    return entry
 
 
 def _child_output_path(parent_directory, child_directory, path):
@@ -239,6 +338,8 @@ def classical_output_file(target):
 
 
 def append_quantum_results(target, results, metadata=None):
+    if _append_schema_family(target, "quantum", results):
+        return
     path = quantum_output_file(target)
     if path is None or not results:
         return
@@ -263,6 +364,8 @@ def append_interaction_results(target, results, metadata=None):
 
 
 def append_quantum_interaction_results(target, results, metadata=None):
+    if _append_schema_family(target, "quantum_interactions", results):
+        return
     path = quantum_interactions_output_file(target)
     if path is None or not results:
         return
@@ -274,6 +377,8 @@ def append_quantum_interaction_results(target, results, metadata=None):
 
 
 def append_classical_interaction_results(target, results, metadata=None):
+    if _append_schema_family(target, "classical_interactions", results):
+        return
     path = classical_interactions_output_file(target)
     if path is None or not results:
         return
@@ -285,6 +390,8 @@ def append_classical_interaction_results(target, results, metadata=None):
 
 
 def append_classical_results(target, results, metadata=None):
+    if _append_schema_family(target, "classical", results):
+        return
     path = classical_output_file(target)
     if path is None or not results:
         return
@@ -293,6 +400,33 @@ def append_classical_results(target, results, metadata=None):
         for result in results:
             record = classical_result_record(result, units=_analysis_units(target))
             f.write(json.dumps(_with_metadata(record, metadata)) + "\n")
+
+
+def _append_schema_family(target, family, results):
+    if not isinstance(target, AnalysisRun) or not results:
+        return False
+    with target.manifest_file.open() as f:
+        manifest = json.load(f)
+    if not _is_schema_format(manifest):
+        return False
+
+    schema = manifest["schemas"][family]
+    if not schema_has_data_columns(schema):
+        return True
+    frame = results[0].frame
+    row = family_row(family, schema, frame, results, target.units)
+    path = {
+        "classical": target.classical_file,
+        "classical_interactions": target.classical_interactions_file,
+        "quantum": target.quantum_file,
+        "quantum_interactions": target.quantum_interactions_file,
+    }[family]
+    if path is None:
+        return True
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a") as f:
+        f.write(json.dumps(row) + "\n")
+    return True
 
 
 def _with_metadata(record, metadata):
@@ -409,6 +543,53 @@ def load_analysis_run(path):
     with manifest_file.open() as f:
         manifest = json.load(f)
 
+    if _is_schema_format(manifest):
+        return _load_schema_analysis_run(directory, manifest)
+
+    return _load_record_analysis_run(directory, manifest)
+
+
+def _is_schema_format(manifest):
+    return (
+        manifest.get("analysis_format_version") == ANALYSIS_FORMAT_VERSION
+        and isinstance(manifest.get("schemas"), dict)
+    )
+
+
+def _load_schema_analysis_run(directory, manifest):
+    outputs = manifest.get("outputs", {})
+    if "per_trajectory" in outputs:
+        per_trajectory = outputs["per_trajectory"]
+        return LoadedAnalysisRun(
+            directory=directory,
+            manifest=manifest,
+            quantum=_read_per_trajectory_schema_outputs(directory, manifest, per_trajectory, "quantum"),
+            classical=_read_per_trajectory_schema_outputs(directory, manifest, per_trajectory, "classical"),
+            quantum_interactions=_read_per_trajectory_schema_outputs(
+                directory,
+                manifest,
+                per_trajectory,
+                "quantum_interactions",
+            ),
+            classical_interactions=_read_per_trajectory_schema_outputs(
+                directory,
+                manifest,
+                per_trajectory,
+                "classical_interactions",
+            ),
+        )
+
+    return LoadedAnalysisRun(
+        directory=directory,
+        manifest=manifest,
+        quantum=_read_schema_outputs(directory, manifest, outputs, "quantum"),
+        classical=_read_schema_outputs(directory, manifest, outputs, "classical"),
+        quantum_interactions=_read_schema_outputs(directory, manifest, outputs, "quantum_interactions"),
+        classical_interactions=_read_schema_outputs(directory, manifest, outputs, "classical_interactions"),
+    )
+
+
+def _load_record_analysis_run(directory, manifest):
     outputs = manifest.get("outputs", {})
     if "per_trajectory" in outputs:
         per_trajectory = outputs["per_trajectory"]
@@ -445,6 +626,57 @@ def _read_per_trajectory_outputs(directory, outputs, key):
         path = _analysis_output_path(directory, item, key)
         records.extend(read_jsonl(path))
     return records
+
+
+def _read_per_trajectory_schema_outputs(directory, manifest, outputs, key):
+    records = []
+    for item in outputs:
+        path = _analysis_output_path(directory, item, key)
+        metadata = _loaded_trajectory_metadata(item)
+        records.extend(_read_schema_outputs(directory, manifest, item, key, metadata=metadata))
+    return records
+
+
+def _read_schema_outputs(directory, manifest, outputs, key, metadata=None):
+    path = _analysis_output_path(directory, outputs, key)
+    schema = manifest.get("schemas", {}).get(key, {})
+    rows = read_jsonl(path)
+    records = []
+    for line_number, row in enumerate(rows, start=1):
+        if not isinstance(row, list):
+            raise ValueError(f"Expected JSON array row {line_number} in {path}")
+        validate_row_length(row, schema, key)
+        record = {
+            column["name"]: value
+            for column, value in zip(schema.get("columns", []), row)
+        }
+        if metadata:
+            record = {**metadata, **record}
+        records.append(record)
+    return records
+
+
+def _loaded_trajectory_metadata(item):
+    return {
+        "trajectory_index": item.get("trajectory_index"),
+        "structure": item.get("structure"),
+        "structure_directory": item.get("structure_directory"),
+    }
+
+
+def _loaded_dataframe(run, family, flatten=False):
+    import pandas as pd
+
+    records = _family_records(run, family)
+    if _is_schema_format(run.manifest) and not flatten:
+        return pd.DataFrame(records)
+    return records_dataframe(records)
+
+
+def _family_records(run, family):
+    if family not in RESULT_FAMILIES:
+        raise ValueError(f"Unsupported result family '{family}'")
+    return getattr(run, family)
 
 
 def read_jsonl(path):
