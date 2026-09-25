@@ -70,7 +70,8 @@ def run_trajectory_analysis(config_file="traj.toml"):
             f"{target['trajectory_index']}: {target['trajectory_file']}"
         )
 
-        for frame in range(start, stop + 1):
+        frame_stride = traj_cfg.get("frame_stride", 1)
+        for frame in range(start, stop + 1, frame_stride):
             analyze_frame(
                 cfg,
                 traj,
@@ -98,11 +99,12 @@ def analyze_frame(
     metadata=None,
 ):
     resources = detect_runtime_resources() if resources is None else resources
+    attachment_snapshots = {}
     attachment_mols = {}
 
     for attachment in attachments or config.get("attachments", []):
         residue = attachment["residue"]
-        attachment_mols[residue] = traj.get_capped_snapshot(
+        snapshot = traj.get_capped_attachment_snapshot(
             frame=frame,
             initial_residue=residue,
             dye=attachment["dye"],
@@ -111,6 +113,8 @@ def analyze_frame(
             basis=basis,
             resources=resources,
         )
+        attachment_snapshots[residue] = snapshot
+        attachment_mols[residue] = snapshot.molecule
 
     groups = build_groups(config, attachment_mols, basis=basis)
     group_fragments = build_group_fragments(config, attachment_mols)
@@ -153,6 +157,7 @@ def analyze_frame(
         config,
         groups=groups,
         frame=frame,
+        attachment_snapshots=attachment_snapshots,
     )
     append_classical_interaction_results(
         analysis_run,

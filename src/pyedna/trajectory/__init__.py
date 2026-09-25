@@ -3,6 +3,7 @@
 import importlib
 
 _LAZY_ATTRS = {
+    "AttachmentSnapshot": "pyedna.trajectory.structure",
     "Fragment": "pyedna.trajectory.structure",
     "Trajectory": "pyedna.trajectory.snapshot",
     "analyze_trajectory": "pyedna.trajectory.trajectory",

@@ -3,9 +3,11 @@
 from pathlib import Path
 
 import MDAnalysis as mda
+import numpy as np
 from pyscf import gto
 
 from .structure import (
+    AttachmentSnapshot,
     build_cap,
     get_external_neighbor,
     infer_dye_charge,
@@ -42,6 +44,19 @@ class Trajectory:
 
     def get_capped_snapshot(self, frame, initial_residue, dye=None, cap_type="H",
                         optimize_caps=False, basis="6-31g", spin=0, resources=None):
+        return self.get_capped_attachment_snapshot(
+            frame=frame,
+            initial_residue=initial_residue,
+            dye=dye,
+            cap_type=cap_type,
+            optimize_caps=optimize_caps,
+            basis=basis,
+            spin=spin,
+            resources=resources,
+        ).molecule
+
+    def get_capped_attachment_snapshot(self, frame, initial_residue, dye=None, cap_type="H",
+                                   optimize_caps=False, basis="6-31g", spin=0, resources=None):
         info = self.get_attachment_info(initial_residue)
 
         if dye is not None and dye != info["dye"]:
@@ -55,6 +70,8 @@ class Trajectory:
         if missing:
             raise ValueError(f"Attachment atoms not found in residue: {missing}")
 
+        atom_names = tuple(str(atom.name) for atom in atoms)
+        coordinates = np.asarray([atom.position.copy() for atom in atoms], dtype=float)
         mol_atoms = [(atom.element, atom.position.copy()) for atom in atoms]
         cap_indices = []
 
@@ -81,4 +98,11 @@ class Trajectory:
         if optimize_caps:
             mol = optimize_cap_geometry(mol, cap_indices, resources=resources)
 
-        return mol
+        return AttachmentSnapshot(
+            residue=initial_residue,
+            dye=info["dye"],
+            amber_residue=info["amber_residue"],
+            atom_names=atom_names,
+            coordinates=coordinates,
+            molecule=mol,
+        )

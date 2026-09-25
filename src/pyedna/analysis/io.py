@@ -257,7 +257,7 @@ def append_interaction_results(target, results, metadata=None):
     )
     append_classical_interaction_results(
         target,
-        [result for result in results if result.type == "distance"],
+        [result for result in results if result.type in {"axis_angle", "distance", "orientation_factor"}],
         metadata=metadata,
     )
 

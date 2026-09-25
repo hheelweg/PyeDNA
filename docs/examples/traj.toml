@@ -2,7 +2,8 @@
 # MD run directory, selected ranked structures, and frame range to analyze.
 run_directory = "md/run_2026_01_01_12_00"
 structures = [1, 2]
-frame_interval = [0, 10]
+frame_interval = "all"
+frame_stride = 1
 optimize_caps = false
 
 # ============================================================
@@ -67,6 +68,15 @@ state_pairs = [["strongest", "strongest"], [0, 0]]
 # Each classical interaction block requests a group-to-group distance.
 [[classical_interactions]]
 type = "distance"
+groups = ["donor", "acceptor"]
+method = "center_of_geometry"
+
+[[classical_interactions]]
+type = "axis_angle"
+groups = ["donor", "acceptor"]
+
+[[classical_interactions]]
+type = "orientation_factor"
 groups = ["donor", "acceptor"]
 method = "center_of_geometry"
 # ============================================================

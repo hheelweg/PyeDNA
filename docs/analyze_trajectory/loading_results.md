@@ -46,4 +46,4 @@ classical interaction rows  = structures x frames x classical interaction jobs
 quantum interaction rows    = structures x frames x quantum interaction jobs x state pairs
 ```
 
-For `frame_interval = [0, 10]`, `frames = 11` because both endpoints are included.
+For `frame_interval = [0, 10]` and the default `frame_stride = 1`, `frames = 11` because both endpoints are included. For `frame_interval = "all"`, PyeDNA uses every available frame in the trajectory, from `0` through `num_frames - 1`; `frame_stride = 10` would keep every tenth frame from that selection.
