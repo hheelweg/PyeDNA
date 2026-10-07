@@ -3,7 +3,7 @@
 from pathlib import Path
 
 from .config import _flatten_docking_overrides, _write_docking_config
-from .finalize import _reformat_docked_models, _select_best_models
+from .finalize import _reformat_docked_models, _select_best_models, _cluster_models
 from .restraints import _prepare_dna_for_haddock, _write_bond_restraints
 from .topology import _combine_ligand_topologies, _prepare_dye_topologies
 
@@ -89,5 +89,23 @@ class HaddockSetup:
             bond_file=self.haddock_dir / "bonds.csv",
             model_pattern=f"{self.config.name}_*.pdb",
             attachments=self.config.attachments,
+        )
+        _cluster_models(
+            config=self.config,
+            structure_dir=self.structure_dir,
+            output_dir=self.structure_dir / "clusters",
+            structure_name=self.config.name,
+            major_atoms=("N1", "N2"),
+            minor_atoms=("N1", "C2"),
+            N_res_rad=0,
+            weight_mode="DisplacementPrincipalAxes",
+            ws=[1/3, 1.0],
+            min_cluster_size=4,
+            min_samples=2,
+            plot_dye1=0, 
+            plot_dye2=1,
+            plot_featureA="dist",
+            plot_featureB="n1_n2",
+            plot_name="clusters"
         )
         return self

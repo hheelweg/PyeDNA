@@ -9,10 +9,13 @@ import pandas as pd
 
 from ..pdb import set_chain_and_segid
 
+from ..clusterer import Clusterer
+
 
 ATTACHMENT_TARGET_A = 1.5
 ATTACHMENT_MIN_DISTANCE_A = 1.2
 ATTACHMENT_MAX_DISTANCE_A = 2.3
+
 
 
 def _pdb_coordinates(pdb):
@@ -323,6 +326,102 @@ def _select_best_models(
 
     print(f"Selected top {nmodels} valid models in {output_dir}")
     return ranked.iloc[:nmodels].copy()
+
+def _get_clusters(
+    structure_dir,
+    output_dir,
+    structure_name,
+    dye_names=["CY3", "CY5"],
+    major_atoms=("N1", "N2"),                  # Orient the principal major axis    (NOTE: This does not define the principal axis,
+    minor_atoms=("N1", "C2"),                  # Orient the principal major axis            but standardises eigenvector direction)
+    N_res_rad=0,                               # Number of environment residues on each side of dye to include as features
+    weight_mode="DisplacementPrincipalAxes",   # Set structure of weights
+    ws=[1/3, 1.0],                             # Weights of weight_mode
+    min_cluster_size=4,                        # Minimum size to be classed a cluster
+    min_samples=2                              # Defines core distance k (larger penalises sparse regions,
+                                               #                          smaller allows easier connectivity)
+):
+
+    # Construct clusterer 
+    clust = Clusterer(structure_name, 
+                      dye_names, 
+                      structure_dir=structure_dir, 
+                      major_atoms=major_atoms,
+                      minor_atoms=minor_atoms,
+                      N_res_rad=N_res_rad)
+                    
+    # Extract features 
+    features = clust.get_features()
+
+    # Make weights 
+    weights = clust.make_weights(weight_mode, ws)
+
+    # Cluster features 
+    clust_labels, N_clust = clust.cluster(features, weights, min_cluster_size, min_samples) 
+
+    # Save cluster results 
+    df = pd.DataFrame(features)
+    df.insert(0, "clust_labels", clust_labels)
+    clust_path = output_dir / "clusters.csv"
+    df.to_csv(clust_path, index=False)
+
+    return clust, features, clust_labels, weights
+
+
+def _plot_clusters(
+    clust,
+    output_dir,
+    features,
+    clust_labels,
+    dye1=0, 
+    dye2=1,
+    featureA="dist",
+    featureB="n1_n2",
+    plot_name="clusters"
+):
+    clust.plot_clusters(features, clust_labels, 
+                      featureA, featureA, 
+                      featureB, featureB,
+                      plot_name, output_dir,
+                      dye1=dye1, dye2=dye2)
+
+
+def _cluster_models(
+    config,
+    structure_dir,
+    output_dir,
+    structure_name,
+    major_atoms=("N1", "N2"),                  # Orient the principal major axis    (NOTE: This does not define the principal axis,
+    minor_atoms=("N1", "C2"),                  # Orient the principal major axis            but standardises eigenvector direction)
+    N_res_rad=0,                               # Number of environment residues on each side of dye to include as features
+    weight_mode="DisplacementPrincipalAxes",   # Set structure of weights
+    ws=[1/3, 1.0],                             # Weights of weight_mode
+    min_cluster_size=4,                        # Minimum size to be classed a cluster
+    min_samples=2,                             # Defines core distance k (larger penalises sparse regions, smaller allows easier connectivity)
+    plot_dye1=0, 
+    plot_dye2=1,
+    plot_featureA="dist",
+    plot_featureB="n1_n2",
+    plot_name="clusters",
+):  
+    # Make directory for cluster information
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Get dye names from config
+    dye_names = [attachment.dye for attachment in config.attachments]
+
+    # Perform clustering
+    clust, features, clust_labels, weights = _get_clusters(structure_dir, output_dir,
+                                                    structure_name, dye_names,
+                                                    major_atoms, minor_atoms,
+                                                    N_res_rad, 
+                                                    weight_mode, ws,
+                                                    min_cluster_size, min_samples)
+
+    # Plot clusters
+    _plot_clusters(clust, output_dir, features, clust_labels, plot_dye1, plot_dye2, 
+                    plot_featureA, plot_featureB, plot_name)
+
 
 
 def _atom_key(line):
