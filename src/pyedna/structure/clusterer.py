@@ -7,6 +7,20 @@ import MDAnalysis as mda
 from sklearn.cluster import HDBSCAN
 import matplotlib.pyplot as plt
 
+PAIR_FEATURES = ["dist",
+                "n1_dist", "u1_dist", "v1_dist",
+                "n2_dist", "u2_dist", "v2_dist",
+                "n1_n2", "n1_u2", "n1_v2",
+                "u1_n2", "u1_u2", "u1_v2",
+                "v1_n2", "v1_u2", "v1_v2"]
+
+WEIGHT_MODES = ["Distance", 
+                "Displacement", 
+                "Orientation",
+                "PrincipalAxes", 
+                "DistancePrincipalAxes",
+                "DisplacementPrincipalAxes",
+                "DistanceNormal"]
 
 class Clusterer:
     """

@@ -10,6 +10,7 @@ from .config import (
     DNAConfig,
     DyePlacement,
     HaddockConfig,
+    ClusterConfig,
     StructureConfig,
     WorkflowConfig,
 )
@@ -29,6 +30,7 @@ __all__ = [
     "DyePlacement",
     "HaddockConfig",
     "HaddockSetup",
+    "ClusterConfig",
     "StructureBuilder",
     "StructureConfig",
     "WorkflowConfig",
