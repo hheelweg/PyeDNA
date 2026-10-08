@@ -25,6 +25,7 @@ dependencies = [
     "pyscf==2.8.0",
     "geometric",
     "rdkit",
+    "scikit-learn",
 ]
 
 [tool.setuptools.package-data]
