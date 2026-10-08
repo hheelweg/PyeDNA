@@ -2,11 +2,15 @@
 
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 from pyedna.config import get_config
 
 from .pdb import set_chain_and_segid
+
+# libgfortran file extension: .dylib on macOS, .so on Linux
+LIBGFORTRAN_SUFFIX = ".dylib" if sys.platform == "darwin" else ".so"
 
 
 def _copy_library_dna(dna_config, dna_dir, workdir):
@@ -62,14 +66,10 @@ def _amberclassic_environment(amberclassic_dir):
     setup_script = amberclassic_dir / "AmberClassic.sh"
 
     if not setup_script.is_file():
-        raise FileNotFoundError(
-            f"AmberClassic.sh not found in {amberclassic_dir}"
-        )
+        raise FileNotFoundError(f"AmberClassic.sh not found in {amberclassic_dir}")
 
     if shutil.which("gcc") is None:
-        raise RuntimeError(
-            "NAB requires gcc, but gcc was not found on PATH."
-        )
+        raise RuntimeError("NAB requires gcc, but gcc was not found on PATH.")
 
     result = subprocess.run(
         [
@@ -84,9 +84,7 @@ def _amberclassic_environment(amberclassic_dir):
     )
 
     env = dict(
-        item.split("=", 1)
-        for item in result.stdout.decode().split("\0")
-        if item
+        item.split("=", 1) for item in result.stdout.decode().split("\0") if item
     )
 
     conda_prefix = env.get("CONDA_PREFIX")
@@ -97,12 +95,12 @@ def _amberclassic_environment(amberclassic_dir):
             "No active Conda environment was detected."
         )
 
-    libgfortran = Path(conda_prefix) / "lib" / "libgfortran.so"
+    libgfortran = Path(conda_prefix) / "lib" / f"libgfortran{LIBGFORTRAN_SUFFIX}"
 
     if not libgfortran.is_file():
         raise RuntimeError(
-            "NAB requires libgfortran.so for linking, but it was not found at "
-            f"{libgfortran}."
+            f"NAB requires libgfortran{LIBGFORTRAN_SUFFIX} for linking, "
+            f"but it was not found at {libgfortran}."
         )
 
     lib_dirs = [
@@ -150,7 +148,6 @@ def _run_nab(nab_file, workdir):
         env=env,
         check=True,
     )
-
 
     executable = workdir / "a.out"
     if not executable.is_file():
