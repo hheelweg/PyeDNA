@@ -3,6 +3,7 @@
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
+from .clusterer import PAIR_FEATURES, WEIGHT_MODES
 
 try:
     import tomllib
@@ -83,6 +84,31 @@ class HaddockConfig:
 
 
 @dataclass(frozen=True)
+class ClusterConfig:
+    """Store clustering parameters."""
+
+    major_atoms: list[str] = field(default_factory=lambda: ["N1", "N2"])
+    minor_atoms: list[str] = field(default_factory=lambda: ["N1", "C2"])
+    N_res_rad: int = 0
+    weight_mode: str = "DisplacementPrincipalAxes"
+    ws: list[float] = field(default_factory=lambda: [1 / 3, 1.0])
+    min_cluster_size: int = 4
+    min_samples: int = 2
+    plot_dye1: int = 0
+    plot_dye2: int = 1
+    plot_featureA: str = "dist"
+    plot_featureB: str = "n1_n2"
+    plot_name: str = "clusters"
+
+    def __post_init__(self):
+        if self.weight_mode not in WEIGHT_MODES:
+            raise ValueError("'clustering.weight_mode' is not valid")
+        if self.plot_featureA not in PAIR_FEATURES:
+            raise ValueError("'clustering.plot_featureA' is not valid")
+        if self.plot_featureB not in PAIR_FEATURES:
+            raise ValueError("'clustering.plot_featureB' is not valid")
+
+@dataclass(frozen=True)
 class AmberConfig:
     """Store internal force-field defaults used during structure preparation."""
 
@@ -110,6 +136,7 @@ class StructureConfig:
     dyes: list[DyePlacement]
     attachments: list[AttachmentConfig] = field(default_factory=list)
     haddock: HaddockConfig = field(default_factory=HaddockConfig)
+    clustering: ClusterConfig = field(default_factory=ClusterConfig)
     amber: AmberConfig = field(default_factory=AmberConfig)
     workflow: WorkflowConfig = field(default_factory=WorkflowConfig)
 
@@ -170,6 +197,7 @@ class StructureConfig:
             )
             docking = dict(data.get("haddock", {}))
             docking.update(data.get("docking", {}))
+            clustering = dict(data.get("clustering", {}))
             workflow = dict(data.get("workflow", {}))
 
             amber = dict(data.get("amber", {}))
@@ -191,6 +219,7 @@ class StructureConfig:
                 dyes=dyes,
                 attachments=attachments,
                 haddock=HaddockConfig(**docking),
+                clustering=ClusterConfig(**clustering),
                 amber=AmberConfig(**amber),
                 workflow=WorkflowConfig(**workflow),
             )
