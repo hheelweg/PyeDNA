@@ -36,18 +36,20 @@ class Clusterer:
                     minor_atoms=("N1", "C2"),
                     N_res_rad=0):
 
-        # Locate structure directory
+
+        self.structure_name = structure_name
+        self.dye_names = dye_names
         self.structure_dir = Path(structure_dir)
-
-        # Collect all PDB files 
-        pdb_files = list(self.structure_dir.glob(f"{structure_name}*.pdb"))
-
-        # Get labels of each pdb file 
-        self.pdb_labels = [Path(p).stem.removeprefix(f"{structure_name}_") for p in pdb_files]
-
         self.N_res_rad = N_res_rad
         self.major_atoms = major_atoms
         self.minor_atoms = minor_atoms
+
+        # Collect all PDB files in the correct order
+        pdb_files = sorted(self.structure_dir.glob(f"{structure_name}_*.pdb"),
+                            key=lambda p: int(p.stem.removeprefix(f"{structure_name}_")))
+
+        # Get labels of each pdb file 
+        self.pdb_labels = [Path(p).stem.removeprefix(f"{structure_name}_") for p in pdb_files]
 
         # Read pdb files into separate universes 
         self.universes = {
@@ -280,7 +282,10 @@ class Clusterer:
         com_envs = self.get_com_envs(pdb)  
 
         # Get principal axes 
-        princ_axes = self.get_orient_princ_axes(pdb)        
+        princ_axes = self.get_orient_princ_axes(pdb)
+
+        # Write .cxc file for ChimeraX visualisation
+        self.write_cxc(pdb, com_envs, princ_axes)        
 
         # Compute displacements within each dye environment
         com_env_disps = self.get_com_env_disps(com_envs)      
@@ -368,3 +373,70 @@ class Clusterer:
         print(f"Saved cluster plot to: {abs_save_file}")
 
         plt.show()
+
+    def write_cxc(self, pdb, com_envs, princ_axes,
+                    axis_length = 10.0, axis_radius = 0.25):
+
+        # Create file
+        file_number = pdb.removeprefix("pdb_")
+        save_dir = self.structure_dir / "clusters" / "cxc"
+        save_dir.mkdir(parents=True, exist_ok=True)
+        save_file = os.path.join(save_dir, f"{self.structure_name}_{file_number}.cxc")
+
+        # Define colours for the principal axes arrows 
+        colors = ["red", "green", "blue"]       # Corresponds to [normal, minor, major]
+
+        # Define colours for the dyes
+        dye_colors = ["magenta", 
+                      "cyan",
+                      "light green",
+                      "light gray",
+                      "gold",
+                      "deep pink",
+                      "dodger blue",
+                      "purple",
+                      "sky blue",
+                      "salmon",
+                      "plum",]
+
+        # Write .cxc
+        with open(save_file, "w") as f:
+            f.write("hide \n")
+
+            for i, dye in enumerate(self.dye_names):
+                f.write(
+                        f"show :{dye} atoms \n"
+                        f"color :{dye} {dye_colors[i % len(dye_colors)]} \n"
+                )
+
+            for i, resid_i in enumerate(self.all_dye_resids):
+                com_dye_i = com_envs[resid_i]
+                axes_dye_i = princ_axes[resid_i].real.T     # Rearranging for next line
+
+                for j, axis in enumerate(axes_dye_i):
+                    p1 = com_dye_i 
+                    p2 = com_dye_i + axis_length * axis
+
+                    shaft_end = p1 + 0.8 * (p2 - p1)
+
+                    f.write(
+                        f"shape cylinder "
+                        f"from {p1[0]:.6f},{p1[1]:.6f},{p1[2]:.6f} "
+                        f"to {shaft_end[0]:.6f},{shaft_end[1]:.6f},{shaft_end[2]:.6f} "
+                        f"radius {axis_radius} "
+                        f"color {colors[j]}\n"
+                    )
+
+                    f.write(
+                        f"shape cone "
+                        f"from {shaft_end[0]:.6f},{shaft_end[1]:.6f},{shaft_end[2]:.6f} "
+                        f"toPoint {p2[0]:.6f},{p2[1]:.6f},{p2[2]:.6f} "
+                        f"radius {2.5 * axis_radius} "
+                        f"color {colors[j]}\n"
+                    )
+
+                f.write("\n")
+
+        print(f"Wrote ChimeraX file: {save_file}")
+
+
