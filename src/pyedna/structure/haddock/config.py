@@ -14,7 +14,7 @@ DEFAULT_DOCKING_CONFIG = {
     "delenph": True,
     "autohis": False,
 
-    "rigidbody_sampling": 32,
+    "rigidbody_sampling": 96,
     "rigidbody_ntrials": 10,
     "rigidbody_randremoval": False,
     "rigidbody_unambig_scale": 1000,
@@ -32,7 +32,7 @@ DEFAULT_DOCKING_CONFIG = {
     "rigidbody_rigidtrans": True,
     "rigidbody_mol_fix_origin_1": True,
 
-    "seletop_select": 16,
+    "seletop_select": 96,
 
     "flexref_randremoval": False,
     "flexref_unambig_hot": 1000,

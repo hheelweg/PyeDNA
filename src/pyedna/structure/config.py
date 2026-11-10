@@ -87,8 +87,8 @@ class HaddockConfig:
 class ClusterConfig:
     """Store clustering parameters."""
 
-    major_atoms: list[str] = field(default_factory=lambda: ["N1", "N2"])
-    minor_atoms: list[str] = field(default_factory=lambda: ["N1", "C2"])
+    major_atoms: list[list[str]] = field(default_factory=lambda: [["CY3", "N1", "N2"], ("CY5", "N1", "N2")])
+    minor_atoms: list[list[str]] = field(default_factory=lambda: [["CY3", "N1", "C2"], ("CY5", "N1", "C2")])
     N_res_rad: int = 0
     weight_mode: str = "DisplacementPrincipalAxes"
     ws: list[float] = field(default_factory=lambda: [1 / 3, 1.0])

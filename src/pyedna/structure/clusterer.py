@@ -25,15 +25,12 @@ WEIGHT_MODES = ["Distance",
 class Clusterer:
     """
     Cluster DNA-dye chromophore configurations by dye features.
-
-    TODO: Change major_atoms and minor_atoms to define separate axes for each dye type in dye_names.
-          Not strictly necessary, unless the specified atoms are collinear in a dye, or don't exist.
     
     """
 
     def __init__(self, structure_name, dye_names, structure_dir="structures", 
-                    major_atoms=("N1", "N2"),
-                    minor_atoms=("N1", "C2"),
+                    major_atoms=[["CY3", "N1", "N2"], ("CY5", "N1", "N2")],
+                    minor_atoms=[["CY3", "N1", "C2"], ("CY5", "N1", "C2")],
                     N_res_rad=0):
 
 
@@ -43,6 +40,24 @@ class Clusterer:
         self.N_res_rad = N_res_rad
         self.major_atoms = major_atoms
         self.minor_atoms = minor_atoms
+
+        # Check that there exists defined major and minor axes for each dye molecule
+        major_names = {label for label, atom1, atom2 in major_atoms}
+        minor_names = {label for label, atom1, atom2 in minor_atoms}
+        major_missing = [name for name in dye_names if name not in major_names]
+        minor_missing = [name for name in dye_names if name not in minor_names]
+        if major_missing or minor_missing:
+            raise ValueError(f"Missing major or minor axes for dye names: {major_missing} {minor_missing}")
+
+        # Define dictionaries for axes of each dye molecule
+        self.major_atoms_dict = {
+            label: (atom1, atom2)
+            for label, atom1, atom2 in major_atoms
+        }
+        self.minor_atoms_dict = {
+            label: (atom1, atom2)
+            for label, atom1, atom2 in minor_atoms
+        }
 
         # Collect all PDB files in the correct order
         pdb_files = sorted(self.structure_dir.glob(f"{structure_name}_*.pdb"),
@@ -78,6 +93,13 @@ class Clusterer:
                             for dye_resids_list in self.dye_resids.values()
                             for dye_resid in dye_resids_list
                           ]
+
+        # Reverse lookup 
+        self.dye_resid_to_dye_name = {
+            resid: dye
+            for dye, resids in self.dye_resids.items()
+            for resid in resids
+        }
 
         # Construct individual pair feature index helpers
         PAIR_FEATURES = [
@@ -193,21 +215,24 @@ class Clusterer:
         # Select dye residue
         res = self.universes[pdb].select_atoms(f"resid {dye_resid}")
 
+        # Get dye name 
+        dye_name = self.dye_resid_to_dye_name[dye_resid]
+
         # MDAnalysis principal axes
         axes = res.principal_axes()
         normal, minor, major = axes
 
         # Dye-fixed reference for major axis
-        r1 = res.select_atoms(f"name {self.major_atoms[0]}").positions[0]
-        r2 = res.select_atoms(f"name {self.major_atoms[1]}").positions[0]
+        r1 = res.select_atoms(f"name {self.major_atoms_dict[dye_name][0]}").positions[0]
+        r2 = res.select_atoms(f"name {self.major_atoms_dict[dye_name][1]}").positions[0]
         ref_major = r2 - r1
 
         if np.dot(major, ref_major) < 0:
             major *= -1
 
         # Dye-fixed reference for minor axis
-        r1 = res.select_atoms(f"name {self.minor_atoms[0]}").positions[0]
-        r2 = res.select_atoms(f"name {self.minor_atoms[1]}").positions[0]
+        r1 = res.select_atoms(f"name {self.minor_atoms_dict[dye_name][0]}").positions[0]
+        r2 = res.select_atoms(f"name {self.minor_atoms_dict[dye_name][1]}").positions[0]
         ref_minor = r2 - r1
 
         if np.dot(minor, ref_minor) < 0:
