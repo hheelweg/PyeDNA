@@ -30,8 +30,8 @@ class Clusterer:
 
     def __init__(self, structure_name, dye_names, 
                     structure_dir="structures", output_dir = "structures/clusters",
-                    major_atoms=[["CY3", "N1", "N2"], ("CY5", "N1", "N2")],
-                    minor_atoms=[["CY3", "N1", "C2"], ("CY5", "N1", "C2")],
+                    major_atoms=[["CY3", "N1", "N2"], ["CY5", "N1", "N2"]],
+                    minor_atoms=[["CY3", "N1", "C2"], ["CY5", "N1", "C2"]],
                     N_res_rad=0):
 
 

@@ -333,8 +333,8 @@ def _get_clusters(
     output_dir,
     structure_name,
     dye_names=["CY3", "CY5"],
-    major_atoms=[["CY3", "N1", "N2"], ("CY5", "N1", "N2")],  # Orient the principal major axis    (NOTE: This does not define the principal axis,
-    minor_atoms=[["CY3", "N1", "C2"], ("CY5", "N1", "C2")],  # Orient the principal minor axis            but standardises eigenvector direction)
+    major_atoms=[["CY3", "N1", "N2"], ["CY5", "N1", "N2"]],  # Orient the principal major axis    (NOTE: This does not define the principal axis,
+    minor_atoms=[["CY3", "N1", "C2"], ["CY5", "N1", "C2"]],  # Orient the principal minor axis            but standardises eigenvector direction)
     N_res_rad=0,                               # Number of environment residues on each side of dye to include as features
     weight_mode="DisplacementPrincipalAxes",   # Set structure of weights
     ws=[1/3, 1.0],                             # Weights of weight_mode
@@ -402,9 +402,9 @@ def _cluster_models(
     output_dir,
     structure_name,
     major_atoms=[["CY3", "N1", "N2"], 
-                 ("CY5", "N1", "N2")],   # Orient the principal major axis    (NOTE: This does not define the principal axis, but standardises eigenvector direction)
+                 ["CY5", "N1", "N2"]],   # Orient the principal major axis    (NOTE: This does not define the principal axis, but standardises eigenvector direction)
     minor_atoms=[["CY3", "N1", "C2"], 
-                 ("CY5", "N1", "C2")],   # Orient the principal major axis            
+                 ["CY5", "N1", "C2"]],   # Orient the principal major axis            
     N_res_rad=0,                               # Number of environment residues on each side of dye to include as features
     weight_mode="DisplacementPrincipalAxes",   # Set structure of weights
     ws=[1/3, 1.0],                             # Weights of weight_mode
