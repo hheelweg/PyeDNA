@@ -34,5 +34,8 @@ def run_structure(stage, config_file="structure.toml"):
     elif stage == "finalize":
         builder.finalize()
 
+    elif stage == "cluster":
+        builder.cluster()
+
     else:
         raise ValueError(f"Unknown structure stage: {stage}")
