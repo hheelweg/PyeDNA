@@ -4,6 +4,7 @@ import json
 import math
 from pathlib import Path
 import shutil
+from collections import defaultdict
 
 import pandas as pd
 
@@ -346,6 +347,7 @@ def _get_clusters(
     clust = Clusterer(structure_name, 
                       dye_names, 
                       structure_dir=structure_dir, 
+                      output_dir=output_dir,
                       major_atoms=major_atoms,
                       minor_atoms=minor_atoms,
                       N_res_rad=N_res_rad)
@@ -364,6 +366,14 @@ def _get_clusters(
     df.insert(0, "clust_labels", clust_labels)
     clust_path = output_dir / "clusters.csv"
     df.to_csv(clust_path, index=False)
+
+    # Create and save reverse map for cluster labels
+    reverse_map = defaultdict(list)
+    for i, label in enumerate(clust_labels, start=1):
+        reverse_map[int(label)].append(i)
+    clust_path = output_dir / "cluster_models.json"
+    with open(clust_path, "w") as f:
+        json.dump(dict(reverse_map), f, indent=4)
 
     return clust, features, clust_labels, weights
 

@@ -1,5 +1,6 @@
 """Prepare HADDOCK inputs and post-process docked DNA–dye structures."""
 
+import re
 from pathlib import Path
 
 from .config import _flatten_docking_overrides, _write_docking_config
@@ -90,10 +91,25 @@ class HaddockSetup:
             model_pattern=f"{self.config.name}_*.pdb",
             attachments=self.config.attachments,
         )
+        return self
+
+    def cluster_results(self):
+        """Cluster the selected HADDOCK models."""
+
+        # Check for existing cluster directories and determine the largest cluster number
+        cluster_numbers = [0]
+        for path in self.structure_dir.iterdir():
+            match = re.fullmatch(r"clusters(\d*)", path.name)
+            if match and path.is_dir():
+                cluster_numbers.append(int(match.group(1) or 0))
+        
+        # Set number for new cluster directory
+        clust_num = max(cluster_numbers) + 1
+
         _cluster_models(
             config=self.config,
             structure_dir=self.structure_dir,
-            output_dir=self.structure_dir / "clusters",
+            output_dir=self.structure_dir / f"clusters{clust_num}",
             structure_name=self.config.name,
             major_atoms=self.config.clustering.major_atoms,
             minor_atoms=self.config.clustering.minor_atoms,

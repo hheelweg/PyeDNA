@@ -28,7 +28,8 @@ class Clusterer:
     
     """
 
-    def __init__(self, structure_name, dye_names, structure_dir="structures", 
+    def __init__(self, structure_name, dye_names, 
+                    structure_dir="structures", output_dir = "structures/clusters",
                     major_atoms=[["CY3", "N1", "N2"], ("CY5", "N1", "N2")],
                     minor_atoms=[["CY3", "N1", "C2"], ("CY5", "N1", "C2")],
                     N_res_rad=0):
@@ -37,6 +38,7 @@ class Clusterer:
         self.structure_name = structure_name
         self.dye_names = dye_names
         self.structure_dir = Path(structure_dir)
+        self.output_dir = Path(output_dir)
         self.N_res_rad = N_res_rad
         self.major_atoms = major_atoms
         self.minor_atoms = minor_atoms
@@ -382,7 +384,7 @@ class Clusterer:
         featureB = self.extract_feature_column(features, featureB_name, dye1, dye2)
 
         # Plot data
-        plt.scatter(featureA[~mask], featureB[~mask], c=clust_labels[~mask], cmap=color_map)
+        scatter = plt.scatter(featureA[~mask], featureB[~mask], c=clust_labels[~mask], cmap=color_map)
         plt.scatter(featureA[mask], featureB[mask], c="black")
         plt.xlabel(featureA_label)
         plt.ylabel(featureB_label)
@@ -390,6 +392,8 @@ class Clusterer:
         if num_labels == True:
             for i, (xi, yi) in enumerate(zip(featureA, featureB)):
                 plt.annotate(self.pdb_labels[i], (xi, yi))
+
+        plt.legend(*scatter.legend_elements(), title="Clusters")
 
         os.makedirs(save_path, exist_ok=True)
         rel_save_file = os.path.join(save_path, save_name + ".png")
@@ -404,7 +408,7 @@ class Clusterer:
 
         # Create file
         file_number = pdb.removeprefix("pdb_")
-        save_dir = self.structure_dir / "clusters" / "cxc"
+        save_dir = self.output_dir / "cxc"
         save_dir.mkdir(parents=True, exist_ok=True)
         save_file = os.path.join(save_dir, f"{self.structure_name}_{file_number}.cxc")
 
