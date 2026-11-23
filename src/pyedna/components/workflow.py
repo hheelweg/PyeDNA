@@ -19,8 +19,8 @@ def run_create_dye(config_file="dye.toml"):
     print(f"Dye output directory: {workdir}")
 
     dye.validate()
-    dye.draw_core(workdir / f"{dye.residue_name}.png")
     dye.generate_conformer(workdir / f"{dye.name}.sdf")
+    dye.draw_core(workdir / f"{dye.residue_name}.png")
 
     print(f"Generated dye core depiction: {dye.residue_name}.png")
     print(f"Generated dye structure: {dye.name}.sdf")

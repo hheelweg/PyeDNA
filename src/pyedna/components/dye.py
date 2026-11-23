@@ -1,3 +1,4 @@
+import math
 from pathlib import Path
 
 from .parameterization import (
@@ -44,6 +45,7 @@ class DyeDefinition:
         output=None,
         qm=None,
         config=None,
+        dihedrals=None,
     ):
         """Store dye core, cap attachment targets, and workflow settings."""
         self.name = name
@@ -56,6 +58,7 @@ class DyeDefinition:
         self.output = output or OutputSettings()
         self.qm = qm or QMSettings()
         self.config = config or {}
+        self.dihedrals = dihedrals if dihedrals is not None else []
         self.mol = None
         self.core_mol = None
         self.core_map_ids = set()
@@ -108,6 +111,7 @@ class DyeDefinition:
             cap_smiles = structure["cap_smiles"]
             core_targets = structure.get("cap_targets", structure.get("core_targets"))
             formal_charge = structure.get("formal_charge")
+            dihedrals = structure.get("dihedrals", [])
         else:
             core = config["core"]
             caps = config["caps"]
@@ -115,6 +119,7 @@ class DyeDefinition:
             cap_smiles = caps["smiles"]
             core_targets = caps["core_targets"]
             formal_charge = core.get("formal_charge")
+            dihedrals = []
 
         parameterization = config.get("parameterization", {})
         amber_config = dict(config.get("amber", {}))
@@ -139,6 +144,7 @@ class DyeDefinition:
             output=OutputSettings.from_config(config.get("output", {})),
             qm=QMSettings.from_config(config.get("qm", {})),
             config=config,
+            dihedrals=dihedrals,
         )
 
     def validate(self):
@@ -171,6 +177,8 @@ class DyeDefinition:
             if target not in self.core_map_ids:
                 raise ValueError(f"Cap target {target} does not exist.")
 
+        self._dihedral_indices(core)
+
         if self.formal_charge is None:
             self.formal_charge = Chem.GetFormalCharge(core)
 
@@ -179,12 +187,34 @@ class DyeDefinition:
             raise ValueError("Dye core RESP group is empty.")
 
     def draw_core(self, output_file):
-        """Write a 2D depiction of the parsed dye core SMILES."""
+        """Draw the dye core using its initial conformer's scaffold orientation."""
         from rdkit import Chem
+        from rdkit.Chem import rdDepictor, rdMolTransforms
+        from rdkit.Chem.Scaffolds import MurckoScaffold
+        from rdkit.Geometry import Point2D
 
-        core = self.core_mol or Chem.MolFromSmiles(self.core_smiles)
-        if core is None:
-            raise ValueError(f"Could not parse dye core '{self.name}'.")
+        if self.mol is None or self.mol.GetNumConformers() == 0:
+            raise RuntimeError("Generate a 3D conformer before drawing the dye core.")
+
+        core = Chem.Mol(self.core_mol or Chem.MolFromSmiles(self.core_smiles))
+        conformer = Chem.Conformer(core.GetNumAtoms())
+        for atom in core.GetAtoms():
+            conformer.SetAtomPosition(atom.GetIdx(), self.mol.GetConformer().GetAtomPosition(atom.GetIdx()))
+            atom.SetAtomMapNum(0)
+            atom.SetIntProp("_depictIndex", atom.GetIdx())
+        core.AddConformer(conformer)
+        rdMolTransforms.CanonicalizeConformer(core.GetConformer())
+        scaffold = MurckoScaffold.GetScaffoldForMol(core)
+        scaffold_indices = {atom.GetIntProp("_depictIndex") for atom in scaffold.GetAtoms()}
+        if not scaffold_indices:
+            scaffold_indices = {atom.GetIdx() for atom in core.GetAtoms() if atom.GetDegree() > 1}
+        positions = {i: core.GetConformer().GetAtomPosition(i) for i in scaffold_indices}
+        lengths = [math.hypot(positions[a].x - positions[b].x, positions[a].y - positions[b].y)
+                   for bond in core.GetBonds() for a, b in [(bond.GetBeginAtomIdx(), bond.GetEndAtomIdx())]
+                   if a in positions and b in positions]
+        scale = 1.5 * len(lengths) / sum(lengths) if lengths and sum(lengths) > 1e-8 else 1.0
+        coord_map = {i: Point2D(pos.x * scale, pos.y * scale) for i, pos in positions.items()}
+        rdDepictor.Compute2DCoords(core, coordMap=coord_map, forceRDKit=True)
 
         return draw_rdkit_molecule(core, output_file)
 
@@ -229,6 +259,38 @@ class DyeDefinition:
 
         return self.cap_map_ids
 
+    def _dihedral_indices(self, core):
+        """Validate dihedral definitions and resolve core atom maps."""
+        from rdkit import Chem
+
+        if not isinstance(self.dihedrals, list):
+            raise ValueError("structure.dihedrals must be a list of tables.")
+        indices = []
+        for spec in self.dihedrals:
+            if not isinstance(spec, dict):
+                raise ValueError("Each dihedral must be a table.")
+            maps = spec.get("atom_maps")
+            if not isinstance(maps, list) or len(maps) != 4:
+                raise ValueError("Each dihedral must contain exactly four atom-map numbers.")
+            if any(type(n) is not int or n <= 0 for n in maps) or len(set(maps)) != 4:
+                raise ValueError(f"Dihedral atom maps must be distinct positive integers: {maps}.")
+            atom_indices = []
+            for map_id in maps:
+                matches = [atom.GetIdx() for atom in core.GetAtoms() if atom.GetAtomMapNum() == map_id]
+                if len(matches) != 1:
+                    raise ValueError(f"Dihedral atom map {map_id} occurs {len(matches)} times in core_smiles; expected exactly one.")
+                atom_indices.append(matches[0])
+            bonds = [core.GetBondBetweenAtoms(a, b) for a, b in zip(atom_indices, atom_indices[1:])]
+            if any(bond is None for bond in bonds):
+                raise ValueError(f"Dihedral atom maps {maps} do not form a consecutively bonded path.")
+            if bonds[1].GetBondType() != Chem.BondType.SINGLE or bonds[1].IsInRing():
+                raise ValueError(f"Dihedral atom maps {maps} require a rotatable, non-ring single central bond.")
+            angle = spec.get("angle")
+            if isinstance(angle, bool) or not isinstance(angle, (int, float)) or not math.isfinite(angle):
+                raise ValueError(f"Dihedral angle for {maps} must be a finite number.")
+            indices.append((atom_indices, float(angle)))
+        return indices
+
     def generate_conformer(self, output_file=None):
         """Generate and write capped dye 3D SDF/PDB structures."""
         from rdkit import Chem
@@ -236,7 +298,28 @@ class DyeDefinition:
         if self.mol is None:
             self.attach_caps()
 
+        dihedrals = self._dihedral_indices(Chem.MolFromSmiles(self.core_smiles))
         self.mol = embed_rdkit_conformer(self.mol, "3D embedding failed.")
+        if dihedrals:
+            from rdkit.Chem import rdMolTransforms
+
+            conf = self.mol.GetConformer()
+            try:
+                for indices, angle in dihedrals:
+                    rdMolTransforms.SetDihedralDeg(conf, *indices, angle)
+            except (ValueError, RuntimeError) as exc:
+                raise ValueError(f"Could not apply initial dihedral: {exc}") from exc
+            for indices, angle in dihedrals:
+                actual = rdMolTransforms.GetDihedralDeg(conf, *indices)
+                if not math.isfinite(actual) or abs((actual - angle + 180) % 360 - 180) > 1e-3:
+                    raise ValueError("Initial dihedrals conflict or cannot be applied consistently.")
+
+            stereo = Chem.Mol(self.mol)
+            Chem.AssignStereochemistryFrom3D(stereo)
+            for bond in self.mol.GetBonds():
+                if bond.GetStereo() in (Chem.BondStereo.STEREOE, Chem.BondStereo.STEREOZ):
+                    if stereo.GetBondWithIdx(bond.GetIdx()).GetStereo() != bond.GetStereo():
+                        raise ValueError("Initial dihedrals are incompatible with explicitly defined stereochemistry.")
         output_file = Path(output_file or f"{self.name}.sdf")
 
         Chem.MolToMolFile(self.mol, str(output_file))

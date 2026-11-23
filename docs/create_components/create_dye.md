@@ -72,6 +72,7 @@ The SMILES above is only a syntax example. The mapped atoms and chemistry must b
 | `[structure].cap_smiles` | required | none | RDKit-readable cap fragment. Current validation supports exactly one cap atom. |
 | `[structure].cap_targets` | required | none | Unique atom-map IDs in `core_smiles`; one cap is attached to each target. `core_targets` is accepted as a legacy alias. |
 | `[structure].formal_charge` | optional | formal charge inferred from core SMILES | Target charge for the uncapped dye RESP group and final residue charge check. |
+| `[[structure.dihedrals]]` | optional | none | Initial dihedral, specified by four core `atom_maps` and an `angle` in degrees. |
 | `[parameterization].charge_method` | optional | `"resp"` | Only `"resp"` is supported. |
 | `[parameterization].forcefield` | optional | `"gaff2"` | Amber/GAFF atom typing passed to AmberTools. |
 | `[parameterization].amber_forcefield` | optional | `"gaff2"` | Legacy alias for force-field selection. |
@@ -110,6 +111,28 @@ The scientific TOML file and CLI command are the same for CPU and GPU execution.
 ## Common Modifications Or Advanced Options
 
 Use `output.cleanup = "none"` when debugging parameterization. Use `output.directory = "library"` only after confirming the generated files should become reusable library inputs.
+
+### Initial dihedral angles
+
+A SMILES string can leave rotations around single bonds unspecified and therefore cause challenges and ambiguities when codncutiong RDKit conformers for geometry optimization. To select an initial conformation, label the four atoms of each dihedral with SMILES atom maps (such as `[C:3]`) and provide their map numbers in order:
+
+```toml
+[structure]
+core_smiles = 'CC1(C)C2=CC=CC=C2[N:1]\[C:3]1=[CH:4]\[CH:5]=[CH:6]\[C:7](C3(C)C)=[N+:2]C4=C3C=CC=C4'
+cap_smiles = 'C'
+cap_targets = [1, 2]
+formal_charge = 1
+
+[[structure.dihedrals]]
+atom_maps = [3, 4, 5, 6]
+angle = 180.0
+
+[[structure.dihedrals]]
+atom_maps = [5, 6, 7, 2]
+angle = 180.0
+```
+
+Atom maps are user-defined labels, independent of RDKit atom indices; only atoms listed in `cap_targets` receive caps. The middle bond of each path must be a rotatable single bond outside a ring. Angles are applied after embedding, before QM optimization, and are not constraints during optimization. If `qm.classical_preopt = true`, the existing classical pre-optimization generates new conformers and can replace these initial angles before QM.
 
 ## Limitations / Troubleshooting
 

@@ -25,3 +25,4 @@ __pycache__/
 # Avoid push of tests/ code except focused repository tests
 tests/*
 !tests/test_classical_geometry.py
+!tests/test_dye_dihedrals.py
