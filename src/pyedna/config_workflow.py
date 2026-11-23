@@ -12,6 +12,7 @@ from pyedna.config import (
     amber_executable,
     get_config,
 )
+from pyedna.structure.dna import LIBGFORTRAN_SUFFIX
 
 
 CONFIG_TEMPLATE = """[amber]
@@ -158,9 +159,9 @@ def check_config() -> None:
         conda_prefix or "",
     )
     check(
-        "$CONDA_PREFIX/lib/libgfortran.so exists",
+        f"$CONDA_PREFIX/lib/libgfortran{LIBGFORTRAN_SUFFIX} exists",
         conda_path is not None
-        and (conda_path / "lib" / "libgfortran.so").is_file(),
+        and (conda_path / "lib" / f"libgfortran{LIBGFORTRAN_SUFFIX}").is_file(),
     )
 
     if failures:

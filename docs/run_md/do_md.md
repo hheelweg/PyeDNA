@@ -111,6 +111,8 @@ cleanup = "standard"
 | `name` | required | none | System basename used to resolve finalized structures and name Amber outputs. |
 | `structure_directory` | optional | `"structures"` | Directory containing finalized unsolvated structures and `bonds.csv`. Relative paths resolve from the working directory. |
 | `structures` | optional | `[1]` | Ranked finalized structure numbers to run. `1` resolves to `<structure_directory>/<name>_1.pdb`. Values must be unique positive integers and order is preserved. |
+| `prmtop` | optional | none | Path to a ready Amber topology. When set, the `prepare` stage must be absent from `workflow.stages`; the file is copied into the run directory as `<name>.prmtop` and restraint masks are resolved from it. Use for systems built outside the structure workflow. Requires `rst7`. |
+| `rst7` | optional | none | Coordinates matching `prmtop`; copied as `<name>.rst7`. Requires `prmtop`. The placeholder `<structure_directory>/<name>_<structure>.pdb` must still exist. |
 
 ### `[amber]`
 
