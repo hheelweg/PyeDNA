@@ -123,7 +123,8 @@ def embed_rdkit_conformer(mol, error_message):
     params = AllChem.ETKDGv3()
     params.useExpTorsionAnglePrefs = True
     params.useBasicKnowledge = True
-    params.randomSeed = 42
+    params.randomSeed = 21
+    params.enforceChirality = True
 
     if AllChem.EmbedMolecule(mol, params) != 0:
         raise RuntimeError(error_message)
@@ -500,6 +501,7 @@ def generate_ac(name, sdf_file, output_dir, amber, charge):
         "-fo", "ac",
         "-at", amber.forcefield,
         "-nc", str(charge),
+        "-j", "5",
     ]
     subprocess.run(cmd, check=True, cwd=output_dir, env=amber_environment("antechamber"))
 
@@ -634,6 +636,7 @@ def generate_resp_mol2(name, ac_file, output_dir, amber):
         "-c", "rc",
         "-cf", str(output_dir / "resp2_charges"),
         "-at", amber.forcefield,
+        "-j", "0",
     ]
     subprocess.run(cmd, check=True, cwd=output_dir, env=amber_environment("antechamber"))
 
