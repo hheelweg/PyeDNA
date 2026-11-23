@@ -177,3 +177,18 @@ class StructureBuilder:
         """Backward-compatible alias for finalize_haddock."""
 
         return self.finalize_haddock()
+
+    def cluster(self):
+        """Cluster HADDOCK output structures."""
+
+        from .haddock import HaddockSetup
+
+        self._load_dyes()
+        setup = HaddockSetup(
+            config=self.config,
+            dna_pdb=self.dna_pdb,
+            instances=self.dye_instances,
+            workdir=self.workdir,
+        )
+        setup.cluster_results()
+        return setup

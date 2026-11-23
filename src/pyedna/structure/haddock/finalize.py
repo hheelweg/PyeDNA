@@ -4,6 +4,7 @@ import json
 import math
 from pathlib import Path
 import shutil
+from collections import defaultdict
 
 import pandas as pd
 
@@ -332,8 +333,8 @@ def _get_clusters(
     output_dir,
     structure_name,
     dye_names=["CY3", "CY5"],
-    major_atoms=("N1", "N2"),                  # Orient the principal major axis    (NOTE: This does not define the principal axis,
-    minor_atoms=("N1", "C2"),                  # Orient the principal major axis            but standardises eigenvector direction)
+    major_atoms=[["CY3", "N1", "N2"], ["CY5", "N1", "N2"]],  # Orient the principal major axis    (NOTE: This does not define the principal axis,
+    minor_atoms=[["CY3", "N1", "C2"], ["CY5", "N1", "C2"]],  # Orient the principal minor axis            but standardises eigenvector direction)
     N_res_rad=0,                               # Number of environment residues on each side of dye to include as features
     weight_mode="DisplacementPrincipalAxes",   # Set structure of weights
     ws=[1/3, 1.0],                             # Weights of weight_mode
@@ -346,6 +347,7 @@ def _get_clusters(
     clust = Clusterer(structure_name, 
                       dye_names, 
                       structure_dir=structure_dir, 
+                      output_dir=output_dir,
                       major_atoms=major_atoms,
                       minor_atoms=minor_atoms,
                       N_res_rad=N_res_rad)
@@ -364,6 +366,14 @@ def _get_clusters(
     df.insert(0, "clust_labels", clust_labels)
     clust_path = output_dir / "clusters.csv"
     df.to_csv(clust_path, index=False)
+
+    # Create and save reverse map for cluster labels
+    reverse_map = defaultdict(list)
+    for i, label in enumerate(clust_labels, start=1):
+        reverse_map[int(label)].append(i)
+    clust_path = output_dir / "cluster_models.json"
+    with open(clust_path, "w") as f:
+        json.dump(dict(reverse_map), f, indent=4)
 
     return clust, features, clust_labels, weights
 
@@ -391,8 +401,10 @@ def _cluster_models(
     structure_dir,
     output_dir,
     structure_name,
-    major_atoms=("N1", "N2"),                  # Orient the principal major axis    (NOTE: This does not define the principal axis,
-    minor_atoms=("N1", "C2"),                  # Orient the principal major axis            but standardises eigenvector direction)
+    major_atoms=[["CY3", "N1", "N2"], 
+                 ["CY5", "N1", "N2"]],   # Orient the principal major axis    (NOTE: This does not define the principal axis, but standardises eigenvector direction)
+    minor_atoms=[["CY3", "N1", "C2"], 
+                 ["CY5", "N1", "C2"]],   # Orient the principal major axis            
     N_res_rad=0,                               # Number of environment residues on each side of dye to include as features
     weight_mode="DisplacementPrincipalAxes",   # Set structure of weights
     ws=[1/3, 1.0],                             # Weights of weight_mode

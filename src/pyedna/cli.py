@@ -44,7 +44,7 @@ def main():
 
     structure.add_argument(
         "stage",
-        choices=["prepare", "dock", "finalize"],
+        choices=["prepare", "dock", "finalize", "cluster"],
     )
 
     structure.add_argument(
