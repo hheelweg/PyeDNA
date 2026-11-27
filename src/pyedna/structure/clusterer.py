@@ -384,7 +384,9 @@ class Clusterer:
         featureB = self.extract_feature_column(features, featureB_name, dye1, dye2)
 
         # Plot data
-        scatter = plt.scatter(featureA[~mask], featureB[~mask], c=clust_labels[~mask], cmap=color_map)
+        cmap = plt.get_cmap(color_map)
+        scatter = plt.scatter(featureA[~mask], featureB[~mask], c=clust_labels[~mask], 
+        cmap=cmap, vmin=0, vmax=cmap.N - 1)
         plt.scatter(featureA[mask], featureB[mask], c="black")
         plt.xlabel(featureA_label)
         plt.ylabel(featureB_label)
